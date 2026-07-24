@@ -1,0 +1,70 @@
+# The "before" half of the translation: the same producer / workers / dashboard
+# topology as bin/orchestrate.sh, expressed the way a researcher would write it
+# on a laptop or a root-capable cloud VM. Read this next to bin/orchestrate.sh
+# to see each Compose construct and its scheduler-side equivalent.
+#
+# Build contexts point to the workflow root (.) so Dockerfiles under services/
+# can COPY from bin/ without duplicating source files.
+#
+#   C2H_TASKS=20 C2H_WORKERS=4 docker compose up --build
+#   curl http://localhost:8080/api/stats
+#   docker compose down -v
+#
+# Compose construct          HPC equivalent (bin/orchestrate.sh)
+# -------------------------  ------------------------------------------------
+# service                    background process under `apptainer exec`
+# build: context + dockerfile  container/worker.def / dashboard.def
+# depends_on + condition     sequential bash steps + wait_for_port
+# named volume               --bind of job-scoped scratch at /data
+# ports:                     port derived from job ID, bound to loopback
+# docker compose down        EXIT trap in orchestrate.sh
+
+services:
+  producer:
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    volumes:
+      - shared-data:/data
+    command: python3 /app/producer.py --output /data/tasks --count ${C2H_TASKS:-20}
+
+  worker:
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    volumes:
+      - shared-data:/data
+    depends_on:
+      producer:
+        # Plain `depends_on: [producer]` waits only for the container to START.
+        # The producer is a one-shot, so workers could begin before any task
+        # files existed and idle straight out again.  This condition is the
+        # Compose expression of what sequential bash gives the HPC side for
+        # free — worth reading against orchestrate.sh step 3.
+        condition: service_completed_successfully
+    deploy:
+      replicas: ${C2H_WORKERS:-4}
+    command: python3 /app/worker.py --input /data/tasks --output /data/results
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: services/dashboard/Dockerfile
+    ports:
+      - "${C2H_PORT:-8080}:8080"
+    volumes:
+      - shared-data:/data
+    depends_on:
+      - worker
+    # Without this override the image CMD (`--help`) runs and the container
+    # exits 0.  Binds 0.0.0.0 because Compose publishes the port; the HPC
+    # side binds loopback and is reached over an SSH tunnel instead.
+    command: >
+      python3 /app/app.py
+      --tasks-dir /data/tasks
+      --results-dir /data/results
+      --port 8080
+      --host 0.0.0.0
+
+volumes:
+  shared-data:
