@@ -28,7 +28,7 @@ export const evidenceReferenceSchema = z.object({
 export type EvidenceReference = z.infer<typeof evidenceReferenceSchema>;
 
 export const repoRefSchema = z.object({
-  repository: z.string().url(),
+  repository: z.url(),
   release: nonEmpty,
   path: z.string().min(1),
   line_anchor: z.string().regex(/^#L\d+(?:-L\d+)?$/, 'must use #L<n> or #L<n>-L<n>').optional(),
@@ -180,3 +180,114 @@ export const releaseChangeSchema = z.object({
     }
   }
 });
+
+export const releaseRecordSchema = z.object({
+  id: nonEmpty,
+  version: z.string().regex(/^v?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/),
+  published_at: isoDate,
+  site_commit: z.string().regex(/^[a-f0-9]{40}$/i),
+  repository: repoRefSchema,
+  url_manifest_sha256: sha256,
+  site_artifact_sha256: sha256,
+  artifact_file_manifest_sha256: sha256,
+  cloudflare_deployment_id: nonEmpty,
+  pages_dev_fallback_url: z.url().refine((value) => /^https:\/\/[^/]+\.pages\.dev\/?$/.test(value)),
+  canonical_origin: z.literal(CANONICAL_ORIGIN),
+  evidence_ids: z.array(nonEmpty),
+  changes: z.array(releaseChangeSchema),
+}).strict();
+export type ReleaseRecord = z.infer<typeof releaseRecordSchema>;
+
+export const redirectRecordSchema = z.object({
+  id: nonEmpty,
+  from: path,
+  to: path,
+  reason: z.enum(['moved', 'superseded', 'archived']),
+  active_from: isoDate,
+}).strict();
+export type RedirectRecord = z.infer<typeof redirectRecordSchema>;
+
+export const milestoneDeliverableSchema = z.object({
+  sow_id: nonEmpty,
+  item_id: nonEmpty,
+  status: z.enum(['planned', 'draft', 'complete', 'externally-pending']),
+  public_url: path,
+  completion_evidence: evidenceReferenceSchema.optional(),
+  revisions: z.array(revisionSchema).default([]),
+}).strict();
+export const milestoneRecordSchema = z.object({
+  id: nonEmpty,
+  number: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  due_date: isoDate,
+  deliverables: z.array(milestoneDeliverableSchema),
+}).strict();
+export type MilestoneRecord = z.infer<typeof milestoneRecordSchema>;
+
+export const feedbackRecordSchema = z.object({
+  id: nonEmpty,
+  themes: z.array(nonEmpty),
+  decisions: z.array(nonEmpty),
+  revisions: z.array(nonEmpty),
+  dispositions: z.array(z.object({ theme: nonEmpty, disposition: nonEmpty, rationale: nonEmpty }).strict()),
+  attribution_approved: z.boolean(),
+}).strict();
+
+export const attributionSchema = z.object({
+  id: nonEmpty,
+  author: nonEmpty,
+  fellowship_role: nonEmpty,
+  professional_affiliation: nonEmpty,
+  funds_administrator: nonEmpty,
+  sponsors: z.array(nonEmpty).min(1),
+  non_endorsement: nonEmpty,
+  licenses: z.array(z.object({ scope: nonEmpty, license: nonEmpty }).strict()).min(1),
+  contributors: z.array(z.object({ name: nonEmpty, role: nonEmpty, funding_scope: nonEmpty.optional() }).strict()).default([]),
+}).strict();
+
+export const evidenceManifestReferenceSchema = z.object({
+  id: nonEmpty,
+  manifest: evidenceReferenceSchema,
+  workflow_revision: nonEmpty,
+  release_candidate: nonEmpty,
+  execution_date: isoDate,
+}).strict();
+
+export function isTechnicalContent(item: ContentItem): boolean {
+  return item.schedulers.length > 0 || item.container_runtimes.length > 0 || item.applicability_records.length > 0
+    || (item.artifact_type === 'learning-module' && ['runnable', 'hybrid'].includes(item.module_type));
+}
+
+export function releaseGateIssues(item: ContentItem, gate: ReleaseGate): string[] {
+  const issues: string[] = [];
+  const requireField = (field: keyof ContentItem, condition = true) => {
+    if (condition && (item[field] === undefined || item[field] === '')) issues.push(`${item.id}.${String(field)} is required at ${gate}`);
+  };
+  const technicalPublished = isTechnicalContent(item) && ['validated', 'published'].includes(item.status);
+  if (gate !== 'm1') requireField('last_reviewed', technicalPublished);
+  if (gate === 'm3' || gate === 'v1.0') requireField('responsible_maintainer', item.status === 'published');
+  if (gate === 'v1.0') {
+    requireField('description');
+    requireField('last_reviewed');
+    requireField('responsible_maintainer');
+    requireField('applicable_release', isTechnicalContent(item));
+  }
+  if (item.publication_date && item.last_reviewed && item.publication_date > item.last_reviewed) {
+    issues.push(`${item.id}.last_reviewed cannot precede publication_date`);
+  }
+  return issues;
+}
+
+export function parseContentItem(input: unknown, gate: ReleaseGate = 'm1'): ContentItem {
+  const item = contentItemSchema.parse(input);
+  const issues = releaseGateIssues(item, gate);
+  if (gate === 'v1.0' && input && typeof input === 'object') {
+    const raw = input as Record<string, unknown>;
+    const requiredKeys = ['description', 'last_reviewed', 'responsible_maintainer', 'supporting_artifacts'];
+    if (isTechnicalContent(item)) requiredKeys.push('applicable_release', 'schedulers', 'container_runtimes');
+    for (const field of requiredKeys) {
+      if (!Object.hasOwn(raw, field)) issues.push(`${item.id}.${field} is required at v1.0`);
+    }
+  }
+  if (issues.length > 0) throw new Error(issues.join('\n'));
+  return item;
+}
