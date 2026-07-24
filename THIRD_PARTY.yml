@@ -6,6 +6,12 @@ artifacts:
     copyrightHolder: Astro contributors
     license: MIT
     modificationStatus: unmodified
+  - name: '@astrojs/sitemap'
+    version: 3.7.3
+    source: https://github.com/withastro/astro
+    copyrightHolder: Astro contributors
+    license: MIT
+    modificationStatus: unmodified
   - name: '@astrojs/check'
     version: 0.9.9
     source: https://github.com/withastro/language-tools

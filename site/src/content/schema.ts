@@ -45,15 +45,32 @@ export const authorityReferenceSchema = z.object({
 export const prerequisiteSchema = z.object({
   id: nonEmpty,
   check: nonEmpty.optional(),
-  diagnostic_id: nonEmpty.optional(),
+  diagnostic_id: z.string().regex(/^BSSW-[A-Z0-9-]+$/, 'must be a stable BSSW-* diagnostic ID').optional(),
 }).strict();
 
-export const revisionSchema = z.object({
-  date: isoDate,
-  summary: nonEmpty,
-  evidence: evidenceReferenceSchema,
+const informativeImageSchema = z.object({
+  kind: z.literal('image'), purpose: z.literal('informative'), src: nonEmpty,
+  alt: z.string().trim().min(8, 'must provide an equivalent informative text alternative'),
+}).strict().superRefine((media, context) => {
+  if (/^(?:image|diagram|photo|graphic|figure|file|todo|tbd)(?:\.|$)/i.test(media.alt)) {
+    context.addIssue({ code: 'custom', path: ['alt'], message: 'must describe meaning, not merely name the media type' });
+  }
+});
+const decorativeImageSchema = z.object({
+  kind: z.literal('image'), purpose: z.literal('decorative'), src: nonEmpty, alt: z.literal(''),
 }).strict();
+const prerecordedMediaSchema = z.object({
+  kind: z.enum(['audio', 'video']), src: nonEmpty, prerecorded: z.literal(true),
+  captions: nonEmpty.optional(), transcript: nonEmpty.optional(),
+}).strict().superRefine((media, context) => {
+  if (media.kind === 'audio' && !media.transcript) context.addIssue({ code: 'custom', path: ['transcript'], message: 'is required for prerecorded audio' });
+  if (media.kind === 'video' && !media.captions && !media.transcript) context.addIssue({ code: 'custom', path: ['captions'], message: 'captions or a transcript is required for prerecorded video' });
+});
+export const publicationMediaSchema = z.discriminatedUnion('kind', [
+  z.discriminatedUnion('purpose', [informativeImageSchema, decorativeImageSchema]), prerecordedMediaSchema,
+]);
 
+export const revisionSchema = z.object({ date: isoDate, summary: nonEmpty, evidence: evidenceReferenceSchema }).strict();
 export const routeNamespaceSchema = z.enum([
   'guide', 'start', 'diagnostics', 'milestones', 'training', 'events', 'adoption',
   'feedback', 'releases', 'about', 'resources',
@@ -62,33 +79,19 @@ export const routeNamespaceSchema = z.enum([
 const commonFields = {
   id: nonEmpty,
   stable_slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'must be an immutable kebab-case slug'),
-  route_namespace: routeNamespaceSchema.optional(),
-  title: nonEmpty,
-  summary: nonEmpty,
-  description: nonEmpty.optional(),
-  topics: z.array(nonEmpty).min(1),
-  keywords: z.array(nonEmpty).min(1),
-  audiences: z.array(nonEmpty).min(1),
-  milestone: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
-  status: maturitySchema,
-  publication_date: isoDate.optional(),
-  last_reviewed: isoDate.optional(),
-  responsible_maintainer: nonEmpty.optional(),
-  applicable_release: nonEmpty.optional(),
-  supporting_artifacts: z.array(repoRefSchema).default([]),
+  route_namespace: routeNamespaceSchema.optional(), title: nonEmpty, summary: nonEmpty, description: nonEmpty.optional(),
+  topics: z.array(nonEmpty).min(1), keywords: z.array(nonEmpty).min(1), audiences: z.array(nonEmpty).min(1),
+  milestone: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]), status: maturitySchema,
+  publication_date: isoDate.optional(), last_reviewed: isoDate.optional(), responsible_maintainer: nonEmpty.optional(),
+  applicable_release: nonEmpty.optional(), supporting_artifacts: z.array(repoRefSchema).default([]),
   schedulers: z.array(z.enum(['slurm', 'pbs-family', 'other'])).default([]),
   container_runtimes: z.array(z.enum(['apptainer', 'charliecloud', 'other'])).default([]),
-  related: z.array(nonEmpty).default([]),
-  applicability_records: z.array(nonEmpty).default([]),
-  authority: z.array(authorityReferenceSchema).default([]),
-  release_introduced: nonEmpty.optional(),
-  release_superseded: nonEmpty.optional(),
-  successor_id: nonEmpty.optional(),
-  last_updated: isoDate.optional(),
-  sow_deliverable_id: nonEmpty.optional(),
+  related: z.array(nonEmpty).default([]), applicability_records: z.array(nonEmpty).default([]),
+  authority: z.array(authorityReferenceSchema).default([]), media: z.array(publicationMediaSchema).default([]),
+  release_introduced: nonEmpty.optional(), release_superseded: nonEmpty.optional(), successor_id: nonEmpty.optional(),
+  last_updated: isoDate.optional(), sow_deliverable_id: nonEmpty.optional(),
   deliverable_status: z.enum(['planned', 'draft', 'complete', 'externally-pending']).optional(),
-  completion_evidence: evidenceReferenceSchema.optional(),
-  revisions: z.array(revisionSchema).default([]),
+  completion_evidence: evidenceReferenceSchema.optional(), revisions: z.array(revisionSchema).default([]),
   learning_stage: z.enum(['baseline', 'portability', 'training', 'operations', 'adoption']).optional(),
 };
 
@@ -97,50 +100,49 @@ const genericArtifactType = z.enum([
   'feedback', 'release', 'diagnostic', 'report', 'news', 'support', 'contribution',
   'attribution', 'accessibility', 'maintenance',
 ]);
+export const genericContentItemSchema = z.object({ ...commonFields, artifact_type: genericArtifactType }).strict();
 
-export const genericContentItemSchema = z.object({
-  ...commonFields,
-  artifact_type: genericArtifactType,
+const completionCheckSchema = z.object({
+  kind: z.enum(['result', 'review-question', 'mapping-checklist', 'decision-exercise']), text: nonEmpty,
 }).strict();
-
 export const learningModuleSchema = z.object({
-  ...commonFields,
-  artifact_type: z.literal('learning-module'),
-  module_number: z.number().int().positive(),
-  module_type: z.enum(['conceptual', 'runnable', 'hybrid']),
-  learning_outcomes: z.array(nonEmpty).min(1),
+  ...commonFields, artifact_type: z.literal('learning-module'), module_number: z.number().int().positive(),
+  module_type: z.enum(['conceptual', 'runnable', 'hybrid']), learning_outcomes: z.array(nonEmpty).min(1),
   prerequisites: z.array(prerequisiteSchema),
   section_kinds: z.array(z.enum(['concept', 'procedure', 'expected-result', 'limitations', 'next-steps'])).default([]),
-  required_resources: z.array(nonEmpty).optional(),
-  estimated_minutes: z.number().int().positive().optional(),
-  completion_check: z.object({
-    kind: z.enum(['result', 'review-question', 'mapping-checklist', 'decision-exercise']),
-    text: nonEmpty,
-  }).strict().optional(),
-  validation_status: z.enum(['validated', 'failed', 'unvalidated', 'stale']).optional(),
-  validation_date: isoDate.optional(),
+  required_resources: z.array(nonEmpty).optional(), estimated_minutes: z.number().int().positive().optional(),
+  completion_check: completionCheckSchema.optional(), conceptual_check: completionCheckSchema.optional(),
+  validation_status: z.enum(['validated', 'failed', 'unvalidated', 'stale']).optional(), validation_date: isoDate.optional(),
   unvalidated_scopes: z.array(z.object({ anchor: nonEmpty, reason: nonEmpty }).strict()).default([]),
 }).strict();
 
-export const contentItemSchema = z.discriminatedUnion('artifact_type', [
-  learningModuleSchema,
-  genericContentItemSchema,
-]).superRefine((item, context) => {
-  if (['published', 'superseded', 'archived'].includes(item.status) && !item.publication_date) {
-    context.addIssue({ code: 'custom', path: ['publication_date'], message: 'is required for published content' });
-  }
-  if (item.status === 'superseded' && !item.successor_id && item.revisions.length === 0) {
-    context.addIssue({ code: 'custom', path: ['successor_id'], message: 'or an archived replacement revision is required' });
-  }
-  if (item.artifact_type === 'learning-module' && ['runnable', 'hybrid'].includes(item.module_type)) {
-    for (const field of ['validation_status', 'validation_date'] as const) {
-      if (!item[field]) context.addIssue({ code: 'custom', path: [field], message: 'is required for runnable workflows' });
+export const contentItemSchema = z.discriminatedUnion('artifact_type', [learningModuleSchema, genericContentItemSchema])
+  .superRefine((item, context) => {
+    const issue = (path: string, message: string) => context.addIssue({ code: 'custom', path: [path], message });
+    if (['published', 'superseded', 'archived'].includes(item.status) && !item.publication_date) issue('publication_date', 'is required for published content');
+    if (item.status === 'superseded' && !item.successor_id && item.revisions.length === 0) issue('successor_id', 'or an archived replacement revision is required');
+    if (item.artifact_type !== 'learning-module') return;
+    for (const section of ['concept', 'limitations', 'next-steps'] as const) {
+      if (!item.section_kinds.includes(section)) issue('section_kinds', `must include ${section}`);
     }
-    if (item.applicability_records.length === 0) {
-      context.addIssue({ code: 'custom', path: ['applicability_records'], message: 'requires at least one record for runnable workflows' });
+    const runnable = ['runnable', 'hybrid'].includes(item.module_type);
+    const conceptual = ['conceptual', 'hybrid'].includes(item.module_type);
+    if (runnable) {
+      for (const section of ['procedure', 'expected-result'] as const) if (!item.section_kinds.includes(section)) issue('section_kinds', `must include ${section}`);
+      if (!item.required_resources?.length) issue('required_resources', 'is required for runnable workflows');
+      if (!item.estimated_minutes) issue('estimated_minutes', 'is required for runnable workflows');
+      if (item.completion_check?.kind !== 'result') issue('completion_check', 'must be a result check for runnable workflows');
+      if (!item.validation_status) issue('validation_status', 'is required for runnable workflows');
+      if (!item.validation_date) issue('validation_date', 'is required for runnable workflows');
+      if (item.applicability_records.length === 0) issue('applicability_records', 'requires at least one record for runnable workflows');
+      for (const [index, prerequisite] of item.prerequisites.entries()) {
+        if (prerequisite.check && !prerequisite.diagnostic_id) issue(`prerequisites.${index}.diagnostic_id`, 'is required for an executable prerequisite check');
+      }
     }
-  }
-});
+    const conceptualCheck = item.module_type === 'hybrid' ? item.conceptual_check : item.completion_check;
+    if (conceptual && !conceptualCheck) issue(item.module_type === 'hybrid' ? 'conceptual_check' : 'completion_check', 'is required for conceptual guidance');
+    if (conceptual && conceptualCheck?.kind === 'result') issue('conceptual_check', 'must be a review question, mapping checklist, or decision exercise');
+  });
 export type ContentItem = z.infer<typeof contentItemSchema>;
 
 export const applicabilityRecordSchema = z.object({
@@ -232,6 +234,7 @@ export const feedbackRecordSchema = z.object({
   attribution_approved: z.boolean(),
 }).strict();
 
+const placeholderApproval = /\b(?:tbd|todo|placeholder|to be approved|pending approval|lorem ipsum)\b/i;
 export const attributionSchema = z.object({
   id: nonEmpty,
   author: nonEmpty,
@@ -242,7 +245,14 @@ export const attributionSchema = z.object({
   non_endorsement: nonEmpty,
   licenses: z.array(z.object({ scope: nonEmpty, license: nonEmpty }).strict()).min(1),
   contributors: z.array(z.object({ name: nonEmpty, role: nonEmpty, funding_scope: nonEmpty.optional() }).strict()).default([]),
-}).strict();
+}).strict().superRefine((record, context) => {
+  for (const [field, value] of Object.entries(record)) {
+    const values = Array.isArray(value) ? value.flatMap((entry) => typeof entry === 'string' ? [entry] : Object.values(entry)) : [value];
+    if (values.some((entry) => typeof entry === 'string' && placeholderApproval.test(entry))) {
+      context.addIssue({ code: 'custom', path: [field], message: 'contains unapproved placeholder wording' });
+    }
+  }
+});
 
 export const evidenceManifestReferenceSchema = z.object({
   id: nonEmpty,

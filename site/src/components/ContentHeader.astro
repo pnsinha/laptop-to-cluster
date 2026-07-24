@@ -1,0 +1,16 @@
+---
+import type { ContentItem } from '../content/schema';
+const { item } = Astro.props as { item: ContentItem };
+const human = (value: string | number) => String(value).replaceAll('-', ' ');
+---
+<header class="content-header">
+  <p class="eyebrow">{human(item.artifact_type)} · Milestone {item.milestone}</p>
+  <h1>{item.title}</h1>
+  <p class="lede">{item.summary}</p>
+  <dl class="status-list">
+    <div><dt>Status</dt><dd><span class="status-marker" aria-hidden="true">●</span> {human(item.status)}</dd></div>
+    {item.applicable_release && <div><dt>Applicable release</dt><dd>{item.applicable_release}</dd></div>}
+    {item.last_reviewed && <div><dt>Last reviewed</dt><dd><time datetime={item.last_reviewed}>{item.last_reviewed}</time></dd></div>}
+    {item.artifact_type === 'learning-module' && item.validation_status && <div><dt>Validation</dt><dd>{human(item.validation_status)}{item.validation_date && ` (${item.validation_date})`}</dd></div>}
+  </dl>
+</header>

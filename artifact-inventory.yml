@@ -10,7 +10,7 @@ categories:
   - id: executable-source
     description: Site source, validators, and automated tests
     license: Apache-2.0
-    paths: [site/src/**, scripts/**, tests/**]
+    paths: [site/src/**/*.ts, site/src/**/*.astro, site/plugins/**, scripts/**, tests/**]
   - id: configuration
     description: Build and package configuration
     license: Apache-2.0
@@ -30,7 +30,7 @@ categories:
   - id: documentation-training-evidence
     description: Original documentation, training sources, static public text, and evidence
     license: CC-BY-4.0
-    paths: [README.md, 01-scheduler-as-orchestrator.md, 02-baseline-single-node-pattern.md, Better_Scientific_Software_SoW.md, templates/**, training/**, evidence/**, site/public/**]
+    paths: [README.md, Better_Scientific_Software_SoW.md, templates/**, training/**, evidence/**, site/src/content/**/*.md, site/src/content/**/*.yml, site/src/content/**/.gitkeep, site/public/**]
 excluded:
   - paths: [LICENSE, licenses/**, artifact-inventory.yml, THIRD_PARTY.yml]
     reason: Legal and provenance declarations retain their stated terms and are not project artifacts.

@@ -1,0 +1,7 @@
+id: milestone-1-record
+number: 1
+due_date: "2026-07-31"
+deliverables:
+  - { sow_id: M1-SITE, item_id: about-project, status: complete, public_url: /about/project/, completion_evidence: { id: m1-site-publication, path: evidence/README.md, integrity: "sha256:2c4769da75fb3ceb36eca05319dcb69fb194ef6427a62acb80f73645c56213e5" }, revisions: [] }
+  - { sow_id: M1-MODULE-1, item_id: module-1-scheduler-orchestrator, status: complete, public_url: /guide/scheduler-as-orchestrator/, completion_evidence: { id: m1-module-1-publication, path: evidence/README.md, integrity: "sha256:2c4769da75fb3ceb36eca05319dcb69fb194ef6427a62acb80f73645c56213e5" }, revisions: [] }
+  - { sow_id: M1-MODULE-2, item_id: module-2-baseline, status: complete, public_url: /guide/baseline-single-node-pattern/, completion_evidence: { id: m1-module-2-publication, path: evidence/README.md, integrity: "sha256:2c4769da75fb3ceb36eca05319dcb69fb194ef6427a62acb80f73645c56213e5" }, revisions: [] }

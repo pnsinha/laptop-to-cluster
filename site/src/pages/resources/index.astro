@@ -1,0 +1,16 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { projectDiscovery } from '../../content/projections';
+const entries = await getCollection('contentItems');
+const projection = projectDiscovery(entries.map(({ data }) => data));
+const byId = new Map(entries.map(({ data }) => [data.id, data]));
+const applicability = await getCollection('applicability');
+---
+<BaseLayout title="Resources" description="Complete no-JavaScript index of published Laptop-to-Cluster resources.">
+<h1>Resources</h1><p class="lede">Browse every published item as an ordinary link. Search records include title, summary, and keywords; the index works without JavaScript.</p>
+<div class="cards">{projection.resources.map((resource) => { const item = byId.get(resource.id)!; return <article class="card"><p class="eyebrow">{item.artifact_type} · {item.status}</p><h2><a href={resource.url}>{resource.title}</a></h2><p>{item.summary}</p><p><strong>Keywords:</strong> {item.keywords.join(', ')}</p></article>; })}</div>
+<h2>Sequential learning path</h2><ol>{projection.sequential_path.map((stage) => <li><strong>{stage.stage}</strong>: {stage.item_ids.length ? stage.item_ids.map((id) => byId.get(id)?.title).join(', ') : 'Planned for a later milestone'}</li>)}</ol>
+<h2>Applicability records</h2>{applicability.map(({ data }) => <article id={data.id} class="card"><h3>{data.id}</h3><p><strong>Status:</strong> {data.status}. <strong>Environment:</strong> {data.environment.public_name}. <strong>Date:</strong> {data.execution_date}.</p><p>{data.environment.notes}</p><p><strong>Limitations:</strong> {data.limitations.join('; ')}</p></article>)}
+<p id="no-results">{projection.no_result.message} <a href={projection.no_result.complete_index_url}>Complete content index</a>.</p>
+</BaseLayout>

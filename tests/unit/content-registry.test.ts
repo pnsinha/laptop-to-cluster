@@ -2,8 +2,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   applicabilityRecordSchema,
+  attributionSchema,
   contentItemSchema,
   parseContentItem,
+  publicationMediaSchema,
   releaseRecordSchema,
 } from '../../site/src/content/schema.js';
 import {
@@ -41,7 +43,10 @@ function moduleItem(overrides: Record<string, unknown> = {}) {
     id: 'module-1', stable_slug: 'module-one', artifact_type: 'learning-module', module_number: 1,
     module_type: 'runnable', learning_outcomes: ['Run the workflow'], prerequisites: [],
     validation_status: 'validated', validation_date: '2026-06-30', applicability_records: ['anvil-run'],
-    schedulers: ['slurm'], container_runtimes: ['apptainer'], section_kinds: [], unvalidated_scopes: [],
+    schedulers: ['slurm'], container_runtimes: ['apptainer'],
+    section_kinds: ['concept', 'procedure', 'expected-result', 'limitations', 'next-steps'],
+    required_resources: ['one compute node'], estimated_minutes: 15,
+    completion_check: { kind: 'result', text: 'Verifier reports success' }, unvalidated_scopes: [],
     ...overrides,
   });
 }

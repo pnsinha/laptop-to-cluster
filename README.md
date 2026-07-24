@@ -8,7 +8,8 @@ These modules formalize how multi-service Docker Compose stacks map onto shared 
 
 | # | Title | Topics | Status |
 |---|---|---|---|
-| 1 | [Scheduler as Orchestrator](01-scheduler-as-orchestrator.md) | `scheduler-as-orchestrator` | draft |
+| 1 | [Scheduler as Orchestrator](site/src/content/content-items/01-scheduler-as-orchestrator.md) | `scheduler-as-orchestrator` | published |
+| 2 | [Baseline Pattern: Single-Node Service + Workers](site/src/content/content-items/02-baseline-single-node-pattern.md) | `scheduler-as-orchestrator`, `service-workers` | published; runnable section unvalidated |
 
 ## Front matter
 

@@ -21,9 +21,9 @@ describe('license and provenance declarations', () => {
   it('rejects an ambiguous category path declaration', () => {
     const data = loadPolicyData(root);
     const inventory = clone(data.inventory);
-    inventory.categories[1].paths.push('site/src/**');
+    inventory.categories[1].paths.push('site/src/**/*.ts');
     expect(validatePolicyData(inventory, data.provenance, data.manifest).join('\n'))
-      .toContain('ambiguous path pattern site/src/**');
+      .toContain('ambiguous path pattern site/src/**/*.ts');
   });
 
   it('rejects incomplete third-party provenance', () => {

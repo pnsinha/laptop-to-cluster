@@ -1,0 +1,9 @@
+---
+import { PROJECT } from '../content/wording';
+const { state = 'available', artifact = 'Public site and companion repository', scope = 'All published guidance and reporting channels', recovery = 'Report a problem through the public issue tracker.' } = Astro.props;
+---
+<aside class:list={['support-state', state]} role="status" aria-live="polite">
+  <h2>Public artifact status: {state}</h2>
+  <dl><div><dt>Artifact</dt><dd>{artifact}</dd></div><div><dt>Affected scope</dt><dd>{scope}</dd></div></dl>
+  <p>{recovery} <a href={PROJECT.issues}>Open an issue</a>; if that channel is unavailable, <a href={PROJECT.contact}>email the maintainer</a>.</p>
+</aside>

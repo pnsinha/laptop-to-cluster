@@ -1,0 +1,16 @@
+id: m1-baseline-unvalidated
+workflow_id: module-2-baseline
+status: unvalidated
+environment: { public_name: "Purdue Anvil target environment", fallback: false, notes: "Representative execution evidence has not yet been published." }
+scheduler: { family: Slurm, version: "not yet recorded" }
+runtime: { name: Apptainer, version: "not yet recorded" }
+container_digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+workflow_revision: v0.1.0
+execution_date: "2026-07-31"
+submission_id: "not-executed"
+result: { terminal_state: "NOT RUN", exit_code: 1, checks: ["No representative-environment success is claimed"] }
+assumptions: ["One Slurm node", "Apptainer available on compute nodes", "Loopback coordinator communication"]
+limitations: ["No representative execution evidence is attached", "Versions and submission ID are not yet recorded"]
+portability_boundaries: ["Scheduler account and partition", "Runtime module", "Storage and network policy"]
+evidence: { id: m1-evidence-status, path: evidence/README.md, integrity: "sha256:2c4769da75fb3ceb36eca05319dcb69fb194ef6427a62acb80f73645c56213e5" }
+review_after: "2026-08-31"

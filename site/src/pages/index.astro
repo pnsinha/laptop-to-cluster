@@ -1,26 +1,14 @@
 ---
-const repositoryPath = 'https://github.com/pnsinha/laptop-to-cluster';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SupportState from '../components/SupportState.astro';
+import { PROJECT } from '../content/wording';
 ---
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="description" content="Public BSSw Fellowship guidance for translating laptop workflows to HPC systems." />
-    <link rel="canonical" href="https://laptop-to-cluster.org/" />
-    <title>Laptop-to-Cluster Guide</title>
-  </head>
-  <body>
-    <a href="#main">Skip to content</a>
-    <header><nav aria-label="Primary"><a href="/">Home</a> <a href={repositoryPath}>Companion repository</a></nav></header>
-    <main id="main">
-      <h1>Bridging the Laptop-to-Cluster Gap</h1>
-      <p>A public, static guide for scientific software practitioners translating multi-service laptop workflows to scheduler-managed HPC systems.</p>
-      <h2>Current release</h2>
-      <p>Milestone 1 foundation is in development for v0.1.0.</p>
-      <h2>Get started</h2>
-      <p>The first learning path and validated baseline workflow will be published here. No account is required to read any published material.</p>
-    </main>
-    <footer><p>Parmanand Sinha, 2026 BSSw Fellow, acting in an individual fellowship capacity.</p></footer>
-  </body>
-</html>
+<BaseLayout title="Bridging the Laptop-to-Cluster Gap" description="Public BSSw Fellowship guidance for translating multi-service laptop workflows to scheduler-managed HPC systems." canonicalPath="/">
+<h1>Bridging the Laptop-to-Cluster Gap</h1>
+<p class="lede">A public, static guide for translating multi-service laptop workflows into scheduler-managed, rootless-container workflows on shared HPC systems.</p>
+<section><h2>Who this is for</h2><p>Scientific software practitioners, first-time HPC learners, workflow maintainers, research computing staff, educators, and fellowship reviewers. All published content is anonymous-access: <strong>No account is required</strong>.</p></section>
+<section><h2>Current release</h2><p><strong>{PROJECT.release}</strong>. The two Milestone 1 modules and supporting guidance are published; Module 2 clearly labels representative-environment execution as unvalidated until evidence is added.</p><p><a href="/releases/v0-1-0/">Read release status</a> or <a href="/milestones/1/">review every Milestone 1 deliverable</a>.</p></section>
+<section><h2>Get started</h2><div class="cards"><article class="card"><h3>Understand the model</h3><p><a href="/guide/scheduler-as-orchestrator/">Scheduler as Orchestrator</a> maps Compose responsibilities to HPC.</p></article><article class="card"><h3>Prepare safely</h3><p><a href="/start/">Check prerequisites and local adaptations</a> before any execution step.</p></article><article class="card"><h3>Try the baseline</h3><p><a href="/guide/baseline-single-node-pattern/">Run the bounded service-plus-workers pattern</a> and verify results.</p></article></div></section>
+<section><h2>Find and reuse</h2><p>Browse the complete <a href="/resources/">resource index</a>, durable <a href="/diagnostics/">diagnostic registry</a>, or public <a href={PROJECT.repository}>Companion repository</a>.</p></section>
+<SupportState />
+</BaseLayout>

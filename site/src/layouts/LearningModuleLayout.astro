@@ -1,0 +1,23 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import ContentHeader from '../components/ContentHeader.astro';
+import AuthorityNote from '../components/AuthorityNote.astro';
+import type { ContentItem } from '../content/schema';
+type LearningModule = Extract<ContentItem, { artifact_type: 'learning-module' }>;
+const { item } = Astro.props as { item: LearningModule };
+---
+<BaseLayout title={item.title} description={item.summary}>
+  <ContentHeader {item} />
+  <section aria-labelledby="module-details"><h2 id="module-details">Module details</h2>
+    <p><strong>Type:</strong> {item.module_type}</p><p><strong>Audience:</strong> {item.audiences.join(', ')}</p>
+    <h3>Learning outcomes</h3><ul>{item.learning_outcomes.map((value) => <li>{value}</li>)}</ul>
+    <h3>Prerequisites</h3><ul>{item.prerequisites.map((value) => <li>{value.check ?? value.id}{value.diagnostic_id && <> — <a href={`/diagnostics/${value.diagnostic_id.toLowerCase()}/`}>{value.diagnostic_id}</a></>}</li>)}</ul>
+    {item.required_resources && <><h3>Required resources</h3><ul>{item.required_resources.map((value) => <li>{value}</li>)}</ul></>}
+    {item.estimated_minutes && <p><strong>Estimated time:</strong> {item.estimated_minutes} minutes</p>}
+  </section>
+  {item.applicability_records.length > 0 && <section class="applicability" aria-labelledby="applicability"><h2 id="applicability">Applicability before execution</h2><p>This bounded procedure applies only to the linked records: {item.applicability_records.map((id) => <a href={`/resources/#${id}`}>{id}</a>)}. Review local scheduler, runtime, network, storage, and security differences before running it.</p></section>}
+  {item.unvalidated_scopes.length > 0 && <aside class="notice" role="note"><h2>Unvalidated content</h2><ul>{item.unvalidated_scopes.map((scope) => <li><a href={`#${scope.anchor}`}>{scope.anchor}</a>: {scope.reason}</li>)}</ul></aside>}
+  <AuthorityNote references={item.authority} />
+  <article class="module-content"><slot /></article>
+  <section aria-labelledby="completion"><h2 id="completion">Completion check</h2><p>{item.completion_check?.text}</p>{item.conceptual_check && <p><strong>Conceptual exercise:</strong> {item.conceptual_check.text}</p>}</section>
+</BaseLayout>

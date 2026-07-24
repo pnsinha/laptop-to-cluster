@@ -1,0 +1,19 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import LearningModuleLayout from '../../layouts/LearningModuleLayout.astro';
+import ContentHeader from '../../components/ContentHeader.astro';
+import AuthorityNote from '../../components/AuthorityNote.astro';
+import Attribution from '../../components/Attribution.astro';
+import SupportState from '../../components/SupportState.astro';
+import { canonicalPath } from '../../content/registry';
+export async function getStaticPaths() {
+  const entries = await getCollection('contentItems', ({ data }) => ['published', 'superseded', 'archived'].includes(data.status) && data.route_namespace !== 'start');
+  return entries.map((entry) => { const [namespace, slug] = canonicalPath(entry.data).split('/').filter(Boolean); return { params: { namespace, slug }, props: { entry } }; });
+}
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const item = entry.data;
+---
+{item.artifact_type === 'learning-module' ? <LearningModuleLayout {item}><Content /></LearningModuleLayout> :
+<BaseLayout title={item.title} description={item.summary}><ContentHeader {item} /><AuthorityNote references={item.authority} /><article><Content /></article>{item.artifact_type === 'attribution' && <Attribution />}{item.artifact_type === 'support' && <SupportState />}</BaseLayout>}

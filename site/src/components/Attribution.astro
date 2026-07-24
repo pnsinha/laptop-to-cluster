@@ -1,0 +1,17 @@
+---
+import { ATTRIBUTION } from '../content/wording';
+const { compact = false } = Astro.props;
+---
+{compact ? (
+  <p><a href="/about/attribution/">Attribution and funding</a>: {ATTRIBUTION.author}, {ATTRIBUTION.fellowship}.</p>
+) : (
+  <section aria-labelledby="attribution-heading">
+    <h2 id="attribution-heading">Attribution, roles, and funding</h2>
+    <p><strong>Author:</strong> {ATTRIBUTION.author}, {ATTRIBUTION.fellowship}.</p>
+    <p><strong>Professional affiliation:</strong> {ATTRIBUTION.affiliation}. This affiliation is distinct from the author’s individual fellowship work.</p>
+    <p><strong>Funds administration:</strong> {ATTRIBUTION.funds}</p>
+    <p><strong>Sponsorship:</strong> {ATTRIBUTION.sponsors}</p>
+    <p><strong>Non-endorsement:</strong> {ATTRIBUTION.nonEndorsement}</p>
+    <p><strong>License scope:</strong> {ATTRIBUTION.licenses}</p>
+  </section>
+)}
