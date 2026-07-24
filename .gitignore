@@ -1,0 +1,10 @@
+node_modules/
+site/dist/
+coverage/
+.astro/
+.DS_Store
+*.log
+__pycache__/
+*.pyc
+*.sif
+.kiro/

@@ -1,0 +1,14 @@
+Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/legalcode
+
+Copyright 2026 Parmanand Sinha
+
+The original documentation, training materials, and publishable evidence
+identified by artifact-inventory.yml are licensed under CC BY 4.0.
+You may share and adapt them for any purpose provided you give appropriate
+credit, link to the license, and indicate whether changes were made. You
+may not apply legal or technological restrictions that prevent others
+from exercising the rights granted by the license. The complete legal
+code at the URL above controls.
+
+SPDX-License-Identifier: CC-BY-4.0

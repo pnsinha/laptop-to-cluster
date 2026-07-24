@@ -1,0 +1,28 @@
+name: validation
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22.15.0'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm run test:unit
+      - run: npm run test:property
+      - run: npm run test:integration
+      - run: npm run test:accessibility
+      - run: npm run validate:repository
+      - run: npm run validate:release

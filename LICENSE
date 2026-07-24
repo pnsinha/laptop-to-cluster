@@ -1,0 +1,7 @@
+# Project licensing
+
+Executable artifacts are licensed under Apache License 2.0; see `licenses/Apache-2.0.txt`.
+
+Original documentation, training materials, and publishable evidence are licensed under Creative Commons Attribution 4.0 International; see `licenses/CC-BY-4.0.txt`.
+
+`artifact-inventory.yml` is the authoritative category mapping. Third-party artifacts retain the terms declared in `THIRD_PARTY.yml`. License and provenance declaration files are legal metadata and are not relicensed by this notice.

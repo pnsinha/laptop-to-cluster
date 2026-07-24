@@ -1,0 +1,33 @@
+name: HPC portability observation
+description: Share a center-specific adaptation or portability boundary
+title: '[portability] '
+labels: [portability]
+body:
+  - type: textarea
+    id: environment
+    attributes: {label: Center, scheduler/runtime, and versions}
+    validations: {required: true}
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Affected boundaries
+      options:
+        - label: Scheduler or allocation
+        - label: Network or security
+        - label: Storage
+        - label: Container runtime
+  - type: textarea
+    id: adaptation
+    attributes: {label: Commands, local adaptation, and sanitized configuration}
+    validations: {required: true}
+  - type: textarea
+    id: result
+    attributes: {label: Expected and observed result}
+    validations: {required: true}
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials and center-sensitive identifiers.
+          required: true

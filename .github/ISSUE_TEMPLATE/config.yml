@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Alternative contact when issues are unavailable
+    url: mailto:parmanandsinha@gmail.com
+    about: Include the report type and the same sanitized reproducibility fields.
+  - name: Private security report
+    url: mailto:parmanandsinha@gmail.com
+    about: Use subject “BSSw resource security report”; do not post sensitive details publicly.

@@ -1,0 +1,36 @@
+schemaVersion: 1
+licenseDeclarations:
+  - id: Apache-2.0
+    kind: executable
+    file: licenses/Apache-2.0.txt
+  - id: CC-BY-4.0
+    kind: content
+    file: licenses/CC-BY-4.0.txt
+categories:
+  - id: executable-source
+    description: Site source, validators, and automated tests
+    license: Apache-2.0
+    paths: [site/src/**, scripts/**, tests/**]
+  - id: configuration
+    description: Build and package configuration
+    license: Apache-2.0
+    paths: [.gitignore, package.json, package-lock.json, tsconfig.json, vitest.config.ts, site/astro.config.mjs, site/tsconfig.json]
+  - id: ci-automation
+    description: Continuous-integration workflows
+    license: Apache-2.0
+    paths: [.github/workflows/**]
+  - id: workflow-assets
+    description: Scheduler and container workflow assets
+    license: Apache-2.0
+    paths: [workflows/**]
+  - id: project-governance
+    description: Contribution, support, security, and issue-process documents
+    license: CC-BY-4.0
+    paths: [CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, MAINTENANCE.md, SUPPORT.md, RECOVERY.md, .github/ISSUE_TEMPLATE/**]
+  - id: documentation-training-evidence
+    description: Original documentation, training sources, static public text, and evidence
+    license: CC-BY-4.0
+    paths: [README.md, 01-scheduler-as-orchestrator.md, 02-baseline-single-node-pattern.md, Better_Scientific_Software_SoW.md, templates/**, training/**, evidence/**, site/public/**]
+excluded:
+  - paths: [LICENSE, licenses/**, artifact-inventory.yml, THIRD_PARTY.yml]
+    reason: Legal and provenance declarations retain their stated terms and are not project artifacts.
