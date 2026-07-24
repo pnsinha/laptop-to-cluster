@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "tasks": [
+    {"id": "task-001", "payload": {"message": "alpha", "repeat": 2}},
+    {"id": "task-002", "payload": {"message": "beta", "repeat": 3}},
+    {"id": "task-003", "payload": {"message": "gamma", "repeat": 1}},
+    {"id": "task-004", "payload": {"message": "delta", "repeat": 2}}
+  ]
+}

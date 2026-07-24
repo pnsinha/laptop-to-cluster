@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+if [[ ${1:-} == --version ]]; then
+  printf 'apptainer version 1.3.0-fixture\n'
+  exit 0
+fi
+[[ ${1:-} == exec ]] || exit 90
+shift
+while (($#)); do
+  case "$1" in
+    --cleanenv) shift ;;
+    --bind) shift 2 ;;
+    *) break ;;
+  esac
+done
+shift # inert fixture image
+mapped=()
+for argument in "$@"; do
+  if [[ "$argument" == *"/work/"* ]]; then
+    prefix=${argument%%/work/*}
+    suffix=${argument#*/work/}
+    mapped+=("${prefix}${BSSW_FAKE_RUNTIME_DIR:?}/${suffix}")
+  else
+    mapped+=("$argument")
+  fi
+done
+target=${mapped[1]:-}
+case "${BSSW_FIXTURE_SCENARIO:-success}:$target" in
+  early-coordinator-exit:*coordinator.py) exit 17 ;;
+  worker-failure:*worker.py) exit 18 ;;
+  verification-failure:*verify.py) exit 19 ;;
+  readiness-timeout:*readiness.py) exit 24 ;;
+esac
+exec "${mapped[@]}"

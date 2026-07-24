@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "name": "bssw-baseline-python",
+  "ociSource": "docker://docker.io/library/python@sha256:90aa7f84f25a90382d75026a82010016d9ae811865bdda851ce48e5d14469b53",
+  "platform": "linux/amd64",
+  "sourceDigest": "sha256:90aa7f84f25a90382d75026a82010016d9ae811865bdda851ce48e5d14469b53",
+  "sourceRecord": "https://hub.docker.com/layers/library/python/3.12.10-slim-bookworm/images/sha256-90aa7f84f25a90382d75026a82010016d9ae811865bdda851ce48e5d14469b53"
+}

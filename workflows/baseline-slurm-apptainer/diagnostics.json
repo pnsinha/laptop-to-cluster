@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "diagnostics": {
+    "invalid-input": "BSSW-PREQ-INPUT",
+    "early-coordinator-exit": "BSSW-COORDINATOR-EXIT",
+    "worker-failure": "BSSW-WORKER-EXIT",
+    "checksum-mismatch": "BSSW-INTEGRITY-INPUT",
+    "verification-failure": "BSSW-VERIFY-RESULT",
+    "cleanup-failure": "BSSW-CLEANUP-CHILD",
+    "readiness-timeout": "BSSW-READY-TIMEOUT"
+  }
+}

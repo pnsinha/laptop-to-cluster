@@ -1,0 +1,24 @@
+Bootstrap: docker
+From: docker.io/library/python@sha256:90aa7f84f25a90382d75026a82010016d9ae811865bdda851ce48e5d14469b53
+
+%files
+    ../bin/common.py /opt/bssw/bin/common.py
+    ../bin/coordinator.py /opt/bssw/bin/coordinator.py
+    ../bin/readiness.py /opt/bssw/bin/readiness.py
+    ../bin/validate_input.py /opt/bssw/bin/validate_input.py
+    ../bin/verify.py /opt/bssw/bin/verify.py
+    ../bin/worker.py /opt/bssw/bin/worker.py
+
+%post
+    chmod 0555 /opt/bssw/bin/*.py
+
+%environment
+    export PYTHONDONTWRITEBYTECODE=1
+    export PYTHONUNBUFFERED=1
+
+%labels
+    org.opencontainers.image.title BSSw single-node baseline
+    org.opencontainers.image.licenses Apache-2.0
+
+%runscript
+    exec python3 "$@"

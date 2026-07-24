@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+while (($#)); do
+  case "$1" in
+    --exclusive|--nodes=*|--ntasks=*|--cpus-per-task=*) shift ;;
+    *) break ;;
+  esac
+done
+exec "$@"

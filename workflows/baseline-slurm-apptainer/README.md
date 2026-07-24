@@ -1,162 +1,130 @@
-# Baseline single-node reference workflow (Slurm + Apptainer)
+# Single-node Slurm + Apptainer reference workflow
 
-The runnable half of *Module 2: Baseline Pattern — Single-Node Service + Workers*.
-It takes the simplest multi-service Compose shape — one coordinating service, a
-producer, and N workers — and runs it inside a single-node Slurm allocation
-through Apptainer, treating the scheduler as the orchestrator.
+This bounded reference package runs one loopback coordinator and 1–16 workers as
+exclusive Slurm steps in one node allocation. Inputs are inert JSON; no input value
+is evaluated by a shell. A run succeeds only when `result.json` is atomically
+created after schema, count, uniqueness, digest, and expected-output verification.
+Passing fake-runtime tests is not representative-cluster validation.
 
-The service code is pure Python standard library (`argparse`, `json`, `os`,
-`time`, `random`, `glob`, `http.server`). There is no `requirements.txt` and
-nothing to `pip install`.
+## Security and site assumptions
 
-> **Validation status: unvalidated on a representative environment.** The
-> orchestration logic has been exercised against a runtime shim; nothing here
-> constitutes a completed run on Anvil or Expanse until an evidence bundle is
-> recorded under `evidence/`. See the project site's applicability record for
-> the authoritative status.
+- Submit from an authorized Slurm account and adapt the `#SBATCH` resource lines.
+- Apptainer must be available on the compute node under center policy.
+- Compute-node loopback connections and exclusive job steps must be permitted.
+- Scratch must be private, writable, large enough for logs/results, and suitable for
+  an Apptainer bind. The launcher uses mode `0700` job storage and `0600` files.
+- The image and input are regular, non-symlink files with separately supplied
+  SHA-256 records. Never use credentials, shell fragments, or sensitive data here.
 
-## Layout
+## Acquire the container
 
-```
-baseline-slurm-apptainer/
-├── bin/                         # application + orchestration code
-│   ├── app.py                   # HTTP dashboard (coordinating service)
-│   ├── producer.py              # one-shot task generator
-│   ├── worker.py                # file-based queue worker
-│   ├── orchestrate.sh           # the HPC analogue of `docker compose up`
-│   └── readiness.sh             # depends_on/healthcheck primitives
-├── slurm/
-│   └── baseline.sbatch          # single-node batch job
-├── container/
-│   ├── worker.def               # Apptainer definition (worker image)
-│   ├── dashboard.def            # Apptainer definition (dashboard image)
-│   ├── build_images.sh          # build the .sif images
-│   └── docker-compose.yml       # the "before" Compose version (reference)
-├── inputs/                      # sample task files (document the task contract)
-├── expected/                    # sample result files (document the result schema)
-└── tests/
+The lock file records an immutable Python 3.12.10 slim-bookworm OCI manifest.
+Review `container/image-lock.json`, then run:
+
+```sh
+workflows/baseline-slurm-apptainer/container/acquire.sh
 ```
 
-`docker-compose.yml` is the *before* side of the translation; read it next to
-`bin/orchestrate.sh` to see each Compose construct and its scheduler-side
-equivalent.
+The command builds from the digest-pinned OCI base into a temporary file, records
+the resulting SIF SHA-256, and atomically installs `container/baseline.sif`. A SIF hash is intentionally not
+predeclared because local Apptainer conversion can vary; the generated sidecar is
+the immutable input to a submitted run. Alternatively build the checked-in
+`container/Apptainer.def`, then create `baseline.sif.sha256` with your SHA-256 tool.
+The pinned OCI record is documented at [Docker Hub](https://hub.docker.com/layers/library/python/3.12.10-slim-bookworm/images/sha256-90aa7f84f25a90382d75026a82010016d9ae811865bdda851ce48e5d14469b53).
+Content from that source was rephrased for licensing compliance.
 
-## What it does
+## Validate and submit
 
-`orchestrate.sh` runs, in order, all inside one allocation:
-
-1. **Dashboard** (`app.py`) — the coordinating service, bound to loopback.
-2. **Readiness gate** — `wait_for_port` blocks until the dashboard answers.
-   No later step starts before it succeeds.
-3. **Producer** (`producer.py`) — writes N task files into job-scoped scratch.
-4. **Workers** (`worker.py`) — N copies claim tasks from the queue by atomic
-   rename, process them, and write results.
-5. **Wait** on the worker PIDs only (the dashboard never exits; a bare `wait`
-   would hang the job to walltime).
-6. **Verify** — result count equals task count, queue drained, no stuck tasks.
-7. **Success marker** — `SUCCESS.json` written only after all invariants pass.
-
-State lives in job-scoped scratch (`$SLURM_SCRATCH`, or `$SCRATCH` keyed by
-`$SLURM_JOB_ID` where the scheduler provides no job scratch — a real portability
-boundary on Anvil), bound into each container at `/data`.
-
-## Prerequisites
-
-- A Slurm allocation on a single node.
-- Apptainer on `PATH` (`module load apptainer` on centers that require it).
-- Job-scoped scratch available (see the `BSSW-W003` diagnostic).
-
-## Getting started
-
-### 1. Build the images
-
-```bash
-# from this directory
-bash container/build_images.sh
+```sh
+sha256sum -c workflows/baseline-slurm-apptainer/inputs/tasks.json.sha256
+sbatch workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
 ```
 
-This writes `worker.sif` and `dashboard.sif` to `$C2H_IMAGE_DIR` (default
-`$SCRATCH/c2hpc-images`) and records their SHA-256 digests. The definitions
-install no packages, so the build is unprivileged on most sites.
+Defaults expect four tasks, two workers, a 30-second readiness deadline, and the
+acquired image beside its checksum. The launcher records Slurm, Apptainer, image,
+and input versions/digests in private job storage. Successful output is beneath
+`${SLURM_TMPDIR}/bssw-${SLURM_JOB_ID}` when `SLURM_TMPDIR` exists, otherwise beneath
+`${TMPDIR:-/tmp}/bssw-${SLURM_JOB_ID}`.
 
-### 2. Submit the job
+## Adapter variables and bounds
 
-Account and partition are **not** in the script — they differ at every center:
+Set these through `sbatch --export` or a center-owned wrapper; do not edit input
+JSON into shell syntax.
 
-```bash
-# Purdue Anvil (worked example)
-sbatch -A <account> -p shared slurm/baseline.sbatch
-```
-
-Override the task and worker counts from the command line via environment, or
-the defaults (`C2H_TASKS=20`, `C2H_WORKERS=4`):
-
-```bash
-C2H_TASKS=50 C2H_WORKERS=8 sbatch -A <account> -p shared slurm/baseline.sbatch
-```
-
-### 3. Check the result
-
-```bash
-# job status
-squeue -j <jobid>          # should reach COMPLETED, not TIMEOUT
-
-# success marker and logs (path printed at the end of the job output)
-cat $SCRATCH/c2hpc-jobs/<jobid>/SUCCESS.json
-ls $SCRATCH/c2hpc-jobs/<jobid>/logs/
-```
-
-A successful run ends with a `SUCCESS.json` containing `"status": "success"`.
-A failed run exits nonzero with a `BSSW-W*` diagnostic code and no success marker.
-
-## Adapter variables
-
-These are the values that vary by center or by run; override them in the
-environment rather than editing scripts:
-
-| Variable | Default | Meaning |
+| Variable | Default | Constraint / adaptation |
 |---|---|---|
-| `C2H_WORKERS` | `4` | worker count |
-| `C2H_TASKS` | `20` | task count |
-| `C2H_IMAGE_DIR` | `$SCRATCH/c2hpc-images` | `.sif` location |
-| `C2H_RUNTIME` | `apptainer` | runtime binary |
-| `C2H_BIND_HOST` | `127.0.0.1` | dashboard bind address |
-| `C2H_PORT` | derived from job ID | dashboard port |
-| `C2H_PROBE_PORT` | `= C2H_PORT` | port the readiness gate polls |
-| `C2H_READY_TIMEOUT` | `60` | readiness timeout (seconds) |
+| `WORKER_COUNT` | `2` | integer 1–16; ensure allocated CPUs are sufficient |
+| `TASK_COUNT` | `4` | integer 1–256 and exactly equal to input task count |
+| `READINESS_TIMEOUT` | `30` | integer 1–300 seconds, measured monotonically |
+| `CLEANUP_TIMEOUT` | `10` | integer 1–60 seconds |
+| `IMAGE_PATH` | `container/baseline.sif` | immutable regular SIF file |
+| `IMAGE_SHA256_FILE` | `${IMAGE_PATH}.sha256` | SHA-256 sidecar from acquisition |
+| `INPUT_PATH` | `inputs/tasks.json` | schema-version 1 inert JSON |
+| `INPUT_SHA256_FILE` | input sidecar | trusted SHA-256 record |
+| `EXPECTED_PATH` | `expected/results.json` | expected task outputs |
+| `BSSW_SCRATCH_ROOT` | scheduler temp root | center-approved private scratch |
+| `BSSW_APPTAINER_CMD` | `apptainer` | center module/wrapper command name |
+| `BSSW_SRUN_CMD` | `srun` | center Slurm step command name |
+| `BSSW_SLURM_VERSION_CMD` | `scontrol` | version-recording command name |
+| `BSSW_SHA256_CMD` | `sha256sum` | command emitting digest then filename |
 
-## Producing the negative-evidence run
+`BSSW_APP_ROOT` and `BSSW_KILL_CMD` are test/runtime packaging boundaries and
+normally remain `/opt/bssw/bin` and `kill`.
 
-Set `C2H_PROBE_PORT` to an unused port so the readiness gate times out. The job
-must exit nonzero with `BSSW-W001`, write no success marker, and start no workers:
+## Output and diagnostics
 
-```bash
-C2H_PROBE_PORT=9999 sbatch -A <account> -p shared slurm/baseline.sbatch
+`logs/` separates coordinator, readiness, each worker, verifier, input validation,
+and machine-readable diagnostic output. `events.jsonl` proves readiness precedes
+all worker-start events. `results.json` is intermediate and is not a success claim.
+Only `result.json` with `status: "success"` is the success marker. Any failure or
+cleanup problem removes it and returns nonzero.
+
+Stable IDs are published in `diagnostics.json`: prerequisite failures use
+`BSSW-PREQ-*`; digest mismatches use `BSSW-INTEGRITY-*`; readiness timeout uses
+`BSSW-READY-TIMEOUT`; early coordinator and worker failures use
+`BSSW-COORDINATOR-EXIT` and `BSSW-WORKER-EXIT`; verification uses `BSSW-VERIFY-*`;
+and bounded cleanup uses `BSSW-CLEANUP-*`. Diagnostics contain no input payload,
+account, host, token, or selected filesystem path.
+
+## Local deterministic fixtures
+
+```sh
+bash tests/fixtures/baseline-fake-runtime/run-scenario.sh success
+npx vitest run tests/unit/baseline-workflow.test.ts
 ```
 
-## Diagnostic codes
+The fixture covers success, invalid input, early coordinator exit, worker failure,
+checksum mismatch, verification failure, cleanup failure, and readiness timeout
+through fake scheduler, runtime, process, clock/timeout, and filesystem boundaries.
+It does not execute Slurm or Apptainer and cannot support a validated-environment
+claim.
 
-| Code | Condition |
-|---|---|
-| `BSSW-W001` | Coordinating service not ready within timeout |
-| `BSSW-W002` | Result count mismatch or undrained queue |
-| `BSSW-W003` | No job-scoped storage available |
-| `BSSW-W004` | Container runtime not on `PATH` |
-| `BSSW-W005` | Required `.sif` image missing |
-| `BSSW-W006` | Invalid worker or task count |
-| `BSSW-W007` | Producer failed |
-| `BSSW-W008` | A worker exited nonzero |
+## Representative-environment re-verification checklist
 
-## Portability boundaries
+The fixtures above prove orchestration logic; they do **not** prove the image
+builds or the job runs on a real cluster. Neither has happened yet. The findings
+below were distilled from center documentation (not from observed failed jobs)
+and are the things to confirm explicitly on the first Anvil (or Expanse fallback)
+run, because they are properties of the site rather than of this code:
 
-These are the conditions under which the workflow needs site-specific adaptation:
+- [ ] **Job-scoped scratch.** Confirm whether the allocation exports
+  `$SLURM_TMPDIR`. Anvil provides `$SCRATCH` but not `$SLURM_SCRATCH`; if
+  `$SLURM_TMPDIR` is also absent, set `BSSW_SCRATCH_ROOT` explicitly to a
+  private, job-scoped path. A silent fallback to `/tmp` on a shared node must
+  not be accepted.
+- [ ] **Single-image build.** `container/acquire.sh` runs `apptainer build`
+  from `Apptainer.def`. Confirm it builds unprivileged (no `--fakeroot` needed,
+  since `%post` installs nothing) and that the resulting `baseline.sif` loads
+  and serves `/health` at `/opt/bssw/bin/coordinator.py`. This image model is
+  unbuilt on real metal — only `apptainer build` + `sbatch` confirms it.
+- [ ] **Loopback on shared partitions.** The coordinator binds `127.0.0.1` on
+  an ephemeral port. Confirm compute-node loopback connections are permitted
+  on the target partition (the SSH-tunnel access pattern the SOW describes).
+- [ ] **`sha256sum` availability.** `BSSW_SHA256_CMD` defaults to `sha256sum`;
+  confirm it is on `PATH` on the compute node or override the variable.
+- [ ] **Exclusive step launch.** `srun --exclusive --ntasks=1` per step; confirm
+  the center permits exclusive single-task steps within the allocation.
 
-- **Job-scoped scratch.** Not every scheduler exports `$SLURM_SCRATCH`; Anvil
-  provides `$SCRATCH` only. The path is derived and its source recorded in the
-  success marker.
-- **Shared compute nodes.** A fixed dashboard port collides with other users'
-  jobs on a shared partition, so the port is derived from the job ID and bound
-  to loopback (reached over an SSH tunnel, per the SOW).
-- **`nc` availability.** The readiness probe falls back to bash `/dev/tcp` where
-  `nc` is absent.
-- **Account and partition.** Deliberately left off the `#SBATCH` directives.
+When the first successful run completes, record it as an applicability record
+(`evidence/`) and flip the published validation status from `unvalidated`. Until
+then, the applicability record correctly reads `NOT RUN`.

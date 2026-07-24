@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+if [[ ${BSSW_FIXTURE_SCENARIO:-} == cleanup-failure && ${1:-} == -TERM ]]; then
+  exit 1
+fi
+exec kill "$@"

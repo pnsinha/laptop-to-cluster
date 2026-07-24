@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "results": [
+    {"taskId": "task-001", "output": "alphaalpha", "sha256": "7d66633575abe258f1bbc70a72d9e8e334026e77d173995bec39a07e3fc9e0e9"},
+    {"taskId": "task-002", "output": "betabetabeta", "sha256": "31c5078a6508abd8c51fff966853b27f1423a1869010792744b391c81463539e"},
+    {"taskId": "task-003", "output": "gamma", "sha256": "be9d587defa1f0c09ef49eb17e206983a5f8f8289e4281860bd0ee5a19592c67"},
+    {"taskId": "task-004", "output": "deltadelta", "sha256": "b7635a43d092717c8e19d16d64b1ca4bc996c26da4fc7779850692f3a492b214"}
+  ]
+}
