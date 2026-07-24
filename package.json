@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.15.0" },
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "scripts": {
     "build": "astro build --root site",
     "check": "astro check --root site",
@@ -17,6 +19,7 @@
     "validate": "npm run check && npm run test:unit && npm run test:property && npm run test:integration && npm run test:accessibility && npm run validate:repository && npm run validate:release"
   },
   "dependencies": {
+    "@astrojs/sitemap": "3.7.3",
     "astro": "7.1.3"
   },
   "devDependencies": {

@@ -1,0 +1,34 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+# Mirrors services/worker/Dockerfile: the application code is baked into the
+# image, exactly as `build: ./services/worker` does on the Compose side.
+#
+# %files source paths are resolved relative to the working directory at build
+# time, so build_images.sh cd's into the service source dir before invoking
+# this.
+#
+# %post deliberately installs nothing. A definition with no package manager
+# steps builds unprivileged via user namespaces on most sites, so this image
+# needs neither root nor --fakeroot. Adding apt-get here would change that.
+
+%files
+    producer.py /app/producer.py
+    worker.py   /app/worker.py
+
+%post
+    chmod -R a+rX /app
+
+%runscript
+    exec python3 /app/worker.py "$@"
+
+%labels
+    org.bssw.project   bssw-compose2hpc
+    org.bssw.component worker
+    org.bssw.source    bin/worker.py, bin/producer.py
+
+%help
+    Reference-workflow worker image.
+
+      apptainer exec worker.sif python3 /app/producer.py --output /data/tasks --count 20
+      apptainer exec worker.sif python3 /app/worker.py   --input /data/tasks --output /data/results

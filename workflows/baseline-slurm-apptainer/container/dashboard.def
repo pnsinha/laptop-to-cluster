@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+# Mirrors services/dashboard/Dockerfile. See worker.def for why %post is empty
+# of package installs and why %files paths are relative.
+
+%files
+    app.py /app/app.py
+
+%post
+    chmod -R a+rX /app
+
+%runscript
+    exec python3 /app/app.py "$@"
+
+%labels
+    org.bssw.project   bssw-compose2hpc
+    org.bssw.component dashboard
+    org.bssw.source    bin/app.py
+
+%help
+    Reference-workflow dashboard image.
+
+      apptainer exec dashboard.sif python3 /app/app.py \
+          --tasks-dir /data/tasks --results-dir /data/results --port 8080
