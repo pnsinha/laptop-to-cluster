@@ -28,8 +28,19 @@ INPUT_SHA256_FILE=${INPUT_SHA256_FILE:-${WORKFLOW_ROOT}/inputs/tasks.json.sha256
 IMAGE_SHA256_FILE=${IMAGE_SHA256_FILE:-${IMAGE_PATH}.sha256}
 RUNTIME_DIR=""
 DIAGNOSTIC_LOG=""
+EVENT_LOG=""
 RESULT_PATH=""
 CHILDREN=()
+
+emit_event() {
+  local event=$1 code=${2:-}
+  [[ -n "$EVENT_LOG" ]] || return 0
+  if [[ -n "$code" ]]; then
+    printf '{"event":"%s","at":"%s","diagnosticId":"%s"}\n' "$event" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$code" >> "$EVENT_LOG"
+  else
+    printf '{"event":"%s","at":"%s"}\n' "$event" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> "$EVENT_LOG"
+  fi
+}
 
 emit_diagnostic() {
   local id=$1 message=$2
@@ -42,6 +53,7 @@ emit_diagnostic() {
 fail() {
   local id=$1 code=$2 message=$3
   if [[ -n "$RESULT_PATH" ]]; then rm -f -- "$RESULT_PATH"; fi
+  emit_event "failure" "$id"
   emit_diagnostic "$id" "$message"
   exit "$code"
 }
@@ -166,6 +178,7 @@ mkdir -m 700 -- "$RUNTIME_DIR" || \
 mkdir -m 700 -- "$RUNTIME_DIR/logs" || \
   fail "BSSW-PREQ-STORAGE" 72 "the job log directory could not be created"
 DIAGNOSTIC_LOG=$RUNTIME_DIR/logs/diagnostic.log
+EVENT_LOG=$RUNTIME_DIR/events.jsonl
 RESULT_PATH=$RUNTIME_DIR/result.json
 install -m 600 -- "$INPUT_PATH" "$RUNTIME_DIR/input.json"
 install -m 600 -- "$EXPECTED_PATH" "$RUNTIME_DIR/expected.json"
@@ -177,7 +190,7 @@ install -m 600 -- "$EXPECTED_PATH" "$RUNTIME_DIR/expected.json"
   printf 'apptainer='; "$APPTAINER_CMD" --version 2>&1
   printf 'image_sha256=%s\ninput_sha256=%s\n' "$ACTUAL_IMAGE_SHA" "$ACTUAL_INPUT_SHA"
 } > "$RUNTIME_DIR/versions.txt"
-printf '{"event":"job-start","jobId":"%s"}\n' "$SLURM_JOB_ID" >> "$RUNTIME_DIR/events.jsonl"
+emit_event "job-start"
 
 container_exec python3 "$APP_ROOT/validate_input.py" \
   --input /work/input.json --task-count "$TASK_COUNT" \
@@ -190,7 +203,7 @@ step_exec "$APPTAINER_CMD" exec --cleanenv --bind "${RUNTIME_DIR}:/work" "$IMAGE
   > "$RUNTIME_DIR/logs/coordinator.log" 2>&1 &
 COORDINATOR_PID=$!
 CHILDREN+=("$COORDINATOR_PID")
-printf '{"event":"coordinator-start"}\n' >> "$RUNTIME_DIR/events.jsonl"
+emit_event "coordinator-start"
 
 ENDPOINT_DEADLINE=$((SECONDS + READINESS_TIMEOUT))
 while [[ ! -s "$RUNTIME_DIR/endpoint.json" ]]; do
@@ -209,7 +222,7 @@ container_exec python3 "$APP_ROOT/readiness.py" --endpoint "$ENDPOINT" \
   fail "BSSW-READY-TIMEOUT" 75 "the coordinator did not become semantically ready before the deadline"
 "$KILL_CMD" -0 "$COORDINATOR_PID" 2>/dev/null || \
   fail "BSSW-COORDINATOR-EXIT" 74 "the coordinator exited immediately after readiness"
-printf '{"event":"coordinator-ready"}\n' >> "$RUNTIME_DIR/events.jsonl"
+emit_event "coordinator-ready"
 
 WORKER_PIDS=()
 for ((index=1; index<=10#$WORKER_COUNT; index++)); do
