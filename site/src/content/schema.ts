@@ -21,7 +21,7 @@ export type ArtifactType = z.infer<typeof artifactTypeSchema>;
 
 export const evidenceReferenceSchema = z.object({
   id: nonEmpty,
-  path: z.string().regex(/^(?:evidence|site\/public\/evidence)\/[A-Za-z0-9._/-]+$/, 'must be a repository evidence path'),
+  path: z.string().regex(/^(?:evidence|releases|site\/public\/evidence)\/[A-Za-z0-9._/-]+$/, 'must be a repository evidence path'),
   integrity: sha256,
   label: nonEmpty.optional(),
 }).strict();
@@ -149,20 +149,36 @@ export const applicabilityRecordSchema = z.object({
   id: nonEmpty,
   workflow_id: nonEmpty,
   status: z.enum(['validated', 'failed', 'unvalidated', 'stale']),
-  environment: z.object({ public_name: nonEmpty, fallback: z.boolean(), notes: nonEmpty }).strict(),
+  environment: z.object({
+    public_name: z.enum(['Purdue Anvil', 'SDSC Expanse']), fallback: z.boolean(), notes: nonEmpty,
+  }).strict(),
   scheduler: z.object({ family: nonEmpty, version: nonEmpty }).strict(),
   runtime: z.object({ name: nonEmpty, version: nonEmpty }).strict(),
   container_digest: sha256,
   workflow_revision: z.string().regex(/^(?:[a-f0-9]{40}|v?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?)$/i),
+  validation_date: isoDate,
   execution_date: isoDate,
   submission_id: nonEmpty,
-  result: z.object({ terminal_state: nonEmpty, exit_code: z.number().int(), checks: z.array(nonEmpty) }).strict(),
-  assumptions: z.array(nonEmpty),
-  limitations: z.array(nonEmpty),
-  portability_boundaries: z.array(nonEmpty),
+  result: z.object({ terminal_state: nonEmpty, exit_code: z.number().int(), checks: z.array(nonEmpty).min(1) }).strict(),
+  assumptions: z.array(nonEmpty).min(1),
+  limitations: z.array(nonEmpty).min(1),
+  portability_boundaries: z.array(nonEmpty).min(1),
   evidence: evidenceReferenceSchema,
   review_after: isoDate,
-}).strict();
+}).strict().superRefine((record, context) => {
+  const issue = (path: string, message: string) => context.addIssue({ code: 'custom', path: [path], message });
+  if (record.environment.public_name === 'Purdue Anvil' && record.environment.fallback) issue('environment.fallback', 'Purdue Anvil is the primary environment');
+  if (record.environment.public_name === 'SDSC Expanse' && !record.environment.fallback) issue('environment.fallback', 'SDSC Expanse must be explicitly marked fallback');
+  if (record.execution_date > record.validation_date) issue('validation_date', 'cannot precede execution_date');
+  if (record.validation_date > record.review_after) issue('review_after', 'cannot precede validation_date');
+  if (record.status === 'validated' && (record.result.terminal_state !== 'COMPLETED' || record.result.exit_code !== 0)) {
+    issue('result', 'validated evidence requires terminal COMPLETED and exit code 0');
+  }
+  if (record.status === 'failed' && record.result.exit_code === 0) issue('result.exit_code', 'failed evidence requires a nonzero exit code');
+  if (record.status === 'unvalidated' && record.result.terminal_state === 'COMPLETED' && record.result.exit_code === 0) {
+    issue('result', 'unvalidated status cannot contain a successful representative result');
+  }
+});
 export type ApplicabilityRecord = z.infer<typeof applicabilityRecordSchema>;
 
 export const releaseChangeSchema = z.object({

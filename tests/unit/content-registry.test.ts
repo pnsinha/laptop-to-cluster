@@ -56,7 +56,7 @@ function applicability() {
     id: 'anvil-run', workflow_id: 'module-1', status: 'validated',
     environment: { public_name: 'Purdue Anvil', fallback: false, notes: 'ACCESS environment' },
     scheduler: { family: 'slurm', version: '24.05' }, runtime: { name: 'apptainer', version: '1.3' },
-    container_digest: digest, workflow_revision: 'v0.1.0', execution_date: '2026-06-30', submission_id: 'public-1',
+    container_digest: digest, workflow_revision: 'v0.1.0', validation_date: '2026-06-30', execution_date: '2026-06-30', submission_id: 'public-1',
     result: { terminal_state: 'COMPLETED', exit_code: 0, checks: ['result schema'] },
     assumptions: ['single node'], limitations: ['site policy'], portability_boundaries: ['storage'],
     evidence, review_after: '2026-12-30',

@@ -26,7 +26,7 @@ export type PackageManifest = {
   devDependencies?: Record<string, string>;
 };
 
-const ignoredPrefixes = ['.git/', '.kiro/', 'node_modules/', 'site/dist/', 'site/.astro/', 'coverage/'];
+const ignoredPrefixes = ['.git/', '.kiro/', 'node_modules/', 'site/dist/', 'site/.astro/', 'coverage/', 'publication/'];
 
 export function loadPolicyData(root: string): {
   inventory: Inventory;

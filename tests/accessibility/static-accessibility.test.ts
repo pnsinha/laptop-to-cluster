@@ -10,7 +10,7 @@ describe('foundation accessibility baseline', () => {
     expect(html).toMatch(/<html lang="en">/);
     expect(html).toContain('href="#main"');
     expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
-    expect(html).toContain('<main id="main">');
+    expect(html).toMatch(/<main id="main"(?:\s+tabindex="-1")?>/);
     expect(html.match(/<h1(?:\s|>)/g)).toHaveLength(1);
   });
 

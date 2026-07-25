@@ -60,3 +60,15 @@ artifacts:
     copyrightHolder: Eemeli Aro
     license: ISC
     modificationStatus: unmodified
+  - name: '@axe-core/playwright'
+    version: 4.11.0
+    source: https://github.com/dequelabs/axe-core-npm
+    copyrightHolder: Deque Systems, Inc.
+    license: MPL-2.0
+    modificationStatus: unmodified
+  - name: '@playwright/test'
+    version: 1.56.1
+    source: https://github.com/microsoft/playwright
+    copyrightHolder: Microsoft Corporation
+    license: Apache-2.0
+    modificationStatus: unmodified

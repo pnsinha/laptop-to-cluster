@@ -1,10 +1,15 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from './BaseLayout.astro';
 import ContentHeader from '../components/ContentHeader.astro';
 import AuthorityNote from '../components/AuthorityNote.astro';
+import TechnicalApplicability from '../components/TechnicalApplicability.astro';
 import type { ContentItem } from '../content/schema';
 type LearningModule = Extract<ContentItem, { artifact_type: 'learning-module' }>;
 const { item } = Astro.props as { item: LearningModule };
+const applicabilityEntries = await getCollection('applicability');
+const applicabilityById = new Map(applicabilityEntries.map(({ data }) => [data.id, data]));
+const applicability = item.applicability_records.flatMap((id) => applicabilityById.get(id) ?? []);
 ---
 <BaseLayout title={item.title} description={item.summary}>
   <ContentHeader {item} />
@@ -15,7 +20,7 @@ const { item } = Astro.props as { item: LearningModule };
     {item.required_resources && <><h3>Required resources</h3><ul>{item.required_resources.map((value) => <li>{value}</li>)}</ul></>}
     {item.estimated_minutes && <p><strong>Estimated time:</strong> {item.estimated_minutes} minutes</p>}
   </section>
-  {item.applicability_records.length > 0 && <section class="applicability" aria-labelledby="applicability"><h2 id="applicability">Applicability before execution</h2><p>This bounded procedure applies only to the linked records: {item.applicability_records.map((id) => <a href={`/resources/#${id}`}>{id}</a>)}. Review local scheduler, runtime, network, storage, and security differences before running it.</p></section>}
+  <TechnicalApplicability records={applicability} />
   {item.unvalidated_scopes.length > 0 && <aside class="notice" role="note"><h2>Unvalidated content</h2><ul>{item.unvalidated_scopes.map((scope) => <li><a href={`#${scope.anchor}`}>{scope.anchor}</a>: {scope.reason}</li>)}</ul></aside>}
   <AuthorityNote references={item.authority} />
   <article class="module-content"><slot /></article>

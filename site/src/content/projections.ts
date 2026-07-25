@@ -188,7 +188,7 @@ export function projectTechnicalStatus(
         scheduler: `${record.scheduler.family} ${record.scheduler.version}`,
         runtime: `${record.runtime.name} ${record.runtime.version}`,
         validation_status: record.status,
-        validation_date: record.execution_date,
+        validation_date: record.validation_date,
         evidence_path: record.evidence.path,
       })),
     };

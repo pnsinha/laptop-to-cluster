@@ -2,14 +2,18 @@ import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertRegularFile, validateRepositoryDeclarations } from './license-provenance.js';
+import { validateEvidenceRepository } from './evidence.js';
 
 export function validateRepositoryFoundation(root: string): string[] {
-  const errors = validateRepositoryDeclarations(root);
+  const errors = [...validateRepositoryDeclarations(root), ...validateEvidenceRepository(root)];
   const requiredFiles = [
     'LICENSE', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'SECURITY.md',
     'MAINTENANCE.md', 'SUPPORT.md', 'RECOVERY.md', '.github/workflows/ci.yml',
     '.github/ISSUE_TEMPLATE/defect.yml', '.github/ISSUE_TEMPLATE/accessibility.yml',
     '.github/ISSUE_TEMPLATE/portability.yml', 'site/astro.config.mjs',
+    '.github/workflows/publication.yml', '.github/workflows/rollback.yml',
+    'infrastructure/cloudflare/hostname-redirects.v1.json',
+    'releases/v0.1.0/release-candidate.json', 'releases/v0.1.0/accessibility-review.yml',
   ];
   for (const file of requiredFiles) {
     const error = assertRegularFile(root, file);
@@ -24,7 +28,7 @@ export function validateRepositoryFoundation(root: string): string[] {
   }
 
   const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { scripts?: Record<string, string> };
-  for (const script of ['build', 'test:unit', 'test:property', 'test:integration', 'test:accessibility', 'validate:repository', 'validate:release']) {
+  for (const script of ['build', 'test:unit', 'test:property', 'test:integration', 'test:accessibility', 'test:accessibility:browser', 'record-run', 'validate:evidence', 'validate:repository', 'validate:release', 'validate:built', 'validate:policy', 'validate:accessibility-review', 'publication:prepare', 'publication:validate']) {
     if (!manifest.scripts?.[script]) errors.push(`package.json: required script ${script} is missing`);
   }
   const astroConfig = readFileSync(join(root, 'site/astro.config.mjs'), 'utf8');

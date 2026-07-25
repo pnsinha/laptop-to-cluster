@@ -6,6 +6,7 @@ import ContentHeader from '../../components/ContentHeader.astro';
 import AuthorityNote from '../../components/AuthorityNote.astro';
 import Attribution from '../../components/Attribution.astro';
 import SupportState from '../../components/SupportState.astro';
+import TechnicalApplicability from '../../components/TechnicalApplicability.astro';
 import { canonicalPath } from '../../content/registry';
 export async function getStaticPaths() {
   const entries = await getCollection('contentItems', ({ data }) => ['published', 'superseded', 'archived'].includes(data.status) && data.route_namespace !== 'start');
@@ -14,6 +15,9 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const item = entry.data;
+const applicabilityEntries = await getCollection('applicability');
+const applicabilityById = new Map(applicabilityEntries.map(({ data }) => [data.id, data]));
+const applicability = item.applicability_records.flatMap((id) => applicabilityById.get(id) ?? []);
 ---
 {item.artifact_type === 'learning-module' ? <LearningModuleLayout {item}><Content /></LearningModuleLayout> :
-<BaseLayout title={item.title} description={item.summary}><ContentHeader {item} /><AuthorityNote references={item.authority} /><article><Content /></article>{item.artifact_type === 'attribution' && <Attribution />}{item.artifact_type === 'support' && <SupportState />}</BaseLayout>}
+<BaseLayout title={item.title} description={item.summary}><ContentHeader {item} /><TechnicalApplicability records={applicability} headingId="release-applicability" /><AuthorityNote references={item.authority} /><article><Content /></article>{item.artifact_type === 'attribution' && <Attribution />}{item.artifact_type === 'support' && <SupportState />}</BaseLayout>}

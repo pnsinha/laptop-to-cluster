@@ -20,8 +20,8 @@ publication_date: "2026-07-31"
 | Module 1: Scheduler as Orchestrator | Published | [Module 1](/guide/scheduler-as-orchestrator/) |
 | Module 2: Baseline Pattern | Published; runnable section unvalidated | [Module 2](/guide/baseline-single-node-pattern/) |
 | Getting started and diagnostics | Published | [Getting started](/start/) and [diagnostics](/diagnostics/) |
-| Baseline Slurm + Apptainer workflow | In development; immutable release target reserved | [Workflow source](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/workflows/baseline-slurm-apptainer) |
-| Attribution, accessibility, and support | Published | [Attribution](/about/attribution/), [accessibility](/about/accessibility/), [support](/about/support/) |
-| Milestone 1 release record | Publication candidate | [v0.1.0](/releases/v0-1-0/) |
+| Baseline Slurm + Apptainer workflow | Complete; representative-environment claim remains explicitly unvalidated | [Workflow source](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/workflows/baseline-slurm-apptainer) |
+| Attribution, accessibility, and support | Published; release accessibility review pending external sign-off | [Attribution](/about/attribution/), [accessibility](/about/accessibility/), [support](/about/support/) |
+| Milestone 1 release record | Checksum-bound publication candidate; Cloudflare deployment identity pending | [v0.1.0](/releases/v0-1-0/) |
 
-Representative-environment evidence is not yet claimed by this Task 3 collection. Module 2 labels that bounded procedure unvalidated until the later evidence task publishes a conforming record.
+The release candidate and immutable build automation are complete offline. Final Milestone 1 publication remains blocked until the manual accessibility review is signed, representative-environment evidence is supplied, and Cloudflare account/zone/project/DNS/certificate/rule identifiers pass live readiness checks.

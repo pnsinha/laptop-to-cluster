@@ -30,7 +30,7 @@ authority:
   - { kind: project-decision, citation: "Milestone 1 architecture", scope: "Use one allocation as the bounded baseline orchestration boundary." }
 sow_deliverable_id: M1-MODULE-1
 deliverable_status: complete
-completion_evidence: { id: m1-module-1-publication, path: evidence/README.md, integrity: "sha256:2c4769da75fb3ceb36eca05319dcb69fb194ef6427a62acb80f73645c56213e5" }
+completion_evidence: { id: m1-module-1-publication, path: evidence/README.md, integrity: "sha256:2fb0fd2e84a083ee33564797f69e63d40fc225987ebe94ea41832995713aca6a" }
 ---
 ## Concepts
 A local Compose stack starts services, connects them, and keeps them within one application boundary. On shared HPC, the scheduler owns resource allocation and reclamation; a rootless runtime launches containers inside that allocation. The scheduler allocation is therefore the orchestration boundary, while the launch script makes dependencies and cleanup explicit.

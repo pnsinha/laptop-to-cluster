@@ -14,7 +14,7 @@ categories:
   - id: configuration
     description: Build and package configuration
     license: Apache-2.0
-    paths: [.gitignore, package.json, package-lock.json, tsconfig.json, vitest.config.ts, site/astro.config.mjs, site/tsconfig.json]
+    paths: [.gitignore, package.json, package-lock.json, tsconfig.json, vitest.config.ts, site/astro.config.mjs, site/tsconfig.json, infrastructure/**]
   - id: ci-automation
     description: Continuous-integration workflows
     license: Apache-2.0
@@ -30,7 +30,7 @@ categories:
   - id: documentation-training-evidence
     description: Original documentation, training sources, static public text, and evidence
     license: CC-BY-4.0
-    paths: [README.md, Better_Scientific_Software_SoW.md, templates/**, training/**, evidence/**, site/src/content/**/*.md, site/src/content/**/*.yml, site/src/content/**/.gitkeep, site/public/**]
+    paths: [README.md, Better_Scientific_Software_SoW.md, templates/**, training/**, evidence/**, releases/**, site/src/content/**/*.md, site/src/content/**/*.yml, site/src/content/**/.gitkeep, site/public/**]
 excluded:
   - paths: [LICENSE, licenses/**, artifact-inventory.yml, THIRD_PARTY.yml]
     reason: Legal and provenance declarations retain their stated terms and are not project artifacts.

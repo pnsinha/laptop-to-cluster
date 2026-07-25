@@ -2,12 +2,19 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateRepositoryFoundation } from './validate-repository.js';
+import { validateBuiltOutput, validateCanonicalConfig, validateDeploymentWorkflow, validateHostnamePolicy } from './publication.mjs';
 
 export function validateReleaseCandidate(root: string): string[] {
   const errors = validateRepositoryFoundation(root);
   const dist = join(root, 'site/dist');
   const index = join(dist, 'index.html');
   if (!existsSync(index)) return [...errors, 'site/dist/index.html: static build output is missing'];
+  errors.push(
+    ...validateBuiltOutput(dist),
+    ...validateCanonicalConfig(readFileSync(join(root, 'site/astro.config.mjs'), 'utf8')),
+    ...validateDeploymentWorkflow(readFileSync(join(root, '.github/workflows/publication.yml'), 'utf8')),
+    ...validateHostnamePolicy(JSON.parse(readFileSync(join(root, 'infrastructure/cloudflare/hostname-redirects.v1.json'), 'utf8'))),
+  );
   const htmlFiles = readdirSync(dist, { recursive: true })
     .filter((path) => String(path).endsWith('.html'))
     .map((path) => join(dist, String(path)));

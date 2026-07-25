@@ -1,4 +1,4 @@
-name: validation
+name: blocking-publication-validation
 
 on:
   pull_request:
@@ -9,20 +9,39 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  publication-gates:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4.2.2
+        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4.4.0
         with:
           node-version: '22.15.0'
           cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npm run check
-      - run: npm run test:unit
-      - run: npm run test:property
-      - run: npm run test:integration
-      - run: npm run test:accessibility
-      - run: npm run validate:repository
-      - run: npm run validate:release
+      - name: Clean pinned install
+        run: npm ci --ignore-scripts
+      - name: Install accessibility browser
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Schema and typed-content checks
+        run: npm run check
+      - name: Unit and property checks
+        run: npm run test:unit && npm run test:property
+      - name: Companion script syntax
+        run: bash -n workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
+      - name: Build production site exactly once
+        run: npm run build
+      - name: Built-site, canonical, link, repository, evidence, and release gates
+        run: npm run publication:validate
+      - name: Static integration and accessibility gates
+        run: npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser
+      - name: Generate checksum-bound publication artifact
+        run: npm run publication:prepare
+      - uses: actions/upload-artifact@v4.6.2
+        with:
+          name: validated-site-v0.1.0-${{ github.sha }}
+          path: |
+            site/dist/
+            publication/v0.1.0/
+          if-no-files-found: error
+          retention-days: 90

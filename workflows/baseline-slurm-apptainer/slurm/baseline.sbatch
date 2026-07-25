@@ -233,7 +233,7 @@ for ((index=1; index<=10#$WORKER_COUNT; index++)); do
   worker_pid=$!
   CHILDREN+=("$worker_pid")
   WORKER_PIDS+=("$worker_pid")
-  printf '{"event":"worker-start","workerId":"%s"}\n' "$worker_id" >> "$RUNTIME_DIR/events.jsonl"
+  emit_event "worker-start"
 done
 for worker_pid in "${WORKER_PIDS[@]}"; do
   if ! wait "$worker_pid"; then
@@ -248,5 +248,5 @@ container_exec python3 "$APP_ROOT/verify.py" --input /work/input.json \
   fail "BSSW-VERIFY-RESULT" 77 "result schema, count, uniqueness, or expected content verification failed"
 [[ -s "$RESULT_PATH" ]] || \
   fail "BSSW-VERIFY-RESULT" 77 "the verifier did not atomically create the success result"
-printf '{"event":"verification-success"}\n' >> "$RUNTIME_DIR/events.jsonl"
+emit_event "verification-success"
 printf 'BSSW workflow completed: result is in the job-scoped runtime directory.\n'
