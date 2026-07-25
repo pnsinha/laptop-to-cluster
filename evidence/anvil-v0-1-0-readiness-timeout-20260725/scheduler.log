@@ -1,0 +1,2 @@
+{"diagnosticId":"BSSW-READY-TIMEOUT","message":"the coordinator did not become semantically ready before the deadline","status":"failure"}
+/var/spool/slurm/job19500688/slurm_script: line 83: 2518270 Terminated              step_exec "$APPTAINER_CMD" exec --cleanenv --bind "${RUNTIME_DIR}:/work" "$IMAGE_PATH" python3 "$APP_ROOT/coordinator.py" --input /work/[REDACTED-USER] --results /work/[REDACTED-USER] --endpoint-file /work/[REDACTED-USER] > "$RUNTIME_DIR/logs/coordinator.log" 2>&1

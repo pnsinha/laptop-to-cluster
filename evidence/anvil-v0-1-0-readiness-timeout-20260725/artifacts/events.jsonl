@@ -1,0 +1,3 @@
+{"event":"job-start","at":"2026-07-25T16:45:49Z"}
+{"event":"coordinator-start","at":"2026-07-25T16:45:49Z"}
+{"event":"failure","at":"2026-07-25T16:45:50Z","diagnosticId":"BSSW-READY-TIMEOUT"}
