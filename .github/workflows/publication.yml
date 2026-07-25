@@ -1,0 +1,131 @@
+name: v0.1.0-build-once-publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Immutable release tag
+        required: true
+        default: v0.1.0
+  push:
+    tags: ['v0.1.0']
+
+permissions:
+  contents: read
+
+jobs:
+  build-once:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      artifact-name: ${{ steps.identity.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22.15.0'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npm run check && npm run test:unit && npm run test:property
+      - name: Build site exactly once
+        run: npm run build
+      - run: npm run publication:validate
+      - run: npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser
+      - run: npx --no-install tsx scripts/validate-accessibility-review.ts releases/v0.1.0/accessibility-review.yml --require-complete
+      - run: npm run publication:prepare
+        env:
+          RELEASE_VERSION: v0.1.0
+      - id: identity
+        run: echo "name=validated-site-v0.1.0-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ${{ steps.identity.outputs.name }}
+          path: |
+            site/dist/
+            publication/v0.1.0/
+          if-no-files-found: error
+          retention-days: 90
+
+  deploy:
+    needs: build-once
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    outputs:
+      pages-url: ${{ steps.cloudflare.outputs.pages-url }}
+      deployment-id: ${{ steps.cloudflare.outputs.deployment-id }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: ${{ needs.build-once.outputs.artifact-name }}
+          path: .
+      - name: Verify retained upload identity
+        run: node scripts/publication.mjs verify site/dist publication/v0.1.0/artifact-manifest.json
+      - name: Validate externally supplied Cloudflare readiness
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          CF_CUSTOM_DOMAIN_ID: ${{ vars.CLOUDFLARE_CUSTOM_DOMAIN_ID }}
+          CF_REDIRECT_LIST_ID: ${{ vars.CLOUDFLARE_REDIRECT_LIST_ID }}
+          CF_REDIRECT_RULE_ID: ${{ vars.CLOUDFLARE_REDIRECT_RULE_ID }}
+        run: |
+          jq -n --arg accountId "$CF_ACCOUNT_ID" --arg zoneId "$CF_ZONE_ID" --arg project "$CF_PROJECT" --arg domainId "$CF_CUSTOM_DOMAIN_ID" --arg listId "$CF_REDIRECT_LIST_ID" --arg ruleId "$CF_REDIRECT_RULE_ID" '{schemaVersion:1,accountId:$accountId,zoneId:$zoneId,pagesProjectName:$project,customDomainId:$domainId,customDomainHostname:"laptop-to-cluster.org",customDomainStatus:"active",redirectListId:$listId,redirectRuleId:$ruleId,redirectRuleStatus:"active",dns:[{hostname:"www.laptop-to-cluster.org",proxied:true,status:"active"},{hostname:"laptoptocluster.org",proxied:true,status:"active"},{hostname:"laptop-to-cluster.pnsinha.com",proxied:true,status:"active"}]}' > publication/v0.1.0/cloudflare-readiness.json
+          node scripts/publication.mjs cloudflare-readiness publication/v0.1.0/cloudflare-readiness.json
+      - id: direct-upload
+        uses: cloudflare/wrangler-action@v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ github.sha }} --commit-dirty=false
+      - name: Capture Cloudflare deployment identity
+        id: cloudflare
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          PAGES_URL: ${{ steps.direct-upload.outputs.deployment-url }}
+        run: |
+          DEPLOYMENT_ID=$(curl --fail --silent --show-error --header "Authorization: Bearer ${CF_API_TOKEN}" "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${CF_PROJECT}/deployments" | jq -r --arg url "$PAGES_URL" '.result[] | select(.url == $url) | .id' | head -n 1)
+          test -n "$DEPLOYMENT_ID"
+          echo "deployment-id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+          echo "pages-url=$PAGES_URL" >> "$GITHUB_OUTPUT"
+      - name: Generate immutable deployment and release records
+        env:
+          RELEASE_VERSION: v0.1.0
+          RELEASE_DATE: '2026-07-31'
+          CLOUDFLARE_DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.deployment-id }}
+          PAGES_DEV_FALLBACK_URL: ${{ steps.cloudflare.outputs.pages-url }}
+        run: node scripts/generate-release-record.mjs .
+      - name: Retain current and previous known-good recovery identities
+        run: |
+          cp releases/recovery-index.json publication/v0.1.0/recovery-index.json
+          node scripts/update-recovery-index.mjs publication/v0.1.0/recovery-index.json publication/v0.1.0/deployment-record.json
+      - uses: actions/upload-artifact@v4.6.2
+        with:
+          name: release-record-v0.1.0-${{ github.sha }}
+          path: publication/v0.1.0/
+          if-no-files-found: error
+          retention-days: 365
+
+  post-deploy-release-checks:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: release-record-v0.1.0-${{ github.sha }}
+          path: publication/v0.1.0
+      - name: Apex, redirect, fallback, repository, and anonymous-access checks
+        env:
+          PAGES_DEV_FALLBACK_URL: ${{ needs.deploy.outputs.pages-url }}
+          RELEASE_RECORD_PATH: publication/v0.1.0/release-manifest.json
+          REPOSITORY_URL: https://github.com/pnsinha/laptop-to-cluster
+        run: node scripts/check-public-release.mjs

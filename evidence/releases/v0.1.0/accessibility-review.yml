@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: accessibility-review-v0.1.0
+release: v0.1.0
+reviewer: EXTERNAL_REQUIRED
+reviewedAt: EXTERNAL_REQUIRED
+releaseReady: false
+automatedEvidence:
+  command: npm run test:accessibility:browser
+  representativePages:
+    - /
+    - /resources/
+    - /guide/scheduler-as-orchestrator/
+    - /guide/baseline-single-node-pattern/
+    - /start/
+    - /diagnostics/
+    - /releases/v0-1-0/
+checks:
+  - { id: keyboard, result: pending, notes: "Review navigation, filters, disclosures, copy controls, focus order, and visible focus." }
+  - { id: headings-landmarks, result: pending, notes: "Review heading hierarchy and named page landmarks." }
+  - { id: zoom-reflow, result: pending, notes: "Review at 200% zoom and a 320 CSS-pixel viewport without two-dimensional scrolling." }
+  - { id: link-purpose, result: pending, notes: "Review link names in and out of context." }
+  - { id: tables, result: pending, notes: "Review captions, headers, and reading order for data tables." }
+  - { id: alternatives, result: pending, notes: "Review informative and decorative non-text alternatives." }
+  - { id: media-captions-transcripts, result: pending, notes: "Confirm captions/transcripts or record not-applicable with rationale." }

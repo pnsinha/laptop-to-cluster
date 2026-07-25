@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "version": "v0.1.0",
+  "repositoryTag": "v0.1.0",
+  "canonicalOrigin": "https://laptop-to-cluster.org",
+  "evidenceIds": ["m1-baseline-unvalidated", "accessibility-review-v0.1.0"],
+  "publicSiteUrls": [
+    "https://laptop-to-cluster.org/",
+    "https://laptop-to-cluster.org/guide/scheduler-as-orchestrator/",
+    "https://laptop-to-cluster.org/guide/baseline-single-node-pattern/",
+    "https://laptop-to-cluster.org/start/",
+    "https://laptop-to-cluster.org/diagnostics/",
+    "https://laptop-to-cluster.org/about/licenses/",
+    "https://laptop-to-cluster.org/about/attribution/",
+    "https://laptop-to-cluster.org/about/accessibility/",
+    "https://laptop-to-cluster.org/milestones/1/"
+  ],
+  "changes": [
+    { "class": "added", "itemId": "module-1-scheduler-orchestrator" },
+    { "class": "added", "itemId": "module-2-baseline" },
+    { "class": "added", "itemId": "baseline-slurm-apptainer-workflow" },
+    { "class": "added", "itemId": "getting-started-and-diagnostics" },
+    { "class": "added", "itemId": "repository-license-attribution-accessibility" }
+  ],
+  "externalInputsRequired": ["cloudflareDeploymentId", "pagesDevFallbackUrl", "activeCloudflareReadinessRecord"]
+}

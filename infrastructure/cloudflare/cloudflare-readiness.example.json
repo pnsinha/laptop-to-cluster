@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "accountId": "EXTERNAL_REQUIRED",
+  "zoneId": "EXTERNAL_REQUIRED",
+  "pagesProjectName": "EXTERNAL_REQUIRED",
+  "customDomainId": "EXTERNAL_REQUIRED",
+  "customDomainHostname": "laptop-to-cluster.org",
+  "customDomainStatus": "EXTERNAL_REQUIRED",
+  "redirectListId": "EXTERNAL_REQUIRED",
+  "redirectRuleId": "EXTERNAL_REQUIRED",
+  "redirectRuleStatus": "EXTERNAL_REQUIRED",
+  "dns": [
+    { "hostname": "www.laptop-to-cluster.org", "proxied": false, "status": "EXTERNAL_REQUIRED" },
+    { "hostname": "laptoptocluster.org", "proxied": false, "status": "EXTERNAL_REQUIRED" },
+    { "hostname": "laptop-to-cluster.pnsinha.com", "proxied": false, "status": "EXTERNAL_REQUIRED" }
+  ]
+}

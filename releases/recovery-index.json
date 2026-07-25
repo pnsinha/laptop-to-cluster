@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "current": null,
+  "previous": null,
+  "note": "The deployment workflow replaces current and retains the prior known-good checksum-bound record. v0.1.0 has no earlier release until its first successful deployment."
+}

@@ -1,0 +1,17 @@
+export const CANONICAL_ORIGIN: 'https://laptop-to-cluster.org';
+export const REDIRECT_HOSTS: readonly string[];
+export type ArtifactFile = { path: string; bytes: number; sha256: string };
+export type ArtifactManifest = { schemaVersion: number; algorithm: string; files: ArtifactFile[]; artifactSha256: string; artifactFileManifestSha256: string };
+export function diagnostic(source: string, field: string, check: string, message: string): string;
+export function sha256(value: string | Uint8Array): string;
+export function filesUnder(directory: string): string[];
+export function createArtifactManifest(directory: string): ArtifactManifest;
+export function verifyArtifactManifest(directory: string, expected: ArtifactManifest): string[];
+export function validateCanonicalConfig(configText: string): string[];
+export function validateBuiltOutput(dist: string): string[];
+export function validateHostnamePolicy(policy: any): string[];
+export function redirectLocation(policy: any, incoming: string): string;
+export function validateCloudflareReadiness(input: any): string[];
+export function validateDeploymentRecord(record: any, manifest: ArtifactManifest): string[];
+export function validateReleaseManifest(record: any, manifest: ArtifactManifest): string[];
+export function validateDeploymentWorkflow(workflowText: string): string[];

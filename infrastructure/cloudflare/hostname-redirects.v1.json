@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "policyId": "canonical-hostname-normalization-v1",
+  "canonicalOrigin": "https://laptop-to-cluster.org",
+  "provider": "cloudflare-bulk-redirects",
+  "rules": [
+    {
+      "sourceHostname": "www.laptop-to-cluster.org",
+      "targetOrigin": "https://laptop-to-cluster.org",
+      "status": 301,
+      "subpathMatching": true,
+      "preservePathSuffix": true,
+      "preserveQueryString": true
+    },
+    {
+      "sourceHostname": "laptoptocluster.org",
+      "targetOrigin": "https://laptop-to-cluster.org",
+      "status": 301,
+      "subpathMatching": true,
+      "preservePathSuffix": true,
+      "preserveQueryString": true
+    },
+    {
+      "sourceHostname": "laptop-to-cluster.pnsinha.com",
+      "targetOrigin": "https://laptop-to-cluster.org",
+      "status": 301,
+      "subpathMatching": true,
+      "preservePathSuffix": true,
+      "preserveQueryString": true
+    }
+  ],
+  "requiredLiveInputs": [
+    "accountId", "zoneId", "pagesProjectName", "customDomainId",
+    "redirectListId", "redirectRuleId", "activeProxiedDnsRecords", "certificateStatus"
+  ]
+}
