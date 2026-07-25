@@ -1,0 +1,31 @@
+---
+import type { ApplicabilityRecord } from '../content/schema';
+const { records, headingId = 'applicability' } = Astro.props as { records: ApplicabilityRecord[]; headingId?: string };
+const evidenceHref = (record: ApplicabilityRecord) =>
+  `https://github.com/pnsinha/laptop-to-cluster/blob/${encodeURIComponent(record.workflow_revision)}/${record.evidence.path}`;
+---
+{records.length > 0 && <section class="applicability" aria-labelledby={headingId}>
+  <h2 id={headingId}>Applicability before execution</h2>
+  <p>Each record is limited to the exact environment, scheduler, runtime, container digest, and workflow revision shown. It does not establish unchanged portability to another combination.</p>
+  {records.map((record) => <article id={record.id} class="card applicability-record">
+    <h3>{record.environment.public_name}{record.environment.fallback ? ' — fallback representative environment' : ' — primary representative environment'}</h3>
+    <dl>
+      <dt>Validation status</dt><dd>{record.status}</dd>
+      <dt>Validation date</dt><dd>{record.validation_date}</dd>
+      {record.status !== 'unvalidated' && <><dt>Execution date</dt><dd>{record.execution_date}</dd></>}
+      <dt>Scheduler</dt><dd>{record.scheduler.family} {record.scheduler.version}</dd>
+      <dt>Container runtime</dt><dd>{record.runtime.name} {record.runtime.version}</dd>
+      <dt>Container digest</dt><dd><code>{record.container_digest}</code></dd>
+      <dt>Workflow revision</dt><dd><code>{record.workflow_revision}</code></dd>
+      <dt>Submission</dt><dd>{record.submission_id}</dd>
+      <dt>Terminal result</dt><dd>{record.result.terminal_state}; exit {record.result.exit_code}</dd>
+      <dt>Review after</dt><dd>{record.review_after}</dd>
+      <dt>Evidence</dt><dd><a href={evidenceHref(record)}>{record.evidence.id}</a></dd>
+    </dl>
+    <p>{record.environment.notes}</p>
+    <h4>Evidence checks</h4><ul>{record.result.checks.map((value) => <li>{value}</li>)}</ul>
+    <h4>Assumptions</h4><ul>{record.assumptions.map((value) => <li>{value}</li>)}</ul>
+    <h4>Limitations</h4><ul>{record.limitations.map((value) => <li>{value}</li>)}</ul>
+    <h4>Portability boundaries</h4><ul>{record.portability_boundaries.map((value) => <li>{value}</li>)}</ul>
+  </article>)}
+</section>}
