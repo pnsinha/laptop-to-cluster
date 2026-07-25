@@ -1,0 +1,5 @@
+job_id=19500029
+slurm=slurm 25.11.1
+apptainer=apptainer version 1.4.3-1.el8
+image_sha256=e871d1e08d712ed708b88a3ecd5d0f5f137ba31b41a5d8fd83d8e44710b7cd33
+input_sha256=ac75807908a3705c57f40c2396db6bc34edc0a2c0f40cc21cd5064bac9f465a5

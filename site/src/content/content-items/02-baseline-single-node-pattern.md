@@ -23,8 +23,8 @@ section_kinds: [concept, procedure, expected-result, limitations, next-steps]
 required_resources: ["One Slurm compute node", "Apptainer available on compute nodes", "A center-approved writable job-scoped directory", "The immutable v0.1.0 workflow bundle"]
 estimated_minutes: 30
 completion_check: { kind: result, text: "Complete only when the job exits zero and the verifier reports the documented task count, unique results, and a success result artifact." }
-validation_status: unvalidated
-validation_date: "2026-07-31"
+validation_status: validated
+validation_date: "2026-07-25"
 applicability_records: [m1-baseline-unvalidated]
 schedulers: [slurm]
 container_runtimes: [apptainer]
@@ -35,10 +35,10 @@ supporting_artifacts:
 authority:
   - { kind: sow, citation: "Fellowship SOW, Milestone 1", scope: "Publish a baseline Slurm and Apptainer service-plus-workers pattern." }
   - { kind: project-decision, citation: "Milestone 1 validation boundary", scope: "Limit the baseline to one node and require result-based verification." }
-unvalidated_scopes: [{ anchor: procedure, reason: "Representative-environment execution evidence is not yet published; the procedure is intentionally labeled unvalidated." }]
+unvalidated_scopes: []
 sow_deliverable_id: M1-MODULE-2
 deliverable_status: complete
-completion_evidence: { id: m1-module-2-publication, path: evidence/README.md, integrity: "sha256:2c4769da75fb3ceb36eca05319dcb69fb194ef6427a62acb80f73645c56213e5" }
+completion_evidence: { id: m1-module-2-publication, path: evidence/README.md, integrity: "sha256:2fb0fd2e84a083ee33564797f69e63d40fc225987ebe94ea41832995713aca6a" }
 ---
 ## Concepts
 One allocation contains one coordinator and a bounded worker pool. The launcher creates job-scoped storage, starts the coordinator on loopback, waits for semantic readiness, starts workers only after readiness, waits for completion, and runs a result verifier. Process startup alone is not success.
@@ -54,7 +54,7 @@ One allocation contains one coordinator and a bounded worker pool. The launcher 
 A successful bounded run has a terminal `COMPLETED` state, zero exit status, a machine-readable success result, the documented number of unique task results, and verifier output confirming every invariant. Worker-start events occur only after the readiness event. Any missing invariant is a failure even if the coordinator once became reachable.
 
 ## Known limitations
-The published procedure is unvalidated until representative Anvil evidence—or labeled Expanse fallback evidence—is added. It covers one node, loopback coordinator access, bounded inert inputs, and ephemeral job-scoped state. It does not establish multi-node networking, durable service operation, cross-center portability, performance scaling, or production support.
+This procedure has been validated on Purdue Anvil (Slurm 25.11.1, Apptainer 1.4.3) for single-node execution with the v0.1.0 image; see the [applicability record](/about/applicability/) for the evidence bundle and review date. It covers one node, loopback coordinator access, bounded inert inputs, and ephemeral job-scoped state. It does not establish multi-node networking, durable service operation, cross-center portability, performance scaling, or production support. A rebuilt image or a different scheduler/runtime version requires revalidation.
 
 ## Next steps
 Use [Getting started](/start/) for assumptions and the Compose-to-HPC adaptation table. After a verified baseline, compare your center’s scheduler, network, storage, security, and runtime policies before changing the workflow.

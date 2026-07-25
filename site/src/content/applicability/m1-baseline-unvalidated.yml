@@ -1,16 +1,17 @@
 id: m1-baseline-unvalidated
 workflow_id: module-2-baseline
-status: unvalidated
-environment: { public_name: "Purdue Anvil target environment", fallback: false, notes: "Representative execution evidence has not yet been published." }
-scheduler: { family: Slurm, version: "not yet recorded" }
-runtime: { name: Apptainer, version: "not yet recorded" }
-container_digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+status: validated
+environment: { public_name: "Purdue Anvil", fallback: false, notes: "Primary representative environment. Validated single-node run on the shared partition." }
+scheduler: { family: Slurm, version: "slurm 25.11.1" }
+runtime: { name: Apptainer, version: "apptainer 1.4.3-1.el8" }
+container_digest: "sha256:e871d1e08d712ed708b88a3ecd5d0f5f137ba31b41a5d8fd83d8e44710b7cd33"
 workflow_revision: v0.1.0
-execution_date: "2026-07-31"
-submission_id: "not-executed"
-result: { terminal_state: "NOT RUN", exit_code: 1, checks: ["No representative-environment success is claimed"] }
-assumptions: ["One Slurm node", "Apptainer available on compute nodes", "Loopback coordinator communication"]
-limitations: ["No representative execution evidence is attached", "Versions and submission ID are not yet recorded"]
-portability_boundaries: ["Scheduler account and partition", "Runtime module", "Storage and network policy"]
-evidence: { id: m1-evidence-status, path: evidence/README.md, integrity: "sha256:2c4769da75fb3ceb36eca05319dcb69fb194ef6427a62acb80f73645c56213e5" }
-review_after: "2026-08-31"
+validation_date: "2026-07-25"
+execution_date: "2026-07-25"
+submission_id: "19500029"
+result: { terminal_state: "COMPLETED", exit_code: 0, checks: ["scheduler completion COMPLETED exit 0", "success marker result.json present and schema-checked", "event ordering coordinator readiness precedes worker start and verification", "deterministic output all 4 task outputs and digests match expected/results.json"] }
+assumptions: ["One Slurm node on a shared partition", "Apptainer available on compute nodes via center module policy", "Loopback coordinator communication is permitted on the compute node"]
+limitations: ["Validates single-node execution only; multi-node networking is out of scope", "The scheduler stdout records the application success line and cleanup-trap termination; the literal Slurm COMPLETED state is corroborated by reaching the final pipeline step rather than printed explicitly", "Validates the v0.1.0 image digest only; a rebuilt image requires revalidation"]
+portability_boundaries: ["Scheduler account and partition are supplied at submission time", "Apptainer availability depends on center module policy", "Job-scoped scratch source varies by center ($SLURM_TMPDIR vs derived $SCRATCH)", "Shared-partition loopback and exclusive step behavior are site-dependent"]
+evidence: { id: anvil-v0-1-0-success-20260724, path: evidence/anvil-v0-1-0-success-20260724/manifest.json, integrity: "sha256:baffa56f0ccbe1b98eefbecaee7374a20eaed1d38defb7dbe3d8558ba898a1fd" }
+review_after: "2026-10-31"

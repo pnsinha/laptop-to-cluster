@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "anvil-v0-1-0-success-20260724",
+  "evidenceKind": "success",
+  "workflowId": "module-2-baseline",
+  "workflowRevision": "v0.1.0",
+  "releaseCandidate": "v0.1.0",
+  "environment": { "publicName": "Purdue Anvil", "fallback": false },
+  "schedulerVersion": "slurm 25.11.1",
+  "runtimeVersion": "apptainer 1.4.3-1.el8",
+  "containerDigest": "sha256:e871d1e08d712ed708b88a3ecd5d0f5f137ba31b41a5d8fd83d8e44710b7cd33",
+  "submissionId": "19500029",
+  "startedAt": "2026-07-25T14:23:34Z",
+  "endedAt": "2026-07-25T14:23:40Z",
+  "nodes": 1,
+  "coordinatorCount": 1,
+  "workerCount": 2,
+  "terminalState": "COMPLETED",
+  "exitCode": 0,
+  "reviewAfter": "2026-10-31",
+  "assumptions": [
+    "One Slurm node on a shared partition",
+    "Apptainer available on compute nodes via center module policy",
+    "Loopback coordinator communication is permitted on the compute node"
+  ],
+  "limitations": [
+    "This run validates single-node execution only; multi-node networking is out of scope",
+    "The scheduler stdout records the application success line and cleanup-trap termination; the literal Slurm COMPLETED state is corroborated by reaching the final pipeline step rather than printed explicitly",
+    "Validates the v0.1.0 image digest only; a rebuilt image requires revalidation"
+  ],
+  "portabilityBoundaries": [
+    "Scheduler account and partition are supplied at submission time",
+    "Apptainer availability depends on center module policy",
+    "Job-scoped scratch source varies by center ($SLURM_TMPDIR vs derived $SCRATCH)",
+    "Shared-partition loopback and exclusive step behavior are site-dependent"
+  ],
+  "reviewer": "Parmanand Sinha",
+  "redactValues": [
+    "x-psinha1",
+    "a243",
+    "cis261295",
+    "57061",
+    "login04"
+  ]
+}

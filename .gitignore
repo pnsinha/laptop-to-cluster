@@ -4,7 +4,10 @@ coverage/
 .astro/
 .DS_Store
 *.log
+# Evidence-bundle logs are immutable, checksum-verified artifacts and must ship.
+!evidence/**/*.log
 __pycache__/
 *.pyc
 *.sif
 .kiro/
+publication/

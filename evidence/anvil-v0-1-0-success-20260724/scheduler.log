@@ -1,0 +1,2 @@
+BSSW workflow completed: result is in the job-scoped runtime directory.
+/var/spool/slurm/job19500029/slurm_script: line 83: 3016584 Terminated              step_exec "$APPTAINER_CMD" exec --cleanenv --bind "${RUNTIME_DIR}:/work" "$IMAGE_PATH" python3 "$APP_ROOT/coordinator.py" --input /work/[REDACTED-USER] --results /work/[REDACTED-USER] --endpoint-file /work/[REDACTED-USER] > "$RUNTIME_DIR/logs/coordinator.log" 2>&1

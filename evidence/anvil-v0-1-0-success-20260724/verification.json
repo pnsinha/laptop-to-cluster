@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "anvil-v0-1-0-success-20260724",
+  "verified": true,
+  "checks": [
+    {
+      "name": "scheduler completion",
+      "passed": true,
+      "detail": "COMPLETED exit 0"
+    },
+    {
+      "name": "success marker",
+      "passed": true,
+      "detail": "artifacts/result.json exists and is schema-checked"
+    },
+    {
+      "name": "event ordering",
+      "passed": true,
+      "detail": "coordinator readiness precedes worker start and verification"
+    },
+    {
+      "name": "redaction review",
+      "passed": true,
+      "detail": "user filesystem paths"
+    }
+  ]
+}

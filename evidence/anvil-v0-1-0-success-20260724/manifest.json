@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "anvil-v0-1-0-success-20260724",
+  "evidenceKind": "success",
+  "workflowId": "module-2-baseline",
+  "workflowRevision": "v0.1.0",
+  "releaseCandidate": "v0.1.0",
+  "representativeEnvironment": {
+    "publicName": "Purdue Anvil",
+    "fallback": false
+  },
+  "run": {
+    "schedulerVersion": "slurm 25.11.1",
+    "runtimeVersion": "apptainer 1.4.3-1.el8",
+    "containerDigest": "sha256:e871d1e08d712ed708b88a3ecd5d0f5f137ba31b41a5d8fd83d8e44710b7cd33",
+    "submissionId": "19500029",
+    "startedAt": "2026-07-25T14:23:34Z",
+    "endedAt": "2026-07-25T14:23:40Z",
+    "nodes": 1,
+    "coordinatorCount": 1,
+    "workerCount": 2,
+    "terminalState": "COMPLETED",
+    "exitCode": 0
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "at": "2026-07-25T14:23:34Z",
+      "type": "coordinator-started"
+    },
+    {
+      "sequence": 2,
+      "at": "2026-07-25T14:23:38Z",
+      "type": "ready"
+    },
+    {
+      "sequence": 3,
+      "at": "2026-07-25T14:23:38Z",
+      "type": "workers-started"
+    },
+    {
+      "sequence": 4,
+      "at": "2026-07-25T14:23:38Z",
+      "type": "workers-started"
+    },
+    {
+      "sequence": 5,
+      "at": "2026-07-25T14:23:40Z",
+      "type": "verified"
+    }
+  ],
+  "checks": [
+    {
+      "name": "scheduler completion",
+      "passed": true,
+      "detail": "COMPLETED exit 0"
+    },
+    {
+      "name": "success marker",
+      "passed": true,
+      "detail": "artifacts/result.json exists and is schema-checked"
+    },
+    {
+      "name": "event ordering",
+      "passed": true,
+      "detail": "coordinator readiness precedes worker start and verification"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "scheduler.log",
+      "sha256": "sha256:38ed4e4028cd4d1b93750e3198ff7fbcbcf826ac4f5cf247bc55b164a1a021b5",
+      "mediaType": "text/plain"
+    },
+    {
+      "path": "artifacts/events.jsonl",
+      "sha256": "sha256:964398d3f65a62c17e6cd0280adcb6839390f0e06b5f460a6ef468ddff4cf578",
+      "mediaType": "application/x-ndjson"
+    },
+    {
+      "path": "artifacts/versions.txt",
+      "sha256": "sha256:466f3a25c481e3e90bf6e6beb5827afb036688ebc5b2b9874fb8f1122c26aaf1",
+      "mediaType": "text/plain"
+    },
+    {
+      "path": "logs/coordinator.log",
+      "sha256": "sha256:5cdce1221813d67bbdc22156313c454e62e461a1303702551ca4264c4b3c0642",
+      "mediaType": "text/plain"
+    },
+    {
+      "path": "logs/input-validation.log",
+      "sha256": "sha256:1d8050425d3edf4c92da74ddac9b1a10abfeb8107aef0fc54700b7f930688647",
+      "mediaType": "text/plain"
+    },
+    {
+      "path": "logs/readiness.log",
+      "sha256": "sha256:0dfb98c10ea64c0147d1698e2c18109ef54940286789e4ae8a09f7298be61d7f",
+      "mediaType": "text/plain"
+    },
+    {
+      "path": "logs/verification.log",
+      "sha256": "sha256:74202634aae844ab7725d176b748760d2e1e0cbc45be37319d69ae7a18c7977e",
+      "mediaType": "text/plain"
+    },
+    {
+      "path": "logs/worker-01.log",
+      "sha256": "sha256:26de27427c8a6941ef19026e788499c1183aaf62a6ea5b585432842b21e6f5c2",
+      "mediaType": "text/plain"
+    },
+    {
+      "path": "logs/worker-02.log",
+      "sha256": "sha256:48b2eed743b61009319eac18be55e24c450679255d4ddb388517498c526dbff4",
+      "mediaType": "text/plain"
+    },
+    {
+      "path": "artifacts/result.json",
+      "sha256": "sha256:96a8c81ea27f6dac24fee00a7685fc3932b69ef4fe7ca460361de6322f9c0646",
+      "mediaType": "application/json"
+    },
+    {
+      "path": "artifacts/results.json",
+      "sha256": "sha256:9143dc65c29bea2b0c5892bf43ae03c949e99cedbd8de942087356da7961f4ee",
+      "mediaType": "application/json"
+    }
+  ],
+  "redactions": [
+    "user filesystem paths"
+  ],
+  "assumptions": [
+    "One Slurm node on a shared partition",
+    "Apptainer available on compute nodes via center module policy",
+    "Loopback coordinator communication is permitted on the compute node"
+  ],
+  "limitations": [
+    "This run validates single-node execution only; multi-node networking is out of scope",
+    "The scheduler stdout records the application success line and cleanup-trap termination; the literal Slurm COMPLETED state is corroborated by reaching the final pipeline step rather than printed explicitly",
+    "Validates the v0.1.0 image digest only; a rebuilt image requires revalidation"
+  ],
+  "portabilityBoundaries": [
+    "Scheduler account and partition are supplied at submission time",
+    "Apptainer availability depends on center module policy",
+    "Job-scoped scratch source varies by center ($SLURM_TMPDIR vs derived $SCRATCH)",
+    "Shared-partition loopback and exclusive step behavior are site-dependent"
+  ],
+  "reviewer": "Parmanand Sinha",
+  "reviewAfter": "2026-10-31"
+}
