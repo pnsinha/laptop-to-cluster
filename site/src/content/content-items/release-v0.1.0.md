@@ -10,7 +10,7 @@ audiences: [adopters, fellowship reviewers]
 milestone: 1
 status: published
 publication_date: "2026-07-31"
-applicability_records: [m1-baseline-unvalidated]
+applicability_records: [m1-baseline-anvil]
 related: [module-1-scheduler-orchestrator, module-2-baseline, milestone-1]
 ---
 ## Added

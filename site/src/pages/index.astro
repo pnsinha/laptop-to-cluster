@@ -3,12 +3,162 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import SupportState from '../components/SupportState.astro';
 import { PROJECT } from '../content/wording';
 ---
-<BaseLayout title="Bridging the Laptop-to-Cluster Gap" description="Public BSSw Fellowship guidance for translating multi-service laptop workflows to scheduler-managed HPC systems." canonicalPath="/">
-<h1>Bridging the Laptop-to-Cluster Gap</h1>
-<p class="lede">A public, static guide for translating multi-service laptop workflows into scheduler-managed, rootless-container workflows on shared HPC systems.</p>
-<section><h2>Who this is for</h2><p>Scientific software practitioners, first-time HPC learners, workflow maintainers, research computing staff, educators, and fellowship reviewers. All published content is anonymous-access: <strong>No account is required</strong>.</p></section>
-<section><h2>Current release</h2><p><strong>{PROJECT.release}</strong>. The two Milestone 1 modules and supporting guidance are published; Module 2 clearly labels representative-environment execution as unvalidated until evidence is added.</p><p><a href="/releases/v0-1-0/">Read release status</a> or <a href="/milestones/1/">review every Milestone 1 deliverable</a>.</p></section>
-<section><h2>Get started</h2><div class="cards"><article class="card"><h3>Understand the model</h3><p><a href="/guide/scheduler-as-orchestrator/">Scheduler as Orchestrator</a> maps Compose responsibilities to HPC.</p></article><article class="card"><h3>Prepare safely</h3><p><a href="/start/">Check prerequisites and local adaptations</a> before any execution step.</p></article><article class="card"><h3>Try the baseline</h3><p><a href="/guide/baseline-single-node-pattern/">Run the bounded service-plus-workers pattern</a> and verify results.</p></article></div></section>
-<section><h2>Find and reuse</h2><p>Browse the complete <a href="/resources/">resource index</a>, durable <a href="/diagnostics/">diagnostic registry</a>, or public <a href={PROJECT.repository}>Companion repository</a>.</p></section>
-<SupportState />
+<BaseLayout
+  title="Bridging the Laptop-to-Cluster Gap"
+  description="Public BSSw Fellowship guidance for translating multi-service laptop workflows to scheduler-managed HPC systems."
+  canonicalPath="/"
+>
+  <h1>Bridging the Laptop-to-Cluster Gap</h1>
+
+  <p class="lede">
+    A multi-service stack is trivial to run with Docker Compose on a laptop. On a shared
+    cluster there is no Docker daemon, and the scheduler owns every resource. This guide is
+    the translation — for scientific software practitioners, HPC learners, and workflow maintainers.
+    No account is required to read anything here.
+  </p>
+
+  <section aria-labelledby="mapping">
+    <h2 id="mapping">What changes</h2>
+    <dl class="mapping">
+      <div>
+        <dt><code>service</code></dt>
+        <dd>Scheduler job or step</dd>
+      </div>
+      <div>
+        <dt><code>depends_on</code></dt>
+        <dd>Explicit readiness check</dd>
+      </div>
+      <div>
+        <dt><code>volumes</code></dt>
+        <dd>Job-scoped scratch</dd>
+      </div>
+      <div>
+        <dt><code>ports</code></dt>
+        <dd>Loopback, reached by tunnel</dd>
+      </div>
+    </dl>
+    <p class="mapping-note">
+      <a href="/guide/scheduler-as-orchestrator/">The full mapping, and why each one shifts</a>
+    </p>
+  </section>
+
+  <section aria-labelledby="path">
+    <h2 id="path">Start here</h2>
+    <ol class="path">
+      <li>
+        <h3><a href="/guide/scheduler-as-orchestrator/">Understand the model</a></h3>
+        <p>How a scheduler allocation replaces Compose as the orchestration boundary.</p>
+      </li>
+      <li>
+        <h3><a href="/start/">Check your center</a></h3>
+        <p>Prerequisites, assumptions, and the values that differ at every site.</p>
+      </li>
+      <li>
+        <h3><a href="/guide/baseline-single-node-pattern/">Run the baseline</a></h3>
+        <p>
+          A coordinator, a readiness gate, workers, and result verification in one allocation.
+          Validated on Purdue Anvil (Slurm 25.11.1, Apptainer 1.4.3).
+        </p>
+      </li>
+    </ol>
+    <p class="release-link">
+      Current release: <strong>{PROJECT.release}</strong>. <a href="/releases/v0-1-0/">Release status</a> · <a href="/milestones/1/">Milestone 1 deliverables</a>.
+    </p>
+  </section>
+
+  <p class="browse">
+    Browse the <a href="/resources/">resource index</a>,
+    the <a href="/diagnostics/">diagnostic registry</a>,
+    every <a href="/milestones/1/">Milestone 1 deliverable</a>,
+    or the <a href={PROJECT.repository}>companion repository</a>.
+  </p>
+
+  <SupportState />
 </BaseLayout>
+
+<style>
+  /* The mapping is the page's thesis, so it gets the one piece of visual weight
+     the rest of the design deliberately withholds. */
+  .mapping {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0;
+    margin: 1.5rem 0 0.75rem;
+    border-top: 0.15rem solid #172033;
+  }
+  .mapping > div {
+    display: grid;
+    grid-template-columns: minmax(8rem, auto) 1fr;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.7rem 0.25rem;
+    border-bottom: 1px solid #c6ccd6;
+  }
+  .mapping dt {
+    font-weight: 400;
+  }
+  .mapping dt code {
+    background: #f2f4f8;
+    padding: 0.1rem 0.35rem;
+  }
+  .mapping dd {
+    margin: 0;
+    font-weight: 600;
+  }
+  /* Direction of translation, without relying on colour or an image. */
+  .mapping dd::before {
+    content: "→ ";
+    color: #596579;
+    font-weight: 400;
+  }
+  .mapping-note {
+    margin: 0 0 0.5rem;
+  }
+
+  .path {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+    margin: 1.5rem 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1.5rem 2rem;
+  }
+  .path > li {
+    counter-increment: step;
+    border-top: 0.15rem solid #0759a5;
+    padding-top: 0.75rem;
+  }
+  .path > li::before {
+    content: counter(step);
+    display: block;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    color: #596579;
+    margin-bottom: 0.25rem;
+  }
+  .path h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1.1rem;
+  }
+  .path p {
+    margin: 0;
+  }
+  .release-link {
+    margin: 1.25rem 0 0;
+  }
+
+  .browse {
+    margin-top: 2.5rem;
+    max-width: 65ch;
+  }
+
+  @media (max-width: 30rem) {
+    .mapping > div {
+      grid-template-columns: 1fr;
+      gap: 0.15rem;
+    }
+  }
+</style>

@@ -3,7 +3,7 @@
   "version": "v0.1.0",
   "repositoryTag": "v0.1.0",
   "canonicalOrigin": "https://laptop-to-cluster.org",
-  "evidenceIds": ["m1-baseline-unvalidated", "accessibility-review-v0.1.0"],
+  "evidenceIds": ["m1-baseline-anvil", "accessibility-review-v0.1.0"],
   "publicSiteUrls": [
     "https://laptop-to-cluster.org/",
     "https://laptop-to-cluster.org/guide/scheduler-as-orchestrator/",

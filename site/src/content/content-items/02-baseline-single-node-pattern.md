@@ -6,7 +6,7 @@ description: "A bounded single-node reference workflow with one coordinating ser
 module_number: 2
 topics: [scheduler-as-orchestrator, service-workers]
 status: published
-last_updated: "2026-07-09"
+last_updated: "2026-07-26"
 summary: "The smallest multi-service Compose shape translated to one scheduler allocation: a coordinator, readiness gate, workers, and result verification."
 artifact_type: learning-module
 keywords: [Apptainer, readiness, single-node, Slurm, workers]
@@ -25,7 +25,7 @@ estimated_minutes: 30
 completion_check: { kind: result, text: "Complete only when the job exits zero and the verifier reports the documented task count, unique results, and a success result artifact." }
 validation_status: validated
 validation_date: "2026-07-25"
-applicability_records: [m1-baseline-unvalidated]
+applicability_records: [m1-baseline-anvil]
 schedulers: [slurm]
 container_runtimes: [apptainer]
 related: [module-1-scheduler-orchestrator, start-guide]
