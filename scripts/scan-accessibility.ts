@@ -30,7 +30,8 @@ const origin = `http://127.0.0.1:${address.port}`;
 const browser = await chromium.launch({ headless: true });
 const failures: string[] = [];
 try {
-  const page = await browser.newPage();
+  const context = await browser.newContext();
+  const page = await context.newPage();
   for (const path of paths) {
     const response = await page.goto(new URL(path, origin).href, { waitUntil: 'networkidle' });
     if (!response?.ok()) {
