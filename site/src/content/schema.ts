@@ -21,7 +21,7 @@ export type ArtifactType = z.infer<typeof artifactTypeSchema>;
 
 export const evidenceReferenceSchema = z.object({
   id: nonEmpty,
-  path: z.string().regex(/^(?:evidence|releases|site\/public\/evidence)\/[A-Za-z0-9._/-]+$/, 'must be a repository evidence path'),
+  path: z.string().regex(/^(?:evidence|releases|site\/public\/evidence)\/[A-Za-z0-9._/-]+$/, 'must be a repository evidence path under evidence/ or releases/'),
   integrity: sha256,
   label: nonEmpty.optional(),
 }).strict();

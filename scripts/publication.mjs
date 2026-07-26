@@ -125,7 +125,9 @@ export function validateBuiltOutput(dist) {
       const text = readFileSync(file, 'utf8');
       if (FORBIDDEN_ORIGIN.test(text)) errors.push(diagnostic(name, 'origin', 'CANONICAL-OUTPUT', 'noncanonical hostname is forbidden'));
       for (const match of text.matchAll(/https:\/\/[^\s"'<>]+/g)) {
-        if (!match[0].startsWith(`${CANONICAL_ORIGIN}/`)) errors.push(diagnostic(name, 'url', 'CANONICAL-OUTPUT', `non-apex URL ${match[0]}`));
+        // The canonical origin itself (no trailing path) is valid; only reject
+        // URLs that use a different host or a non-apex path prefix.
+        if (match[0] !== CANONICAL_ORIGIN && !match[0].startsWith(`${CANONICAL_ORIGIN}/`)) errors.push(diagnostic(name, 'url', 'CANONICAL-OUTPUT', `non-apex URL ${match[0]}`));
       }
     }
   }
