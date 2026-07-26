@@ -22,11 +22,12 @@ describe('static Astro publication candidate', () => {
   it('renders bounded applicability on Module 2 and the release page before claims', () => {
     for (const page of [moduleTwo, release]) {
       expect(page).toContain('Purdue Anvil');
-      expect(page).toContain('Validation status</dt><dd>unvalidated');
+      expect(page).toContain('Validation status</dt><dd>validated');
       expect(page).toContain('primary representative environment');
       expect(page).toContain('does not establish unchanged portability');
-      expect(page).toContain('No representative-environment success is claimed');
     }
+    expect(moduleTwo).toContain('COMPLETED');
+    expect(moduleTwo).toContain('19500029');
     expect(moduleTwo.indexOf('Applicability before execution')).toBeLessThan(moduleTwo.indexOf('<h2 id="procedure">'));
   });
 });
