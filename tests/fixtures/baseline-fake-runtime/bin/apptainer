@@ -16,13 +16,16 @@ done
 shift # inert fixture image
 mapped=()
 for argument in "$@"; do
-  if [[ "$argument" == *"/work/"* ]]; then
-    prefix=${argument%%/work/*}
-    suffix=${argument#*/work/}
-    mapped+=("${prefix}${BSSW_FAKE_RUNTIME_DIR:?}/${suffix}")
-  else
-    mapped+=("$argument")
+  # Map container bind-mount paths (/work -> BSSW_FAKE_RUNTIME_DIR). Two forms appear:
+  #   1. a standalone argument that IS the path:   /work/input.json
+  #   2. a path embedded in a -c script string:    ...open("/work/endpoint.json"...
+  # Require /work/ to follow a quote or the start of the argument, never a path
+  # segment, so checkout dirs like /home/runner/work/repo/ are left untouched.
+  if [[ "$argument" == /work/* ]]; then
+    argument="$BSSW_FAKE_RUNTIME_DIR/${argument#/work/}"
   fi
+  argument="${argument//\"\/work\//\"$BSSW_FAKE_RUNTIME_DIR/}"
+  mapped+=("$argument")
 done
 target=${mapped[1]:-}
 case "${BSSW_FIXTURE_SCENARIO:-success}:$target" in

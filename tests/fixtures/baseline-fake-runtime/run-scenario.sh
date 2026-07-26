@@ -37,11 +37,4 @@ export WORKER_COUNT=2 TASK_COUNT=4 READINESS_TIMEOUT=3 CLEANUP_TIMEOUT=1
 bash "$WORKFLOW_ROOT/slurm/baseline.sbatch"
 status=$?
 printf 'FIXTURE_RUNTIME=%s\n' "$BSSW_FAKE_RUNTIME_DIR"
-# Diagnostic dump for CI environment debugging (temporary)
-if [ -f "$BSSW_FAKE_RUNTIME_DIR/logs/input-validation.log" ]; then
-  printf 'DIAG input-validation.log:\n'
-  cat "$BSSW_FAKE_RUNTIME_DIR/logs/input-validation.log"
-fi
-printf 'DIAG python3=%s\n' "$(command -v python3 || echo MISSING)"
-printf 'DIAG python3 --version: '; python3 --version 2>&1 || true
 exit "$status"
