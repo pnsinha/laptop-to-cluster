@@ -7,4 +7,14 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'always',
   integrations: [sitemap(), canonicalPolicy()],
+  markdown: {
+    shikiConfig: {
+      theme: 'github-dark',
+      wrap: false,
+      langs: ['bash', 'python', 'sh'],
+      colorReplacements: {
+        '#6A737D': '#8B949E',
+      },
+    },
+  },
 });

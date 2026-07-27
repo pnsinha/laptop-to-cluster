@@ -177,9 +177,6 @@ pre {
   tab-size: 2;
 }
 pre code { overflow-wrap: normal; word-break: normal; }
-/* Shiki's default comment color (#6A737D) fails WCAG AA on the dark code background.
-   Override comment tokens to a lighter grey that meets 4.5:1 contrast. */
-.astro-code span[style*="6A737D"] { color: #8B949E !important; }
 
 .table-overflow {
   position: relative;
