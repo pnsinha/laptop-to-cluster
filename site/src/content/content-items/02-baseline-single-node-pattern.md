@@ -41,9 +41,9 @@ deliverable_status: complete
 completion_evidence: { id: m1-module-2-publication, path: evidence/README.md, integrity: "sha256:2fb0fd2e84a083ee33564797f69e63d40fc225987ebe94ea41832995713aca6a" }
 ---
 ## Concepts
-Module 1 established the reframe: on HPC, the scheduler allocation replaces Compose as the orchestration boundary, and each Compose construct maps onto a scheduler-side equivalent. This module makes that mapping concrete with the smallest multi-service shape worth translating — one coordinating service plus a pool of workers, all inside a single-node allocation — and shows the five-step launch sequence that replaces `docker compose up`.
+Module 1 established the reframe: on HPC, the scheduler allocation replaces Compose as the orchestration boundary, and each Compose construct maps onto a scheduler-side equivalent. This module makes that mapping concrete with the smallest multi-service shape worth translating: one coordinating service plus a pool of workers, all inside a single-node allocation. It shows the five-step launch sequence that replaces `docker compose up`.
 
-The reason this shape matters as the baseline: it isolates the three Compose assumptions that break hardest on HPC. A long-running service (the coordinator) has no scheduler equivalent, so the launch script must start it and tear it down explicitly. Compose's `depends_on` waits only for a container to *start*, but workers must not begin until the coordinator is *actually ready* — so a readiness gate sits between them. And "the container is running" is not success on HPC; the workflow must verify results and write a success marker before the scheduler reclaims the allocation. Get these three right in the smallest case and the rest of the translation (multi-node, cross-site) extends from here.
+The reason this shape matters as the baseline: it isolates the three Compose assumptions that break hardest on HPC. A long-running service (the coordinator) has no scheduler equivalent, so the launch script must start it and tear it down explicitly. Compose's `depends_on` waits only for a container to *start*, but workers must not begin until the coordinator is *actually ready*, so a readiness gate sits between them. And "the container is running" is not success on HPC; the workflow must verify results and write a success marker before the scheduler reclaims the allocation. Get these three right in the smallest case and the rest of the translation (multi-node, cross-site) extends from here.
 
 One allocation contains one coordinator and a bounded worker pool. The launcher creates job-scoped storage, starts the coordinator on loopback, waits for semantic readiness, starts workers only after readiness, waits for completion, and runs a result verifier. Process startup alone is not success. Term definitions are in the [glossary](/about/glossary/).
 
@@ -51,26 +51,26 @@ One allocation contains one coordinator and a bounded worker pool. The launcher 
 The runnable `baseline.sbatch` adds integrity checks (image and input SHA-256 verification), bounded cleanup, and machine-readable diagnostics. Stripped to just the Compose-to-HPC translation, the whole pattern is five steps:
 
 ```bash
-# 1. Job-scoped storage        — replaces Compose's named volume
+# 1. Job-scoped storage: replaces Compose's named volume
 RUNTIME_DIR="$SCRATCH/bssw-$SLURM_JOB_ID"
 mkdir -p "$RUNTIME_DIR"/{results,logs}
 
-# 2. Coordinator               — the long-running service, on loopback
+# 2. Coordinator: the long-running service, on loopback
 srun --exclusive apptainer exec --bind "$RUNTIME_DIR:/work" baseline.sif \
   python3 /opt/bssw/bin/coordinator.py --input /work/input.json &
 
-# 3. Readiness gate            — the depends_on + healthcheck Compose has no scheduler equivalent for
+# 3. Readiness gate: the depends_on + healthcheck Compose has no scheduler equivalent for
 until [ -s "$RUNTIME_DIR/endpoint.json" ]; do sleep 0.05; done
 apptainer exec baseline.sif python3 /opt/bssw/bin/readiness.py --endpoint "$ENDPOINT"
 
-# 4. Workers                   — only after readiness; each is an exclusive srun step
+# 4. Workers: only after readiness; each is an exclusive srun step
 for w in $(seq 1 "$WORKER_COUNT"); do
   srun --exclusive apptainer exec baseline.sif \
     python3 /opt/bssw/bin/worker.py --endpoint "$ENDPOINT" --worker-id "$w" &
 done
-wait   # workers only — the coordinator runs forever, like a Compose service
+wait   # workers only; the coordinator runs forever, like a Compose service
 
-# 5. Verify + success marker   — replaces "the container reported healthy"
+# 5. Verify + success marker: replaces "the container reported healthy"
 apptainer exec baseline.sif python3 /opt/bssw/bin/verify.py --output /work/result.json
 ```
 

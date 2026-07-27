@@ -17,13 +17,13 @@ This glossary defines the terms that appear in the [Scheduler as Orchestrator](/
 ## The core reframe
 
 **allocation**
-: A lease on compute resources (cores, memory, GPUs, wall time) that a batch scheduler grants to a job. The allocation is the HPC equivalent of "the machine your Compose stack runs on" — except it is temporary, requested at submission time, and reclaimed when the job ends. The scheduler allocation replaces Compose as the orchestration boundary.
+: A lease on compute resources (cores, memory, GPUs, wall time) that a batch scheduler grants to a job. The allocation is the HPC equivalent of "the machine your Compose stack runs on," except it is temporary, requested at submission time, and reclaimed when the job ends. The scheduler allocation replaces Compose as the orchestration boundary.
 
 **orchestration boundary**
 : The system responsible for starting services, wiring them together, and keeping them running. With Docker Compose, Compose itself is the boundary; on HPC, the scheduler allocation is the boundary, and a launch script does the wiring inside it.
 
 **reclamation**
-: The scheduler taking resources back when a job ends or hits its wall time. There is no "leave it running" — the moment the job exits or times out, the scheduler reclaims the node for the next job in the queue.
+: The scheduler taking resources back when a job ends or hits its wall time. There is no "leave it running." The moment the job exits or times out, the scheduler reclaims the node for the next job in the queue.
 
 ## Scheduler concepts
 
@@ -43,7 +43,7 @@ This glossary defines the terms that appear in the [Scheduler as Orchestrator](/
 : The final state the scheduler records for a job: `COMPLETED` (finished, exit 0), `FAILED` (exited nonzero), `TIMEOUT` (hit its wall time), or `CANCELLED`. The terminal state is what evidence records, distinct from the application's own exit code.
 
 **module load**
-: A command (via the Lmod or environment-modules system) that makes a specific software version available on the compute node — e.g. `module load apptainer`. HPC centers use this instead of per-user installs to avoid filesystem sprawl.
+: A command (via the Lmod or environment-modules system) that makes a specific software version available on the compute node, e.g. `module load apptainer`. HPC centers use this instead of per-user installs to avoid filesystem sprawl.
 
 ## Container runtime concepts
 
@@ -54,13 +54,13 @@ This glossary defines the terms that appear in the [Scheduler as Orchestrator](/
 : A read-only container image (a `.sif` file) that cannot be modified at runtime. You cannot `exec` in and edit files the way you can with Docker; rebuilding requires re-creating the image and re-verifying its checksum.
 
 **bind**
-: Mounting a host filesystem path into a container at a target path (Apptainer's `--bind $SCRATCH:/work`). This is the rootless-runtime equivalent of a Docker volume mount — it is how writable state reaches a container that otherwise sees a read-only image.
+: Mounting a host filesystem path into a container at a target path (Apptainer's `--bind $SCRATCH:/work`). This is the rootless-runtime equivalent of a Docker volume mount. It is how writable state reaches a container that otherwise sees a read-only image.
 
 **scratch**
-: Fast, temporary filesystem storage a center provides for running jobs. Scratch is typically per-job or purged on a schedule — it is *not* durable. "Job-scoped scratch" means a directory the scheduler creates for one job and reclaims when it ends; this is where Compose-style writable state has to live on HPC.
+: Fast, temporary filesystem storage a center provides for running jobs. Scratch is typically per-job or purged on a schedule. It is *not* durable. "Job-scoped scratch" means a directory the scheduler creates for one job and reclaims when it ends; this is where Compose-style writable state has to live on HPC.
 
 **loopback**
-: The network address `127.0.0.1` (localhost) — reachable only from the same machine. On a shared compute node, services bind loopback so they are not exposed to other users' jobs; a user reaches a loopback service over an SSH tunnel rather than a published port.
+: The network address `127.0.0.1` (localhost), reachable only from the same machine. On a shared compute node, services bind loopback so they are not exposed to other users' jobs; a user reaches a loopback service over an SSH tunnel rather than a published port.
 
 **SSH tunnel**
 : A way to reach a port on a compute node (typically bound to loopback) by forwarding it through the login node over SSH. This is how a dashboard running on a compute node is viewed from a laptop, since compute nodes are usually not directly addressable.
@@ -77,7 +77,7 @@ This glossary defines the terms that appear in the [Scheduler as Orchestrator](/
 : Data passed to a workflow as plain values (JSON), never evaluated as code or shell. Inert inputs are a security property: they cannot inject commands even if malformed, because the workflow reads them as data, not as instructions.
 
 **checksum (SHA-256)**
-: A short fingerprint of a file's contents that changes if even one byte differs. The workflow verifies image and input checksums before launching so that the evidence can prove *which exact* image and input ran — not just "an image."
+: A short fingerprint of a file's contents that changes if even one byte differs. The workflow verifies image and input checksums before launching so that the evidence can prove *which exact* image and input ran, not just "an image."
 
 **success marker**
 : A file the workflow writes *only* after every invariant (result count, schema, ordering) passes. Its presence is the machine-readable success signal; its absence after a nonzero exit is the failure signal. This replaces "the container reported healthy" as the definition of success.
