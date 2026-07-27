@@ -116,15 +116,29 @@ export function validatePolicyData(
 }
 
 function walk(root: string, directory = root): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const absolute = join(directory, entry.name);
-    const path = relative(root, absolute).replaceAll('\\', '/');
-    if (path === '.DS_Store' || path.includes('/node_modules/') || path.includes('/.astro/') || ignoredPrefixes.some((prefix) => `${path}/`.startsWith(prefix))) continue;
-    if (entry.isDirectory()) files.push(...walk(root, absolute));
-    else if (entry.isFile() || entry.isSymbolicLink()) files.push(path);
+  // Use git ls-files so only tracked files are validated (not untracked WIP).
+  try {
+    const { execSync } = require('node:child_process');
+    const tracked = execSync('git ls-files', { cwd: root, encoding: 'utf8' })
+      .trim().split('\n').filter(Boolean);
+    return tracked.filter((path) =>
+      path !== '.DS_Store'
+      && !path.includes('/node_modules/')
+      && !path.includes('/.astro/')
+      && !ignoredPrefixes.some((prefix) => `${path}/`.startsWith(prefix))
+    ).sort();
+  } catch {
+    // Fallback to filesystem walk if git is unavailable
+    const files: string[] = [];
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const absolute = join(directory, entry.name);
+      const path = relative(root, absolute).replaceAll('\\', '/');
+      if (path === '.DS_Store' || path.includes('/node_modules/') || path.includes('/.astro/') || ignoredPrefixes.some((prefix) => `${path}/`.startsWith(prefix))) continue;
+      if (entry.isDirectory()) files.push(...walk(root, absolute));
+      else if (entry.isFile() || entry.isSymbolicLink()) files.push(path);
+    }
+    return files.sort();
   }
-  return files.sort();
 }
 
 export function validateRepositoryDeclarations(root: string): string[] {
