@@ -177,9 +177,6 @@ pre {
   tab-size: 2;
 }
 pre code { overflow-wrap: normal; word-break: normal; }
-/* Shiki github-dark comment color #6A737D fails WCAG AA on #24292e (3.05:1).
-   Override to #8B949E (4.77:1). Inline style needs !important to win. */
-.astro-code span[style*="6A737D"] { color: #8B949E !important; }
 
 .table-overflow {
   position: relative;

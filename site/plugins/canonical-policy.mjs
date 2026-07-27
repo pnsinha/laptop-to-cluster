@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const origin = 'https://laptop-to-cluster.org';
@@ -16,6 +16,11 @@ export default function canonicalPolicy() {
       if (/\.html$/.test(file)) {
         const discovery = content.match(/<(?:link[^>]+rel="canonical"|meta[^>]+property="og:url")[^>]*>/g) ?? [];
         if (discovery.some((tag) => forbidden.test(tag) || !tag.includes(origin))) throw new Error(`${file}: canonical or Open Graph URL is not apex-only`);
+        // Replace Shiki's github-dark comment color inline so axe-core sees an
+        // accessible contrast without relying on CSS !important specificity.
+        if (content.includes('#6A737D')) {
+          writeFileSync(file, content.replaceAll('#6A737D', '#8B949E'));
+        }
       }
     }
   } } };
