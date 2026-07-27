@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import picomatch from 'picomatch';
 import { parse } from 'yaml';
@@ -118,7 +119,6 @@ export function validatePolicyData(
 function walk(root: string, directory = root): string[] {
   // Use git ls-files so only tracked files are validated (not untracked WIP).
   try {
-    const { execSync } = require('node:child_process');
     const tracked = execSync('git ls-files', { cwd: root, encoding: 'utf8' })
       .trim().split('\n').filter(Boolean);
     return tracked.filter((path) =>
