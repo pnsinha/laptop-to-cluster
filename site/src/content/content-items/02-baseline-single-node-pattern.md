@@ -43,6 +43,35 @@ completion_evidence: { id: m1-module-2-publication, path: evidence/README.md, in
 ## Concepts
 One allocation contains one coordinator and a bounded worker pool. The launcher creates job-scoped storage, starts the coordinator on loopback, waits for semantic readiness, starts workers only after readiness, waits for completion, and runs a result verifier. Process startup alone is not success.
 
+### The orchestration skeleton
+The runnable `baseline.sbatch` adds integrity checks (image and input SHA-256 verification), bounded cleanup, and machine-readable diagnostics. Stripped to just the Compose-to-HPC translation, the whole pattern is five steps:
+
+```bash
+# 1. Job-scoped storage        — replaces Compose's named volume
+RUNTIME_DIR="$SCRATCH/bssw-$SLURM_JOB_ID"
+mkdir -p "$RUNTIME_DIR"/{results,logs}
+
+# 2. Coordinator               — the long-running service, on loopback
+srun --exclusive apptainer exec --bind "$RUNTIME_DIR:/work" baseline.sif \
+  python3 /opt/bssw/bin/coordinator.py --input /work/input.json &
+
+# 3. Readiness gate            — the depends_on + healthcheck Compose has no scheduler equivalent for
+until [ -s "$RUNTIME_DIR/endpoint.json" ]; do sleep 0.05; done
+apptainer exec baseline.sif python3 /opt/bssw/bin/readiness.py --endpoint "$ENDPOINT"
+
+# 4. Workers                   — only after readiness; each is an exclusive srun step
+for w in $(seq 1 "$WORKER_COUNT"); do
+  srun --exclusive apptainer exec baseline.sif \
+    python3 /opt/bssw/bin/worker.py --endpoint "$ENDPOINT" --worker-id "$w" &
+done
+wait   # workers only — the coordinator runs forever, like a Compose service
+
+# 5. Verify + success marker   — replaces "the container reported healthy"
+apptainer exec baseline.sif python3 /opt/bssw/bin/verify.py --output /work/result.json
+```
+
+Each step maps directly onto a Compose construct it replaces: `named volume` → job-scoped scratch, `service` → background `apptainer exec`, `depends_on` + `healthcheck` → explicit readiness gate, `replicas` → `srun` worker steps, and the container's own health as the success signal → a result verifier that writes a success marker only after every invariant holds. The full script wraps these five steps in checksum verification, signal traps, and stable diagnostic codes; the shape above is what to carry in your head when adapting the pattern to your own stack.
+
 ## Procedure
 1. Read the immutable workflow README and verify its recorded digest before using it. Do not substitute a branch link for the released reference.
 2. Set local values for account/queue, wall time, CPU and memory requests, runtime module, image location and digest, writable scratch root, worker count, task count, and readiness timeout. Keep requested values within the documented workflow bounds.
