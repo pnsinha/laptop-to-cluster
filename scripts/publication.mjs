@@ -11,6 +11,172 @@ export const REDIRECT_HOSTS = Object.freeze([
 ]);
 const FORBIDDEN_ORIGIN = /https:\/\/(?:www\.laptop-to-cluster\.org|laptoptocluster\.org|laptop-to-cluster\.pnsinha\.com|[^/\s"'<>]+\.pages\.dev)/i;
 const SHA256 = /^[a-f0-9]{64}$/;
+const COMPOSITION_PROFILES = new Set([
+  'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start', 'diagnostic',
+  'milestone', 'release', 'about', 'support', 'accessibility', 'applicability',
+]);
+const STANDARD_PROJECTION_CONSUMER = Object.freeze({
+  landing: 'landing',
+  'learning-runnable': 'runnable-module',
+  milestone: 'milestone',
+  release: 'release',
+});
+const CANONICAL_ONLY_PATTERN = /<dt>Submission ID<\/dt>|<dt>Container (?:image )?digest<\/dt>|<h2[^>]*>Result checks<\/h2>|<h2[^>]*>Evidence and integrity<\/h2>|<h2[^>]*>Provenance<\/h2>|sha256:[a-f0-9]{64}/i;
+
+const occurrences = (text, pattern) => text.match(pattern)?.length ?? 0;
+const stripTags = (value = '') => value.replace(/<[^>]+>/g, '').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').trim();
+const standardProjectionBlocks = (html) => html.match(/<section class="applicability-projection"[\s\S]*?<\/section>/g) ?? [];
+const diagnosticProjectionBlocks = (html) => html.match(/<aside class="diagnostic-applicability"[\s\S]*?<\/aside>/g) ?? [];
+const definitionValue = (html, label) => stripTags(html.match(new RegExp(`<dt>${label}<\\/dt><dd>([\\s\\S]*?)<\\/dd>`, 'i'))?.[1]);
+const sectionList = (html, heading) => [...(html.match(new RegExp(`<h2[^>]*>${heading}<\\/h2><ul>([\\s\\S]*?)<\\/ul>`, 'i'))?.[1] ?? '').matchAll(/<li>([\s\S]*?)<\/li>/g)].map((match) => stripTags(match[1]));
+
+export function validatePageComposition(source, html) {
+  const errors = [];
+  const profile = html.match(/data-composition-profile="([^"]+)"/)?.[1];
+  if (!profile || !COMPOSITION_PROFILES.has(profile)) {
+    errors.push(diagnostic(source, 'composition', 'COMPOSITION-PROFILE', `known validated composition profile is required; received ${profile ?? '<missing>'}`));
+    return errors;
+  }
+
+  const standard = standardProjectionBlocks(html);
+  const diagnostics = diagnosticProjectionBlocks(html);
+  const expectedConsumer = STANDARD_PROJECTION_CONSUMER[profile];
+  if (expectedConsumer && standard.length !== 1) {
+    errors.push(diagnostic(source, 'applicability', 'APPLICABILITY-OWNERSHIP', `profile ${profile} requires exactly one generated projection`));
+  }
+  if (!expectedConsumer && standard.length !== 0) {
+    errors.push(diagnostic(source, 'applicability', 'APPLICABILITY-OWNERSHIP', `profile ${profile} forbids a standard applicability projection`));
+  }
+  if (profile === 'diagnostic') {
+    if (diagnostics.length > 1) errors.push(diagnostic(source, 'applicability', 'DIAGNOSTIC-CONTEXT', 'diagnostic profile permits at most one typed context'));
+  } else if (diagnostics.length) {
+    errors.push(diagnostic(source, 'applicability', 'DIAGNOSTIC-CONTEXT', `profile ${profile} forbids diagnostic context`));
+  }
+
+  for (const block of standard) {
+    const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
+    const projectionId = block.match(/data-projection-id="([^"]+)"/)?.[1];
+    const links = [...block.matchAll(/href="(\/applicability\/([^"]+)\/)"/g)];
+    if (!sourceId || projectionId !== `${expectedConsumer}:${sourceId}`) errors.push(diagnostic(source, 'projectionId', 'SOURCE-AGREEMENT', 'projection discriminator must match its profile consumer and source ID'));
+    if (links.length !== 1 || links[0]?.[2] !== sourceId) errors.push(diagnostic(source, 'canonicalLink', 'SOURCE-AGREEMENT', 'exactly one canonical applicability link must match the source ID'));
+    if (occurrences(block, /<p(?:\s|>)/g) !== 3 || occurrences(block, /class="applicability-supplement/g) !== 1) {
+      errors.push(diagnostic(source, 'projection', 'PROJECTION-SHAPE', 'projection requires one tested-scope sentence, one supplement, and one canonical-link paragraph'));
+    }
+    if (CANONICAL_ONLY_PATTERN.test(block)) errors.push(diagnostic(source, 'projection', 'CANONICAL-ONLY', 'concise projection leaked exhaustive applicability detail'));
+  }
+  for (const block of diagnostics) {
+    const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
+    const projectionId = block.match(/data-projection-id="([^"]+)"/)?.[1];
+    const linkId = block.match(/href="\/applicability\/([^"]+)\/"/)?.[1];
+    if (!sourceId || !projectionId?.startsWith('diagnostic:') || linkId !== sourceId) errors.push(diagnostic(source, 'diagnostic', 'SOURCE-AGREEMENT', 'typed diagnostic projection ID, source ID, and canonical link must agree'));
+    if (occurrences(block, /Relevant discriminator:/g) !== 1 || occurrences(block, /(?:environment|scheduler|runtime):/g) !== 1 || CANONICAL_ONLY_PATTERN.test(block)) {
+      errors.push(diagnostic(source, 'diagnostic', 'DIAGNOSTIC-CONTEXT', 'diagnostic context must expose exactly one authorized discriminator and canonical link'));
+    }
+  }
+
+  if (profile === 'applicability') {
+    for (const label of ['Status', 'Environment', 'Environment role', 'Environment scope', 'Scheduler', 'Runtime', 'Workflow revision', 'Container image digest', 'Execution date', 'Validation date', 'Submission ID', 'Terminal result', 'Review after']) {
+      if (!new RegExp(`<dt>${label}<\\/dt>`, 'i').test(html)) errors.push(diagnostic(source, label, 'EXHAUSTIVE-APPLICABILITY', 'canonical applicability field is required'));
+    }
+    for (const heading of ['Result checks', 'Assumptions', 'Limitations', 'Portability boundaries', 'Evidence and integrity', 'Provenance']) {
+      if (!new RegExp(`<h2[^>]*>${heading}<\\/h2>`, 'i').test(html)) errors.push(diagnostic(source, heading, 'EXHAUSTIVE-APPLICABILITY', 'canonical applicability section is required'));
+    }
+  } else if (CANONICAL_ONLY_PATTERN.test(html.replace(standard.join(''), '').replace(diagnostics.join(''), '')) || /class="applicability-record"/.test(html)) {
+    errors.push(diagnostic(source, 'applicability', 'CANONICAL-ONLY', 'exhaustive applicability detail leaked outside its canonical route'));
+  }
+
+  const contentHeader = html.match(/<header class="content-header">([\s\S]*?)<\/header>/)?.[1] ?? '';
+  if (/<dt>|Applicable release|Last reviewed|<strong>(?:Status|Milestone):<\/strong>/i.test(contentHeader)) {
+    errors.push(diagnostic(source, 'contentHeader', 'CONTENT-HEADER', 'routine metadata is forbidden in the direct title and summary header'));
+  }
+  if (profile !== 'support' && /class="support-state/.test(html)) errors.push(diagnostic(source, 'support', 'SUPPORT-STATE', 'support state is allowed only on the support profile'));
+  if (/class="support-state(?![^>]*(?:degraded|unavailable))/.test(html)) errors.push(diagnostic(source, 'support', 'SUPPORT-STATE', 'only an active degraded or unavailable state may render'));
+
+  const details = html.match(/<details[\s\S]*?<\/details>/g) ?? [];
+  if (details.some((block) => /Before you begin|<strong>Warning:<\/strong>|applicability-projection|Unvalidated content/i.test(block))) {
+    errors.push(diagnostic(source, 'visibility', 'CRITICAL-VISIBILITY', 'prerequisites, warnings, validation state, and applicability scope cannot be hidden in a disclosure'));
+  }
+  if (/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>[\s\S]*?(?:Before you begin|<strong>Warning:<\/strong>|applicability-projection)/i.test(html)) {
+    errors.push(diagnostic(source, 'visibility', 'CRITICAL-VISIBILITY', 'critical content cannot be hidden'));
+  }
+
+  if (profile === 'learning-runnable') {
+    const procedure = html.indexOf('<h2 id="procedure">');
+    const projection = html.indexOf('class="applicability-projection"');
+    const warnings = [...html.matchAll(/<strong>Warning:<\/strong>/g)].map(({ index }) => index ?? -1);
+    if (procedure < 0 || projection < 0 || projection > procedure || warnings.length === 0 || warnings.some((index) => index > procedure)) {
+      errors.push(diagnostic(source, 'procedure', 'SAFE-ORDERING', 'applicability, prerequisites, and every critical warning must precede execution'));
+    }
+  }
+  const sources = html.indexOf('class="sources-scope"');
+  if (sources >= 0 && sources < html.lastIndexOf('</article>')) errors.push(diagnostic(source, 'sources', 'SOURCE-ORDERING', 'Sources and scope must follow substantive content'));
+
+  if (profile === 'resources') {
+    const cards = html.match(/<article class="card resource-card">[\s\S]*?<\/article>/g) ?? [];
+    if (!cards.length || cards.some((card) => /resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i.test(card) || occurrences(card, /class="resource-qualifier"/g) > 1)) {
+      errors.push(diagnostic(source, 'cards', 'RESOURCE-COMPOSITION', 'resource cards require a title, summary, and at most one choice-relevant qualifier without routine metadata'));
+    }
+  }
+
+  if (profile === 'landing') {
+    const figure = html.match(/<figure class="workflow-figure">([\s\S]*?)<\/figure>/)?.[1] ?? '';
+    const labels = [...figure.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
+    if (!/<figcaption>[^<]+<\/figcaption>/.test(figure) || !/<ol>/.test(figure)
+      || labels.join('|') !== 'Allocation|Coordinator|Readiness gate|Workers|Verification'
+      || occurrences(figure, /<i aria-hidden="true">/g) !== 4
+      || !/Verification<\/strong><span>[^<]*before success is recorded/.test(figure)) {
+      errors.push(diagnostic(source, 'workflowFigure', 'WORKFLOW-SEMANTICS', 'captioned allocation-to-verification ordered semantics and hidden decorative connectors are required'));
+    }
+  }
+
+  if (/<script\b|client:(?:load|idle|visible|media|only)|<canvas\b|autoplay|<marquee\b/i.test(html)) errors.push(diagnostic(source, 'html', 'TECHNOLOGY-EXCLUSION', 'client islands, scripts, canvas, autoplay, and marquee output are forbidden'));
+  if (/(?:fonts\.(?:googleapis|gstatic)|use\.typekit\.net|<link[^>]+rel="preconnect"[^>]+font)/i.test(html)) errors.push(diagnostic(source, 'html', 'REMOTE-FONT', 'remote font references are forbidden'));
+  return errors;
+}
+
+export function validateProjectionSourceAgreement(source, projectionHtml, canonicalSource, canonicalHtml) {
+  const errors = [];
+  const sourceId = projectionHtml.match(/data-source-id="([^"]+)"/)?.[1];
+  const canonicalId = canonicalHtml.match(/class="applicability-record" data-source-id="([^"]+)"/)?.[1];
+  if (!sourceId || sourceId !== canonicalId || canonicalSource !== `/applicability/${sourceId}/`) {
+    errors.push(diagnostic(source, 'sourceId', 'SOURCE-AGREEMENT', 'projection source ID must resolve to the matching canonical applicability route'));
+    return errors;
+  }
+  const scheduler = definitionValue(canonicalHtml, 'Scheduler').split(' ')[0];
+  const runtime = definitionValue(canonicalHtml, 'Runtime').split(' ')[0];
+  const status = definitionValue(canonicalHtml, 'Status');
+  const environment = definitionValue(canonicalHtml, 'Environment');
+  const expectedScope = `The baseline workflow was ${status === 'validated' ? 'validated' : 'recorded'} on ${environment} with ${scheduler} and ${runtime}.`;
+  const statusText = {
+    failed: 'This recorded run failed; use the linked record before attempting the workflow.',
+    unvalidated: 'This workflow scope is unvalidated; do not treat it as executable evidence.',
+    stale: 'This validation is stale and requires review before reuse.',
+  };
+  const expectedSupplement = statusText[status] ?? sectionList(canonicalHtml, 'Portability boundaries')[0];
+  const linkId = projectionHtml.match(/href="\/applicability\/([^"]+)\/"/)?.[1];
+  if (linkId !== sourceId || !projectionHtml.includes(expectedScope) || !expectedSupplement || !projectionHtml.includes(expectedSupplement)) {
+    errors.push(diagnostic(source, 'projection', 'SOURCE-AGREEMENT', 'projection ID, canonical link, tested scope, or status/boundary supplement is stale'));
+  }
+  return errors;
+}
+
+export function validateFrontendPolicy(manifest, astroConfig, sourceEntries = []) {
+  const errors = [];
+  const expectedDependencies = { '@astrojs/sitemap': '3.7.3', astro: '7.1.3' };
+  if (JSON.stringify(manifest.dependencies ?? {}) !== JSON.stringify(expectedDependencies)) {
+    errors.push(diagnostic('package.json', 'dependencies', 'DEPENDENCY-EXCLUSION', 'production dependencies must remain the pinned Astro and sitemap closed set'));
+  }
+  const integrations = astroConfig.match(/integrations\s*:\s*\[([^\]]*)\]/s)?.[1]?.replace(/\s/g, '');
+  if (!/^sitemap\(\),canonicalPolicy\(\)(?:,accessibleTables\(\))?$/.test(integrations ?? '')) errors.push(diagnostic('site/astro.config.mjs', 'integrations', 'INTEGRATION-EXCLUSION', 'only sitemap and the repository-owned canonical policy and accessible tables integrations are allowed'));
+  if (/ViewTransitions|adapter|server\s*:|session|auth/i.test(astroConfig)) errors.push(diagnostic('site/astro.config.mjs', 'configuration', 'TECHNOLOGY-EXCLUSION', 'view transitions, adapters, server state, sessions, and authentication are forbidden'));
+  for (const { path, text } of sourceEntries) {
+    if (/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net/i.test(text)) errors.push(diagnostic(path, 'font', 'REMOTE-FONT', 'system font stacks only; remote and bundled font declarations are forbidden'));
+    if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax|autoplay|client:(?:load|idle|visible|media|only)|from\s+['"](?:react|vue|svelte|@astrojs\/(?:react|vue|svelte))['"]/i.test(text)) {
+      errors.push(diagnostic(path, 'source', 'TECHNOLOGY-EXCLUSION', 'decorative motion, client islands, and UI frameworks are forbidden'));
+    }
+  }
+  return errors;
+}
 
 export function diagnostic(source, field, check, message) {
   return `${source}:${field} [${check}] ${message}`;
@@ -100,10 +266,9 @@ export function validateBuiltOutput(dist) {
   const errors = [];
   const htmlFiles = filesUnder(dist).filter((file) => file.endsWith('.html'));
   if (!htmlFiles.length) return [diagnostic('site/dist', 'html', 'BUILD-OUTPUT', 'no generated HTML files were found')];
+  const builtPages = htmlFiles.map((file) => ({ file, source: publicPathForFile(dist, file), html: readFileSync(file, 'utf8') }));
   const canonicalUrls = new Set();
-  for (const file of htmlFiles) {
-    const source = publicPathForFile(dist, file);
-    const html = readFileSync(file, 'utf8');
+  for (const { source, html } of builtPages) {
     const canonical = html.match(/<link\s+rel="canonical"\s+href="([^"]+)"/i)?.[1];
     const openGraph = html.match(/<meta\s+property="og:url"\s+content="([^"]+)"/i)?.[1];
     const expected = new URL(source, CANONICAL_ORIGIN).href;
@@ -111,6 +276,7 @@ export function validateBuiltOutput(dist) {
     if (openGraph !== expected) errors.push(diagnostic(source, 'og:url', 'CANONICAL-OUTPUT', `expected ${expected}, received ${openGraph ?? '<missing>'}`));
     if (canonical) canonicalUrls.add(canonical);
     if (FORBIDDEN_ORIGIN.test(html)) errors.push(diagnostic(source, 'html', 'CANONICAL-OUTPUT', 'redirect or pages.dev hostname leaked into built HTML'));
+    errors.push(...validatePageComposition(source, html));
     const links = [...html.matchAll(/\b(?:href|src)="([^"]+)"/g)].map((match) => match[1]);
     for (const href of links) {
       if ((href.startsWith('/') || href.startsWith(CANONICAL_ORIGIN)) && !internalTargetExists(dist, href.replace(CANONICAL_ORIGIN, ''))) {
@@ -118,6 +284,65 @@ export function validateBuiltOutput(dist) {
       }
     }
   }
+
+  const applicabilityById = new Map();
+  for (const page of builtPages.filter(({ html }) => html.includes('data-composition-profile="applicability"'))) {
+    const sourceId = page.html.match(/class="applicability-record" data-source-id="([^"]+)"/)?.[1];
+    if (!sourceId || page.source !== `/applicability/${sourceId}/`) {
+      errors.push(diagnostic(page.source, 'sourceId', 'SOURCE-AGREEMENT', 'canonical applicability route and source ID must agree'));
+      continue;
+    }
+    const scheduler = definitionValue(page.html, 'Scheduler');
+    const runtime = definitionValue(page.html, 'Runtime');
+    applicabilityById.set(sourceId, {
+      sourceId,
+      canonicalSource: page.source,
+      canonicalHtml: page.html,
+      environment: definitionValue(page.html, 'Environment'),
+      status: definitionValue(page.html, 'Status'),
+      schedulerFamily: scheduler.split(' ')[0],
+      schedulerVersion: scheduler.slice(scheduler.indexOf(' ') + 1),
+      runtimeName: runtime.split(' ')[0],
+      runtimeVersion: runtime.slice(runtime.indexOf(' ') + 1),
+      executionDate: definitionValue(page.html, 'Execution date'),
+      validationDate: definitionValue(page.html, 'Validation date'),
+      submissionId: definitionValue(page.html, 'Submission ID'),
+      boundary: sectionList(page.html, 'Portability boundaries')[0],
+      checks: sectionList(page.html, 'Result checks'),
+      evidenceId: stripTags(page.html.match(/<h2[^>]*>Evidence and integrity<\/h2><p><a[^>]*>([^<]+)<\/a>/i)?.[1]),
+      integrity: page.html.match(/sha256:[a-f0-9]{64}/i)?.[0],
+    });
+  }
+  for (const page of builtPages) {
+    for (const block of standardProjectionBlocks(page.html)) {
+      const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
+      const facts = applicabilityById.get(sourceId);
+      if (!facts) {
+        errors.push(diagnostic(page.source, 'sourceId', 'SOURCE-AGREEMENT', `projection references missing canonical applicability source ${sourceId ?? '<missing>'}`));
+        continue;
+      }
+      errors.push(...validateProjectionSourceAgreement(page.source, block, facts.canonicalSource, facts.canonicalHtml));
+    }
+    for (const block of diagnosticProjectionBlocks(page.html)) {
+      const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
+      const facts = applicabilityById.get(sourceId);
+      const permitted = facts && [`environment: ${facts.environment}`, `scheduler: ${facts.schedulerFamily}`, `runtime: ${facts.runtimeName}`].some((value) => block.includes(value));
+      if (!permitted) errors.push(diagnostic(page.source, 'diagnostic', 'SOURCE-AGREEMENT', 'diagnostic discriminator is stale or does not match its canonical source'));
+    }
+  }
+  for (const facts of applicabilityById.values()) {
+    for (const page of builtPages.filter(({ source }) => source !== `/applicability/${facts.sourceId}/`)) {
+      const conciseRemoved = standardProjectionBlocks(page.html).concat(diagnosticProjectionBlocks(page.html))
+        .reduce((text, block) => text.replace(block, ''), page.html);
+      const forbiddenValues = [facts.environment, facts.schedulerVersion, facts.runtimeVersion, facts.executionDate,
+        facts.validationDate, facts.submissionId, facts.evidenceId, facts.integrity, facts.boundary, ...facts.checks]
+        .filter((value) => typeof value === 'string' && value.length > 3);
+      if (forbiddenValues.some((value) => conciseRemoved.includes(value))) {
+        errors.push(diagnostic(page.source, 'applicability', 'SOURCE-DUPLICATION', 'handwritten or canonical-only applicability value appears outside its generated projection'));
+      }
+    }
+  }
+
   for (const name of ['sitemap-index.xml', 'sitemap-0.xml', 'feed.xml', 'url-manifest.json']) {
     const file = join(dist, name);
     if (!existsSync(file)) errors.push(diagnostic(name, 'path', 'DISCOVERY-OUTPUT', 'required file is missing'));
@@ -143,6 +368,20 @@ export function validateBuiltOutput(dist) {
   }
   for (const url of new Set([...canonicalUrls, ...sitemapUrls, ...manifestUrls])) {
     if (!canonicalUrls.has(url) || !sitemapUrls.has(url) || !manifestUrls.has(url)) errors.push(diagnostic(url, 'url', 'DISCOVERY-AGREEMENT', 'canonical, sitemap, and URL manifest disagree'));
+  }
+  for (const file of filesUnder(dist).filter((candidate) => candidate.endsWith('.css'))) {
+    const css = readFileSync(file, 'utf8');
+    const cssPath = relative(dist, file);
+    if (/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net|linear-gradient|radial-gradient|backdrop-filter/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'VISUAL-DEPENDENCY', 'remote or bundled fonts, gradients, textures, and glass effects are forbidden'));
+    if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'MOTION-EXCLUSION', 'decorative animation, transitions, and parallax are forbidden'));
+    if (!/color-scheme:light dark/.test(css) || !/prefers-color-scheme:dark/.test(css)) errors.push(diagnostic(cssPath, 'css', 'COLOR-SCHEME', 'complete light and dark scheme support is required'));
+    for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'border', 'warning']) {
+      if (occurrences(css, new RegExp(`--${token}:`, 'g')) < 2) errors.push(diagnostic(cssPath, `--${token}`, 'SEMANTIC-TOKENS', 'semantic role must be defined in both light and dark schemes'));
+    }
+    if (!/--font-display:ui-serif/.test(css) || !/--font-body:system-ui/.test(css) || !/--font-technical:ui-monospace/.test(css)
+      || !/--text-base:1rem/.test(css) || !/--text-supporting:0?\.875rem/.test(css)) {
+      errors.push(diagnostic(cssPath, 'typography', 'SYSTEM-TYPOGRAPHY', 'system-only serif, sans, and mono roles with 16px/14px minimum sizes are required'));
+    }
   }
   return errors;
 }
@@ -252,10 +491,19 @@ if (invoked) {
   } else if (command === 'policy') {
     const root = resolve(args[0] ?? '.');
     const policy = JSON.parse(readFileSync(join(root, 'infrastructure/cloudflare/hostname-redirects.v1.json'), 'utf8'));
+    const policySourceFiles = [
+      ...filesUnder(join(root, 'site/src')),
+      ...filesUnder(join(root, 'site/plugins')),
+    ].filter((file) => /\.(?:astro|css|mjs|ts)$/.test(file));
+    const packageManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    const astroConfig = readFileSync(join(root, 'site/astro.config.mjs'), 'utf8');
     const errors = [
-      ...validateCanonicalConfig(readFileSync(join(root, 'site/astro.config.mjs'), 'utf8')),
+      ...validateCanonicalConfig(astroConfig),
       ...validateHostnamePolicy(policy),
       ...validateDeploymentWorkflow(readFileSync(join(root, '.github/workflows/publication.yml'), 'utf8')),
+      ...validateFrontendPolicy(packageManifest, astroConfig, policySourceFiles.map((file) => ({
+        path: relative(root, file).replaceAll('\\', '/'), text: readFileSync(file, 'utf8'),
+      }))),
     ];
     for (const file of filesUnder(join(root, 'site/src/content/redirects'))) {
       const text = readFileSync(file, 'utf8');
