@@ -1,4 +1,4 @@
-schemaVersion: 1
+schemaVersion: 2
 id: accessibility-review-v0.1.0
 release: v0.1.0
 reviewer: EXTERNAL_REQUIRED
@@ -13,12 +13,77 @@ automatedEvidence:
     - /guide/baseline-single-node-pattern/
     - /start/
     - /diagnostics/
+    - /diagnostics/bssw-prereq-apptainer/
+    - /applicability/m1-baseline-anvil/
+    - /milestones/1/
     - /releases/v0-1-0/
+    - /about/accessibility/
+    - /about/support/
+    - /about/attribution/
+    - /about/licenses/
+    - /about/glossary/
+    - /about/project/
+presentationLevels:
+  primary: "Direct answer and any prerequisite, safety warning, unvalidated state, tested-scope summary, or reporting action needed to act safely now; never place critical content only in disclosure."
+  supporting: "Outcomes, limitations, status, and related actions presented visibly after the direct answer or task."
+  disclosure: "Noncritical citations or reconstruction explanation in native details/summary that remains available without JavaScript."
+  canonical-only: "Exhaustive applicability, evidence, authority, provenance, and release facts linked to—not copied from—their sole canonical destination."
+editorialHeuristicsPolicy:
+  enforcement: human-review
+  approximateFirstWords: 120
+  buildFailingWordCount: false
+editorialHeuristics:
+  - "The first screen and approximately first 120 rendered words answer the route question."
+  - "Ledes and paragraphs are concise, headings and terminology face the reader, and warnings are explicitly labelled."
+  - "No throat-clearing or internal projection/schema terminology appears in ordinary reader prose."
+canonicalDestinationTrace:
+  - { subject: applicability, destination: /applicability/m1-baseline-anvil/, result: pending, notes: "Trace exact tested configuration, dates, boundaries, checks, and evidence integrity here." }
+  - { subject: evidence, destination: /applicability/m1-baseline-anvil/, result: pending, notes: "Trace complete validation evidence and reconstruction links here; upstream pages retain only generated scope." }
+  - { subject: authority, destination: /about/attribution/, result: pending, notes: "Trace approved authorship, fellowship role, affiliation, funding, sponsorship, and non-endorsement wording here." }
+  - { subject: provenance, destination: /about/licenses/, result: pending, notes: "Trace artifact license coverage and third-party provenance to the canonical license records linked here." }
+  - { subject: release, destination: /releases/v0-1-0/, result: pending, notes: "Trace immutable release identity, classified changes, citation, and reconstruction mechanics here." }
+manualRouteSamples:
+  - { kind: landing, route: /, result: pending }
+  - { kind: resources, route: /resources/, result: pending }
+  - { kind: conceptual-module, route: /guide/scheduler-as-orchestrator/, result: pending }
+  - { kind: runnable-module, route: /guide/baseline-single-node-pattern/, result: pending }
+  - { kind: start, route: /start/, result: pending }
+  - { kind: diagnostics-index, route: /diagnostics/, result: pending }
+  - { kind: diagnostic-detail, route: /diagnostics/bssw-prereq-apptainer/, result: pending }
+  - { kind: applicability, route: /applicability/m1-baseline-anvil/, result: pending }
+  - { kind: milestone, route: /milestones/1/, result: pending }
+  - { kind: release, route: /releases/v0-1-0/, result: pending }
+  - { kind: accessibility, route: /about/accessibility/, result: pending }
+  - { kind: support, route: /about/support/, result: pending }
+  - { kind: attribution, route: /about/attribution/, result: pending }
+  - { kind: licenses, route: /about/licenses/, result: pending }
+  - { kind: glossary, route: /about/glossary/, result: pending }
+  - { kind: not-found, route: /404, result: pending }
+  - { kind: about, route: /about/project/, result: pending }
 checks:
-  - { id: keyboard, result: pending, notes: "Review navigation, filters, disclosures, copy controls, focus order, and visible focus." }
-  - { id: headings-landmarks, result: pending, notes: "Review heading hierarchy and named page landmarks." }
-  - { id: zoom-reflow, result: pending, notes: "Review at 200% zoom and a 320 CSS-pixel viewport without two-dimensional scrolling." }
-  - { id: link-purpose, result: pending, notes: "Review link names in and out of context." }
-  - { id: tables, result: pending, notes: "Review captions, headers, and reading order for data tables." }
-  - { id: alternatives, result: pending, notes: "Review informative and decorative non-text alternatives." }
+  - { id: keyboard, result: pending, notes: "Review skip, navigation, disclosures, actions, cards, breadcrumbs, pager, tables, applicability, and footer focus order without JavaScript." }
+  - { id: headings-landmarks, result: pending, notes: "Review heading hierarchy, source order, named landmarks, and direct first-screen answers." }
+  - { id: zoom-reflow, result: pending, notes: "Review 200% zoom and 320 CSS-pixel reflow, including vertical hero/figure order and bounded technical content." }
+  - { id: link-purpose, result: pending, notes: "Review link names in and out of context and all reporting/recovery routes." }
+  - { id: tables, result: pending, notes: "Review captions, headers, reading order, and local overflow." }
+  - { id: alternatives, result: pending, notes: "Review workflow figure caption/order and all informative/decorative alternatives." }
   - { id: media-captions-transcripts, result: pending, notes: "Confirm captions/transcripts or record not-applicable with rationale." }
+  - { id: light-dark-contrast, result: pending, notes: "Review text, links, focus, one-pixel borders, warnings, status, and figure in forced light and dark schemes." }
+  - { id: visual-hierarchy, result: pending, notes: "Confirm the dark signature shell stays restrained and cyan remains primary interaction while warm sand is limited to secondary editorial annotation in both schemes." }
+  - { id: typography, result: pending, notes: "Confirm system-only display/body/technical stacks and minimum 16px body/control and 14px supporting/technical text." }
+  - { id: static-figure, result: pending, notes: "Confirm the workflow figure communicates allocation through verification in source order, preserves meaning without decorative connectors, and never implies success before verification." }
+  - { id: forced-colors-print, result: pending, notes: "Confirm forced-colors legibility and print-preserved workflow labels, meaning, and order." }
+  - { id: no-javascript, result: pending, notes: "Disable JavaScript and confirm navigation, disclosures, route indexes, primary actions, warnings, applicability scope, and reporting/recovery paths remain available." }
+  - { id: no-decorative-motion, result: pending, notes: "Confirm no autoplay, blinking, typing, parallax, decorative animation, or transition-dependent meaning; review reduced motion." }
+  - { id: canonical-ownership, result: pending, notes: "Trace every relocated requirement-bearing applicability, evidence, authority, provenance, and release fact to the sole destination listed above; verify no canonical-only leakage." }
+  - { id: projection-count, result: pending, notes: "Confirm landing, runnable-module, milestone, and release pages each have no more than one generated tested-scope projection; resources, conceptual-module, start, accessibility, support, attribution, licenses, glossary, and about have none; diagnostic context is present only for a narrowly justified typed failure relationship." }
+  - { id: pre-execution-warnings, result: pending, notes: "Confirm critical prerequisites, assumptions, labelled warnings, unvalidated state, boundaries needed for safe action, and recovery links stay visible before execution and outside collapsed disclosures." }
+  - { id: validation-source-agreement, result: pending, notes: "Confirm no handwritten tested-on, environment, version, date, job, evidence, hash, check, integrity, or provenance claim can drift from the applicability source." }
+  - { id: editorial-concision, result: pending, notes: "Apply first-screen answers, approximately first 120 rendered words, concise ledes/paragraphs, reader-facing terminology, labelled warnings, and absence of throat-clearing as human heuristics only—not build-failing word counts." }
+  - { id: mockup-direction, result: pending, notes: "Finalized 'less is more' surface treatment: flat canvas/surface tokens, no raised panels or card shadows, border-only containment, accent-line applicability and diagnostic markers. Visual separation through whitespace and thin borders rather than elevation." }
+  - { id: surface-inventory, result: pending, notes: "canvas (#f4f1e8 light / #071419 dark), surface (#fffdf7 / #0d2027), raised (#e9f1ef / #122a32 — token preserved for future use, not applied to cards), shell (#071419 / #050e12). No raised panels, box-shadows, or gradient backgrounds on content containers." }
+  - { id: type-rhythm-roles, result: pending, notes: "System serif (ui-serif) for display/headings, system sans (system-ui) for body, system mono (ui-monospace) for technical. Body 1rem/1.55 lh, supporting 0.875rem, headings line-height 1.15. No custom font loading." }
+  - { id: exact-public-wording, result: pending, notes: "Funded title: 'Bridging the Laptop-to-Cluster Gap'. Two-line identity: 'laptop → cluster' / 'multi-service stacks under the scheduler'. Nav label: 'Troubleshooting' at /diagnostics/. Release: 'v0.1.0'. Footer: 'ParaTools, Inc.' attribution clause." }
+  - { id: status-severity, result: pending, notes: "Blocking danger (--danger) for failed/unsafe/unavailable states. Caution (--warning) for unvalidated/stale/superseded/draft/archived states. Neutral for healthy/published (no panel, just inline action). Text labels always present independent of color." }
+  - { id: meaningful-arrow-exceptions, result: pending, notes: "ModulePager prev/next arrows (← →) and external-link indicator (↗) are meaningful navigation cues. Workflow ↓ connectors are decorative (aria-hidden='true'). No other arrow/icon conveys meaning without text." }
+  - { id: whitespace-balance-hierarchy, result: pending, notes: "Manual visual review: consistent flow-section spacing between major sections, flow-body between paragraphs, flow-tight between heading and content. Hero grid balanced at 1.15fr/0.85fr. No cramped or overly spacious regions. Heading hierarchy clear through size, weight, and font-family contrast." }
