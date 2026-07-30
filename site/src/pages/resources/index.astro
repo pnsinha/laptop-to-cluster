@@ -14,6 +14,6 @@ const qualifier = (item: typeof entries[number]) => item.artifact_type === 'lear
 <BaseLayout title="Resources" description="Complete no-JavaScript index of published Laptop-to-Cluster resources." profile="resources">
   <header class="content-header"><h1>Choose what you need</h1><p class="lede">Start with a question, then follow an ordinary link. The complete index works without JavaScript.</p></header>
   {groups.map((group) => <section class="resource-group" aria-labelledby={`resource-${group.id}`}><h2 id={`resource-${group.id}`}>{group.title}</h2><p>{group.question}</p><ul class="resource-index">
-    {group.items.map((item) => <li><h3><a href={canonicalPath(item)}>{item.title}</a></h3><p>{item.summary}</p>{qualifier(item) && <p class="resource-qualifier">{qualifier(item)}</p>}</li>)}
+    {group.items.map((item) => <li><article class="card resource-card"><h3><a href={canonicalPath(item)}>{item.title}</a></h3><p>{item.summary}</p>{qualifier(item) && <p class="resource-qualifier">{qualifier(item)}</p>}</article></li>)}
   </ul></section>)}
 </BaseLayout>

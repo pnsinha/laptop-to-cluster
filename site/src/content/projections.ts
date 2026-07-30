@@ -327,7 +327,7 @@ export function projectApplicabilityForItem(
   const allowed = consumer === 'runnable-module'
     ? item.artifact_type === 'learning-module' && item.module_type !== 'conceptual'
     : item.artifact_type === consumer;
-  if (!allowed) throw new RegistryValidationError([`${item.id}: ${consumer} applicability is not allowed for ${compositionProfileFor(item)}`]);
+  if (!allowed) throw new RegistryValidationError([`${item.id}: ${consumer} applicability is not allowed for ${item.artifact_type}`]);
   if (item.applicability_records.length === 0) return undefined;
   if (item.applicability_records.length !== 1) throw new RegistryValidationError([`${item.id}: exactly one applicability record is allowed`]);
   const record = records.find(({ id }) => id === item.applicability_records[0]);

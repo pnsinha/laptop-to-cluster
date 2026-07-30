@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
+import WorkflowFigure from '../components/WorkflowFigure.astro';
 import { projectLandingPage } from '../content/projections';
 const content = await getCollection('contentItems');
 const applicability = await getCollection('applicability');
@@ -17,16 +18,7 @@ const landing = projectLandingPage(content.map(({ data }) => data), applicabilit
         <a class="hero__secondary-link" href={landing.learning_path[0].url}>Understand the model</a>
       </div>
     </div>
-    <figure class="workflow-figure">
-      <figcaption>One allocation, five ordered responsibilities</figcaption>
-      <ol>
-        <li><strong>Allocation</strong><span>Slurm grants one node and job-scoped resources.</span></li><i aria-hidden="true">↓</i>
-        <li><strong>Coordinator</strong><span>The coordinating service starts on loopback inside the allocation.</span></li><i aria-hidden="true">↓</i>
-        <li><strong>Readiness gate</strong><span>A semantic check must pass before workers start.</span></li><i aria-hidden="true">↓</i>
-        <li><strong>Workers</strong><span>One or more exclusive worker steps start only after readiness.</span></li><i aria-hidden="true">↓</i>
-        <li><strong>Verification</strong><span>Result invariants are checked before success is recorded.</span></li>
-      </ol>
-    </figure>
+    <WorkflowFigure />
   </section>
 
   {landing.applicability_projection ? <ApplicabilityProjectionView projection={landing.applicability_projection} /> : <p class="notice notice--info">{landing.validation_unavailable_reason}</p>}

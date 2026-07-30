@@ -1,10 +1,14 @@
 <figure class="workflow-figure">
   <figcaption>One allocation, five ordered responsibilities</figcaption>
   <ol>
-    <li><strong>Allocation</strong><span>Slurm grants one node and job-scoped resources.</span></li>
-    <li><strong>Coordinator</strong><span>The service starts on loopback inside the allocation.</span></li>
-    <li><strong>Readiness gate</strong><span>A semantic check must pass before workers start.</span></li>
-    <li><strong>Workers</strong><span>Exclusive worker steps start only after readiness.</span></li>
-    <li><strong>Verification</strong><span>Result invariants are checked before success is recorded.</span></li>
+    <li><strong>Allocation</strong> <span>Slurm grants one node and job-scoped resources.</span></li>
+    <i aria-hidden="true">↓</i>
+    <li><strong>Coordinator</strong> <span>The coordinating service starts on loopback inside the allocation.</span></li>
+    <i aria-hidden="true">↓</i>
+    <li class="workflow-figure__gate"><strong>Readiness gate</strong> <span>A semantic check must pass before workers start.</span></li>
+    <i aria-hidden="true">↓</i>
+    <li><strong>Workers</strong> <span>One or more exclusive worker steps start only after readiness.</span></li>
+    <i aria-hidden="true">↓</i>
+    <li><strong>Verification</strong> <span>Result invariants are checked before success is recorded.</span></li>
   </ol>
 </figure>

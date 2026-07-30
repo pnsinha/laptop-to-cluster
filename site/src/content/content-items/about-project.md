@@ -25,7 +25,7 @@ Milestone 1 covers a bounded, single-node Slurm and Apptainer baseline. It does 
 The fellowship Statement of Work controls project deliverables and dates. Official BSSw program material provides program context. Prior-fellow examples inform project-adopted practices but do not create BSSw Fellowship Program obligations. Implementation choices are project decisions.
 
 ## What comes next
-In progress for Milestone 2: a container-union pattern in which a GPU container reuses a CPU container's prebuilt dependency tree inside one allocation, instead of rebuilding shared packages. Currently explored on a single Linux workstation; concurrent execution under a scheduler is not yet validated.
+In progress for Milestone 2: a container-union pattern. A GPU container reuses a CPU container's prebuilt dependency tree inside one allocation, instead of rebuilding shared packages. Currently explored on a single Linux workstation; concurrent execution under a scheduler is not yet validated.
 
 ## Start using the guide
 Read [Scheduler as Orchestrator](/guide/scheduler-as-orchestrator/), follow [Getting started](/start/), or inspect the public [companion repository](https://github.com/pnsinha/laptop-to-cluster).

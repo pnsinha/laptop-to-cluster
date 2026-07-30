@@ -12,7 +12,7 @@ const isEscalated = projection.supplement.kind === 'status';
 ) : (
   <section class="applicability-projection" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
     <p><strong>Tested scope:</strong> {projection.testedScope}</p>
-    <p class="applicability-supplement">{projection.supplement.text}</p>
+    <p class="applicability-supplement"><strong>Boundary:</strong> {projection.supplement.text}</p>
     <p><a href={projection.canonicalPath}>View applicability record.</a></p>
   </section>
 )}
