@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const CANONICAL_ORIGIN = 'https://laptop-to-cluster.org';
@@ -13,7 +13,7 @@ const FORBIDDEN_ORIGIN = /https:\/\/(?:www\.laptop-to-cluster\.org|laptoptoclust
 const SHA256 = /^[a-f0-9]{64}$/;
 const COMPOSITION_PROFILES = new Set([
   'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start', 'diagnostic',
-  'milestone', 'release', 'about', 'support', 'accessibility', 'applicability',
+  'milestone', 'release', 'about', 'support', 'accessibility', 'applicability', 'not-found',
 ]);
 const STANDARD_PROJECTION_CONSUMER = Object.freeze({
   landing: 'landing',
@@ -124,7 +124,7 @@ export function validatePageComposition(source, html) {
     if (!/<figcaption>[^<]+<\/figcaption>/.test(figure) || !/<ol>/.test(figure)
       || labels.join('|') !== 'Allocation|Coordinator|Readiness gate|Workers|Verification'
       || occurrences(figure, /<i aria-hidden="true">/g) !== 4
-      || !/Verification<\/strong><span>[^<]*before success is recorded/.test(figure)) {
+      || !/Verification<\/strong>\s?<span>[^<]*before success is recorded/.test(figure)) {
       errors.push(diagnostic(source, 'workflowFigure', 'WORKFLOW-SEMANTICS', 'captioned allocation-to-verification ordered semantics and hidden decorative connectors are required'));
     }
   }
@@ -274,7 +274,7 @@ export function validateBuiltOutput(dist) {
     const expected = new URL(source, CANONICAL_ORIGIN).href;
     if (canonical !== expected) errors.push(diagnostic(source, 'canonical', 'CANONICAL-OUTPUT', `expected ${expected}, received ${canonical ?? '<missing>'}`));
     if (openGraph !== expected) errors.push(diagnostic(source, 'og:url', 'CANONICAL-OUTPUT', `expected ${expected}, received ${openGraph ?? '<missing>'}`));
-    if (canonical) canonicalUrls.add(canonical);
+    if (canonical && source !== '/404.html') canonicalUrls.add(canonical);
     if (FORBIDDEN_ORIGIN.test(html)) errors.push(diagnostic(source, 'html', 'CANONICAL-OUTPUT', 'redirect or pages.dev hostname leaked into built HTML'));
     errors.push(...validatePageComposition(source, html));
     const links = [...html.matchAll(/\b(?:href|src)="([^"]+)"/g)].map((match) => match[1]);
