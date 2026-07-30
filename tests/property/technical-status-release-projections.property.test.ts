@@ -120,9 +120,19 @@ const releaseCases = fc.uniqueArray(releaseSeed, {
   canonical_origin: 'https://laptop-to-cluster.org', evidence_ids: [`evidence-${index}`], changes,
 })));
 
+// Mirror the projection's documented entry shape exactly. The `class` discriminator
+// is intentionally omitted here because the projection represents it as the map key
+// (classes.added, classes.changed, ...), not as a field on each entry. Spreading the
+// parsed change object would leak `class` and diverge from ReleaseChangeProjection.
 const normalizeChange = (change: {
   item_id: string; reason?: string; affected_environments: string[]; migration?: string; material: boolean;
-}) => ({ ...change, affected_environments: [...change.affected_environments].sort() });
+}) => ({
+  item_id: change.item_id,
+  reason: change.reason,
+  affected_environments: [...change.affected_environments].sort(),
+  migration: change.migration,
+  material: change.material,
+});
 
 describe('Property 16: Technical status and release projections are traceable', () => {
   it('preserves technical status/applicability and classifies each release change exactly once', () => {

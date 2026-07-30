@@ -14,7 +14,7 @@ categories:
   - id: configuration
     description: Build and package configuration
     license: Apache-2.0
-    paths: [.gitignore, package.json, package-lock.json, tsconfig.json, vitest.config.ts, site/astro.config.mjs, site/tsconfig.json, infrastructure/**]
+    paths: [.gitignore, package.json, package-lock.json, tsconfig.json, vitest.config.ts, vitest.integration.config.ts, vitest.property.config.ts, site/astro.config.mjs, site/tsconfig.json, infrastructure/**]
   - id: ci-automation
     description: Continuous-integration workflows
     license: Apache-2.0

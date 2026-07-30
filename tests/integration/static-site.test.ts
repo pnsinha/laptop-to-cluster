@@ -233,7 +233,7 @@ describe('static accessibility, metadata, and dependency gates', () => {
     const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
     expect(pkg.dependencies).toEqual({ '@astrojs/sitemap': '3.7.3', astro: '7.1.3' });
     const config = readFileSync(resolve(root, 'site/astro.config.mjs'), 'utf8');
-    expect(config.match(/integrations:\s*\[([^\]]+)\]/)?.[1].replace(/\s/g, '')).toBe('sitemap(),canonicalPolicy()');
+    expect(config.match(/integrations:\s*\[([^\]]+)\]/)?.[1].replace(/\s/g, '')).toBe('sitemap(),canonicalPolicy(),accessibleTables()');
     expect(config).not.toMatch(/ViewTransitions|adapter|server\s*:|session|auth/i);
   });
 

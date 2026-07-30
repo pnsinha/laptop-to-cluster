@@ -3,6 +3,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { beforeAll, describe, expect, it } from 'vitest';
 import BaseLayout from '../../site/src/layouts/BaseLayout.astro';
 import { attributionSchema } from '../../site/src/content/schema.js';
+import { COMPOSITION_PROFILES } from '../../site/src/content/projections.js';
 
 let container: AstroContainer;
 beforeAll(async () => { container = await AstroContainer.create(); });
@@ -15,7 +16,7 @@ const publicPage = fc.record({
   title: phrase,
   description: phrase,
   canonicalPath: word.map((slug) => `/guide/${slug}/`),
-  profile: fc.constant('learning-conceptual' as const),
+  profile: fc.constantFrom(...COMPOSITION_PROFILES),
 });
 const contributorRecord = fc.record({
   name: phrase,
