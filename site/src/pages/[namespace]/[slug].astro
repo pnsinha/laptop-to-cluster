@@ -3,11 +3,14 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import LearningModuleLayout from '../../layouts/LearningModuleLayout.astro';
 import ContentHeader from '../../components/ContentHeader.astro';
-import AuthorityNote from '../../components/AuthorityNote.astro';
+import ApplicabilityProjectionView from '../../components/ApplicabilityProjection.astro';
 import Attribution from '../../components/Attribution.astro';
+import DiagnosticApplicabilityContextView from '../../components/DiagnosticApplicabilityContext.astro';
+import SectionNav from '../../components/SectionNav.astro';
+import SourcesAndScope from '../../components/SourcesAndScope.astro';
 import SupportState from '../../components/SupportState.astro';
-import TechnicalApplicability from '../../components/TechnicalApplicability.astro';
 import { canonicalPath } from '../../content/registry';
+import { assertCompositionProfile, compositionProfileFor, projectApplicabilityForItem, projectDiagnosticApplicabilityContext } from '../../content/projections';
 export async function getStaticPaths() {
   const entries = await getCollection('contentItems', ({ data }) => ['published', 'superseded', 'archived'].includes(data.status) && data.route_namespace !== 'start');
   return entries.map((entry) => { const [namespace, slug] = canonicalPath(entry.data).split('/').filter(Boolean); return { params: { namespace, slug }, props: { entry } }; });
@@ -15,9 +18,49 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const item = entry.data;
-const applicabilityEntries = await getCollection('applicability');
-const applicabilityById = new Map(applicabilityEntries.map(({ data }) => [data.id, data]));
-const applicability = item.applicability_records.flatMap((id) => applicabilityById.get(id) ?? []);
+const profile = compositionProfileFor(item);
+assertCompositionProfile(item, profile);
+const applicability = (await getCollection('applicability')).map(({ data }) => data);
+const projection = item.artifact_type === 'milestone' ? projectApplicabilityForItem(item, applicability, 'milestone')
+  : item.artifact_type === 'release' ? projectApplicabilityForItem(item, applicability, 'release') : undefined;
+const diagnosticContext = item.artifact_type === 'diagnostic' ? projectDiagnosticApplicabilityContext(item, applicability) : undefined;
+const recordDateLabel = item.artifact_type === 'milestone' ? 'Due' : 'Released';
+const recordStatus = item.status[0].toUpperCase() + item.status.slice(1);
+const currentPath = Astro.url.pathname;
+
+/* Section navigation for About subsections */
+const aboutNavItems = [
+  { label: 'Project', href: '/about/project/' },
+  { label: 'Attribution', href: '/about/attribution/' },
+  { label: 'Licenses', href: '/about/licenses/' },
+  { label: 'Accessibility', href: '/about/accessibility/' },
+  { label: 'Support', href: '/about/support/' },
+  { label: 'Glossary', href: '/about/glossary/' },
+];
+
+/* Section navigation for Milestone pages (only when multiple milestones exist) */
+const allEntries = await getCollection('contentItems', ({ data }) =>
+  ['published', 'superseded', 'archived'].includes(data.status) && data.artifact_type === 'milestone');
+const milestoneNavItems = allEntries
+  .sort((a, b) => a.data.milestone - b.data.milestone)
+  .map(({ data }) => ({
+    label: `Milestone ${data.milestone}`,
+    href: canonicalPath(data),
+  }));
+const showMilestoneNav = item.artifact_type === 'milestone' && milestoneNavItems.length > 1;
+const showAboutNav = item.route_namespace === 'about';
 ---
 {item.artifact_type === 'learning-module' ? <LearningModuleLayout {item}><Content /></LearningModuleLayout> :
-<BaseLayout title={item.title} description={item.summary}><ContentHeader {item} /><TechnicalApplicability records={applicability} headingId="release-applicability" /><AuthorityNote references={item.authority} /><article><Content /></article>{item.artifact_type === 'attribution' && <Attribution />}{item.artifact_type === 'support' && <SupportState />}</BaseLayout>}
+<BaseLayout title={item.title} description={item.summary} {profile}>
+  <ContentHeader {item} />
+  {showAboutNav && <SectionNav items={aboutNavItems} currentPath={currentPath} label="About sections" />}
+  {showMilestoneNav && <SectionNav items={milestoneNavItems} currentPath={currentPath} label="Milestones" />}
+  {item.artifact_type === 'diagnostic' && <p class="diagnostic-code"><strong>Diagnostic code:</strong> <code>{item.id}</code></p>}
+  {['milestone', 'release'].includes(item.artifact_type) && <p class="record-context"><strong>Status:</strong> {recordStatus} · <strong>{recordDateLabel}:</strong> <time datetime={item.publication_date}>{item.publication_date}</time></p>}
+  {projection && <ApplicabilityProjectionView {projection} />}
+  {item.artifact_type === 'attribution' && <Attribution />}
+  <article><Content /></article>
+  {diagnosticContext && <DiagnosticApplicabilityContextView context={diagnosticContext} />}
+  {item.artifact_type === 'support' && <SupportState />}
+  <SourcesAndScope references={item.authority} />
+</BaseLayout>}

@@ -4,13 +4,11 @@ const { item } = Astro.props as { item: ContentItem };
 const human = (value: string | number) => String(value).replaceAll('-', ' ');
 ---
 <header class="content-header">
-  <p class="eyebrow">{human(item.artifact_type)} · Milestone {item.milestone}</p>
   <h1>{item.title}</h1>
   <p class="lede">{item.summary}</p>
-  <dl class="status-list">
-    <div><dt>Status</dt><dd><span class="status-marker" aria-hidden="true">●</span> {human(item.status)}</dd></div>
-    {item.applicable_release && <div><dt>Applicable release</dt><dd>{item.applicable_release}</dd></div>}
-    {item.last_reviewed && <div><dt>Last reviewed</dt><dd><time datetime={item.last_reviewed}>{item.last_reviewed}</time></dd></div>}
-    {item.artifact_type === 'learning-module' && item.validation_status && <div><dt>Validation</dt><dd>{human(item.validation_status)}{item.validation_date && ` (${item.validation_date})`}</dd></div>}
-  </dl>
+  {item.status === 'draft' && <aside class="notice" role="note"><strong>Draft:</strong> This page is not yet published guidance.</aside>}
+  {item.status === 'superseded' && <aside class="notice" role="note"><strong>Superseded:</strong> Use the identified successor for current guidance.</aside>}
+  {item.status === 'archived' && <aside class="notice" role="note"><strong>Archived:</strong> This page is retained for durable reference.</aside>}
+  {item.artifact_type === 'learning-module' && ['failed', 'unvalidated', 'stale'].includes(item.validation_status ?? '') &&
+    <aside class="notice" role="note"><strong>{human(item.validation_status!)}:</strong> The affected runnable guidance must not be treated as currently validated.</aside>}
 </header>

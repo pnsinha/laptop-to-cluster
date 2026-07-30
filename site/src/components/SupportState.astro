@@ -1,9 +1,30 @@
 ---
 import { PROJECT } from '../content/wording';
-const { state = 'available', artifact = 'Public site and companion repository', scope = 'All published guidance and reporting channels', recovery = 'Report a problem through the public issue tracker.' } = Astro.props;
+type DegradedState = 'degraded' | 'unavailable';
+const { state, artifact, scope, recovery, validatedAt } = Astro.props as {
+  state?: DegradedState;
+  artifact?: string;
+  scope?: string;
+  recovery?: string;
+  validatedAt?: string;
+};
+const active = state !== undefined;
+if (active && !['degraded', 'unavailable'].includes(state)) {
+  throw new Error(`Unknown support state: ${String(state)}`);
+}
+if (active) {
+  const missing = Object.entries({ artifact, scope, recovery, validatedAt })
+    .filter(([, value]) => typeof value !== 'string' || value.trim() === '')
+    .map(([name]) => name);
+  if (missing.length) throw new Error(`Active support state requires ${missing.join(', ')}`);
+}
 ---
-<aside class:list={['support-state', state]} role="status" aria-live="polite">
+{active && <aside class:list={['support-state', state]} role="status" aria-live="polite">
   <h2>Public artifact status: {state}</h2>
-  <dl><div><dt>Artifact</dt><dd>{artifact}</dd></div><div><dt>Affected scope</dt><dd>{scope}</dd></div></dl>
+  <dl>
+    <div><dt>Artifact</dt><dd>{artifact}</dd></div>
+    <div><dt>Affected scope</dt><dd>{scope}</dd></div>
+    <div><dt>Validated</dt><dd><time datetime={validatedAt}>{validatedAt}</time></dd></div>
+  </dl>
   <p>{recovery} <a href={PROJECT.issues}>Open an issue</a>; if that channel is unavailable, <a href={PROJECT.contact}>email the maintainer</a>.</p>
-</aside>
+</aside>}

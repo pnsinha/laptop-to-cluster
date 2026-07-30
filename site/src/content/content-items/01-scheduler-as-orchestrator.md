@@ -33,28 +33,29 @@ sow_deliverable_id: M1-MODULE-1
 deliverable_status: complete
 completion_evidence: { id: m1-module-1-publication, path: evidence/README.md, integrity: "sha256:2fb0fd2e84a083ee33564797f69e63d40fc225987ebe94ea41832995713aca6a" }
 ---
-## Concepts
+## Why the scheduler becomes the orchestrator
 
-A multi-service stack (a UI, a database, a queue, GPU-backed workers) is trivial to stand up on a laptop with Docker Compose: one file declares every service, Compose starts them, wires them together, and keeps them running. Ship the same stack to a shared HPC cluster and that mental model breaks in three places at once. There is no Docker daemon, because centers run **rootless** runtimes like Apptainer that launch containers without the privileged daemon Docker relies on. Nothing stays up on its own, because a **batch scheduler** (Slurm, PBS) owns every compute resource and reclaims it the moment a job ends (**reclamation**). And nothing assumes root, so anything that expected to `chown` a directory or bind a privileged port at startup has to be rethought.
+A laptop Compose stack uses one tool to start services, connect them, and manage their lifetime. On shared HPC, one scheduler allocation becomes that boundary. A launch script starts each component as a tracked step, uses a rootless runtime, keeps writable state in approved storage, and verifies results before the allocation ends.
 
-The reframe: on HPC, the scheduler **allocation** (the leased compute a job holds for its wall time) replaces Compose as the orchestration boundary. Compose's job was to start services, wire them, and keep them alive. On HPC that job belongs to the launch script running *inside* the allocation. Each piece of Compose's dependency model maps onto something the scheduler already understands.
+## Map each responsibility
 
-| Compose concept | Scheduler-managed HPC mapping | Why it shifts |
+| Compose concept | Scheduler-managed HPC mapping | Decision to make |
 |---|---|---|
-| `service` | A scheduler **job step** inside the allocation | A job step is a process the scheduler launches and tracks within your allocation. Compose's always-on service has no scheduler equivalent, so a long-running service becomes a step you start and tear down yourself. |
-| image or build | An **immutable image** launched with a rootless runtime | HPC has no Docker daemon to build or run images, so you pre-build a read-only image (a `.sif`) and launch it with Apptainer. "Immutable" means you cannot `exec` in and edit it, which is why image checksums matter. |
-| `depends_on` | A bounded **semantic readiness check** before dependent steps | Compose waits for a container to *start*. The scheduler has no notion of "is the database ready," so the launch script polls a health endpoint or sentinel file. "Semantic" means it checks the service actually answers, not just that the process exists. |
-| volume | Explicit **job-scoped scratch** or center-approved storage bind | HPC has no Docker daemon to manage named volumes, so writable state must live on a **scratch** filesystem (fast, temporary storage) the scheduler gives the job for its lifetime. It is created fresh per job and bound explicitly into each container. |
-| port | **Loopback** by default; approved tunnel or network path when needed | Compute nodes are shared, so a fixed port collides with other jobs. Services bind **loopback** (`127.0.0.1`, reachable only from the same node) and are reached over an SSH tunnel rather than published to a host port. |
-| device request | Scheduler resource request, such as a GPU **allocation** | In Compose you request a GPU in the YAML. On HPC the scheduler owns all accelerators, so you ask for one at submission time (e.g. `--gres=gpu:1`) and the scheduler assigns it from the allocation. |
+| service | tracked step inside one allocation | Which process coordinates, and which processes are workers? |
+| image or build | immutable image launched by a rootless runtime | Who builds and approves the image? |
+| dependency or health check | bounded semantic readiness gate | What response proves the coordinator is ready? |
+| volume | explicit job-scoped scratch or approved storage bind | Which state is temporary, and which must persist? |
+| port | loopback or a center-approved access path | Who needs access, and what does policy permit? |
+| device request | scheduler CPU, memory, wall-time, or accelerator request | Which resources must be requested before launch? |
 
-Term definitions are consolidated in the [glossary](/about/glossary/); each is also defined inline the first time it appears above.
+## Make the local decisions
 
-### Decision exercise
-For one workflow, write down the coordinating service, worker count, startup dependency, writable state, user access path, and accelerator needs. Mark each responsibility as scheduler policy, container-runtime behavior, launch-script logic, or local-center adaptation. The goal is to notice *before* you submit which Compose assumptions each service carries. Those are exactly the ones that will break on the cluster.
+For one workflow, assign allocation, startup order, runtime state, access, and accelerator ownership to scheduler policy, runtime behavior, launch-script logic, or local-center configuration. The completion exercise below turns those assignments into a reviewable decision record.
 
-## Known limitations
-This conceptual mapping does not make a workflow portable unchanged. Scheduler syntax, network policy, storage, security controls, runtime modules, and accelerator flags vary by center. Multi-node service discovery, persistent databases, privileged ports, and production availability are outside the single-node Milestone 1 boundary.
+## Limitations
 
-## Next steps
-Continue to [Baseline Pattern: Single-Node Service + Workers](/guide/baseline-single-node-pattern/) for the bounded runnable shape, or review [Getting started](/start/) and its local-adaptation checklist. The immutable repository reference above provides the release context; support and mutable contribution links remain on the support page.
+This mapping does not make a workflow portable unchanged. Scheduler syntax, network policy, storage, security controls, runtime modules, and accelerator flags vary by center. Multi-node discovery, persistent databases, privileged ports, and production availability are outside the single-node baseline.
+
+## Next step
+
+Continue to [Baseline Pattern: Single-Node Service + Workers](/guide/baseline-single-node-pattern/) to run the bounded shape, or [check your center](/start/) before execution.

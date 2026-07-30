@@ -157,6 +157,13 @@ function validateReferences(registry: ValidatedRegistry, issues: string[]): void
     for (const id of item.applicability_records) {
       if (!applicabilityIds.has(id)) issues.push(`${item.id}.applicability_records: missing ${id}`);
     }
+    if (item.diagnostic_applicability) {
+      const record = registry.applicability.find(({ id }) => id === item.diagnostic_applicability!.record_id);
+      if (!record) issues.push(`${item.id}.diagnostic_applicability: missing ${item.diagnostic_applicability.record_id}`);
+      else if (!item.related.includes(record.workflow_id)) {
+        issues.push(`${item.id}.diagnostic_applicability: record ${record.id} must belong to a related workflow`);
+      }
+    }
     for (const id of [item.release_introduced, item.release_superseded].filter(Boolean) as string[]) {
       if (!releaseIds.has(id)) issues.push(`${item.id}: missing release reference ${id}`);
     }

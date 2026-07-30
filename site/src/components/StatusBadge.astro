@@ -1,0 +1,17 @@
+---
+type StatusBadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
+
+interface Props {
+  status: string;
+  label?: string;
+  tone?: StatusBadgeTone;
+}
+
+const { status, label, tone = 'neutral' } = Astro.props;
+const statusKey = status.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+---
+<span class:list={['status-badge', `status-badge--${tone}`]} data-status={statusKey}>
+  <span class="status-badge__marker" aria-hidden="true">●</span>
+  {label && <span class="status-badge__label">{label}: </span>}
+  <span class="status-badge__text">{status}</span>
+</span>

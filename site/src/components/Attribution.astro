@@ -3,7 +3,7 @@ import { ATTRIBUTION } from '../content/wording';
 const { compact = false } = Astro.props;
 ---
 {compact ? (
-  <p><a href="/about/attribution/">Attribution and funding</a>: {ATTRIBUTION.author}, {ATTRIBUTION.fellowship}.</p>
+  <p><a href="/about/attribution/">Attribution and funding</a>: {ATTRIBUTION.author}, {ATTRIBUTION.fellowship}; fellowship funds administered through ParaTools, Inc.</p>
 ) : (
   <section aria-labelledby="attribution-heading">
     <h2 id="attribution-heading">Attribution, roles, and funding</h2>

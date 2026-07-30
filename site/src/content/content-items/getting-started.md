@@ -3,7 +3,7 @@ id: start-guide
 stable_slug: getting-started
 route_namespace: start
 title: Getting started
-summary: "A bounded path from system prerequisites and local adaptation through baseline result verification."
+summary: "Prerequisites, assumptions, and the values that differ at every HPC facility."
 artifact_type: guidance-note
 topics: [adaptation, baseline-workflow]
 keywords: [allocation, Apptainer, prerequisites, Slurm, verification]
@@ -17,32 +17,37 @@ related: [module-1-scheduler-orchestrator, module-2-baseline, BSSW-PREREQ-SLURM,
 learning_stage: baseline
 authority: [{ kind: project-decision, citation: "Milestone 1 bounded workflow", scope: "Prerequisite and adaptation sequence for the single-node baseline." }]
 ---
-## Before you run anything: assumptions
-You need authorized access to a Slurm cluster, an allocation/account, and Apptainer on the compute nodes. You need writable job-scoped storage, loopback access within one node, and permission to request the CPU, memory, and wall time the workflow asks for. You do **not** need Docker, root access, inbound public ports, or a persistent service.
+## Can I run this?
 
-## Prerequisite checks
-1. Run `command -v sbatch` and confirm your center's account/partition syntax. If it fails, see [BSSW-PREREQ-SLURM](/diagnostics/bssw-prereq-slurm/).
-2. Run `command -v apptainer` and `apptainer --version` in the module environment the job will use. If it fails, see [BSSW-PREREQ-APPTAINER](/diagnostics/bssw-prereq-apptainer/).
-3. Confirm a writable job-scoped location with enough quota for the image, cache, and output files. If it fails, see [BSSW-STORAGE-UNAVAILABLE](/diagnostics/bssw-storage-unavailable/).
+Confirm these assumptions before execution:
 
-A failed check blocks execution only. You can still read the modules, the mapping below, and every diagnostic page without satisfying a prerequisite.
+- **Allocation:** you have authorized Slurm access, an account, and permission to request the needed CPU, memory, and wall time.
+- **Security and network:** the coordinator can use loopback within one node; no root access, privileged daemon, or inbound public port is required.
+- **Storage:** a center-approved job-scoped path has enough quota for the image, cache, runtime state, and outputs.
+- **Runtime and image:** Apptainer is available on compute nodes, and you have an approved image path and digest.
+- **Readiness:** a bounded semantic probe can reach the coordinator before any worker starts.
 
-## Values to adapt for your center
-Write down your account/project, partition/queue, wall time, CPU and memory requests, runtime module command, image path and digest, scratch root, worker/task bounds, readiness timeout, and any tunnel or accelerator request. Do not copy example account names, paths, or module versions from this guide.
+## Check the prerequisites
 
-## Compose-to-HPC mapping
-| Compose responsibility | HPC adaptation |
-|---|---|
-| services | exclusive scheduler steps inside one allocation |
-| dependencies | a readiness gate that polls until the service actually answers |
-| volumes | job-scoped scratch, bound explicitly into each container |
-| ports | loopback by default; reached over an SSH tunnel |
-| device requests | scheduler resource flags (e.g. `--gres=gpu`) |
-| restart/lifecycle | scheduler state, signal traps, bounded cleanup |
+1. Run `command -v sbatch` and confirm your center's account and partition syntax. If either fails, use [BSSW-PREREQ-SLURM](/diagnostics/bssw-prereq-slurm/).
+2. Run `command -v apptainer` and `apptainer --version` in the compute-node module environment. If either fails, use [BSSW-PREREQ-APPTAINER](/diagnostics/bssw-prereq-apptainer/).
+3. Create and remove a private test file through the intended container bind. If that fails, use [BSSW-STORAGE-UNAVAILABLE](/diagnostics/bssw-storage-unavailable/).
 
-## Run and verify
-1. Get the immutable v0.1.0 workflow and verify its recorded digest.
-2. Apply only the local values above. Keep the task, worker, and timeout bounds.
-3. Submit the baseline script once. Record the submission ID privately.
-4. Confirm readiness happens before any worker starts. If the readiness wait expires, see [BSSW-READINESS-TIMEOUT](/diagnostics/bssw-readiness-timeout/).
-5. Accept the run as successful only when the scheduler state, exit code, result file, expected item count, uniqueness, and verifier output all agree. [Module 2](/guide/baseline-single-node-pattern/) has the exact completion check.
+## Record your local values
+
+Write down the account or project, partition or queue, wall time, CPU and memory, runtime module, image path and digest, scratch root, worker and task bounds, readiness timeout, and any approved tunnel or accelerator request.
+
+## Run
+
+1. Obtain the workflow from the repository link in [Module 2](/guide/baseline-single-node-pattern/).
+2. Apply the local values without exceeding the documented worker, task, or timeout bounds.
+3. Submit the baseline script once.
+4. Confirm the readiness gate passes before workers start. If it expires, use [BSSW-READINESS-TIMEOUT](/diagnostics/bssw-readiness-timeout/).
+
+## Verify
+
+Accept success only when the scheduler state, exit status, result file, expected item count, uniqueness, and verifier output agree. [Module 2](/guide/baseline-single-node-pattern/) states the complete result-based completion check.
+
+## If execution still fails
+
+Use the [diagnostic registry](/diagnostics/) to match the visible symptom. If no entry matches, [report a workflow defect](/about/support/) with sanitized commands, expected behavior, and observed behavior.

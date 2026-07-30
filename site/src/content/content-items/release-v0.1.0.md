@@ -2,7 +2,7 @@
 id: release-v0-1-0
 stable_slug: v0-1-0
 title: Release v0.1.0
-summary: "Milestone 1 scope, validation status, and the immutable repository target."
+summary: "The published Milestone 1 changes and immutable repository citation."
 artifact_type: release
 topics: [release, milestone-1]
 keywords: [release notes, v0.1.0]
@@ -13,16 +13,24 @@ publication_date: "2026-07-31"
 applicability_records: [m1-baseline-anvil]
 related: [module-1-scheduler-orchestrator, module-2-baseline, milestone-1]
 ---
-## What's in this release
-- The two foundational modules: [Scheduler as Orchestrator](/guide/scheduler-as-orchestrator/) and [Baseline Pattern: Single-Node Service + Workers](/guide/baseline-single-node-pattern/).
-- A validated single-node Slurm + Apptainer reference workflow.
-- Getting-started guidance, a diagnostic registry, attribution, licensing, accessibility, and support pages.
+## Included changes
 
-## Validation status
-The baseline workflow is validated on Purdue Anvil (Slurm 25.11.1, Apptainer 1.4.3). A successful run (job 19500029, `COMPLETED` exit 0) and a controlled readiness-timeout run (job 19500688, `FAILED` exit 75) are recorded under `evidence/anvil-v0-1-0-*`. The validation covers single-node execution with the v0.1.0 image only; a rebuilt image or a different scheduler/runtime version requires revalidation. Local and fake-runtime tests remain distinct from this representative-environment claim.
+### Added
+- [Scheduler as Orchestrator](/guide/scheduler-as-orchestrator/)
+- [Baseline Pattern: Single-Node Service + Workers](/guide/baseline-single-node-pattern/)
+- The reference workflow, [getting-started path](/start/), [diagnostic registry](/diagnostics/), and public-information pages
 
-## Repository target
-The immutable companion target is [repository tag v0.1.0](https://github.com/pnsinha/laptop-to-cluster/releases/tag/v0.1.0). The [release candidate](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/releases/v0.1.0/release-candidate.json) lists every included item and its public URL.
+### Changed
+None in this initial release.
 
-## Changes
-This is the initial release. There are no deprecated or corrected items. Completion evidence is append-only in the [Milestone 1 record](/milestones/1/); later corrections add dated revisions rather than overwriting it.
+### Deprecated
+None in this initial release.
+
+### Corrected
+None in this initial release.
+
+## Immutable citation
+Cite [repository release v0.1.0](https://github.com/pnsinha/laptop-to-cluster/releases/tag/v0.1.0). Its [release record](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/releases/v0.1.0/release-candidate.json) binds the included items to their public URLs.
+
+## Reconstruct this release
+The versioned release manifest identifies the site commit, generated URL inventory, prebuilt site artifact, and deployment record. Use the applicability link above for the workflow’s run configuration and result. The [Milestone 1 page](/milestones/1/) retains the completion and revision history.

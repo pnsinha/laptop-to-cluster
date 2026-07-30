@@ -8,6 +8,7 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be an ISO date (YY
   .refine((value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)), 'must be a real date');
 const nonEmpty = z.string().trim().min(1);
 const path = z.string().regex(/^\/(?:[^?#]*\/)?$/, 'must be an origin-relative trailing-slash path');
+const stableRouteId = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'must be an immutable kebab-case route ID');
 const sha256 = z.string().regex(/^sha256:[a-f0-9]{64}$/i, 'must be sha256:<64 hexadecimal characters>');
 
 export const maturitySchema = z.enum(['draft', 'validated', 'published', 'superseded', 'archived']);
@@ -46,6 +47,11 @@ export const prerequisiteSchema = z.object({
   id: nonEmpty,
   check: nonEmpty.optional(),
   diagnostic_id: z.string().regex(/^BSSW-[A-Z0-9-]+$/, 'must be a stable BSSW-* diagnostic ID').optional(),
+}).strict();
+
+export const diagnosticApplicabilityRelationshipSchema = z.object({
+  record_id: nonEmpty,
+  discriminator: z.enum(['environment', 'scheduler', 'runtime']),
 }).strict();
 
 const informativeImageSchema = z.object({
@@ -88,6 +94,7 @@ const commonFields = {
   container_runtimes: z.array(z.enum(['apptainer', 'charliecloud', 'other'])).default([]),
   related: z.array(nonEmpty).default([]), applicability_records: z.array(nonEmpty).default([]),
   authority: z.array(authorityReferenceSchema).default([]), media: z.array(publicationMediaSchema).default([]),
+  diagnostic_applicability: diagnosticApplicabilityRelationshipSchema.optional(),
   release_introduced: nonEmpty.optional(), release_superseded: nonEmpty.optional(), successor_id: nonEmpty.optional(),
   last_updated: isoDate.optional(), sow_deliverable_id: nonEmpty.optional(),
   deliverable_status: z.enum(['planned', 'draft', 'complete', 'externally-pending']).optional(),
@@ -121,7 +128,10 @@ export const contentItemSchema = z.discriminatedUnion('artifact_type', [learning
     const issue = (path: string, message: string) => context.addIssue({ code: 'custom', path: [path], message });
     if (['published', 'superseded', 'archived'].includes(item.status) && !item.publication_date) issue('publication_date', 'is required for published content');
     if (item.status === 'superseded' && !item.successor_id && item.revisions.length === 0) issue('successor_id', 'or an archived replacement revision is required');
-    if (item.artifact_type !== 'learning-module') return;
+  if (item.artifact_type !== 'diagnostic' && item.diagnostic_applicability) {
+    issue('diagnostic_applicability', 'is allowed only for diagnostic content');
+  }
+  if (item.artifact_type !== 'learning-module') return;
     for (const section of ['concept', 'limitations', 'next-steps'] as const) {
       if (!item.section_kinds.includes(section)) issue('section_kinds', `must include ${section}`);
     }
@@ -146,7 +156,7 @@ export const contentItemSchema = z.discriminatedUnion('artifact_type', [learning
 export type ContentItem = z.infer<typeof contentItemSchema>;
 
 export const applicabilityRecordSchema = z.object({
-  id: nonEmpty,
+  id: stableRouteId,
   workflow_id: nonEmpty,
   status: z.enum(['validated', 'failed', 'unvalidated', 'stale']),
   environment: z.object({
@@ -164,6 +174,7 @@ export const applicabilityRecordSchema = z.object({
   limitations: z.array(nonEmpty).min(1),
   portability_boundaries: z.array(nonEmpty).min(1),
   evidence: evidenceReferenceSchema,
+  provenance: z.array(z.object({ label: nonEmpty, reference: repoRefSchema }).strict()).min(1),
   review_after: isoDate,
 }).strict().superRefine((record, context) => {
   const issue = (path: string, message: string) => context.addIssue({ code: 'custom', path: [path], message });

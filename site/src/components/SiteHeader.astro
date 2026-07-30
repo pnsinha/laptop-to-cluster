@@ -1,0 +1,43 @@
+---
+import { PROJECT } from '../content/wording';
+type NavLink = { label: string; href: string; external?: boolean };
+const { currentPath = Astro.url.pathname } = Astro.props as { currentPath?: string };
+const normalize = (path: string) => path === '/' ? path : `/${path.split('/').filter(Boolean).join('/')}/`;
+const path = normalize(currentPath);
+const links: readonly NavLink[] = [
+  { label: 'Get started', href: '/start/' },
+  { label: 'Resources', href: '/resources/' },
+  { label: 'Troubleshooting', href: '/diagnostics/' },
+  { label: 'About', href: '/about/project/' },
+  { label: 'Repository', href: PROJECT.repository, external: true },
+] as const;
+const current = (href: string) => href.startsWith('/') && normalize(href) === path;
+---
+<header class="site-header">
+  <div class="site-header__top">
+    <a class="site-identity" href="/" aria-label="Laptop to Cluster home">
+      <span class="site-identity__icon" aria-hidden="true">
+        <svg width="56" height="40" viewBox="0 0 56 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 2 L4 38 L14 38 M4 2 L14 2" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M52 2 L52 38 L42 38 M52 2 L42 2" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <rect x="14" y="14" width="8" height="8" rx="1.5" fill="var(--identity-block-color, #7ec8c0)"/>
+          <rect x="24" y="14" width="8" height="8" rx="1.5" fill="var(--identity-block-color, #7ec8c0)"/>
+          <rect x="34" y="14" width="8" height="8" rx="1.5" fill="var(--identity-block-color, #7ec8c0)"/>
+        </svg>
+      </span>
+      <span class="site-identity__text">
+        <span class="site-identity__line1">laptop → cluster</span>
+        <span class="site-identity__line2">multi-service stacks under the scheduler</span>
+      </span>
+    </a>
+    <nav aria-label="Primary"><ul class="site-nav site-nav--wide">
+      {links.map((link) => <li><a class="site-nav__link" href={link.href} rel={link.external ? 'external' : undefined} aria-current={!link.external && current(link.href) ? 'page' : undefined}>{link.label}{link.external && <span aria-hidden="true"> ↗</span>}</a></li>)}
+    </ul></nav>
+    <details class="site-nav--compact">
+      <summary>Menu</summary>
+      <nav aria-label="Primary navigation menu"><ul class="site-nav">
+        {links.map((link) => <li><a class="site-nav__link" href={link.href} rel={link.external ? 'external' : undefined} aria-current={!link.external && current(link.href) ? 'page' : undefined}>{link.label}{link.external && <span aria-hidden="true"> ↗</span>}</a></li>)}
+      </ul></nav>
+    </details>
+  </div>
+</header>

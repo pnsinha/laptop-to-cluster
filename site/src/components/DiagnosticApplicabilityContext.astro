@@ -1,0 +1,7 @@
+---
+import type { DiagnosticApplicabilityContext } from '../content/projections';
+const { context } = Astro.props as { context: DiagnosticApplicabilityContext };
+---
+<aside class="diagnostic-applicability" data-projection-id={context.projectionId} data-source-id={context.recordId} aria-label="Relevant tested context">
+  <p><strong>Relevant discriminator:</strong> {context.discriminator}. <a href={context.canonicalPath}>Review the complete applicability record</a>.</p>
+</aside>

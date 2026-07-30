@@ -1,0 +1,27 @@
+---
+import type { ModuleNavigation } from '../content/projections';
+
+const { navigation } = Astro.props as { navigation: ModuleNavigation };
+---
+{(navigation.previous || navigation.next) && (
+  <nav class="module-pager" aria-label="Learning module navigation">
+    <ul>
+      <li>
+        {navigation.previous && (
+          <a rel="prev" href={navigation.previous.url}>
+            <span class="module-pager__direction">← Previous module</span>
+            <span>{navigation.previous.title}</span>
+          </a>
+        )}
+      </li>
+      <li>
+        {navigation.next && (
+          <a rel="next" href={navigation.next.url}>
+            <span class="module-pager__direction">Next module →</span>
+            <span>{navigation.next.title}</span>
+          </a>
+        )}
+      </li>
+    </ul>
+  </nav>
+)}

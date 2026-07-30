@@ -12,8 +12,11 @@ milestone: 1
 status: published
 publication_date: "2026-07-31"
 ---
-The site uses semantic landmarks, a skip link, visible keyboard focus, descriptive links, text status cues, responsive layouts, and static HTML that does not require client-side JavaScript. Informative images require meaningful alternatives; decorative images require explicit empty alternatives; prerecorded media requires captions or transcripts before publication.
+## Report an accessibility barrier
+Use the public [accessibility issue form](https://github.com/pnsinha/laptop-to-cluster/issues/new?template=accessibility.yml). Include the page, barrier, input method or assistive technology when relevant, and desired outcome. If GitHub Issues is unavailable, use the [support fallback](/about/support/).
 
-Report a barrier through the public [accessibility issue form](https://github.com/pnsinha/laptop-to-cluster/issues/new?template=accessibility.yml). Include the page, barrier, input method or assistive technology when relevant, and desired outcome. If issues are unavailable, use the [support fallback](/about/support/).
+## Supported access
+The site provides semantic landmarks, a skip link, visible keyboard focus, descriptive links, text status cues, responsive layouts, and static HTML that works without client-side JavaScript. Informative images require meaningful text alternatives, decorative images use empty alternatives, and prerecorded media requires captions or transcripts before publication.
 
-The Milestone 1 release gate covers automated checks and representative manual keyboard and content-structure review. This statement does not claim that no barrier exists.
+## Current status
+The release review records automated accessibility checks and manual keyboard-navigation and content-structure checks for representative page types. These checks do not guarantee that every visitor will encounter no barrier; please report any problem.

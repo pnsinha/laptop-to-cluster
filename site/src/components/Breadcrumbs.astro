@@ -1,0 +1,23 @@
+---
+type Parent = { label: string; href: string };
+const { currentPath = Astro.url.pathname, currentTitle } = Astro.props as { currentPath?: string; currentTitle: string };
+const normalize = (path: string) => path === '/' ? path : `/${path.split('/').filter(Boolean).join('/')}/`;
+const path = normalize(currentPath);
+const namespace = path.split('/').filter(Boolean)[0] ?? '';
+const parents: Record<string, Parent> = {
+  guide: { label: 'Resources', href: '/resources/' },
+  diagnostics: { label: 'Troubleshooting', href: '/diagnostics/' },
+  milestones: { label: 'Resources', href: '/resources/' },
+  releases: { label: 'Resources', href: '/resources/' },
+  about: { label: 'About', href: '/about/project/' },
+};
+const parent = parents[namespace];
+const showParent = parent && normalize(parent.href) !== path;
+---
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    <li><a href="/">Home</a></li>
+    {showParent && <li><a href={parent.href}>{parent.label}</a></li>}
+    <li aria-current="page"><span>{currentTitle}</span></li>
+  </ol>
+</nav>

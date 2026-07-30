@@ -2,11 +2,17 @@
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ContentHeader from '../../components/ContentHeader.astro';
-import AuthorityNote from '../../components/AuthorityNote.astro';
+import SourcesAndScope from '../../components/SourcesAndScope.astro';
+import { assertCompositionProfile } from '../../content/projections';
 const entries = await getCollection('contentItems');
 const entry = entries.find(({ data }) => data.route_namespace === 'start');
 if (!entry) throw new Error('Missing published getting-started content item');
 const { Content } = await render(entry);
 const item = entry.data;
+assertCompositionProfile(item, 'start');
 ---
-<BaseLayout title={item.title} description={item.summary}><ContentHeader {item} /><AuthorityNote references={item.authority} /><article><Content /></article></BaseLayout>
+<BaseLayout title={item.title} description={item.summary} profile="start">
+  <ContentHeader {item} />
+  <article class="start-path" aria-label="Getting started steps"><Content /></article>
+  <SourcesAndScope references={item.authority} />
+</BaseLayout>

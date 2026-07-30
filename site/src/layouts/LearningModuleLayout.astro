@@ -2,27 +2,47 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from './BaseLayout.astro';
 import ContentHeader from '../components/ContentHeader.astro';
-import AuthorityNote from '../components/AuthorityNote.astro';
-import TechnicalApplicability from '../components/TechnicalApplicability.astro';
-import type { ContentItem } from '../content/schema';
+import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
+import SourcesAndScope from '../components/SourcesAndScope.astro';
+import UnvalidatedNotice from '../components/UnvalidatedNotice.astro';
+import ModulePager from '../components/ModulePager.astro';
+import { canonicalPath } from '../content/registry';
+import { assertCompositionProfile, projectApplicabilityForItem, projectModuleNavigation } from '../content/projections';
+import type { ContentItem, RepoRef } from '../content/schema';
 type LearningModule = Extract<ContentItem, { artifact_type: 'learning-module' }>;
 const { item } = Astro.props as { item: LearningModule };
-const applicabilityEntries = await getCollection('applicability');
-const applicabilityById = new Map(applicabilityEntries.map(({ data }) => [data.id, data]));
-const applicability = item.applicability_records.flatMap((id) => applicabilityById.get(id) ?? []);
+const profile = item.module_type === 'conceptual' ? 'learning-conceptual' : 'learning-runnable';
+assertCompositionProfile(item, profile);
+const applicability = profile === 'learning-runnable'
+  ? (await getCollection('applicability')).map(({ data }) => data)
+  : [];
+const projection = profile === 'learning-runnable'
+  ? projectApplicabilityForItem(item, applicability, 'runnable-module')
+  : undefined;
+const contentItems = (await getCollection('contentItems')).map(({ data }) => data);
+const contentById = new Map(contentItems.map((data) => [data.id, data]));
+const related = item.related.flatMap((id) => contentById.get(id) ?? []);
+const moduleNavigation = projectModuleNavigation(contentItems)[item.id] ?? {};
+const repositoryHref = (reference: RepoRef) => `${reference.repository}/blob/${encodeURIComponent(reference.release)}/${reference.path.split('/').map(encodeURIComponent).join('/')}${reference.line_anchor ?? ''}`;
 ---
-<BaseLayout title={item.title} description={item.summary}>
+<BaseLayout title={item.title} description={item.summary} {profile}>
   <ContentHeader {item} />
-  <section aria-labelledby="module-details"><h2 id="module-details">Module details</h2>
-    <p><strong>Type:</strong> {item.module_type}</p><p><strong>Audience:</strong> {item.audiences.join(', ')}</p>
-    <h3>Learning outcomes</h3><ul>{item.learning_outcomes.map((value) => <li>{value}</li>)}</ul>
-    <h3>Prerequisites</h3><ul>{item.prerequisites.map((value) => <li>{value.check ?? value.id}{value.diagnostic_id && <> — <a href={`/diagnostics/${value.diagnostic_id.toLowerCase()}/`}>{value.diagnostic_id}</a></>}</li>)}</ul>
-    {item.required_resources && <><h3>Required resources</h3><ul>{item.required_resources.map((value) => <li>{value}</li>)}</ul></>}
-    {item.estimated_minutes && <p><strong>Estimated time:</strong> {item.estimated_minutes} minutes</p>}
+  <section class="module-facts" aria-label="Module details">
+    <p><strong>Type:</strong> {item.module_type}{item.estimated_minutes && <> · <strong>Time:</strong> {item.estimated_minutes} minutes</>}</p>
   </section>
-  <TechnicalApplicability records={applicability} />
-  {item.unvalidated_scopes.length > 0 && <aside class="notice" role="note"><h2>Unvalidated content</h2><ul>{item.unvalidated_scopes.map((scope) => <li><a href={`#${scope.anchor}`}>{scope.anchor}</a>: {scope.reason}</li>)}</ul></aside>}
-  <AuthorityNote references={item.authority} />
+  {projection && <ApplicabilityProjectionView {projection} />}
+  <section class="module-overview" aria-labelledby="module-outcomes">
+    <h2 id="module-outcomes">What you will learn</h2>
+    <ul>{item.learning_outcomes.map((value) => <li>{value}</li>)}</ul>
+    <h2>Before you begin</h2>
+    <ul>{item.prerequisites.length ? item.prerequisites.map((value) => <li>{value.check ?? value.id}{value.diagnostic_id && <> — <a href={`/diagnostics/${value.diagnostic_id.toLowerCase()}/`}>{value.diagnostic_id}</a></>}</li>) : <li>No execution prerequisite is required.</li>}</ul>
+    {item.required_resources && <><h3>Required resources</h3><ul>{item.required_resources.map((value) => <li>{value}</li>)}</ul></>}
+  </section>
+  <UnvalidatedNotice scopes={item.unvalidated_scopes} />
   <article class="module-content"><slot /></article>
-  <section aria-labelledby="completion"><h2 id="completion">Completion check</h2><p>{item.completion_check?.text}</p>{item.conceptual_check && <p><strong>Conceptual exercise:</strong> {item.conceptual_check.text}</p>}</section>
+  <section aria-labelledby="completion"><h2 id="completion">{profile === 'learning-conceptual' ? 'Complete the decision exercise' : 'Check completion'}</h2><p>{item.completion_check?.text}</p>{item.conceptual_check && <p>{item.conceptual_check.text}</p>}</section>
+  <section aria-labelledby="related"><h2 id="related">Continue learning</h2><ul>{related.map((entry) => <li><a href={canonicalPath(entry)}>{entry.title}</a></li>)}</ul></section>
+  <ModulePager navigation={moduleNavigation} />
+  <section aria-labelledby="repository"><h2 id="repository">Repository</h2><ul>{item.supporting_artifacts.map((reference) => <li><a href={repositoryHref(reference)}><code>{reference.path}</code> at {reference.release}</a></li>)}</ul></section>
+  <SourcesAndScope references={item.authority} />
 </BaseLayout>

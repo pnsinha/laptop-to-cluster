@@ -1,0 +1,15 @@
+---
+interface Props {
+  label: string;
+  instruction?: string;
+}
+
+const {
+  label,
+  instruction = 'Scroll horizontally to view all table columns.',
+} = Astro.props;
+---
+<div class="table-overflow layout-data" role="region" aria-label={label} tabindex="0">
+  <p class="table-overflow__instruction">{instruction}</p>
+  <slot />
+</div>

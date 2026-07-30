@@ -12,8 +12,11 @@ milestone: 1
 status: published
 publication_date: "2026-07-31"
 ---
-Executable source, workflow assets, configuration, CI automation, and validation code are licensed under Apache License 2.0. Original documentation, learning modules, training materials, and publishable evidence are licensed under Creative Commons Attribution 4.0 International.
+## Executable artifacts
+Executable source, workflow assets, configuration, CI automation, and validation code use the [Apache License 2.0](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/licenses/Apache-2.0.txt).
 
-The repository’s `artifact-inventory.yml` is the authoritative category mapping. `THIRD_PARTY.yml` records source, copyright holder, license, and modification status for included or adapted third-party material. Third-party terms continue to apply to those works.
+## Documentation and training
+Original documentation, learning modules, training materials, and publishable evidence use [Creative Commons Attribution 4.0 International](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/licenses/CC-BY-4.0.txt).
 
-Read the [license declarations](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/licenses) in the immutable release.
+## Category and third-party records
+The immutable release’s [artifact inventory](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/artifact-inventory.yml) is the authoritative category-to-license mapping. The [third-party record](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/THIRD_PARTY.yml) identifies each included or adapted work’s source, copyright holder, license, and modification status. Third-party terms continue to apply to those works.

@@ -1,164 +1,52 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SupportState from '../components/SupportState.astro';
-import { PROJECT } from '../content/wording';
+import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
+import { projectLandingPage } from '../content/projections';
+const content = await getCollection('contentItems');
+const applicability = await getCollection('applicability');
+const landing = projectLandingPage(content.map(({ data }) => data), applicability.map(({ data }) => data));
 ---
-<BaseLayout
-  title="Bridging the Laptop-to-Cluster Gap"
-  description="Public BSSw Fellowship guidance for translating multi-service laptop workflows to scheduler-managed HPC systems."
-  canonicalPath="/"
->
-  <h1>Bridging the Laptop-to-Cluster Gap</h1>
+<BaseLayout title="Bridging the Laptop-to-Cluster Gap" description="Translate a multi-service Docker Compose stack to a scheduler-managed HPC allocation with Slurm and Apptainer." canonicalPath="/" profile="landing">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero__copy">
+      <h1 id="hero-title">Bridging the Laptop‑to‑Cluster Gap</h1>
+      <p class="lede">A multi-service stack is trivial to run with Docker Compose on a laptop. On a shared cluster there is no Docker daemon, and the scheduler owns every resource. This guide is the translation.</p>
+      <div class="hero__actions" aria-label="Start learning">
+        <a class="action action--primary" href="/start/">Get started</a>
+        <a class="hero__secondary-link" href={landing.learning_path[0].url}>Understand the model</a>
+      </div>
+    </div>
+    <figure class="workflow-figure">
+      <figcaption>One allocation, five ordered responsibilities</figcaption>
+      <ol>
+        <li><strong>Allocation</strong><span>Slurm grants one node and job-scoped resources.</span></li><i aria-hidden="true">↓</i>
+        <li><strong>Coordinator</strong><span>The coordinating service starts on loopback inside the allocation.</span></li><i aria-hidden="true">↓</i>
+        <li><strong>Readiness gate</strong><span>A semantic check must pass before workers start.</span></li><i aria-hidden="true">↓</i>
+        <li><strong>Workers</strong><span>One or more exclusive worker steps start only after readiness.</span></li><i aria-hidden="true">↓</i>
+        <li><strong>Verification</strong><span>Result invariants are checked before success is recorded.</span></li>
+      </ol>
+    </figure>
+  </section>
 
-  <p class="lede">
-    A multi-service stack is trivial to run with Docker Compose on a laptop. On a shared
-    cluster there is no Docker daemon, and the scheduler owns every resource. This guide is
-    the translation — for scientific software practitioners, HPC learners, and workflow maintainers.
-    No account is required to read anything here.
-  </p>
+  {landing.applicability_projection ? <ApplicabilityProjectionView projection={landing.applicability_projection} /> : <p class="notice notice--info">{landing.validation_unavailable_reason}</p>}
 
-  <section aria-labelledby="mapping">
-    <h2 id="mapping">What changes</h2>
-    <dl class="mapping">
-      <div>
-        <dt><code>service</code></dt>
-        <dd>Scheduler job or step</dd>
-      </div>
-      <div>
-        <dt><code>depends_on</code></dt>
-        <dd>Explicit readiness check</dd>
-      </div>
-      <div>
-        <dt><code>volumes</code></dt>
-        <dd>Job-scoped scratch</dd>
-      </div>
-      <div>
-        <dt><code>ports</code></dt>
-        <dd>Loopback, reached by tunnel</dd>
-      </div>
+  <section aria-labelledby="mapping-title">
+    <h2 id="mapping-title">Compose-to-HPC mapping</h2>
+    <dl class="compose-mapping">
+      <div><dt>service</dt><dd>scheduler job or step</dd></div>
+      <div><dt>depends_on</dt><dd>explicit readiness check</dd></div>
+      <div><dt>volumes</dt><dd>job-scoped scratch</dd></div>
+      <div><dt>ports</dt><dd>loopback, reached by tunnel</dd></div>
     </dl>
-    <p class="mapping-note">
-      <a href="/guide/scheduler-as-orchestrator/">The full mapping, and why each one shifts</a>
-    </p>
   </section>
 
-  <section aria-labelledby="path">
-    <h2 id="path">Start here</h2>
-    <ol class="path">
-      <li>
-        <h3><a href="/guide/scheduler-as-orchestrator/">Understand the model</a></h3>
-        <p>How a scheduler allocation replaces Compose as the orchestration boundary.</p>
-      </li>
-      <li>
-        <h3><a href="/start/">Check your center</a></h3>
-        <p>Prerequisites, assumptions, and the values that differ at every site.</p>
-      </li>
-      <li>
-        <h3><a href="/guide/baseline-single-node-pattern/">Run the baseline</a></h3>
-        <p>
-          A coordinator, a readiness gate, workers, and result verification in one allocation.
-          Validated on Purdue Anvil (Slurm 25.11.1, Apptainer 1.4.3).
-        </p>
-      </li>
+  <section aria-labelledby="path-title">
+    <h2 id="path-title">Start here</h2>
+    <ol class="path-list">
+      <li><a href={landing.learning_path[0].url}><strong>Baseline Orchestration:</strong> Establish single-node parity with local development environments.</a></li>
+      <li><a href={landing.learning_path[1].url}><strong>Prerequisites and center values:</strong> The values that differ at every HPC facility — account, partition, scratch path, and module names.</a></li>
+      <li><a href={landing.learning_path[2].url}><strong>Run the baseline:</strong> Submit the single-node workflow and verify success from result artifacts.</a></li>
     </ol>
-    <p class="release-link">
-      Current release: <strong>{PROJECT.release}</strong>. <a href="/releases/v0-1-0/">Release status</a> · <a href="/milestones/1/">Milestone 1 deliverables</a>.
-    </p>
   </section>
-
-  <p class="browse">
-    Browse the <a href="/resources/">resource index</a>,
-    the <a href="/diagnostics/">diagnostic registry</a>,
-    every <a href="/milestones/1/">Milestone 1 deliverable</a>,
-    or the <a href={PROJECT.repository}>companion repository</a>.
-  </p>
-
-  <SupportState />
 </BaseLayout>
-
-<style>
-  /* The mapping is the page's thesis, so it gets the one piece of visual weight
-     the rest of the design deliberately withholds. */
-  .mapping {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    gap: 0;
-    margin: 1.5rem 0 0.75rem;
-    border-top: 0.15rem solid #172033;
-  }
-  .mapping > div {
-    display: grid;
-    grid-template-columns: minmax(8rem, auto) 1fr;
-    align-items: baseline;
-    gap: 0.75rem;
-    padding: 0.7rem 0.25rem;
-    border-bottom: 1px solid #c6ccd6;
-  }
-  .mapping dt {
-    font-weight: 400;
-  }
-  .mapping dt code {
-    background: #f2f4f8;
-    padding: 0.1rem 0.35rem;
-  }
-  .mapping dd {
-    margin: 0;
-    font-weight: 600;
-  }
-  /* Direction of translation, without relying on colour or an image. */
-  .mapping dd::before {
-    content: "→ ";
-    color: #596579;
-    font-weight: 400;
-  }
-  .mapping-note {
-    margin: 0 0 0.5rem;
-  }
-
-  .path {
-    list-style: none;
-    counter-reset: step;
-    padding: 0;
-    margin: 1.5rem 0 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-    gap: 1.5rem 2rem;
-  }
-  .path > li {
-    counter-increment: step;
-    border-top: 0.15rem solid #0759a5;
-    padding-top: 0.75rem;
-  }
-  .path > li::before {
-    content: counter(step);
-    display: block;
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    font-size: 0.85rem;
-    letter-spacing: 0.06em;
-    color: #596579;
-    margin-bottom: 0.25rem;
-  }
-  .path h3 {
-    margin: 0 0 0.35rem;
-    font-size: 1.1rem;
-  }
-  .path p {
-    margin: 0;
-  }
-  .release-link {
-    margin: 1.25rem 0 0;
-  }
-
-  .browse {
-    margin-top: 2.5rem;
-    max-width: 65ch;
-  }
-
-  @media (max-width: 30rem) {
-    .mapping > div {
-      grid-template-columns: 1fr;
-      gap: 0.15rem;
-    }
-  }
-</style>

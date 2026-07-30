@@ -1,8 +1,19 @@
 ---
+import '../styles/global.css';
 import Attribution from '../components/Attribution.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import SiteHeader from '../components/SiteHeader.astro';
 import { CANONICAL_ORIGIN } from '../content/schema';
+import { assertKnownCompositionProfile, type CompositionProfile } from '../content/projections';
 import { PROJECT } from '../content/wording';
-const { title, description, canonicalPath = Astro.url.pathname } = Astro.props;
+const { title, description, profile, canonicalPath = Astro.url.pathname } = Astro.props as {
+  title: string;
+  description: string;
+  profile: CompositionProfile;
+  canonicalPath?: string;
+};
+const selectedProfile = assertKnownCompositionProfile(profile, Astro.url.pathname);
+const currentPath = Astro.url.pathname;
 const canonical = new URL(canonicalPath, CANONICAL_ORIGIN).href;
 ---
 <!doctype html><html lang="en"><head>
@@ -12,10 +23,8 @@ const canonical = new URL(canonicalPath, CANONICAL_ORIGIN).href;
   <meta property="og:url" content={canonical} /><link rel="canonical" href={canonical} />
   <link rel="alternate" type="application/rss+xml" title="Laptop-to-Cluster updates" href={`${CANONICAL_ORIGIN}/feed.xml`} />
   <link rel="sitemap" href={`${CANONICAL_ORIGIN}/sitemap-index.xml`} /><title>{title} | {PROJECT.name}</title>
-  <style is:global>
-    :root{font-family:system-ui,sans-serif;line-height:1.55;color:#172033;background:#fff}*{box-sizing:border-box}body{margin:0}a{color:#0759a5;text-decoration-thickness:.12em;text-underline-offset:.15em}a:hover{text-decoration-thickness:.2em}:focus-visible{outline:3px solid #d43f00;outline-offset:3px}.skip{position:absolute;left:.75rem;top:-5rem;background:#fff;padding:.75rem;z-index:10}.skip:focus{top:.75rem}.site-header,.site-footer{background:#172033;color:#fff;padding:1rem max(1rem,calc((100% - 72rem)/2))}.site-header a,.site-footer a{color:#fff}.site-header nav{display:flex;gap:1rem;flex-wrap:wrap}.release{margin:.5rem 0 0}main{max-width:72rem;margin:auto;padding:2rem 1rem 4rem}h1{font-size:clamp(2rem,5vw,3.3rem);line-height:1.08}h2{margin-top:2rem}.lede{font-size:1.2rem;max-width:65ch}.eyebrow{text-transform:uppercase;font-weight:700;letter-spacing:.04em}.status-list,.support-state dl{display:flex;gap:1rem;flex-wrap:wrap}.status-list div,.support-state dl div{border-left:.3rem solid #0759a5;padding-left:.65rem}.status-list dt,.support-state dt{font-weight:700}.status-list dd,.support-state dd{margin:0}.status-marker{color:#0759a5}.notice,.authority,.applicability,.support-state{border:.15rem solid #596579;padding:1rem;margin:1.5rem 0}.notice{border-color:#9a4b00;background:#fff8e8}.support-state.unavailable{border-color:#a40000}code,pre{font-family:ui-monospace,monospace}pre{overflow:auto;padding:1rem;background:#f2f4f8}table{border-collapse:collapse;width:100%;display:block;overflow:auto}th,td{border:1px solid #7d8798;padding:.5rem;text-align:left}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:1rem}.card{border:1px solid #aab1bd;padding:1rem}.site-footer p{max-width:72rem}
-  </style>
-</head><body><a class="skip" href="#main">Skip to content</a>
-<header class="site-header"><nav aria-label="Primary"><a href="/">Home</a><a href="/start/">Get started</a><a href="/resources/">Resources</a><a href="/milestones/1/">Milestone 1</a><a href="/about/project/">About</a><a href={PROJECT.repository}>Companion repository</a></nav><p class="release"><strong>Release status:</strong> {PROJECT.release}. Public access requires no account.</p></header>
-<main id="main" tabindex="-1"><slot /></main><footer class="site-footer"><Attribution compact /><p><a href="/about/accessibility/">Accessibility</a> · <a href="/about/support/">Support and recovery</a> · <a href="/about/licenses/">Licenses</a></p></footer>
+</head><body data-composition-profile={selectedProfile}><a class="skip" href="#main">Skip to content</a>
+<SiteHeader {currentPath} />
+<main id="main" tabindex="-1">{currentPath !== '/' && <Breadcrumbs currentPath={currentPath} currentTitle={title} />}<slot /></main>
+<footer class="site-footer"><Attribution compact /><p class="acknowledgment">This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.</p><p class="acknowledgment">Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.</p><p>Found a problem? <a href={PROJECT.issues}>Open an issue.</a></p><p><a href="/about/accessibility/">Accessibility</a> · <a href="/about/support/">Contact and maintenance</a> · <a href="/about/licenses/">Licenses</a> · <a href="/milestones/1/">Milestone 1</a></p></footer>
 </body></html>

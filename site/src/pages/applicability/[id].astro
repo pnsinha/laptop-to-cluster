@@ -1,0 +1,33 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+export async function getStaticPaths() {
+  return (await getCollection('applicability')).map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
+}
+const { entry } = Astro.props;
+const record = entry.data;
+const repositoryHref = (reference: typeof record.provenance[number]['reference']) => `${reference.repository}/blob/${encodeURIComponent(reference.release)}/${reference.path.split('/').map(encodeURIComponent).join('/')}${reference.line_anchor ?? ''}`;
+const evidencePath = record.evidence.path.split('/').map(encodeURIComponent).join('/');
+const evidenceHref = `https://github.com/pnsinha/laptop-to-cluster/blob/${encodeURIComponent(record.workflow_revision)}/${evidencePath}`;
+---
+<BaseLayout title={`Applicability: ${record.id}`} description={`Exact validation record for ${record.workflow_id}.`} profile="applicability">
+  <header class="content-header"><h1>Applicability: {record.id}</h1></header>
+  <section class="applicability-record" data-source-id={record.id} aria-labelledby="tested-configuration">
+    <h2 id="tested-configuration">Tested configuration</h2>
+    <dl class="record-grid">
+      <div><dt>Status</dt><dd>{record.status}</dd></div><div><dt>Environment</dt><dd>{record.environment.public_name}</dd></div>
+      <div><dt>Environment role</dt><dd>{record.environment.fallback ? 'Fallback' : 'Primary'}</dd></div><div><dt>Environment scope</dt><dd>{record.environment.notes}</dd></div>
+      <div><dt>Scheduler</dt><dd>{record.scheduler.family} {record.scheduler.version}</dd></div><div><dt>Runtime</dt><dd>{record.runtime.name} {record.runtime.version}</dd></div>
+      <div><dt>Workflow revision</dt><dd><code>{record.workflow_revision}</code></dd></div><div><dt>Container image digest</dt><dd><code class="hash">{record.container_digest}</code></dd></div>
+      <div><dt>Execution date</dt><dd><time datetime={record.execution_date}>{record.execution_date}</time></dd></div><div><dt>Validation date</dt><dd><time datetime={record.validation_date}>{record.validation_date}</time></dd></div>
+      <div><dt>Submission ID</dt><dd><code>{record.submission_id}</code></dd></div><div><dt>Terminal result</dt><dd>{record.result.terminal_state}; exit {record.result.exit_code}</dd></div>
+      <div><dt>Review after</dt><dd><time datetime={record.review_after}>{record.review_after}</time></dd></div>
+    </dl>
+    <h2>Result checks</h2><ul>{record.result.checks.map((value) => <li>{value}</li>)}</ul>
+    <h2>Assumptions</h2><ul>{record.assumptions.map((value) => <li>{value}</li>)}</ul>
+    <h2>Limitations</h2><ul>{record.limitations.map((value) => <li>{value}</li>)}</ul>
+    <h2>Portability boundaries</h2><ul>{record.portability_boundaries.map((value) => <li>{value}</li>)}</ul>
+    <h2>Evidence and integrity</h2><p><a href={evidenceHref}>{record.evidence.id}</a></p><p><code class="integrity">{record.evidence.integrity}</code></p>
+    <h2>Provenance</h2><ul>{record.provenance.map(({ label, reference }) => <li>{label}: <a href={repositoryHref(reference)}>{reference.path} at {reference.release}</a> (<code class="integrity">{reference.integrity}</code>)</li>)}</ul>
+  </section>
+</BaseLayout>

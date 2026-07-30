@@ -2,10 +2,11 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { canonicalPath } from '../../content/registry';
-const diagnostics = (await getCollection('contentItems', ({ data }) => data.artifact_type === 'diagnostic' && data.status === 'published')).sort((a,b) => a.data.id.localeCompare(b.data.id));
+const diagnostics = (await getCollection('contentItems', ({ data }) => data.artifact_type === 'diagnostic' && data.status === 'published')).sort((a,b) => a.data.title.localeCompare(b.data.title));
 ---
-<BaseLayout title="Diagnostic registry" description="Stable BSSW diagnostic identifiers and recovery guidance for every documented baseline failure mode.">
-<h1>Diagnostic registry</h1><p class="lede">Use these durable identifiers in logs, issue reports, and learning-module failure links. Diagnostic guidance remains available when execution prerequisites fail.</p>
-<ul>{diagnostics.map(({ data }) => <li><a href={canonicalPath(data)}><strong>{data.id}</strong>: {data.summary}</a></li>)}</ul>
-<p>If a failure has no listed ID, <a href="/about/support/">report the missing diagnostic</a> with sanitized reproduction details.</p>
+<BaseLayout title="Diagnostic registry" description="Stable BSSW diagnostic identifiers and recovery guidance for every documented baseline failure mode." profile="diagnostic">
+<h1>Find a failure by symptom</h1>
+<p class="lede">Choose the symptom you see. Each recovery page gives the stable code to use in logs and issue reports.</p>
+<ul class="diagnostic-index">{diagnostics.map(({ data }) => <li><a href={canonicalPath(data)}>{data.title}</a><span><strong>Code:</strong> <code>{data.id}</code><br />{data.summary}</span></li>)}</ul>
+<p>If execution is blocked, you can still use the conceptual modules and local adaptation guidance. If no symptom matches, <a href="/about/support/">report a missing diagnostic</a> with sanitized reproduction details.</p>
 </BaseLayout>

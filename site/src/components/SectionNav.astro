@@ -1,0 +1,39 @@
+---
+/**
+ * Local sibling navigation for page sets where lateral orientation materially
+ * helps the reader (About subsections and milestone pages). Uses real underlined
+ * links, aria-current="page", stronger weight, and a non-color-only active
+ * marker (▸ prefix) consistent with the primary site navigation pattern.
+ */
+interface NavItem {
+  label: string;
+  href: string;
+}
+
+interface Props {
+  items: NavItem[];
+  currentPath: string;
+  label: string;
+}
+
+const { items, currentPath, label } = Astro.props;
+const normalize = (path: string) =>
+  path === '/' ? path : `/${path.split('/').filter(Boolean).join('/')}/`;
+const normalizedCurrent = normalize(currentPath);
+---
+<nav class="section-nav" aria-label={label}>
+  <ul class="section-nav__list">
+    {items.map((item) => {
+      const active = normalize(item.href) === normalizedCurrent;
+      return (
+        <li>
+          <a
+            class:list={['section-nav__link', { 'section-nav__link--active': active }]}
+            href={item.href}
+            aria-current={active ? 'page' : undefined}
+          >{item.label}</a>
+        </li>
+      );
+    })}
+  </ul>
+</nav>

@@ -1,0 +1,19 @@
+---
+import type { ContentItem } from '../content/schema';
+const { references = [] } = Astro.props as { references?: ContentItem['authority'] };
+const labels: Record<ContentItem['authority'][number]['kind'], string> = {
+  sow: 'SOW commitment',
+  'official-guidance': 'Official guidance',
+  'inferred-practice': 'Project-adopted practice',
+  'project-decision': 'Project decision',
+};
+const needsDisclaimer = references.some(({ kind }) => kind === 'inferred-practice' || kind === 'project-decision');
+---
+{references.length > 0 && <section class="sources-scope" aria-labelledby="sources-scope-heading">
+  <h2 id="sources-scope-heading">Sources and scope</h2>
+  <details>
+    <summary>Review source roles and citations</summary>
+    <ul>{references.map((reference) => <li data-authority={reference.kind}><strong>{labels[reference.kind]}:</strong> {reference.scope} <cite>{reference.citation}</cite></li>)}</ul>
+    {needsDisclaimer && <p>Project-adopted practices and project decisions are not BSSw Fellowship Program requirements.</p>}
+  </details>
+</section>}

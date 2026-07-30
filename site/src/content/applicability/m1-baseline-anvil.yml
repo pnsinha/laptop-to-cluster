@@ -14,4 +14,7 @@ assumptions: ["One Slurm node on a shared partition", "Apptainer available on co
 limitations: ["Validates single-node execution only; multi-node networking is out of scope", "The scheduler stdout records the application success line and cleanup-trap termination; the literal Slurm COMPLETED state is corroborated by reaching the final pipeline step rather than printed explicitly", "Validates the v0.1.0 image digest only; a rebuilt image requires revalidation"]
 portability_boundaries: ["Scheduler account and partition are supplied at submission time", "Apptainer availability depends on center module policy", "Job-scoped scratch source varies by center ($SLURM_TMPDIR vs derived $SCRATCH)", "Shared-partition loopback and exclusive step behavior are site-dependent"]
 evidence: { id: anvil-v0-1-0-success-20260725, path: evidence/anvil-v0-1-0-success-20260725/manifest.json, integrity: "sha256:c92906581d8bc31e6238eff8ce90ea8073dbe3316afb67d5369f08d064ee26e3" }
+provenance:
+  - label: "Released workflow source"
+    reference: { repository: "https://github.com/pnsinha/laptop-to-cluster", release: v0.1.0, path: workflows/baseline-slurm-apptainer/README.md, integrity: "sha256:f7586054384c3d0f6d1632da0da33d987fadb73652d9cd11890ae5b0ccec0b7c" }
 review_after: "2026-10-31"

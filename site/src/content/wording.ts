@@ -1,6 +1,6 @@
 export const PROJECT = {
   name: 'Laptop-to-Cluster Guide',
-  release: 'v0.1.0 (Milestone 1 publication candidate)',
+  release: 'v0.1.0',
   repository: 'https://github.com/pnsinha/laptop-to-cluster',
   issues: 'https://github.com/pnsinha/laptop-to-cluster/issues',
   contact: 'mailto:parmanandsinha@gmail.com?subject=BSSw%20resource%20report',

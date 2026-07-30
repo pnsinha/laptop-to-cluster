@@ -1,0 +1,10 @@
+---
+interface Scope { anchor: string; reason: string }
+const { scopes = [] } = Astro.props as { scopes?: Scope[] };
+---
+{scopes.length > 0 && (
+  <aside class="notice" role="note" aria-labelledby="unvalidated-heading">
+    <h2 id="unvalidated-heading">Unvalidated content</h2>
+    <ul>{scopes.map((scope) => <li><a href={`#${scope.anchor}`}>{scope.anchor}</a>: {scope.reason}</li>)}</ul>
+  </aside>
+)}

@@ -1,6 +1,5 @@
 import {
   CANONICAL_ORIGIN,
-  isTechnicalContent,
   releaseChangeSchema,
   type ApplicabilityRecord,
   type ContentItem,
@@ -72,18 +71,56 @@ export interface SearchRecord {
 
 export interface DiscoveryProjection {
   resources: Array<{ id: string; title: string; url: string }>;
+  resource_groups: Array<{ artifact_type: ContentItem['artifact_type']; item_ids: string[] }>;
   indexes: Record<string, Record<string, string[]>>;
-  sequential_path: Array<{ stage: string; item_ids: string[] }>;
+  sequential_path: Array<{ stage: LearningStage; item_ids: string[] }>;
   search: SearchRecord[];
   relationships: Record<string, { related: string[]; prerequisites: string[] }>;
-  no_result: { message: string; active_filters: string[]; complete_index_url: '/resources/' };
   sitemap: string[];
   feed: Array<{ id: string; url: string; title: string; date: string }>;
   url_manifest: Array<{ id: string; path: string; url: string }>;
   no_js_html: string;
 }
 
-const stages = ['baseline', 'portability', 'training', 'operations', 'adoption'] as const;
+export const LEARNING_STAGES = ['baseline', 'portability', 'training', 'operations', 'adoption'] as const;
+export type LearningStage = typeof LEARNING_STAGES[number];
+export interface ModuleNavigationNode { id: string; title: string; url: string }
+export interface ModuleNavigation { previous?: ModuleNavigationNode; next?: ModuleNavigationNode }
+export interface NoResultState { message: string; active_filters: string[]; complete_index_url: '/resources/' }
+
+const publicStatuses = ['published', 'superseded', 'archived'] as const;
+const isPublic = ({ status }: ContentItem) => publicStatuses.includes(status as typeof publicStatuses[number]);
+const stageRank = (stage: LearningStage) => LEARNING_STAGES.indexOf(stage);
+const sequenceCompare = (a: ContentItem, b: ContentItem) => {
+  const stageDifference = stageRank(a.learning_stage!) - stageRank(b.learning_stage!);
+  if (stageDifference) return stageDifference;
+  if (a.artifact_type === 'learning-module' && b.artifact_type === 'learning-module') {
+    return a.module_number - b.module_number || a.id.localeCompare(b.id);
+  }
+  if (a.artifact_type === 'learning-module') return -1;
+  if (b.artifact_type === 'learning-module') return 1;
+  return canonicalPath(a).localeCompare(canonicalPath(b)) || a.id.localeCompare(b.id);
+};
+
+export function projectModuleNavigation(content: ContentItem[]): Record<string, ModuleNavigation> {
+  const modules = content.filter((item): item is Extract<ContentItem, { artifact_type: 'learning-module' }> =>
+    isPublic(item) && item.artifact_type === 'learning-module');
+  const issues: string[] = [];
+  const moduleNumbers = new Map<number, string>();
+  for (const module of modules) {
+    if (!module.learning_stage) issues.push(`${module.id}.learning_stage is required for module navigation`);
+    const existing = moduleNumbers.get(module.module_number);
+    if (existing) issues.push(`duplicate module_number ${module.module_number}: ${existing}, ${module.id}`);
+    moduleNumbers.set(module.module_number, module.id);
+  }
+  if (issues.length) throw new RegistryValidationError(issues);
+  const ordered = [...modules].sort(sequenceCompare);
+  return Object.fromEntries(ordered.map((module, index) => [module.id, {
+    previous: index > 0 ? { id: ordered[index - 1].id, title: ordered[index - 1].title, url: canonicalPath(ordered[index - 1]) } : undefined,
+    next: index < ordered.length - 1 ? { id: ordered[index + 1].id, title: ordered[index + 1].title, url: canonicalPath(ordered[index + 1]) } : undefined,
+  }]));
+}
+
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[character]!);
@@ -93,7 +130,7 @@ function addIndex(index: Record<string, string[]>, key: string | number, id: str
   index[normalized] = [...(index[normalized] ?? []), id];
 }
 
-export function projectNoResultState(activeFilters: string[]): DiscoveryProjection['no_result'] {
+export function projectNoResultState(activeFilters: string[]): NoResultState {
   return {
     message: 'No resources match the active filters. Clear filters or browse the complete index.',
     active_filters: [...activeFilters].sort(),
@@ -102,7 +139,7 @@ export function projectNoResultState(activeFilters: string[]): DiscoveryProjecti
 }
 
 export function projectDiscovery(content: ContentItem[], fixedPublicPaths: string[] = ['/','/resources/']): DiscoveryProjection {
-  const published = content.filter(({ status }) => ['published', 'superseded', 'archived'].includes(status))
+  const published = content.filter(isPublic)
     .sort((a, b) => canonicalPath(a).localeCompare(canonicalPath(b)) || a.id.localeCompare(b.id));
   generateCanonicalRoutes(published);
   const indexNames = ['audience', 'topic', 'milestone', 'artifact_type', 'maturity', 'scheduler', 'container_runtime'] as const;
@@ -127,12 +164,21 @@ export function projectDiscovery(content: ContentItem[], fixedPublicPaths: strin
   const manifest = published.map((item) => ({ id: item.id, path: canonicalPath(item), url: `${CANONICAL_ORIGIN}${canonicalPath(item)}` }));
   const allUrls = [...new Set([...fixedPublicPaths.map((path) => `${CANONICAL_ORIGIN}${path}`), ...manifest.map(({ url }) => url)])].sort();
   const resources = published.map((item) => ({ id: item.id, title: item.title, url: canonicalPath(item) }));
+  const artifactTypes = [...new Set(published.map(({ artifact_type }) => artifact_type))].sort();
+  const sequenced = published.filter((item): item is ContentItem & { learning_stage: LearningStage } => Boolean(item.learning_stage));
   return {
-    resources, indexes,
-    sequential_path: stages.map((stage) => ({ stage, item_ids: published.filter((item) => item.learning_stage === stage).map(({ id }) => id) })),
+    resources,
+    resource_groups: artifactTypes.map((artifact_type) => ({
+      artifact_type,
+      item_ids: published.filter((item) => item.artifact_type === artifact_type).map(({ id }) => id),
+    })),
+    indexes,
+    sequential_path: LEARNING_STAGES.map((stage) => ({
+      stage,
+      item_ids: sequenced.filter((item) => item.learning_stage === stage).sort(sequenceCompare).map(({ id }) => id),
+    })),
     search: published.map((item) => ({ id: item.id, url: canonicalPath(item), title: item.title, summary: item.summary, keywords: [...item.keywords].sort() })),
     relationships,
-    no_result: projectNoResultState([]),
     sitemap: allUrls,
     feed: published.filter(({ publication_date }) => Boolean(publication_date)).map((item) => ({ id: item.id, url: `${CANONICAL_ORIGIN}${canonicalPath(item)}`, title: item.title, date: item.publication_date! })).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id)),
     url_manifest: manifest,
@@ -140,61 +186,179 @@ export function projectDiscovery(content: ContentItem[], fixedPublicPaths: strin
   };
 }
 
-export interface TechnicalStatusProjection {
-  item_id: string;
-  url: string;
-  maturity: ContentItem['status'];
-  applicable_release?: string;
-  last_reviewed?: string;
-  validation_status?: 'validated' | 'failed' | 'unvalidated' | 'stale';
-  validation_date?: string;
-  applicability: Array<{
-    id: string;
-    environment: string;
-    scheduler: string;
-    runtime: string;
-    validation_status: ApplicabilityRecord['status'];
-    validation_date: string;
-    evidence_path: string;
-  }>;
+export const COMPOSITION_PROFILES = [
+  'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start',
+  'diagnostic', 'milestone', 'release', 'about', 'support', 'accessibility', 'applicability',
+  'not-found',
+] as const;
+export type CompositionProfile = typeof COMPOSITION_PROFILES[number];
+export type ApplicabilityConsumer = 'landing' | 'runnable-module' | 'milestone' | 'release';
+export type ApplicabilitySupplement = { kind: 'boundary' | 'status'; text: string };
+export interface ApplicabilityProjection {
+  projectionId: `${ApplicabilityConsumer}:${string}`;
+  consumer: ApplicabilityConsumer;
+  recordId: string;
+  canonicalPath: `/applicability/${string}/`;
+  testedScope: string;
+  supplement: ApplicabilitySupplement;
+}
+export interface DiagnosticApplicabilityContext {
+  projectionId: `diagnostic:${string}:${string}`;
+  diagnosticId: string;
+  recordId: string;
+  canonicalPath: `/applicability/${string}/`;
+  discriminator: string;
 }
 
-export function projectTechnicalStatus(
-  content: ContentItem[],
-  applicability: ApplicabilityRecord[],
-): TechnicalStatusProjection[] {
-  const issues: string[] = [];
-  const applicabilityById = new Map(applicability.map((record) => [record.id, record]));
-  const projections = content.filter(isTechnicalContent).map((item) => {
-    const records = item.applicability_records.flatMap((id) => {
-      const record = applicabilityById.get(id);
-      if (!record) { issues.push(`${item.id}: missing applicability projection source ${id}`); return []; }
-      if (record.workflow_id !== item.id) issues.push(`${item.id}: applicability ${id} belongs to ${record.workflow_id}`);
-      return [record];
-    });
-    const moduleValidation = item.artifact_type === 'learning-module'
-      ? { validation_status: item.validation_status, validation_date: item.validation_date }
-      : {};
-    return {
-      item_id: item.id,
-      url: canonicalPath(item),
-      maturity: item.status,
-      applicable_release: item.applicable_release,
-      last_reviewed: item.last_reviewed,
-      ...moduleValidation,
-      applicability: records.map((record) => ({
-        id: record.id,
-        environment: record.environment.public_name,
-        scheduler: `${record.scheduler.family} ${record.scheduler.version}`,
-        runtime: `${record.runtime.name} ${record.runtime.version}`,
-        validation_status: record.status,
-        validation_date: record.validation_date,
-        evidence_path: record.evidence.path,
-      })),
-    };
-  }).sort((a, b) => a.url.localeCompare(b.url));
-  if (issues.length) throw new RegistryValidationError(issues);
-  return projections;
+const compositionProfiles = new Set<string>(COMPOSITION_PROFILES);
+
+export function assertKnownCompositionProfile(requested: unknown, context = 'page'): CompositionProfile {
+  if (typeof requested !== 'string' || !compositionProfiles.has(requested)) {
+    throw new RegistryValidationError([`${context}: unknown composition profile ${String(requested)}`]);
+  }
+  return requested as CompositionProfile;
+}
+
+function assertProfileNamespace(item: ContentItem, expected: string): void {
+  if (item.route_namespace && item.route_namespace !== expected) {
+    throw new RegistryValidationError([
+      `${item.id}: ${item.artifact_type} content cannot use ${item.route_namespace} composition; expected ${expected}`,
+    ]);
+  }
+}
+
+export function compositionProfileFor(item: ContentItem): CompositionProfile {
+  if (item.artifact_type === 'learning-module') {
+    assertProfileNamespace(item, 'guide');
+    return item.module_type === 'conceptual' ? 'learning-conceptual' : 'learning-runnable';
+  }
+  if (item.route_namespace === 'start') {
+    if (item.artifact_type !== 'guidance-note') {
+      throw new RegistryValidationError([`${item.id}: start composition requires guidance-note content`]);
+    }
+    return 'start';
+  }
+  if (item.artifact_type === 'diagnostic') {
+    assertProfileNamespace(item, 'diagnostics');
+    return 'diagnostic';
+  }
+  if (item.artifact_type === 'milestone') {
+    assertProfileNamespace(item, 'milestones');
+    return 'milestone';
+  }
+  if (item.artifact_type === 'release') {
+    assertProfileNamespace(item, 'releases');
+    return 'release';
+  }
+  if (item.artifact_type === 'support') {
+    assertProfileNamespace(item, 'about');
+    return 'support';
+  }
+  if (item.artifact_type === 'accessibility') {
+    assertProfileNamespace(item, 'about');
+    return 'accessibility';
+  }
+
+  const aboutArtifacts: ReadonlySet<ContentItem['artifact_type']> = new Set([
+    'guidance-note', 'report', 'news', 'contribution', 'attribution', 'maintenance',
+  ]);
+  const defaultsToAbout = ['contribution', 'attribution', 'maintenance'].includes(item.artifact_type);
+  if (aboutArtifacts.has(item.artifact_type) && (item.route_namespace === 'about' || (!item.route_namespace && defaultsToAbout))) {
+    return 'about';
+  }
+  throw new RegistryValidationError([
+    `${item.id}: no composition profile for ${item.artifact_type} content${item.route_namespace ? ` in ${item.route_namespace}` : ''}`,
+  ]);
+}
+
+export function assertCompositionProfile(item: ContentItem, requested: unknown): CompositionProfile {
+  const selected = assertKnownCompositionProfile(requested, item.id);
+  const inferred = compositionProfileFor(item);
+  if (selected !== inferred) {
+    throw new RegistryValidationError([`${item.id}: composition profile ${selected} contradicts ${inferred}`]);
+  }
+  return inferred;
+}
+
+const statusSupplement = (status: ApplicabilityRecord['status']): ApplicabilitySupplement | undefined => ({
+  failed: { kind: 'status', text: 'This recorded run failed; use the linked record before attempting the workflow.' },
+  unvalidated: { kind: 'status', text: 'This workflow scope is unvalidated; do not treat it as executable evidence.' },
+  stale: { kind: 'status', text: 'This validation is stale and requires review before reuse.' },
+  validated: undefined,
+})[status] as ApplicabilitySupplement | undefined;
+
+export function projectApplicability(record: ApplicabilityRecord, consumer: ApplicabilityConsumer): ApplicabilityProjection {
+  const supplement = statusSupplement(record.status) ?? {
+    kind: 'boundary' as const,
+    text: record.portability_boundaries[0],
+  };
+  return {
+    projectionId: `${consumer}:${record.id}`,
+    consumer,
+    recordId: record.id,
+    canonicalPath: `/applicability/${record.id}/`,
+    testedScope: `The baseline workflow was ${record.status === 'validated' ? 'validated' : 'recorded'} on ${record.environment.public_name} with ${record.scheduler.family} and ${record.runtime.name}.`,
+    supplement,
+  };
+}
+
+const applicabilityConsumerByProfile: Partial<Record<CompositionProfile, ApplicabilityConsumer>> = {
+  landing: 'landing',
+  'learning-runnable': 'runnable-module',
+  milestone: 'milestone',
+  release: 'release',
+};
+
+/** Applies the closed composition allowlist before any applicability output is created. */
+export function projectApplicabilityForProfile(
+  profile: CompositionProfile,
+  record?: ApplicabilityRecord,
+): ApplicabilityProjection | undefined {
+  const selected = assertKnownCompositionProfile(profile);
+  const consumer = applicabilityConsumerByProfile[selected];
+  return consumer && record ? projectApplicability(record, consumer) : undefined;
+}
+
+export function projectApplicabilityForItem(
+  item: ContentItem,
+  records: ApplicabilityRecord[],
+  consumer: Exclude<ApplicabilityConsumer, 'landing'>,
+): ApplicabilityProjection | undefined {
+  const allowed = consumer === 'runnable-module'
+    ? item.artifact_type === 'learning-module' && item.module_type !== 'conceptual'
+    : item.artifact_type === consumer;
+  if (!allowed) throw new RegistryValidationError([`${item.id}: ${consumer} applicability is not allowed for ${compositionProfileFor(item)}`]);
+  if (item.applicability_records.length === 0) return undefined;
+  if (item.applicability_records.length !== 1) throw new RegistryValidationError([`${item.id}: exactly one applicability record is allowed`]);
+  const record = records.find(({ id }) => id === item.applicability_records[0]);
+  if (!record) throw new RegistryValidationError([`${item.id}: missing applicability source ${item.applicability_records[0]}`]);
+  if (consumer === 'runnable-module' && record.workflow_id !== item.id) {
+    throw new RegistryValidationError([`${item.id}: applicability ${record.id} belongs to ${record.workflow_id}`]);
+  }
+  return projectApplicability(record, consumer);
+}
+
+export function projectDiagnosticApplicabilityContext(
+  item: ContentItem,
+  records: ApplicabilityRecord[],
+): DiagnosticApplicabilityContext | undefined {
+  if (item.artifact_type !== 'diagnostic') throw new RegistryValidationError([`${item.id}: diagnostic context requires a diagnostic item`]);
+  const relationship = item.diagnostic_applicability;
+  if (!relationship) return undefined;
+  const record = records.find(({ id }) => id === relationship.record_id);
+  if (!record) throw new RegistryValidationError([`${item.id}: missing diagnostic applicability source ${relationship.record_id}`]);
+  if (!item.related.includes(record.workflow_id)) {
+    throw new RegistryValidationError([`${item.id}: diagnostic applicability must reference a record for a related workflow`]);
+  }
+  const discriminator = relationship.discriminator === 'environment' ? record.environment.public_name
+    : relationship.discriminator === 'scheduler' ? record.scheduler.family : record.runtime.name;
+  return {
+    projectionId: `diagnostic:${item.id}:${record.id}`,
+    diagnosticId: item.id,
+    recordId: record.id,
+    canonicalPath: `/applicability/${record.id}/`,
+    discriminator: `${relationship.discriminator}: ${discriminator}`,
+  };
 }
 
 export interface ReleaseChangeProjection {
@@ -234,4 +398,58 @@ export function projectReleaseChanges(releases: ReleaseRecord[]): ReleaseChangeP
       classes,
     };
   });
+}
+
+export interface LandingPageProjection {
+  applicability_projection?: ApplicabilityProjection;
+  validation_unavailable_reason?: string;
+  learning_path: Array<{ label: string; title: string; summary: string; url: string }>;
+  estimated_minutes: number;
+  release: { title: string; status: ContentItem['status']; url: string };
+  milestone: { title: string; url: string };
+}
+
+/** Builds the root-page editorial data strictly from validated content records. */
+export function projectLandingPage(
+  content: ContentItem[],
+  applicability: ApplicabilityRecord[],
+): LandingPageProjection {
+  const published = content.filter(({ status }) => ['published', 'superseded', 'archived'].includes(status));
+  const model = published.find((item) => item.artifact_type === 'learning-module' && item.module_number === 1);
+  const baseline = published.find((item) => item.artifact_type === 'learning-module' && item.module_number === 2);
+  const start = published.find((item) => item.route_namespace === 'start');
+  const milestone = baseline && published.find((item) => item.artifact_type === 'milestone' && item.milestone === baseline.milestone);
+  const missing = [!model && 'module 1', !start && 'getting-started guide', !baseline && 'module 2', !milestone && 'milestone collection'].filter(Boolean);
+  if (missing.length) throw new RegistryValidationError([`landing projection is missing ${missing.join(', ')}`]);
+
+  const modules = [model!, baseline!];
+  const missingDurations = modules.filter((item) => item.artifact_type === 'learning-module' && !item.estimated_minutes);
+  if (missingDurations.length) {
+    throw new RegistryValidationError(missingDurations.map((item) => `${item.id}.estimated_minutes is required by the landing learning path`));
+  }
+
+  const records = baseline!.applicability_records.flatMap((id) => {
+    const record = applicability.find((candidate) => candidate.id === id && candidate.workflow_id === baseline!.id);
+    return record ? [record] : [];
+  });
+  const latestDate = records.map(({ validation_date }) => validation_date).sort().at(-1);
+  const currentRecords = latestDate ? records.filter(({ validation_date }) => validation_date === latestDate) : [];
+  const current = currentRecords.length === 1 ? currentRecords[0] : undefined;
+  const release = published.find((item) => item.artifact_type === 'release'
+    && (!current || item.applicability_records.includes(current.id)));
+  if (!release) throw new RegistryValidationError(['landing projection is missing the current release record']);
+
+  const step = (label: string, item: ContentItem) => ({
+    label, title: item.title, summary: item.summary, url: canonicalPath(item),
+  });
+  return {
+    applicability_projection: current ? projectApplicability(current, 'landing') : undefined,
+    validation_unavailable_reason: current ? undefined : records.length
+      ? 'Multiple applicability records share the latest validation date.'
+      : 'No current applicability record is published.',
+    learning_path: [step('Understand the model', model!), step('Check your center', start!), step('Run the baseline', baseline!)],
+    estimated_minutes: modules.reduce((total, item) => total + (item.artifact_type === 'learning-module' ? item.estimated_minutes ?? 0 : 0), 0),
+    release: { title: release.title, status: release.status, url: canonicalPath(release) },
+    milestone: { title: milestone!.title, url: canonicalPath(milestone!) },
+  };
 }
