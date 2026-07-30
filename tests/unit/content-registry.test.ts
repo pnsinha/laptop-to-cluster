@@ -19,9 +19,10 @@ import {
 import {
   projectDiscovery,
   projectMilestones,
+  projectModuleNavigation,
+  projectApplicabilityForItem,
   projectNoResultState,
   projectReleaseChanges,
-  projectTechnicalStatus,
 } from '../../site/src/content/projections.js';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -59,7 +60,9 @@ function applicability() {
     container_digest: digest, workflow_revision: 'v0.1.0', validation_date: '2026-06-30', execution_date: '2026-06-30', submission_id: 'public-1',
     result: { terminal_state: 'COMPLETED', exit_code: 0, checks: ['result schema'] },
     assumptions: ['single node'], limitations: ['site policy'], portability_boundaries: ['storage'],
-    evidence, review_after: '2026-12-30',
+    evidence,
+    provenance: [{ label: 'fixture source', reference: { repository: 'https://github.com/example/project', release: 'v0.1.0', path: 'README.md', integrity: digest } }],
+    review_after: '2026-12-30',
   });
 }
 
@@ -101,6 +104,19 @@ describe('cross-record validation and lifecycle', () => {
     expect(() => validateRegistry({
       content: [item({ status: 'draft', publication_date: undefined })], previousContent: [item()],
     })).toThrow(/invalid transition published -> draft/);
+  });
+
+  it('validates diagnostic applicability only for a record owned by a related workflow', () => {
+    const diagnostic = item({
+      id: 'BSSW-RUNTIME', stable_slug: 'bssw-runtime', artifact_type: 'diagnostic',
+      related: ['module-1'], container_runtimes: ['apptainer'],
+      diagnostic_applicability: { record_id: 'anvil-run', discriminator: 'runtime' },
+    });
+    expect(validateRegistry({ content: [moduleItem(), diagnostic], applicability: [applicability()] })
+      .content.find(({ id }) => id === 'BSSW-RUNTIME')?.diagnostic_applicability?.record_id).toBe('anvil-run');
+    expect(() => validateRegistry({
+      content: [moduleItem(), { ...diagnostic, related: [] }], applicability: [applicability()],
+    })).toThrow(/must belong to a related workflow/);
   });
 
   it('rejects conflicting or duplicate explicit milestone ownership', () => {
@@ -170,22 +186,47 @@ describe('milestone and discovery projections', () => {
     const draft = contentItemSchema.parse(item({ id: 'draft-1', stable_slug: 'draft-one', status: 'draft', publication_date: undefined }));
     const projection = projectDiscovery([draft, published]);
     expect(projection.resources.map(({ id }) => id)).toEqual(['guide-1']);
+    expect(projection.resource_groups).toEqual([{ artifact_type: 'guidance-note', item_ids: ['guide-1'] }]);
+    expect(projection.sequential_path[0]).toEqual({ stage: 'baseline', item_ids: ['guide-1'] });
     expect(projection.search[0]).toMatchObject({ title: 'Guide one', summary: 'A useful guide' });
     expect(projection.relationships['guide-1'].related).toEqual(['module-1']);
     expect(projection.url_manifest[0].url).toBe('https://laptop-to-cluster.org/guide/guide-one/');
     expect(projection.no_js_html).toContain('<a href="/guide/guide-one/">Guide one</a>');
+    expect(projection).not.toHaveProperty('no_result');
     expect(projectNoResultState(['topic:mpi']).active_filters).toEqual(['topic:mpi']);
+  });
+
+  it('derives previous and next module links from stage and module-number sequence', () => {
+    const first = contentItemSchema.parse(moduleItem({
+      id: 'module-1', stable_slug: 'model', module_number: 1, module_type: 'conceptual',
+      learning_stage: 'baseline', validation_status: undefined, validation_date: undefined,
+      applicability_records: [], required_resources: undefined, estimated_minutes: 10,
+      section_kinds: ['concept', 'limitations', 'next-steps'],
+      completion_check: { kind: 'decision-exercise', text: 'Map the workflow outcome' },
+    }));
+    const second = contentItemSchema.parse(moduleItem({
+      id: 'module-2', stable_slug: 'run', module_number: 2, learning_stage: 'baseline',
+    }));
+    const navigation = projectModuleNavigation([second, first]);
+    expect(navigation['module-1']).toEqual({
+      previous: undefined,
+      next: { id: 'module-2', title: 'Guide one', url: '/guide/run/' },
+    });
+    expect(navigation['module-2'].previous).toEqual({ id: 'module-1', title: 'Guide one', url: '/guide/model/' });
+    expect(navigation['module-2'].next).toBeUndefined();
   });
 });
 
-describe('technical status and release change projections', () => {
-  it('projects maturity, release, review, validation, applicability, and evidence links', () => {
+describe('applicability and release change projections', () => {
+  it('projects only one source-derived scope, one supplement, and the canonical link', () => {
     const technical = contentItemSchema.parse(moduleItem({ applicable_release: 'v0.1.0', last_reviewed: '2026-07-01' }));
-    expect(projectTechnicalStatus([technical], [applicability()])[0]).toMatchObject({
-      maturity: 'published', applicable_release: 'v0.1.0', last_reviewed: '2026-07-01',
-      validation_status: 'validated', validation_date: '2026-06-30',
-      applicability: [{ environment: 'Purdue Anvil', validation_status: 'validated', evidence_path: 'evidence/run-1/manifest.json' }],
+    const projected = projectApplicabilityForItem(technical, [applicability()], 'runnable-module');
+    expect(projected).toMatchObject({
+      projectionId: 'runnable-module:anvil-run', consumer: 'runnable-module', recordId: 'anvil-run',
+      canonicalPath: '/applicability/anvil-run/', supplement: { kind: 'boundary', text: 'storage' },
     });
+    expect(Object.keys(projected!).sort()).toEqual(['canonicalPath', 'consumer', 'projectionId', 'recordId', 'supplement', 'testedScope']);
+    expect(JSON.stringify(projected)).not.toMatch(/24\.05|1\.3|2026-06-30|public-1|manifest\.json|sha256/);
   });
 
   it('classifies release changes and requires material-change traceability', () => {

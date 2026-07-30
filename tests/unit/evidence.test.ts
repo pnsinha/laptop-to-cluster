@@ -98,6 +98,7 @@ describe('applicability and provenance validation', () => {
       result: { terminal_state: manifest.run.terminalState, exit_code: manifest.run.exitCode, checks: ['verified'] },
       assumptions: manifest.assumptions, limitations: manifest.limitations, portability_boundaries: manifest.portabilityBoundaries,
       evidence: { id: manifest.evidenceId, path: `evidence/${manifest.evidenceId}/manifest.json`, integrity: sha256File(join(bundle, 'manifest.json')) },
+      provenance: [{ label: 'recorded workflow', reference: { repository: 'https://github.com/pnsinha/laptop-to-cluster', release: 'v0.1.0', path: 'README.md', integrity: digest } }],
       review_after: manifest.reviewAfter,
     });
     expect(validateApplicabilityAgainstManifest(record, manifest, paths.root, '2026-07-24')).toEqual([]);
