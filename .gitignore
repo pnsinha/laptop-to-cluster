@@ -11,3 +11,8 @@ __pycache__/
 *.sif
 .kiro/
 publication/
+.claude/
+Better_Scientific_Software_SoW.md
+.opencode/
+.agents/
+.kilocode/

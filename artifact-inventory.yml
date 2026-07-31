@@ -30,7 +30,7 @@ categories:
   - id: documentation-training-evidence
     description: Original documentation, training sources, static public text, and evidence
     license: CC-BY-4.0
-    paths: [README.md, Better_Scientific_Software_SoW.md, templates/**, training/**, evidence/**, releases/**, site/src/content/**/*.md, site/src/content/**/*.yml, site/src/content/**/.gitkeep, site/public/**]
+    paths: [README.md, templates/**, training/**, evidence/**, releases/**, site/src/content/**/*.md, site/src/content/**/*.yml, site/src/content/**/.gitkeep, site/public/**]
 excluded:
   - paths: [LICENSE, licenses/**, artifact-inventory.yml, THIRD_PARTY.yml]
     reason: Legal and provenance declarations retain their stated terms and are not project artifacts.
