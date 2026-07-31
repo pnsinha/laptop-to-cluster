@@ -151,7 +151,7 @@ describe('immutable companion repository references', () => {
 describe('canonical routes and redirects', () => {
   it('generates every designed namespace deterministically', () => {
     expect(canonicalPath(contentItemSchema.parse(moduleItem()))).toBe('/guide/module-one/');
-    expect(canonicalPath(contentItemSchema.parse(item({ artifact_type: 'diagnostic' })))).toBe('/diagnostics/guide-one/');
+    expect(canonicalPath(contentItemSchema.parse(item({ artifact_type: 'diagnostic' })))).toBe('/diagnostics/#guide-one');
     expect(canonicalPath(contentItemSchema.parse(item({ artifact_type: 'milestone' })))).toBe('/milestones/1/');
     expect(canonicalPath(contentItemSchema.parse(item({ route_namespace: 'start' })))).toBe('/start/');
   });
