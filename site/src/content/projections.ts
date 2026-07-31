@@ -6,9 +6,9 @@ import {
   type EvidenceReference,
   type ReleaseRecord,
 } from './schema.js';
-import { RegistryValidationError, canonicalPath, generateCanonicalRoutes } from './registry.js';
+import { RegistryValidationError, canonicalPath, generateCanonicalRoutes, hasNoStandalonePage } from './registry.js';
 
-export interface MilestoneDeliverableProjection {
+interface MilestoneDeliverableProjection {
   sow_id: string;
   item_id: string;
   title: string;
@@ -161,7 +161,12 @@ export function projectDiscovery(content: ContentItem[], fixedPublicPaths: strin
   for (const index of Object.values(indexes)) {
     for (const ids of Object.values(index)) ids.sort();
   }
-  const manifest = published.map((item) => ({ id: item.id, path: canonicalPath(item), url: `${CANONICAL_ORIGIN}${canonicalPath(item)}` }));
+  // Diagnostics and the consolidated v0.1.0 release render as sections of another
+  // item's page rather than owning a distinct page, so they are excluded from the
+  // manifest/URL inventory (their content's real page is already covered there)
+  // even though they remain in indexes, relationships, search, and feed metadata above.
+  const addressable = published.filter((item) => !hasNoStandalonePage(item));
+  const manifest = addressable.map((item) => ({ id: item.id, path: canonicalPath(item), url: `${CANONICAL_ORIGIN}${canonicalPath(item)}` }));
   const allUrls = [...new Set([...fixedPublicPaths.map((path) => `${CANONICAL_ORIGIN}${path}`), ...manifest.map(({ url }) => url)])].sort();
   const resources = published.map((item) => ({ id: item.id, title: item.title, url: canonicalPath(item) }));
   const artifactTypes = [...new Set(published.map(({ artifact_type }) => artifact_type))].sort();
