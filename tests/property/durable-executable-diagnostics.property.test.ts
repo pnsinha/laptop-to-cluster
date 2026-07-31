@@ -62,7 +62,7 @@ describe('Property 9: Executable failures resolve to durable diagnostics', () =>
         expect(prerequisite.diagnostic_id).toMatch(/^BSSW-[A-Z0-9-]+$/);
         const target = registry.content.find(({ id }) => id === prerequisite.diagnostic_id);
         expect(target?.artifact_type).toBe('diagnostic');
-        expect(canonicalPath(target!)).toBe(`/diagnostics/${prerequisite.diagnostic_id!.toLowerCase()}/`);
+        expect(canonicalPath(target!)).toBe(`/diagnostics/#${prerequisite.diagnostic_id!.toLowerCase()}`);
       }
     }));
   });

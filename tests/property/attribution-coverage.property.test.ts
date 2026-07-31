@@ -51,7 +51,7 @@ describe('Property 12: Attribution coverage preserves role and funding scope', (
       const html = await container.renderToString(BaseLayout, { props: page });
       const projection = attributionSchema.parse({ ...globalAttribution, contributors });
 
-      expect(html).toContain('<a href="/about/attribution/">Attribution and funding</a>');
+      expect(html).toContain('<a href="/about/attribution/">Attribution and licenses</a>');
       expect(projection.contributors).toEqual(contributors);
       for (const contributor of contributors) {
         expect(projection.contributors).toContainEqual(contributor);
