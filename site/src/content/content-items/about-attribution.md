@@ -1,23 +1,26 @@
 ---
 id: attribution-statement
 stable_slug: attribution
-title: Attribution and funding
-summary: "Author, fellowship, affiliation, funds administration, sponsorship, contributor, license, and non-endorsement context."
+title: Attribution and licenses
+summary: "Author, fellowship, affiliation, funds administration, sponsorship, and license coverage."
 artifact_type: attribution
 route_namespace: about
-topics: [attribution, funding]
-keywords: [author, fellowship, funding, sponsors]
-audiences: [general public]
+topics: [attribution, funding, licensing]
+keywords: [Apache-2.0, author, CC-BY-4.0, fellowship, funding, license, provenance, sponsors]
+audiences: [general public, adopters, contributors]
 milestone: 1
 status: published
 publication_date: "2026-07-31"
 ---
-## Acknowledgment
+## Licenses
 
-This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.
+### Executable artifacts
+Executable source, workflow assets, configuration, CI automation, and validation code use the [Apache License 2.0](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/licenses/Apache-2.0.txt).
 
-Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.
+### Documentation and training
+Original documentation, learning modules, training materials, and publishable evidence use [Creative Commons Attribution 4.0 International](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/licenses/CC-BY-4.0.txt).
 
-## Contributor roles
+### Category and third-party records
+The [artifact inventory](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/artifact-inventory.yml) is the authoritative category-to-license mapping. The [third-party record](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/THIRD_PARTY.yml) identifies each included or adapted work’s source, copyright holder, license, and modification status.
 
-Artifact-specific contributor roles and funding scopes appear with the relevant artifact when applicable.
+The full funding acknowledgment appears in the footer of every page.
