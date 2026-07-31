@@ -29,9 +29,9 @@ Confirm these assumptions before execution:
 
 ## Check the prerequisites
 
-1. Run `command -v sbatch` and confirm your center's account and partition syntax. If either fails, use [BSSW-PREREQ-SLURM](/diagnostics/bssw-prereq-slurm/).
-2. Run `command -v apptainer` and `apptainer --version` in the compute-node module environment. If either fails, use [BSSW-PREREQ-APPTAINER](/diagnostics/bssw-prereq-apptainer/).
-3. Create and remove a private test file through the intended container bind. If that fails, use [BSSW-STORAGE-UNAVAILABLE](/diagnostics/bssw-storage-unavailable/).
+1. Run `command -v sbatch` and confirm your center's account and partition syntax. If either fails, use [PREREQ-SLURM](/diagnostics/#bssw-prereq-slurm).
+2. Run `command -v apptainer` and `apptainer --version` in the compute-node module environment. If either fails, use [PREREQ-APPTAINER](/diagnostics/#bssw-prereq-apptainer).
+3. Create and remove a private test file through the intended container bind. If that fails, use [STORAGE-UNAVAILABLE](/diagnostics/#bssw-storage-unavailable).
 
 ## Record your local values
 
@@ -39,10 +39,10 @@ Write down the account or project, partition or queue, wall time, CPU and memory
 
 ## Run
 
-1. Obtain the workflow from the repository link in [Module 2](/guide/baseline-single-node-pattern/).
+1. Open the release-pinned [sbatch workflow](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/slurm/baseline.sbatch) or review the annotated implementation reference in [Module 2](/guide/baseline-single-node-pattern/#implementation-reference).
 2. Apply the local values without exceeding the documented worker, task, or timeout bounds.
 3. Submit the baseline script once.
-4. Confirm the readiness gate passes before workers start. If it expires, use [BSSW-READINESS-TIMEOUT](/diagnostics/bssw-readiness-timeout/).
+4. Confirm the readiness gate passes before workers start. If it expires, use [READINESS-TIMEOUT](/diagnostics/#bssw-readiness-timeout).
 
 ## Verify
 

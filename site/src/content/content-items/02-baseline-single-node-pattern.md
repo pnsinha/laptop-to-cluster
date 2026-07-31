@@ -46,28 +46,21 @@ One allocation contains one coordinator and a bounded worker pool. The launcher 
 
 ### Five-step flow
 
+This is the conceptual sequence, not an executable submission script. The release-pinned implementation and annotated source excerpts appear below before the procedure.
+
 1. **Storage:** create private state and output directories for the allocation.
 2. **Coordinator:** start one service on loopback.
 3. **Readiness:** require a bounded semantic response before continuing.
 4. **Workers:** start exclusive worker steps only after readiness.
 5. **Verification:** confirm result count, uniqueness, schema, and worker completion before recording success.
 
-```bash
-RUNTIME_DIR="$SCRATCH/bssw-$SLURM_JOB_ID"
-mkdir -p "$RUNTIME_DIR"/{results,logs}
-start_coordinator_on_loopback
-wait_for_bounded_readiness
-start_exclusive_workers
-verify_results_before_success
+```text
+allocation → coordinator → semantic readiness → workers → result verification
 ```
-
-## Safety before execution
-
-**Warning:** Use only center-approved allocations, storage, network paths, runtime modules, and image digests. Do not expose the coordinator publicly, use privileged containers, fall back silently to shared writable storage, or publish sensitive scheduler data.
 
 ## Procedure
 
-1. Open the workflow instructions from the repository link below.
+1. Open the complete workflow package from the implementation reference above; the annotated excerpts are orientation, not a replacement for the release-pinned source.
 2. Set an approved account and partition, wall time, CPU and memory, runtime module, image path and digest, scratch root, worker count, task count, and readiness timeout.
 3. Run the prerequisite commands listed above.
 4. Submit the baseline script. Keep account names, private hosts, and sensitive paths out of logs.
@@ -79,10 +72,10 @@ A successful run exits zero, writes a machine-readable success result, contains 
 
 ## Diagnose a failure
 
-- A rejected or unavailable scheduler command: [BSSW-PREREQ-SLURM](/diagnostics/bssw-prereq-slurm/)
-- A missing container runtime: [BSSW-PREREQ-APPTAINER](/diagnostics/bssw-prereq-apptainer/)
-- An unusable runtime directory or bind: [BSSW-STORAGE-UNAVAILABLE](/diagnostics/bssw-storage-unavailable/)
-- A coordinator readiness timeout: [BSSW-READINESS-TIMEOUT](/diagnostics/bssw-readiness-timeout/)
+- A rejected or unavailable scheduler command: [PREREQ-SLURM](/diagnostics/#bssw-prereq-slurm)
+- A missing container runtime: [PREREQ-APPTAINER](/diagnostics/#bssw-prereq-apptainer)
+- An unusable runtime directory or bind: [STORAGE-UNAVAILABLE](/diagnostics/#bssw-storage-unavailable)
+- A coordinator readiness timeout: [READINESS-TIMEOUT](/diagnostics/#bssw-readiness-timeout)
 
 ## Safety and scope limitations
 
