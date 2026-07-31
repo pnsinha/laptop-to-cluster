@@ -11,8 +11,8 @@ const groups = [
 const qualifier = (item: typeof entries[number]) => item.artifact_type === 'learning-module'
   ? `${item.module_type} module` : item.artifact_type === 'diagnostic' ? 'Recovery guide' : undefined;
 ---
-<BaseLayout title="Resources" description="Complete no-JavaScript index of published Laptop-to-Cluster resources." profile="resources">
-  <header class="content-header"><h1>Resources</h1><p class="lede">Every published page, grouped by what you are trying to do. Start with a question, then follow an ordinary link. Works without JavaScript.</p></header>
+<BaseLayout title="Resources" description="Complete index of published Laptop-to-Cluster resources." profile="resources">
+  <header class="content-header"><h1>Resources</h1><p class="lede">Every published page, grouped by what you are trying to do. Start with a question, then follow a link.</p></header>
   {groups.map((group) => (
     <section class="resource-section" aria-labelledby={`resource-${group.id}`}>
       <div class="resource-section__header">
