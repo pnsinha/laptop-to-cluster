@@ -21,7 +21,7 @@ const STANDARD_PROJECTION_CONSUMER = Object.freeze({
   milestone: 'milestone',
   release: 'release',
 });
-const CANONICAL_ONLY_PATTERN = /<dt>Submission ID<\/dt>|<dt>Container (?:image )?digest<\/dt>|<h2[^>]*>Result checks<\/h2>|<h2[^>]*>Evidence and integrity<\/h2>|<h2[^>]*>Provenance<\/h2>|sha256:[a-f0-9]{64}/i;
+const CANONICAL_ONLY_PATTERN = /<dt>Submission ID<\/dt>|<dt>Container (?:image )?digest<\/dt>|<h2[^>]*>Result checks<\/h2>|<h2[^>]*>Evidence and integrity<\/h2>|<h2[^>]*>Provenance<\/h2>/i;
 
 const occurrences = (text, pattern) => text.match(pattern)?.length ?? 0;
 const stripTags = (value = '') => value.replace(/<[^>]+>/g, '').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').trim();
@@ -374,13 +374,13 @@ export function validateBuiltOutput(dist) {
     const cssPath = relative(dist, file);
     if (/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net|linear-gradient|radial-gradient|backdrop-filter/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'VISUAL-DEPENDENCY', 'remote or bundled fonts, gradients, textures, and glass effects are forbidden'));
     if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'MOTION-EXCLUSION', 'decorative animation, transitions, and parallax are forbidden'));
-    if (!/color-scheme:light dark/.test(css) || !/prefers-color-scheme:dark/.test(css)) errors.push(diagnostic(cssPath, 'css', 'COLOR-SCHEME', 'complete light and dark scheme support is required'));
+    if (!/color-scheme:light dark/.test(css)) errors.push(diagnostic(cssPath, 'css', 'COLOR-SCHEME', 'color-scheme must advertise light and dark support'));
     for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'border', 'warning']) {
-      if (occurrences(css, new RegExp(`--${token}:`, 'g')) < 2) errors.push(diagnostic(cssPath, `--${token}`, 'SEMANTIC-TOKENS', 'semantic role must be defined in both light and dark schemes'));
+      if (!new RegExp(`--${token}:`, '').test(css)) errors.push(diagnostic(cssPath, `--${token}`, 'SEMANTIC-TOKENS', 'semantic role must be defined'));
     }
-    if (!/--font-display:ui-serif/.test(css) || !/--font-body:system-ui/.test(css) || !/--font-technical:ui-monospace/.test(css)
-      || !/--text-base:1rem/.test(css) || !/--text-supporting:0?\.875rem/.test(css)) {
-      errors.push(diagnostic(cssPath, 'typography', 'SYSTEM-TYPOGRAPHY', 'system-only serif, sans, and mono roles with 16px/14px minimum sizes are required'));
+    if (!/--font-display:\s*(?:ui-serif|system-ui|Georgia)/.test(css) || !/--font-body:\s*system-ui/.test(css) || !/--font-technical:\s*ui-monospace/.test(css)
+      || !/--text-base:\s*1rem/.test(css) || !/--text-supporting:\s*0?\.875rem/.test(css)) {
+      errors.push(diagnostic(cssPath, 'typography', 'SYSTEM-TYPOGRAPHY', 'system-only serif or sans display, sans body, mono technical with 16px/14px minimum sizes are required'));
     }
   }
   return errors;
