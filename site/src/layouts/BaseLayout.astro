@@ -1,6 +1,5 @@
 ---
 import '../styles/global.css';
-import Attribution from '../components/Attribution.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import { CANONICAL_ORIGIN } from '../content/schema';
@@ -26,5 +25,5 @@ const canonical = new URL(canonicalPath, CANONICAL_ORIGIN).href;
 </head><body data-composition-profile={selectedProfile}><a class="skip" href="#main">Skip to content</a>
 <SiteHeader {currentPath} />
 <main id="main" tabindex="-1">{currentPath !== '/' && <Breadcrumbs currentPath={currentPath} currentTitle={title} />}<slot /></main>
-<footer class="site-footer"><Attribution compact /><p class="acknowledgment">This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.</p><p class="acknowledgment">Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.</p><p>Found a problem? <a href={PROJECT.issues}>Open an issue.</a></p><p><a href="/about/accessibility/">Accessibility</a> · <a href="/about/support/">Contact and maintenance</a> · <a href="/about/licenses/">Licenses</a> · <a href="/milestones/1/">Milestone 1</a></p></footer>
+<footer class="site-footer"><p class="acknowledgment">This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.</p><p class="acknowledgment">Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.</p></footer>
 </body></html>
