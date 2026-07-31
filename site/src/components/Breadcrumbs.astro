@@ -14,10 +14,12 @@ const parents: Record<string, Parent> = {
 const parent = parents[namespace];
 const showParent = parent && normalize(parent.href) !== path;
 ---
-<nav class="breadcrumbs" aria-label="Breadcrumb">
-  <ol>
-    <li><a href="/">Home</a></li>
-    {showParent && <li><a href={parent.href}>{parent.label}</a></li>}
-    <li aria-current="page"><span>{currentTitle}</span></li>
-  </ol>
-</nav>
+{showParent && (
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li><a href={parent.href}>{parent.label}</a></li>
+      <li aria-current="page"><span>{currentTitle}</span></li>
+    </ol>
+  </nav>
+)}

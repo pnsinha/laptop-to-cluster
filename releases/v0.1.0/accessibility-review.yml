@@ -13,14 +13,11 @@ automatedEvidence:
     - /guide/baseline-single-node-pattern/
     - /start/
     - /diagnostics/
-    - /diagnostics/bssw-prereq-apptainer/
     - /applicability/m1-baseline-anvil/
     - /milestones/1/
-    - /releases/v0-1-0/
     - /about/accessibility/
     - /about/support/
     - /about/attribution/
-    - /about/licenses/
     - /about/glossary/
     - /about/project/
 presentationLevels:
@@ -40,8 +37,8 @@ canonicalDestinationTrace:
   - { subject: applicability, destination: /applicability/m1-baseline-anvil/, result: pending, notes: "Trace exact tested configuration, dates, boundaries, checks, and evidence integrity here." }
   - { subject: evidence, destination: /applicability/m1-baseline-anvil/, result: pending, notes: "Trace complete validation evidence and reconstruction links here; upstream pages retain only generated scope." }
   - { subject: authority, destination: /about/attribution/, result: pending, notes: "Trace approved authorship, fellowship role, affiliation, funding, sponsorship, and non-endorsement wording here." }
-  - { subject: provenance, destination: /about/licenses/, result: pending, notes: "Trace artifact license coverage and third-party provenance to the canonical license records linked here." }
-  - { subject: release, destination: /releases/v0-1-0/, result: pending, notes: "Trace immutable release identity, classified changes, citation, and reconstruction mechanics here." }
+  - { subject: provenance, destination: /about/attribution/, result: pending, notes: "Trace artifact license coverage and third-party provenance to the canonical license records linked here; v0.1.0 renders licenses as a section of the attribution page." }
+  - { subject: release, destination: /milestones/1/, result: pending, notes: "Trace immutable release identity, classified changes, citation, and reconstruction mechanics here; v0.1.0 renders the release record as a section of the one milestone it belongs to." }
 manualRouteSamples:
   - { kind: landing, route: /, result: pending }
   - { kind: resources, route: /resources/, result: pending }
@@ -49,14 +46,11 @@ manualRouteSamples:
   - { kind: runnable-module, route: /guide/baseline-single-node-pattern/, result: pending }
   - { kind: start, route: /start/, result: pending }
   - { kind: diagnostics-index, route: /diagnostics/, result: pending }
-  - { kind: diagnostic-detail, route: /diagnostics/bssw-prereq-apptainer/, result: pending }
   - { kind: applicability, route: /applicability/m1-baseline-anvil/, result: pending }
   - { kind: milestone, route: /milestones/1/, result: pending }
-  - { kind: release, route: /releases/v0-1-0/, result: pending }
   - { kind: accessibility, route: /about/accessibility/, result: pending }
   - { kind: support, route: /about/support/, result: pending }
-  - { kind: attribution, route: /about/attribution/, result: pending }
-  - { kind: licenses, route: /about/licenses/, result: pending }
+  - { kind: attribution-and-licenses, route: /about/attribution/, result: pending }
   - { kind: glossary, route: /about/glossary/, result: pending }
   - { kind: not-found, route: /404, result: pending }
   - { kind: about, route: /about/project/, result: pending }

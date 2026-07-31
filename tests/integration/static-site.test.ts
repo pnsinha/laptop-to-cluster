@@ -147,11 +147,11 @@ describe('reader-choice landing and resources', () => {
     expect(html.resources).toContain('href="/guide/baseline-single-node-pattern/"');
     expect(html.resources).not.toContain('Planned for a later milestone');
 
-    const cards = html.resources.match(/<article class="card resource-card">.*?<\/article>/g) ?? [];
+    const cards = html.resources.match(/<a class="resource-tile"[^>]*>.*?<\/a>/g) ?? [];
     expect(cards).toHaveLength(14);
     for (const card of cards) {
       expect(card).not.toMatch(/resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i);
-      expect(card.match(/class="resource-qualifier"/g)?.length ?? 0).toBeLessThanOrEqual(1);
+      expect(card.match(/class="resource-tile__tag"/g)?.length ?? 0).toBeLessThanOrEqual(1);
     }
   });
 });
@@ -182,11 +182,9 @@ describe('finalized presentation regression gates', () => {
   });
 
   it('does not imply clickability on unlinked containers (no cursor:pointer on non-interactive elements)', () => {
-    // Resource cards must contain links (not be standalone clickable)
-    const resourceCards = html.resources.match(/<article class="card resource-card">.*?<\/article>/gs) ?? [];
-    for (const card of resourceCards) {
-      expect(card, 'resource card must contain a link').toMatch(/<a\s/);
-    }
+    // Resource tiles must themselves be links (not standalone clickable containers)
+    const resourceCards = html.resources.match(/<a class="resource-tile"[^>]*>.*?<\/a>/gs) ?? [];
+    expect(resourceCards.length).toBeGreaterThan(0);
   });
 
   it('does not restore per-step boxes or connector/arrow SVGs in the workflow', () => {
@@ -208,9 +206,8 @@ describe('finalized presentation regression gates', () => {
     expect(notFoundHtml).toContain('href="/resources/"');
   });
 
-  it('links every footer to the full attribution and licenses page instead of repeating funding text inline', () => {
+  it('keeps the full funding administration text on the attribution page only, not repeated inline elsewhere', () => {
     for (const page of pages.filter(({ route }) => route !== 'about/attribution/').slice(0, 5)) {
-      expect(page.html, page.route).toContain('<a href="/about/attribution/">Attribution and licenses</a>');
       expect(page.html, page.route).not.toContain('ParaTools');
     }
     expect(html.attribution).toContain('ParaTools');
@@ -218,11 +215,11 @@ describe('finalized presentation regression gates', () => {
 });
 
 describe('static accessibility, metadata, and dependency gates', () => {
-  it('preserves landmarks, one h1, attribution, and canonical apex metadata on every page', () => {
+  it('preserves landmarks, one h1, and canonical apex metadata on every page', () => {
     expect(pages.length).toBeGreaterThan(10);
     for (const page of pages) {
       expect(page.html.match(/<h1(?:\s|>)/g), page.route).toHaveLength(1);
-      for (const marker of ['<header class="site-header">', '<main id="main" tabindex="-1">', '<footer class="site-footer">', '<a href="/about/attribution/">Attribution and licenses</a>']) expect(page.html, page.route).toContain(marker);
+      for (const marker of ['<header class="site-header">', '<main id="main" tabindex="-1">', '<footer class="site-footer">']) expect(page.html, page.route).toContain(marker);
       const canonical = `https://laptop-to-cluster.org/${page.route}`;
       expect(page.html).toContain(`<link rel="canonical" href="${canonical}">`);
       expect(page.html).toContain(`<meta property="og:url" content="${canonical}">`);

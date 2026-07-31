@@ -41,4 +41,12 @@ const landing = projectLandingPage(content.map(({ data }) => data), applicabilit
       <li><a href={landing.learning_path[2].url}><strong>Run the baseline:</strong> Submit the single-node workflow and verify success from result artifacts.</a></li>
     </ol>
   </section>
+
+  <section class="project-links" aria-labelledby="project-links-title">
+    <h2 id="project-links-title">Project records</h2>
+    <ul>
+      <li><a href={landing.release.url}>{landing.release.title}</a></li>
+      <li><a href={landing.milestone.url}>{landing.milestone.title}</a></li>
+    </ul>
+  </section>
 </BaseLayout>

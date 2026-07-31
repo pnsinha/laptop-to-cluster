@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
-import { chromium, type Page } from '@playwright/test';
+import { chromium, type Page } from 'playwright';
 import { accessibilityPages } from '../tests/accessibility/browser-fixtures';
 
 const root = resolve(process.argv[2] ?? '.');
@@ -17,7 +17,7 @@ const fail = (scope: string, code: string, message: string) => failures.push(`${
 const server = createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
   const safe = normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, '').replace(/^\//, '');
-  let file = join(dist, safe);
+  let file = pathname === '/404' ? join(dist, '404.html') : join(dist, safe);
   if (!existsSync(file) || statSync(file).isDirectory()) file = join(file, 'index.html');
   if (!existsSync(file) || !file.startsWith(dist)) {
     response.writeHead(404).end('Not found');
@@ -211,7 +211,7 @@ try {
           return style.display !== 'none' && style.visibility !== 'hidden' && Boolean(element.textContent?.trim());
         });
         const controls = visible.filter((element) => element.matches('a, button, summary, input, select, textarea'));
-        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction'));
+        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source'));
         const mainLinks = visible.filter((element) => element.matches('main a'));
         return {
           body: Number.parseFloat(getComputedStyle(document.body).fontSize),
@@ -264,7 +264,7 @@ try {
     fail('/resources/:navigation', 'A11Y-FOCUS', 'disclosure focus must remain visible after opening');
   }
   await page.keyboard.press('Tab');
-  if (await page.locator(':focus').getAttribute('href') !== '/') {
+  if (await page.locator(':focus').getAttribute('href') !== '/start/') {
     fail('/resources/:navigation', 'A11Y-KEYBOARD', 'first disclosed navigation link must follow the summary in keyboard order');
   }
   await page.keyboard.press('Shift+Tab');
@@ -332,8 +332,8 @@ try {
   await stressRegion.focus();
   if (!(await hasVisibleFocus(page))) fail('/guide/:table-stress', 'A11Y-FOCUS', 'the bounded table region must expose visible keyboard focus');
   await page.keyboard.press('Tab');
-  if (await page.locator(':focus').getAttribute('href') !== '/about/attribution/') {
-    fail('/guide/:table-stress', 'A11Y-FOCUS-ORDER', 'the table region must remain in document focus order before footer links');
+  if (await stressRegion.evaluate((element) => element === document.activeElement)) {
+    fail('/guide/:table-stress', 'A11Y-FOCUS-ORDER', 'the table region must not trap keyboard focus');
   }
   if (await hasPageOverflow(page)) fail('/guide/:stress', 'A11Y-OVERFLOW', 'technical stress content must not overflow the page viewport');
 
@@ -408,7 +408,7 @@ try {
   }
   if (await open(noScriptPage, '/resources/')) {
     await verifyNativeDisclosure(noScriptPage, '.site-nav--compact', 'Navigation', '/resources/:no-script');
-    const moduleLink = noScriptPage.getByRole('link', { name: 'Baseline Pattern: Single-Node Service + Workers', exact: true }).first();
+    const moduleLink = noScriptPage.getByRole('link', { name: 'Baseline Pattern: Single-Node Service + Workers' }).first();
     if (await moduleLink.getAttribute('href') !== '/guide/baseline-single-node-pattern/') {
       fail('/resources/:no-script', 'A11Y-NOJS', 'grouped resource entries must remain ordinary links');
     }

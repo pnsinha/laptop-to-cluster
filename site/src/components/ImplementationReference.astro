@@ -1,0 +1,30 @@
+---
+import type { ImplementationReference as ImplementationReferenceData } from '../content/implementation';
+
+const { reference } = Astro.props as { reference: ImplementationReferenceData };
+const lineRange = (start: number, end: number) => `Lines ${start}–${end}`;
+---
+<section class="implementation-reference" aria-labelledby="implementation-reference-heading">
+  <header class="implementation-reference__intro">
+    <h2 id="implementation-reference-heading">Implementation reference</h2>
+    <p>The following excerpts are generated from the immutable <code>{reference.release}</code> workflow source. Use the complete package when adapting and submitting the workflow.</p>
+    <p><a class="action action--secondary" href={reference.packageUrl} rel="external">Open the complete workflow package (external)</a></p>
+  </header>
+  {reference.excerpts.map((excerpt) => <figure class="technical-figure source-excerpt">
+    <figcaption>
+      <span class="source-excerpt__title">{excerpt.title}</span>
+      <span class="source-excerpt__meta"><a href={excerpt.sourceUrl} rel="external"><code>{excerpt.sourcePath}</code> ({lineRange(excerpt.lineStart, excerpt.lineEnd)}) (external)</a></span>
+    </figcaption>
+    <p class="source-excerpt__annotation">{excerpt.annotation}</p>
+    <pre tabindex="0" aria-label={`${excerpt.title} source code`}><code>{excerpt.code}</code></pre>
+    <p class="source-excerpt__source">SHA-256 <code>{excerpt.integrity}</code></p>
+  </figure>)}
+  <figure class="technical-figure source-excerpt source-excerpt--expected">
+    <figcaption>
+      <span class="source-excerpt__title">Expected success result</span>
+      <span class="source-excerpt__meta"><code>result.json</code> · sanitized example</span>
+    </figcaption>
+    <p class="source-excerpt__annotation">A successful run has a machine-readable success marker. Intermediate results are not a success claim until this verifier output exists.</p>
+    <pre tabindex="0" aria-label="Expected success result JSON"><code>{reference.expectedOutput}</code></pre>
+  </figure>
+</section>

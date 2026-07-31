@@ -5,8 +5,12 @@ import ContentHeader from '../components/ContentHeader.astro';
 import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
 import SourcesAndScope from '../components/SourcesAndScope.astro';
 import UnvalidatedNotice from '../components/UnvalidatedNotice.astro';
+import ExecutionSafetyNotice from '../components/ExecutionSafetyNotice.astro';
+import ImplementationReference from '../components/ImplementationReference.astro';
 import ModulePager from '../components/ModulePager.astro';
 import { canonicalPath } from '../content/registry';
+import { diagnosticHref, displayDiagnosticCode } from '../content/diagnostics';
+import { IMPLEMENTATION_REFERENCE } from '../content/implementation';
 import { assertCompositionProfile, projectApplicabilityForItem, projectModuleNavigation } from '../content/projections';
 import type { ContentItem, RepoRef } from '../content/schema';
 type LearningModule = Extract<ContentItem, { artifact_type: 'learning-module' }>;
@@ -35,10 +39,12 @@ const repositoryHref = (reference: RepoRef) => `${reference.repository}/blob/${e
     <h2 id="module-outcomes">What you will learn</h2>
     <ul>{item.learning_outcomes.map((value) => <li>{value}</li>)}</ul>
     <h2>Before you begin</h2>
-    <ul>{item.prerequisites.length ? item.prerequisites.map((value) => <li>{value.check ?? value.id}{value.diagnostic_id && <> — <a href={`/diagnostics/${value.diagnostic_id.toLowerCase()}/`}>{value.diagnostic_id}</a></>}</li>) : <li>No execution prerequisite is required.</li>}</ul>
+    <ul>{item.prerequisites.length ? item.prerequisites.map((value) => <li>{value.check ?? value.id}{value.diagnostic_id && <> — <a href={diagnosticHref(value.diagnostic_id)}>{displayDiagnosticCode(value.diagnostic_id)}</a></>}</li>) : <li>No execution prerequisite is required.</li>}</ul>
     {item.required_resources && <><h3>Required resources</h3><ul>{item.required_resources.map((value) => <li>{value}</li>)}</ul></>}
   </section>
   <UnvalidatedNotice scopes={item.unvalidated_scopes} />
+  {profile === 'learning-runnable' && <ExecutionSafetyNotice />}
+  {profile === 'learning-runnable' && <ImplementationReference reference={IMPLEMENTATION_REFERENCE} />}
   <article class="module-content"><slot /></article>
   <section aria-labelledby="completion"><h2 id="completion">{profile === 'learning-conceptual' ? 'Complete the decision exercise' : 'Check completion'}</h2><p>{item.completion_check?.text}</p>{item.conceptual_check && <p>{item.conceptual_check.text}</p>}</section>
   <section aria-labelledby="related"><h2 id="related">Continue learning</h2><ul>{related.map((entry) => <li><a href={canonicalPath(entry)}>{entry.title}</a></li>)}</ul></section>

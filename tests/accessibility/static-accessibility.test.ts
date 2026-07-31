@@ -70,8 +70,8 @@ describe('representative static accessibility coverage', () => {
     expect(css).toMatch(/\.site-nav__link\[aria-current=(?:"page"|page)\]:(?::)?before\{content:"▸ "/);
     expect(css).toMatch(/\.site-nav__link--external\{[^}]*border:/);
     for (const page of pages) expect(page.html, page.path).toContain('(external)');
-    expect(pages.find(({ kind }) => kind === 'support')!.html).toContain('Warning — protect sensitive information');
-    expect(pages.find(({ kind }) => kind === 'release')!.html).toMatch(/<strong>Status:<\/strong>/);
+    expect(pages.find(({ kind }) => kind === 'support')!.html).toContain('Warning: protect sensitive information');
+    expect(pages.find(({ kind }) => kind === 'milestone')!.html).toMatch(/<strong>Status:<\/strong>/);
     expect(pages.find(({ kind }) => kind === 'home')!.html).toMatch(/<strong>(?:Status|Boundary):<\/strong>/);
   });
 
@@ -79,7 +79,7 @@ describe('representative static accessibility coverage', () => {
     expect(css).toMatch(/--text-base:1rem/);
     expect(css).toMatch(/--text-supporting:\.875rem/);
     expect(css).toMatch(/:focus-visible\{outline:/);
-    expect(css).toMatch(/prefers-color-scheme:dark/);
+    expect(css).toMatch(/color-scheme:light dark/);
     expect(css).toMatch(/forced-colors:active/);
     expect(css).toMatch(/@media print/);
     expect(css).toMatch(/(?:max-width:30rem|width<=30rem)/);

@@ -8,9 +8,7 @@ import DiagnosticApplicabilityContextView from '../../site/src/components/Diagno
 import ModulePager from '../../site/src/components/ModulePager.astro';
 import SiteHeader from '../../site/src/components/SiteHeader.astro';
 import SourcesAndScope from '../../site/src/components/SourcesAndScope.astro';
-import StatusBadge from '../../site/src/components/StatusBadge.astro';
 import SupportState from '../../site/src/components/SupportState.astro';
-import TableOverflow from '../../site/src/components/TableOverflow.astro';
 import UnvalidatedNotice from '../../site/src/components/UnvalidatedNotice.astro';
 import WorkflowFigure from '../../site/src/components/WorkflowFigure.astro';
 
@@ -28,8 +26,8 @@ describe('Astro semantic components', () => {
     const compact = await render(Attribution, { compact: true });
     const full = await render(Attribution);
 
-    expect(compact).toContain('<a href="/about/attribution/">Attribution and funding</a>');
-    expect(full).toContain('<section aria-labelledby="attribution-heading">');
+    expect(compact).toContain('<a href="/about/attribution/">Attribution and licenses</a>');
+    expect(full).toContain('<section class="layout-prose" aria-labelledby="attribution-heading">');
     expect(full).toContain('Parmanand Sinha');
     expect(full).toContain('2026 BSSw Fellow');
     expect(full).toContain('University of Chicago');
@@ -78,29 +76,6 @@ describe('Astro status components', () => {
       expect(html, validationStatus).toContain(`<strong>${validationStatus}:</strong>`);
       expect(html, validationStatus).not.toMatch(/Applicable release|Last reviewed|<dt>Status|Milestone 1/);
     }
-  });
-
-  it('renders explicit status text independently of its visual tone', async () => {
-    const html = await render(StatusBadge, {
-      status: 'Validated', label: 'Validation', tone: 'success',
-    });
-
-    expect(html).toContain('class="status-badge status-badge--success"');
-    expect(html).toContain('<span class="status-badge__label">Validation: </span>');
-    expect(html).toContain('<span class="status-badge__text">Validated</span>');
-    expect(html).toContain('aria-hidden="true"');
-  });
-
-  it('keeps a slotted table native inside a labelled keyboard-reachable overflow region', async () => {
-    const html = await container.renderToString(TableOverflow, {
-      props: { label: 'Validation evidence', instruction: 'Scroll to compare environments.' },
-      slots: { default: '<table><caption>Runs</caption><thead><tr><th scope="col">Environment</th></tr></thead><tbody><tr><td>Anvil</td></tr></tbody></table>' },
-    });
-
-    expect(html).toContain('role="region" aria-label="Validation evidence" tabindex="0"');
-    expect(html).toContain('Scroll to compare environments.');
-    expect(html).toContain('<table><caption>Runs</caption><thead>');
-    expect(html).toContain('<th scope="col">Environment</th>');
   });
 
   it('identifies each unvalidated scope beside a link to the affected content', async () => {

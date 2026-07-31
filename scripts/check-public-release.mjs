@@ -31,7 +31,7 @@ for (const text of ['Who this is for', 'Current release', 'Get started', 'Compan
 }
 for (const path of [
   '/guide/scheduler-as-orchestrator/', '/guide/baseline-single-node-pattern/', '/start/',
-  '/diagnostics/', '/milestones/1/', '/releases/v0-1-0/', '/about/support/',
+  '/diagnostics/', '/milestones/1/', '/about/support/',
 ]) await requirePublic(`${CANONICAL_ORIGIN}${path}`);
 await requirePublic(repositoryUrl, 'laptop-to-cluster');
 await requirePublic(`${repositoryUrl}/releases/tag/v0.1.0`);

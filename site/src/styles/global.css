@@ -196,6 +196,7 @@ th { font-weight: 750; background: var(--surface); border-block-end-width: var(-
 .implementation-reference, .source-excerpt, .source-excerpt figcaption { min-inline-size: 0; max-inline-size: 100%; }
 .source-excerpt__meta, .source-excerpt__source { color: var(--shell-text); font-family: var(--font-body); font-size: var(--text-fine); overflow-wrap: anywhere; }
 .source-excerpt__meta { display: block; }
+.source-excerpt__meta a { font-size: var(--text-body); }
 .source-excerpt__annotation { max-inline-size: var(--measure-prose); }
 .source-excerpt__source a { color: var(--shell-accent); font-size: var(--text-body); }
 .source-excerpt__source code { color: inherit; }

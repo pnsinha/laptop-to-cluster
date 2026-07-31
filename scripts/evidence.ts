@@ -7,6 +7,7 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { z } from 'astro/zod';
 import { parse as parseYaml } from 'yaml';
 import { applicabilityRecordSchema, type ApplicabilityRecord } from '../site/src/content/schema.js';
+import { canonicalDiagnosticId, isReadinessTimeoutDiagnostic } from '../site/src/content/diagnostics.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoDateTime = z.string().datetime({ offset: true });
@@ -46,7 +47,7 @@ export type RecordRunMetadata = z.infer<typeof recordRunMetadataSchema>;
 const evidenceEventSchema = z.object({
   sequence: z.number().int().nonnegative(), at: isoDateTime,
   type: z.enum(['coordinator-started', 'ready', 'workers-started', 'verified', 'failed']),
-  code: z.string().regex(/^BSSW-[A-Z0-9-]+$/).optional(),
+  code: z.string().regex(/^BSSW-[A-Z0-9-]+$/).transform(canonicalDiagnosticId).optional(),
 }).strict();
 
 export const evidenceManifestSchema = z.object({
@@ -197,8 +198,8 @@ function semanticErrors(manifest: EvidenceManifest, bundleDirectory: string): st
     if (manifest.run.exitCode === 0) errors.push('readiness-timeout evidence requires a nonzero exit code');
     if (worker >= 0) errors.push('readiness-timeout evidence must not contain a worker-start event');
     if (verified >= 0 || existsSync(resultPath)) errors.push('readiness-timeout evidence must not contain a success marker');
-    if (coordinator < 0 || !failed || failed.code !== 'BSSW-READY-TIMEOUT' || failed.sequence <= coordinator) {
-      errors.push('readiness-timeout evidence requires coordinator-started followed by failed BSSW-READY-TIMEOUT');
+    if (coordinator < 0 || !failed || !isReadinessTimeoutDiagnostic(failed.code) || failed.sequence <= coordinator) {
+      errors.push('readiness-timeout evidence requires coordinator-started followed by failed BSSW-READINESS-TIMEOUT');
     }
   }
   return errors;
@@ -227,7 +228,7 @@ export function recordRun(options: {
       { name: 'event ordering', passed: true, detail: 'coordinator readiness precedes worker start and verification' },
     ] : [
       { name: 'bounded failure', passed: metadata.exitCode !== 0, detail: `${metadata.terminalState} exit ${metadata.exitCode}` },
-      { name: 'timeout diagnostic', passed: true, detail: 'BSSW-READY-TIMEOUT recorded after coordinator start' },
+      { name: 'timeout diagnostic', passed: true, detail: 'BSSW-READINESS-TIMEOUT recorded after coordinator start' },
       { name: 'workers not started', passed: true, detail: 'no workers-started event is present' },
     ];
     const artifacts = copied.map(({ target }) => ({ path: target, sha256: sha256File(join(temporary, target)), mediaType: mediaType(target) }));

@@ -16,17 +16,20 @@ const ROUTE_SAMPLES = {
   '/guide/scheduler-as-orchestrator/': 'conceptual-module',
   '/guide/baseline-single-node-pattern/': 'runnable-module', '/start/': 'start',
   '/diagnostics/': 'diagnostics-index',
-  '/diagnostics/bssw-prereq-apptainer/': 'diagnostic-detail',
-  '/applicability/m1-baseline-anvil/': 'applicability', '/milestones/1/': 'milestone',
-  '/releases/v0-1-0/': 'release', '/about/accessibility/': 'accessibility',
-  '/about/support/': 'support', '/about/attribution/': 'attribution',
-  '/about/licenses/': 'licenses', '/about/glossary/': 'glossary', '/about/project/': 'about',
+  '/applicability/m1-baseline-anvil/': 'applicability',
+  '/milestones/1/': 'milestone', '/about/accessibility/': 'accessibility',
+  '/about/support/': 'support', '/about/attribution/': 'attribution-and-licenses',
+  '/about/glossary/': 'glossary', '/about/project/': 'about',
 } as const;
 
+// v0.1.0-only: the release record renders as a section of /milestones/1/ (one milestone,
+// one release), and license coverage renders as a section of /about/attribution/, rather
+// than each owning a standalone page. See design.md's "Pre-deployment route consolidation"
+// amendment.
 const CANONICAL_DESTINATIONS = {
   applicability: '/applicability/m1-baseline-anvil/',
   evidence: '/applicability/m1-baseline-anvil/', authority: '/about/attribution/',
-  provenance: '/about/licenses/', release: '/releases/v0-1-0/',
+  provenance: '/about/attribution/', release: '/milestones/1/',
 } as const;
 const VALID_RESULTS = new Set(['pending', 'pass', 'not-applicable']);
 
