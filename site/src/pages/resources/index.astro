@@ -54,9 +54,9 @@ const qualifier = (item: typeof entries[number]) => item.artifact_type === 'lear
     background: var(--raised);
     text-decoration: none;
     color: inherit;
-    transition: border-color 0.15s ease;
   }
   .resource-tile:hover { border-color: var(--primary); }
+  .resource-tile:active { border-color: var(--primary); }
   .resource-tile:focus-visible { outline-offset: 2px; }
   .resource-tile h3 { font-size: var(--text-subheading); font-weight: 700; }
   .resource-tile p { color: var(--muted); font-size: var(--text-fine); line-height: 1.5; flex-grow: 1; }

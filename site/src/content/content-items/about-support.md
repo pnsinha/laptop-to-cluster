@@ -23,7 +23,7 @@ publication_date: "2026-07-31"
 - Expected result and observed result
 - Exit status and the smallest useful redacted log excerpt
 
-> **Warning — protect sensitive information:** Do not publish credentials, usernames, allocation IDs, private hosts, or sensitive paths. Send sensitive reports privately to the [security contact](mailto:parmanandsinha@gmail.com?subject=BSSw%20resource%20security%20report).
+> **Warning: protect sensitive information.** Do not publish credentials, usernames, allocation IDs, private hosts, or sensitive paths. Send sensitive reports privately to the [security contact](mailto:parmanandsinha@gmail.com?subject=BSSw%20resource%20security%20report).
 
 ## If the public issue channel is unavailable
 Email the [project maintainer](mailto:parmanandsinha@gmail.com?subject=BSSw%20resource%20report) with the same sanitized information and identify the failed channel. If email is also unavailable, use the [BSSw contact page](https://bssw.io/contact) to request a project-maintainer handoff without including security details.

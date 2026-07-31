@@ -112,8 +112,8 @@ export function validatePageComposition(source, html) {
   if (sources >= 0 && sources < html.lastIndexOf('</article>')) errors.push(diagnostic(source, 'sources', 'SOURCE-ORDERING', 'Sources and scope must follow substantive content'));
 
   if (profile === 'resources') {
-    const cards = html.match(/<article class="card resource-card">[\s\S]*?<\/article>/g) ?? [];
-    if (!cards.length || cards.some((card) => /resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i.test(card) || occurrences(card, /class="resource-qualifier"/g) > 1)) {
+    const cards = html.match(/<(?:article|a) class="(?:card )?(?:resource-card|resource-tile)"[^>]*>[\s\S]*?<\/(?:article|a)>/g) ?? [];
+    if (!cards.length || cards.some((card) => /resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i.test(card) || occurrences(card, /class="resource-(?:qualifier|tile__tag)"/g) > 1)) {
       errors.push(diagnostic(source, 'cards', 'RESOURCE-COMPOSITION', 'resource cards require a title, summary, and at most one choice-relevant qualifier without routine metadata'));
     }
   }

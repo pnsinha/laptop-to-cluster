@@ -15,7 +15,7 @@ publication_date: "2026-07-27"
 ## Scheduler and allocation
 
 **allocation**
-: Compute resources—such as cores, memory, GPUs, and wall time—that a scheduler grants temporarily to a job.
+: Compute resources (cores, memory, GPUs, wall time) that a scheduler grants temporarily to a job.
 
 **batch scheduler**
 : Software, such as Slurm or a PBS-family system, that assigns shared cluster resources and controls when jobs run.
