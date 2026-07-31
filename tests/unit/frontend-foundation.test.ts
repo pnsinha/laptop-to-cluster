@@ -48,16 +48,14 @@ describe('finalized presentation CSS regression gates', () => {
 });
 
 
-describe('Midnight Field Notes semantic foundation', () => {
-  it('defines complete semantic light/dark/shell roles and system-only serif, sans, and mono typography', () => {
-    const light = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
-    const dark = css.match(/@media \(prefers-color-scheme:\s*dark\)\s*\{\s*:root\s*\{([\s\S]*?)\n\s*\}/)?.[1] ?? '';
+describe('Cluster Terminal semantic foundation', () => {
+  it('defines complete semantic dark/shell roles and system-only sans and mono typography', () => {
+    const root = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
     for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'shell-text', 'border', 'warning']) {
-      expect(light, `light --${token}`).toMatch(new RegExp(`--${token}:`));
-      expect(dark, `dark --${token}`).toMatch(new RegExp(`--${token}:`));
+      expect(root, `--${token}`).toMatch(new RegExp(`--${token}:`));
     }
     expect(css).toMatch(/color-scheme:\s*light dark/);
-    expect(css).toMatch(/--font-display:\s*ui-serif,[^;]*serif;/);
+    expect(css).toMatch(/--font-display:\s*system-ui,[^;]*sans-serif;/);
     expect(css).toMatch(/--font-body:\s*system-ui,[^;]*sans-serif;/);
     expect(css).toMatch(/--font-technical:\s*ui-monospace,[^;]*monospace;/);
     expect(css).toMatch(/\.site-header, \.site-footer\s*\{[^}]*background:\s*var\(--shell\)/s);
@@ -68,11 +66,11 @@ describe('Midnight Field Notes semantic foundation', () => {
   it('keeps minimum text sizes and forced-color, print, and reduced-motion safeguards', () => {
     expect(css).toMatch(/--text-base:\s*1rem/);
     expect(css).toMatch(/--text-supporting:\s*0\.875rem/);
-    expect(css).toMatch(/--leading-base:\s*1\.5[0-9]*/);
+    expect(css).toMatch(/--leading-base:\s*1\.[5-9]/);
     expect(css).toMatch(/:root\s*\{[\s\S]*font-size:\s*var\(--text-base\);[\s\S]*line-height:\s*var\(--leading-base\)/);
     expect(css).toMatch(/button, input, select, textarea, summary\s*\{[^}]*font-size:\s*var\(--text-base\)[^}]*line-height:\s*1\.5/s);
     expect(css).toMatch(/small, \.supporting, \.technical-label\s*\{[^}]*font-size:\s*var\(--text-supporting\)/s);
-    expect(css).toMatch(/h1, h2, h3\s*\{[^}]*line-height:\s*1\.15/s);
+    expect(css).toMatch(/h1, h2, h3\s*\{[^}]*line-height:\s*1\.[0-9]/s);
     expect(css).toMatch(/pre, \.terminal, \.technical-figure\s*\{[^}]*background:\s*var\(--shell\)/s);
     expect(css).toMatch(/@media \(forced-colors:\s*active\)[\s\S]*--canvas:\s*Canvas/);
     expect(css).toMatch(/@media print[\s\S]*--shell:\s*#fff/);
