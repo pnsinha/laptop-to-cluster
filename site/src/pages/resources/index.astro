@@ -12,8 +12,64 @@ const qualifier = (item: typeof entries[number]) => item.artifact_type === 'lear
   ? `${item.module_type} module` : item.artifact_type === 'diagnostic' ? 'Recovery guide' : undefined;
 ---
 <BaseLayout title="Resources" description="Complete no-JavaScript index of published Laptop-to-Cluster resources." profile="resources">
-  <header class="content-header"><h1>Choose what you need</h1><p class="lede">Start with a question, then follow an ordinary link. The complete index works without JavaScript.</p></header>
-  {groups.map((group) => <section class="resource-group" aria-labelledby={`resource-${group.id}`}><h2 id={`resource-${group.id}`}>{group.title}</h2><p>{group.question}</p><ul class="resource-index">
-    {group.items.map((item) => <li><article class="card resource-card"><h3><a href={canonicalPath(item)}>{item.title}</a></h3><p>{item.summary}</p>{qualifier(item) && <p class="resource-qualifier">{qualifier(item)}</p>}</article></li>)}
-  </ul></section>)}
+  <header class="content-header"><h1>Resources</h1><p class="lede">Every published page, grouped by what you are trying to do. Start with a question, then follow an ordinary link. Works without JavaScript.</p></header>
+  {groups.map((group) => (
+    <section class="resource-section" aria-labelledby={`resource-${group.id}`}>
+      <div class="resource-section__header">
+        <h2 id={`resource-${group.id}`}>{group.title}</h2>
+        <p class="resource-section__question">{group.question}</p>
+      </div>
+      <ul class="resource-grid">
+        {group.items.map((item) => (
+          <li><a class="resource-tile" href={canonicalPath(item)}>
+            <h3>{item.title}</h3>
+            <p>{item.summary}</p>
+            {qualifier(item) && <span class="resource-tile__tag">{qualifier(item)}</span>}
+          </a></li>
+        ))}
+      </ul>
+    </section>
+  ))}
 </BaseLayout>
+<style>
+  .resource-section { margin-block-start: var(--space-12); }
+  .resource-section:first-of-type { margin-block-start: var(--space-8); }
+  .resource-section__header { margin-block-end: var(--space-6); }
+  .resource-section__question { color: var(--muted); font-size: var(--text-body); margin-block-start: var(--space-1); }
+  .resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .resource-tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: var(--border-thin) solid var(--border);
+    border-radius: var(--radius-small);
+    background: var(--raised);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease;
+  }
+  .resource-tile:hover { border-color: var(--primary); }
+  .resource-tile:focus-visible { outline-offset: 2px; }
+  .resource-tile h3 { font-size: var(--text-subheading); font-weight: 700; }
+  .resource-tile p { color: var(--muted); font-size: var(--text-fine); line-height: 1.5; flex-grow: 1; }
+  .resource-tile__tag {
+    align-self: flex-start;
+    font-family: var(--font-technical);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  @media (max-width: 30rem) {
+    .resource-grid { grid-template-columns: 1fr; }
+  }
+</style>
