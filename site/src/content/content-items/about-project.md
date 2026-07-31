@@ -25,7 +25,7 @@ Practitioners adapting their own stack, educators teaching the model, and fellow
 | Milestone | Due | Focus | Status |
 |---|---|---|---|
 | [1](/milestones/1/) | Jul 2026 | Foundation: site, two modules, validated Slurm + Apptainer baseline | Complete |
-| 2 | Dec 2026 | Portability: Slurm/PBS templates, Apptainer/Charliecloud patterns, dissemination | Planned |
+| 2 | Dec 2026 | Portability: Slurm/PBS templates, Apptainer/Charliecloud patterns, container union, dissemination | Planned |
 | 3 | Mar 2027 | Training: reusable training packages, container-first Python guidance | Planned |
 | 4 | Apr 2027 | Final: adoption checklist, webinar, BSSw.io blog post, v1.0 release | Planned |
 
