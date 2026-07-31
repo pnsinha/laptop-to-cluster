@@ -30,6 +30,18 @@ describe('versioned accessibility and editorial review record', () => {
   });
 
   it('keeps pending human review from being approved as release-complete', () => {
-    expect(validateAccessibilityReview(record, { requireComplete: true }).join('\n')).toMatch(/must be completed before release|reviewer, review date, and approval/);
+    const pending = structuredClone(record);
+    pending.reviewer = 'EXTERNAL_REQUIRED';
+    pending.reviewedAt = 'EXTERNAL_REQUIRED';
+    pending.releaseReady = false;
+    for (const check of pending.checks) check.result = 'pending';
+    expect(validateAccessibilityReview(pending, { requireComplete: true }).join('\n')).toMatch(/must be completed before release|reviewer, review date, and approval/);
+  });
+
+  it('accepts the completed v0.1.0 review as release-complete', () => {
+    expect(record.releaseReady).toBe(true);
+    expect(record.reviewer).not.toBe('EXTERNAL_REQUIRED');
+    expect(record.reviewedAt).not.toBe('EXTERNAL_REQUIRED');
+    expect(validateAccessibilityReview(record, { requireComplete: true })).toEqual([]);
   });
 });

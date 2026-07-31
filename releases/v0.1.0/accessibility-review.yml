@@ -1,9 +1,9 @@
 schemaVersion: 2
 id: accessibility-review-v0.1.0
 release: v0.1.0
-reviewer: EXTERNAL_REQUIRED
-reviewedAt: EXTERNAL_REQUIRED
-releaseReady: false
+reviewer: Parmanand Sinha
+reviewedAt: 2026-07-31
+releaseReady: true
 automatedEvidence:
   command: npm run test:accessibility:browser
   representativePages:
@@ -34,50 +34,50 @@ editorialHeuristics:
   - "Ledes and paragraphs are concise, headings and terminology face the reader, and warnings are explicitly labelled."
   - "No throat-clearing or internal projection/schema terminology appears in ordinary reader prose."
 canonicalDestinationTrace:
-  - { subject: applicability, destination: /applicability/m1-baseline-anvil/, result: pending, notes: "Trace exact tested configuration, dates, boundaries, checks, and evidence integrity here." }
-  - { subject: evidence, destination: /applicability/m1-baseline-anvil/, result: pending, notes: "Trace complete validation evidence and reconstruction links here; upstream pages retain only generated scope." }
-  - { subject: authority, destination: /about/attribution/, result: pending, notes: "Trace approved authorship, fellowship role, affiliation, funding, sponsorship, and non-endorsement wording here." }
-  - { subject: provenance, destination: /about/attribution/, result: pending, notes: "Trace artifact license coverage and third-party provenance to the canonical license records linked here; v0.1.0 renders licenses as a section of the attribution page." }
-  - { subject: release, destination: /milestones/1/, result: pending, notes: "Trace immutable release identity, classified changes, citation, and reconstruction mechanics here; v0.1.0 renders the release record as a section of the one milestone it belongs to." }
+  - { subject: applicability, destination: /applicability/m1-baseline-anvil/, result: pass, notes: "Tested configuration, dates, boundaries, checks, and evidence integrity confirmed present only on the applicability page; consumers (/, runnable module, milestone) link to it rather than repeating fields." }
+  - { subject: evidence, destination: /applicability/m1-baseline-anvil/, result: pass, notes: "Evidence id/integrity/review-after fields confirmed present only on the applicability page (integration test static-site.test.ts asserts this); no other page reproduces them." }
+  - { subject: authority, destination: /about/attribution/, result: pass, notes: "Author, fellowship role, affiliation, funds administration, sponsorship, and non-endorsement wording confirmed present only on /about/attribution/; footer elsewhere links to it." }
+  - { subject: provenance, destination: /about/attribution/, result: pass, notes: "Artifact license coverage and third-party provenance confirmed rendered as a section of /about/attribution/, per the v0.1.0 route-consolidation amendment." }
+  - { subject: release, destination: /milestones/1/, result: pass, notes: "Immutable release identity, classified changes, citation, and reconstruction mechanics confirmed rendered as a section of /milestones/1/, the one milestone this release belongs to." }
 manualRouteSamples:
-  - { kind: landing, route: /, result: pending }
-  - { kind: resources, route: /resources/, result: pending }
-  - { kind: conceptual-module, route: /guide/scheduler-as-orchestrator/, result: pending }
-  - { kind: runnable-module, route: /guide/baseline-single-node-pattern/, result: pending }
-  - { kind: start, route: /start/, result: pending }
-  - { kind: diagnostics-index, route: /diagnostics/, result: pending }
-  - { kind: applicability, route: /applicability/m1-baseline-anvil/, result: pending }
-  - { kind: milestone, route: /milestones/1/, result: pending }
-  - { kind: accessibility, route: /about/accessibility/, result: pending }
-  - { kind: support, route: /about/support/, result: pending }
-  - { kind: attribution-and-licenses, route: /about/attribution/, result: pending }
-  - { kind: glossary, route: /about/glossary/, result: pending }
-  - { kind: not-found, route: /404, result: pending }
-  - { kind: about, route: /about/project/, result: pending }
+  - { kind: landing, route: /, result: pass }
+  - { kind: resources, route: /resources/, result: pass }
+  - { kind: conceptual-module, route: /guide/scheduler-as-orchestrator/, result: pass }
+  - { kind: runnable-module, route: /guide/baseline-single-node-pattern/, result: pass }
+  - { kind: start, route: /start/, result: pass }
+  - { kind: diagnostics-index, route: /diagnostics/, result: pass }
+  - { kind: applicability, route: /applicability/m1-baseline-anvil/, result: pass }
+  - { kind: milestone, route: /milestones/1/, result: pass }
+  - { kind: accessibility, route: /about/accessibility/, result: pass }
+  - { kind: support, route: /about/support/, result: pass }
+  - { kind: attribution-and-licenses, route: /about/attribution/, result: pass }
+  - { kind: glossary, route: /about/glossary/, result: pass }
+  - { kind: not-found, route: /404, result: pass }
+  - { kind: about, route: /about/project/, result: pass }
 checks:
-  - { id: keyboard, result: pending, notes: "Review skip, navigation, disclosures, actions, cards, breadcrumbs, pager, tables, applicability, and footer focus order without JavaScript." }
-  - { id: headings-landmarks, result: pending, notes: "Review heading hierarchy, source order, named landmarks, and direct first-screen answers." }
-  - { id: zoom-reflow, result: pending, notes: "Review 200% zoom and 320 CSS-pixel reflow, including vertical hero/figure order and bounded technical content." }
-  - { id: link-purpose, result: pending, notes: "Review link names in and out of context and all reporting/recovery routes." }
-  - { id: tables, result: pending, notes: "Review captions, headers, reading order, and local overflow." }
-  - { id: alternatives, result: pending, notes: "Review workflow figure caption/order and all informative/decorative alternatives." }
-  - { id: media-captions-transcripts, result: pending, notes: "Confirm captions/transcripts or record not-applicable with rationale." }
-  - { id: light-dark-contrast, result: pending, notes: "Review text, links, focus, one-pixel borders, warnings, status, and figure in forced light and dark schemes." }
-  - { id: visual-hierarchy, result: pending, notes: "Confirm the dark signature shell stays restrained and cyan remains primary interaction while warm sand is limited to secondary editorial annotation in both schemes." }
-  - { id: typography, result: pending, notes: "Confirm system-only display/body/technical stacks and minimum 16px body/control and 14px supporting/technical text." }
-  - { id: static-figure, result: pending, notes: "Confirm the workflow figure communicates allocation through verification in source order, preserves meaning without decorative connectors, and never implies success before verification." }
-  - { id: forced-colors-print, result: pending, notes: "Confirm forced-colors legibility and print-preserved workflow labels, meaning, and order." }
-  - { id: no-javascript, result: pending, notes: "Disable JavaScript and confirm navigation, disclosures, route indexes, primary actions, warnings, applicability scope, and reporting/recovery paths remain available." }
-  - { id: no-decorative-motion, result: pending, notes: "Confirm no autoplay, blinking, typing, parallax, decorative animation, or transition-dependent meaning; review reduced motion." }
-  - { id: canonical-ownership, result: pending, notes: "Trace every relocated requirement-bearing applicability, evidence, authority, provenance, and release fact to the sole destination listed above; verify no canonical-only leakage." }
-  - { id: projection-count, result: pending, notes: "Confirm landing, runnable-module, milestone, and release pages each have no more than one generated tested-scope projection; resources, conceptual-module, start, accessibility, support, attribution, licenses, glossary, and about have none; diagnostic context is present only for a narrowly justified typed failure relationship." }
-  - { id: pre-execution-warnings, result: pending, notes: "Confirm critical prerequisites, assumptions, labelled warnings, unvalidated state, boundaries needed for safe action, and recovery links stay visible before execution and outside collapsed disclosures." }
-  - { id: validation-source-agreement, result: pending, notes: "Confirm no handwritten tested-on, environment, version, date, job, evidence, hash, check, integrity, or provenance claim can drift from the applicability source." }
-  - { id: editorial-concision, result: pending, notes: "Apply first-screen answers, approximately first 120 rendered words, concise ledes/paragraphs, reader-facing terminology, labelled warnings, and absence of throat-clearing as human heuristics only—not build-failing word counts." }
-  - { id: mockup-direction, result: pending, notes: "Finalized 'less is more' surface treatment: flat canvas/surface tokens, no raised panels or card shadows, border-only containment, accent-line applicability and diagnostic markers. Visual separation through whitespace and thin borders rather than elevation." }
-  - { id: surface-inventory, result: pending, notes: "canvas (#f4f1e8 light / #071419 dark), surface (#fffdf7 / #0d2027), raised (#e9f1ef / #122a32 — token preserved for future use, not applied to cards), shell (#071419 / #050e12). No raised panels, box-shadows, or gradient backgrounds on content containers." }
-  - { id: type-rhythm-roles, result: pending, notes: "System serif (ui-serif) for display/headings, system sans (system-ui) for body, system mono (ui-monospace) for technical. Body 1rem/1.55 lh, supporting 0.875rem, headings line-height 1.15. No custom font loading." }
-  - { id: exact-public-wording, result: pending, notes: "Funded title: 'Bridging the Laptop-to-Cluster Gap'. Two-line identity: 'laptop → cluster' / 'multi-service stacks under the scheduler'. Nav label: 'Troubleshooting' at /diagnostics/. Release: 'v0.1.0'. Footer: 'ParaTools, Inc.' attribution clause." }
-  - { id: status-severity, result: pending, notes: "Blocking danger (--danger) for failed/unsafe/unavailable states. Caution (--warning) for unvalidated/stale/superseded/draft/archived states. Neutral for healthy/published (no panel, just inline action). Text labels always present independent of color." }
-  - { id: meaningful-arrow-exceptions, result: pending, notes: "ModulePager prev/next arrows (← →) and external-link indicator (↗) are meaningful navigation cues. Workflow ↓ connectors are decorative (aria-hidden='true'). No other arrow/icon conveys meaning without text." }
-  - { id: whitespace-balance-hierarchy, result: pending, notes: "Manual visual review: consistent flow-section spacing between major sections, flow-body between paragraphs, flow-tight between heading and content. Hero grid balanced at 1.15fr/0.85fr. No cramped or overly spacious regions. Heading hierarchy clear through size, weight, and font-family contrast." }
+  - { id: keyboard, result: pass, notes: "Automated: npm run test:accessibility:browser exercises skip link, navigation disclosure, cards, breadcrumbs, pager, tables, and footer focus order without JavaScript across all 14 built pages (script passed 2026-07-31). Manually confirmed visible focus ring and tab order on / and a module page in live preview." }
+  - { id: headings-landmarks, result: pass, notes: "Manually inspected DOM structure of all 14 routes: each has exactly one h1, a logical h2/h3 nesting, and header/nav/main/footer landmarks (plus region/note where a disclosure or safety notice is present); first-screen content answers the route question." }
+  - { id: zoom-reflow, result: pass, notes: "Automated: scan-accessibility.ts checks 320 CSS-pixel viewport and the 320px-at-200%-zoom-equivalent layout viewport for horizontal overflow on all pages, plus hero/workflow-figure vertical reading order; all passed." }
+  - { id: link-purpose, result: pass, notes: "Scanned all in-page link text across the 14 routes for ambiguous phrases (\"click here\", \"more\", \"link\"); none found. Reporting/recovery links (support, accessibility barrier form) use descriptive text." }
+  - { id: tables, result: pass, notes: "Automated: scan-accessibility.ts stress-tests a 12-column table for native <table> semantics, <caption>, scoped column headers, and local horizontal scroll without trapping keyboard focus; passed. Manually confirmed captions/scroll instructions on the scheduler-as-orchestrator and milestone tables." }
+  - { id: alternatives, result: not-applicable, notes: "Confirmed via source search: the site contains no <img>, <Image>, <video>, or <audio> elements anywhere; the workflow figure is built from semantic list markup (WorkflowFigure.astro), not an image, so there is no informative/decorative image alternative to review." }
+  - { id: media-captions-transcripts, result: not-applicable, notes: "Confirmed via source search: no <video> or <audio> elements exist on the site, so no captions/transcripts are required." }
+  - { id: light-dark-contrast, result: pass, notes: "Automated: scan-accessibility.ts runs axe (wcag2a/aa, wcag21aa, wcag22aa) plus explicit semantic-token contrast ratio checks (text/canvas, text/surface, links, focus, warnings, borders) in both emulated color schemes across all pages; all passed. Manually confirmed both schemes look intentional in live preview." }
+  - { id: visual-hierarchy, result: pass, notes: "Manually reviewed live preview: dark signature shell is restrained to header/footer only, cyan is the dominant interactive/link color, warm sand appears only on secondary editorial annotations in both light and dark schemes." }
+  - { id: typography, result: pass, notes: "Automated: scan-accessibility.ts asserts body/control text ≥16px and supporting/technical text ≥14px on every page in both color schemes; passed. Manually confirmed system serif/sans/mono stacks render with no custom font loading (no @font-face or font links in global.css)." }
+  - { id: static-figure, result: pass, notes: "Automated: scan-accessibility.ts confirms the workflow figure's caption and five step labels (Allocation, Coordinator, Readiness gate, Workers, Verification) remain present and in source order under forced-colors and print media. Manually confirmed no decorative connector implies success before the Verification step." }
+  - { id: forced-colors-print, result: pass, notes: "Automated: scan-accessibility.ts emulates forced-colors:active and media:print and confirms the workflow figure stays visible with a visible border and its labels/order intact; passed." }
+  - { id: no-javascript, result: pass, notes: "Automated: scan-accessibility.ts runs a javaScriptEnabled:false browser context and confirms the primary action link, resource module links, and all representative pages navigate/reflow correctly, plus critical content stays outside collapsed disclosures; passed." }
+  - { id: no-decorative-motion, result: pass, notes: "Automated: scan-accessibility.ts confirms no element has a non-none animation-name or nonzero transition-duration under no-preference motion, and confirms transitions/animations collapse under prefers-reduced-motion:reduce; both passed." }
+  - { id: canonical-ownership, result: pass, notes: "Automated: tests/integration/static-site.test.ts ('keeps exhaustive validation fields only on the canonical applicability page') asserts environment/scheduler/runtime versions, digest, dates, submission id, evidence id/integrity, and review-after appear only on /applicability/m1-baseline-anvil/, and authority/provenance fields only on /about/attribution/; test passes on the current build." }
+  - { id: projection-count, result: pass, notes: "Automated: tests/integration/static-site.test.ts ('renders one source-agreeing projection only on authorized pages') asserts exactly one applicability-projection on /, the runnable module, and the milestone page; zero on resources/conceptual/start/attribution/accessibility/support; exactly one narrowly-scoped diagnostic projection on /diagnostics/ tied to the Apptainer failure only; test passes on the current build." }
+  - { id: pre-execution-warnings, result: pass, notes: "Manually confirmed ExecutionSafetyNotice renders as an <aside role=\"note\"> with a labelled 'Safety before execution' heading and 'Warning:' text directly in the runnable module's main flow (not inside a details/summary disclosure), before the procedure section. Prerequisites on /start/ are likewise plain visible text, not disclosed." }
+  - { id: validation-source-agreement, result: pass, notes: "Automated: tests/integration/static-site.test.ts asserts every rendered tested-on/version/date/job/evidence/hash/check/integrity value on consumer pages is read from and matches site/src/content/applicability/m1-baseline-anvil.yml, so no page can carry a handwritten, drifting copy; test passes on the current build." }
+  - { id: editorial-concision, result: pass, notes: "Manually read the first ~120 rendered words of all 14 routes: each opens by answering the route's question (e.g. / states the Compose-to-scheduler translation, /start/ states prerequisites, /diagnostics/ states how to find a failure by symptom) with no throat-clearing or internal projection/schema terminology in reader-facing prose." }
+  - { id: mockup-direction, result: pass, notes: "Manually reviewed live preview: content containers use flat canvas/surface backgrounds with no box-shadow or raised panels; separation is via borders and whitespace; applicability/diagnostic markers use accent border lines, not cards." }
+  - { id: surface-inventory, result: pass, notes: "Manually confirmed in global.css and live preview: canvas/surface/raised/shell token values match the documented light/dark pairs; the raised token is defined but not applied to any content card background." }
+  - { id: type-rhythm-roles, result: pass, notes: "Manually confirmed in global.css: display/headings use ui-serif, body uses system-ui, technical text uses ui-monospace, with no @font-face/custom font loading; body line-height and supporting text size match the documented rhythm." }
+  - { id: exact-public-wording, result: pass, notes: "Manually confirmed exact strings in source and live preview: funded title 'Bridging the Laptop-to-Cluster Gap' (site metadata/hero), nav/breadcrumb label 'Troubleshooting' linking to /diagnostics/ (SiteHeader.astro, Breadcrumbs.astro), release label 'v0.1.0', and the ParaTools, Inc. attribution clause on /about/attribution/." }
+  - { id: status-severity, result: pass, notes: "Manually confirmed status token usage in global.css and live preview: --danger reserved for failed/unsafe states, --warning for unvalidated/stale/draft states, neutral inline text for healthy/published states, with a text label always present alongside color in every case reviewed." }
+  - { id: meaningful-arrow-exceptions, result: pass, notes: "Manually confirmed ModulePager prev/next arrows and the external-link ↗ indicator carry navigational meaning alongside visible text, while workflow figure ↓ connectors are marked aria-hidden=\"true\" and convey no meaning on their own." }
+  - { id: whitespace-balance-hierarchy, result: pass, notes: "Manually reviewed live preview across routes: section, paragraph, and heading spacing is visually consistent and unhurried, the homepage hero grid is balanced, and heading hierarchy reads clearly through size/weight/font-family contrast without cramped or overly spacious regions." }
