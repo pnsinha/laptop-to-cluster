@@ -11,9 +11,9 @@ const readPage = (path: string) => readFileSync(resolve(dist, path, 'index.html'
 const route = {
   home: '', resources: 'resources', start: 'start', diagnostics: 'diagnostics',
   conceptual: 'guide/scheduler-as-orchestrator', runnable: 'guide/baseline-single-node-pattern',
-  diagnostic: 'diagnostics/bssw-prereq-apptainer', applicability: 'applicability/m1-baseline-anvil',
-  milestone: 'milestones/1', release: 'releases/v0-1-0', attribution: 'about/attribution',
-  licenses: 'about/licenses', accessibility: 'about/accessibility', support: 'about/support',
+  applicability: 'applicability/m1-baseline-anvil',
+  milestone: 'milestones/1', attribution: 'about/attribution',
+  accessibility: 'about/accessibility', support: 'about/support',
 } as const;
 const html = Object.fromEntries(Object.entries(route).map(([key, path]) => [key, readPage(path)])) as Record<keyof typeof route, string>;
 const source = parse(readFileSync(resolve(root, 'site/src/content/applicability/m1-baseline-anvil.yml'), 'utf8')) as any;
@@ -30,9 +30,9 @@ const projectionCount = (page: string) => page.match(/data-projection-id=/g)?.le
 
 const profiles: Record<keyof typeof route, string> = {
   home: 'landing', resources: 'resources', start: 'start', diagnostics: 'diagnostic',
-  conceptual: 'learning-conceptual', runnable: 'learning-runnable', diagnostic: 'diagnostic',
-  applicability: 'applicability', milestone: 'milestone', release: 'release', attribution: 'about',
-  licenses: 'about', accessibility: 'accessibility', support: 'support',
+  conceptual: 'learning-conceptual', runnable: 'learning-runnable',
+  applicability: 'applicability', milestone: 'milestone', attribution: 'about',
+  accessibility: 'accessibility', support: 'support',
 };
 
 describe('artifact-aware static composition', () => {
@@ -40,12 +40,12 @@ describe('artifact-aware static composition', () => {
     for (const [key, profile] of Object.entries(profiles)) expect(html[key as keyof typeof route], key).toContain(`data-composition-profile="${profile}"`);
     expect(new Set(Object.values(profiles))).toEqual(new Set([
       'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start', 'diagnostic',
-      'milestone', 'release', 'about', 'support', 'accessibility', 'applicability',
+      'milestone', 'about', 'support', 'accessibility', 'applicability',
     ]));
   });
 
   it('renders one source-agreeing projection only on authorized pages', () => {
-    const consumers = { home: 'landing', runnable: 'runnable-module', milestone: 'milestone', release: 'release' } as const;
+    const consumers = { home: 'landing', runnable: 'runnable-module', milestone: 'milestone' } as const;
     const expectedScope = `The baseline workflow was validated on ${source.environment.public_name} with ${source.scheduler.family} and ${source.runtime.name}.`;
     for (const [key, consumer] of Object.entries(consumers) as Array<[keyof typeof consumers, string]>) {
       expect(projectionCount(html[key]), key).toBe(1);
@@ -57,12 +57,14 @@ describe('artifact-aware static composition', () => {
       expect(block.match(/href="\/applicability\/[^"]+\/"/g), key).toEqual([`href="/applicability/${source.id}/"`]);
       expect(block.match(/<p(?:\s|>)/g), key).toHaveLength(3);
     }
-    for (const key of ['resources', 'conceptual', 'start', 'attribution', 'licenses', 'accessibility', 'support'] as const) expect(projectionCount(html[key]), key).toBe(0);
-    expect(projectionCount(html.diagnostic)).toBe(1);
-    expect(html.diagnostic).toContain(`data-projection-id="diagnostic:BSSW-PREREQ-APPTAINER:${source.id}"`);
-    expect(html.diagnostic.match(/Relevant discriminator:/g)).toHaveLength(1);
-    expect(html.diagnostic).toContain('runtime: Apptainer');
-    expect(html.diagnostic).not.toContain('Tested workflow scope');
+    for (const key of ['resources', 'conceptual', 'start', 'attribution', 'accessibility', 'support'] as const) expect(projectionCount(html[key]), key).toBe(0);
+    // Diagnostics are anchored sections of the single /diagnostics/ page; only the
+    // apptainer diagnostic has a typed causal relationship to the applicability record.
+    expect(projectionCount(html.diagnostics)).toBe(1);
+    expect(html.diagnostics).toContain(`data-projection-id="diagnostic:BSSW-PREREQ-APPTAINER:${source.id}"`);
+    expect(html.diagnostics.match(/Relevant discriminator:/g)).toHaveLength(1);
+    expect(html.diagnostics).toContain('runtime: Apptainer');
+    expect(html.diagnostics).not.toContain('Tested workflow scope');
   });
 
   it('keeps exhaustive validation fields only on the canonical applicability page', () => {
@@ -102,8 +104,15 @@ describe('artifact-aware static composition', () => {
     expect(html.runnable.indexOf('Tested workflow scope')).toBeLessThan(procedure);
     expect(html.runnable.indexOf('<strong>Warning:</strong>')).toBeLessThan(procedure);
     expect(html.runnable).toContain('Safety and scope limitations');
-    expect(html.runnable).toContain('BSSW-PREREQ-SLURM');
-    expect(html.runnable).toContain('BSSW-PREREQ-APPTAINER');
+    expect(html.runnable).toContain('PREREQ-SLURM');
+    expect(html.runnable).toContain('PREREQ-APPTAINER');
+    expect(html.runnable).toContain('Implementation reference');
+    expect(html.runnable).toContain('workflows/baseline-slurm-apptainer/slurm/baseline.sbatch');
+    expect(html.runnable).toContain('bin/readiness.py');
+    expect(html.runnable).toContain('&quot;status&quot;: &quot;success&quot;');
+    expect(html.start).toContain('Open the v0.1.0 sbatch script (external)');
+    expect(html.start).toContain('workflows/baseline-slurm-apptainer/slurm/baseline.sbatch');
+    expect(html.start).toContain('implementation-reference');
     const disclosures = html.runnable.match(/<details.*?<\/details>/g) ?? [];
     for (const disclosure of disclosures) expect(disclosure).not.toMatch(/Before you begin|Warning:|Tested workflow scope|Unvalidated content/);
     expect(html.runnable).not.toMatch(/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>.*?(?:Before you begin|Warning:|applicability-projection)/);
@@ -139,7 +148,7 @@ describe('reader-choice landing and resources', () => {
     expect(html.resources).not.toContain('Planned for a later milestone');
 
     const cards = html.resources.match(/<article class="card resource-card">.*?<\/article>/g) ?? [];
-    expect(cards).toHaveLength(15);
+    expect(cards).toHaveLength(14);
     for (const card of cards) {
       expect(card).not.toMatch(/resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i);
       expect(card.match(/class="resource-qualifier"/g)?.length ?? 0).toBeLessThanOrEqual(1);
@@ -199,19 +208,21 @@ describe('finalized presentation regression gates', () => {
     expect(notFoundHtml).toContain('href="/resources/"');
   });
 
-  it('includes ParaTools in the footer attribution', () => {
-    for (const page of pages.slice(0, 5)) {
-      expect(page.html, page.route).toContain('ParaTools');
+  it('links every footer to the full attribution and licenses page instead of repeating funding text inline', () => {
+    for (const page of pages.filter(({ route }) => route !== 'about/attribution/').slice(0, 5)) {
+      expect(page.html, page.route).toContain('<a href="/about/attribution/">Attribution and licenses</a>');
+      expect(page.html, page.route).not.toContain('ParaTools');
     }
+    expect(html.attribution).toContain('ParaTools');
   });
 });
 
 describe('static accessibility, metadata, and dependency gates', () => {
   it('preserves landmarks, one h1, attribution, and canonical apex metadata on every page', () => {
-    expect(pages.length).toBeGreaterThan(15);
+    expect(pages.length).toBeGreaterThan(10);
     for (const page of pages) {
       expect(page.html.match(/<h1(?:\s|>)/g), page.route).toHaveLength(1);
-      for (const marker of ['<header class="site-header">', '<main id="main" tabindex="-1">', '<footer class="site-footer">', '<a href="/about/attribution/">Attribution and funding</a>']) expect(page.html, page.route).toContain(marker);
+      for (const marker of ['<header class="site-header">', '<main id="main" tabindex="-1">', '<footer class="site-footer">', '<a href="/about/attribution/">Attribution and licenses</a>']) expect(page.html, page.route).toContain(marker);
       const canonical = `https://laptop-to-cluster.org/${page.route}`;
       expect(page.html).toContain(`<link rel="canonical" href="${canonical}">`);
       expect(page.html).toContain(`<meta property="og:url" content="${canonical}">`);
@@ -221,8 +232,7 @@ describe('static accessibility, metadata, and dependency gates', () => {
 
   it('uses system fonts, both schemes, native tables, bounded overflow, and no decorative technology', () => {
     expect(generatedCss).toMatch(/color-scheme:light dark/);
-    expect(generatedCss).toMatch(/prefers-color-scheme:dark/);
-    expect(generatedCss).toMatch(/ui-serif/);
+    expect(generatedCss).toMatch(/--font-display:\s*(?:ui-serif|system-ui|Georgia)/);
     expect(generatedCss).toMatch(/system-ui/);
     expect(generatedCss).toMatch(/ui-monospace/);
     expect(generatedCss).not.toMatch(/@font-face|@import url|fonts\.google|use\.typekit|linear-gradient|radial-gradient|backdrop-filter/);
