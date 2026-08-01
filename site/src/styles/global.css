@@ -155,6 +155,8 @@ pre { max-inline-size: 100%; margin-block: var(--flow-body); padding: var(--spac
 .terminal, .technical-figure { max-inline-size: 100%; padding: var(--space-4); }
 .technical-figure figcaption { margin-block-end: var(--space-3); font-family: var(--font-display); font-size: var(--text-subheading); line-height: var(--leading-heading); font-weight: 750; }
 pre code { overflow-wrap: normal; word-break: normal; padding: 0; background: transparent; border: none; }
+.diagram { max-inline-size: 100%; margin-block: var(--space-6); }
+.diagram-svg { inline-size: 100%; block-size: auto; }
 blockquote { margin-block: var(--space-4); padding-inline-start: var(--space-4); padding-block: var(--space-2); border-inline-start: var(--border-strong) solid var(--primary); color: var(--muted); font-style: italic; }
 .prose ul, .prose ol, .module-content ul, .module-content ol { padding-inline-start: var(--space-6); }
 .prose li, .module-content li { line-height: 1.6; }
