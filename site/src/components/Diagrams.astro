@@ -6,10 +6,10 @@ const { name } = Astro.props as { name: string };
     <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
       <style>{`
         .lbl { font-family: ui-monospace, monospace; font-size: 13px; fill: #e6edf3; }
-        .sub { font-family: system-ui, sans-serif; font-size: 11px; fill: #8b949e; }
+        .sub { font-family: system-ui, sans-serif; font-size: 11px; fill: #9da5ae; }
         .arr { stroke: #58a6ff; stroke-width: 2; fill: none; }
-        .box-l { fill: #161b22; stroke: #484f58; stroke-width: 1; rx: 6; }
-        .box-r { fill: #1c2128; stroke: #58a6ff; stroke-width: 1.5; rx: 6; }
+        .box-l { fill: #30363d; stroke: #7d8590; stroke-width: 1.5; rx: 6; }
+        .box-r { fill: #30363d; stroke: #58a6ff; stroke-width: 1.5; rx: 6; }
         .hdr { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: #58a6ff; text-transform: uppercase; letter-spacing: 0.05em; }
       `}</style>
       <text x="80" y="25" class="hdr" text-anchor="middle">Docker Compose</text>
@@ -51,10 +51,10 @@ const { name } = Astro.props as { name: string };
     <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
       <style>{`
         .lbl { font-family: ui-monospace, monospace; font-size: 12px; fill: #e6edf3; }
-        .sub { font-family: system-ui, sans-serif; font-size: 10px; fill: #8b949e; }
+        .sub { font-family: system-ui, sans-serif; font-size: 10px; fill: #9da5ae; }
         .hdr { font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700; fill: #e6edf3; }
         .tag { font-family: system-ui, sans-serif; font-size: 9px; font-weight: 600; fill: #3fb950; text-transform: uppercase; letter-spacing: 0.05em; }
-        .box { fill: #161b22; stroke: #484f58; stroke-width: 1; }
+        .box { fill: #30363d; stroke: #7d8590; stroke-width: 1.5; }
         .alloc-border { fill: none; stroke: #58a6ff; stroke-width: 1.5; stroke-dasharray: 6,4; rx: 8; }
         .arrow { stroke: #8b949e; stroke-width: 1.5; fill: none; }
         .gate-arrow { stroke: #3fb950; stroke-width: 2; fill: none; }
@@ -132,12 +132,12 @@ const { name } = Astro.props as { name: string };
     <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
       <style>{`
         .lbl { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: #e6edf3; }
-        .step { font-family: ui-monospace, monospace; font-size: 11px; fill: #8b949e; }
-        .note { font-family: system-ui, sans-serif; font-size: 10px; fill: #8b949e; }
+        .step { font-family: ui-monospace, monospace; font-size: 11px; fill: #9da5ae; }
+        .note { font-family: system-ui, sans-serif; font-size: 10px; fill: #9da5ae; }
         .ok { font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #3fb950; }
         .no { font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #f85149; }
-        .tl { stroke: #484f58; stroke-width: 1; stroke-dasharray: 3,3; }
-        .bar { fill: #161b22; stroke: #484f58; stroke-width: 1; rx: 4; }
+        .tl { stroke: #7d8590; stroke-width: 1.5; stroke-dasharray: 3,3; }
+        .bar { fill: #30363d; stroke: #7d8590; stroke-width: 1.5; rx: 4; }
       `}</style>
       <line x1="10" y1="30" x2="710" y2="30" class="tl"/>
       <text x="10" y="20" class="note">TIME</text>
