@@ -137,6 +137,9 @@ h3 { font-size: var(--text-subheading); font-weight: 700; }
 .applicability-projection strong { font-weight: 800; }
 .applicability-projection--escalated { padding: var(--space-4); border: var(--border-strong) solid var(--warning); background: var(--warning-surface); border-block-start-color: var(--warning); }
 .applicability-projection--escalated p + p { margin-block-start: var(--flow-tight); }
+.event-band { max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding-inline-start: var(--space-3); border-inline-start: var(--border-strong) solid var(--accent); }
+.event-band__eyebrow { margin: 0; font-size: var(--text-supporting); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+.event-band__copy { margin-block-start: var(--flow-tight); font-size: var(--text-body); line-height: var(--leading-base); }
 .diagnostic-applicability { max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding-inline-start: var(--space-3); border-inline-start: var(--border-strong) solid var(--accent); }
 .diagnostic-applicability p + p { margin-block-start: var(--flow-tight); }
 .sources-scope { margin-block-start: var(--flow-section); padding-block-start: var(--space-6); border-block-start: var(--border-thin) solid var(--border); }

@@ -194,7 +194,7 @@ export function projectDiscovery(content: ContentItem[], fixedPublicPaths: strin
 export const COMPOSITION_PROFILES = [
   'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start',
   'diagnostic', 'milestone', 'release', 'about', 'support', 'accessibility', 'applicability',
-  'not-found',
+  'event', 'not-found',
 ] as const;
 export type CompositionProfile = typeof COMPOSITION_PROFILES[number];
 export type ApplicabilityConsumer = 'landing' | 'runnable-module' | 'milestone' | 'release';
@@ -262,6 +262,16 @@ export function compositionProfileFor(item: ContentItem): CompositionProfile {
   if (item.artifact_type === 'accessibility') {
     assertProfileNamespace(item, 'about');
     return 'accessibility';
+  }
+
+  /* Conference and event material. canonicalPath() routes event-assets to
+     /events/{slug}/. These are prose articles (poster companions, talk notes),
+     not the resource-card grid the resources profile requires, so they get a
+     dedicated profile that the publication validator does not subject to the
+     card-grid composition rule. */
+  if (item.artifact_type === 'event-assets') {
+    assertProfileNamespace(item, 'events');
+    return 'event';
   }
 
   const aboutArtifacts: ReadonlySet<ContentItem['artifact_type']> = new Set([

@@ -13,7 +13,7 @@ const FORBIDDEN_ORIGIN = /https:\/\/(?:www\.laptop-to-cluster\.org|laptoptoclust
 const SHA256 = /^[a-f0-9]{64}$/;
 const COMPOSITION_PROFILES = new Set([
   'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start', 'diagnostic',
-  'milestone', 'release', 'about', 'support', 'accessibility', 'applicability', 'not-found',
+  'milestone', 'release', 'about', 'support', 'accessibility', 'applicability', 'event', 'not-found',
 ]);
 const STANDARD_PROJECTION_CONSUMER = Object.freeze({
   landing: 'landing',

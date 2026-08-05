@@ -87,6 +87,7 @@ describe('artifact-aware composition and applicability projections', () => {
       [{ ...content[1], id: 'support', route_namespace: 'about', artifact_type: 'support' }, 'support'],
       [{ ...content[1], id: 'accessibility', route_namespace: 'about', artifact_type: 'accessibility' }, 'accessibility'],
       [{ ...content[1], id: 'about', route_namespace: 'about', artifact_type: 'report' }, 'about'],
+      [{ ...content[1], id: 'event', route_namespace: 'events', artifact_type: 'event-assets' }, 'event'],
     ] as Array<[ContentItem, ReturnType<typeof compositionProfileFor>]>;
     for (const [item, expected] of fixtures) expect(compositionProfileFor(item)).toBe(expected);
     const represented = new Set(['landing', 'resources', 'applicability', 'not-found', ...fixtures.map(([, profile]) => profile)]);
