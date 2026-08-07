@@ -9,7 +9,7 @@ describe('frontend foundation styles', () => {
   it('defines shared measures, focus, and bounded technical content', () => {
     expect(css).toMatch(/--measure-prose:\s*68ch/);
     expect(css).toMatch(/--measure-(?:wide|data):/);
-    expect(css).toMatch(/:focus-visible\s*\{[^}]*outline/s);
+    expect(css).toMatch(/:focus-visible[^{]*\{[^}]*outline/s);
     expect(css).toMatch(/pre\s*\{[^}]*overflow-x:\s*auto/s);
     expect(css).toMatch(/(?:\.hash|\.checksum|\.integrity)[\s\S]*overflow-wrap:\s*anywhere/);
   });

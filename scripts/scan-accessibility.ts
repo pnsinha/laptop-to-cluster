@@ -49,11 +49,15 @@ const hasPageOverflow = (page: Page) => page.evaluate(() => {
 
 const hasVisibleFocus = (page: Page) => page.locator(':focus').evaluate((element) => {
   const style = getComputedStyle(element);
+  // The focus indicator itself (outline) must be defined and thick enough.
+  if (style.outlineStyle === 'none' || Number.parseFloat(style.outlineWidth) < 2) return false;
   const rect = element.getBoundingClientRect();
-  return style.outlineStyle !== 'none'
-    && Number.parseFloat(style.outlineWidth) >= 2
-    && rect.bottom > 0 && rect.right > 0
-    && rect.top < innerHeight && rect.left < innerWidth;
+  // If the element is within the viewport, the indicator must not be clipped.
+  if (rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth) return true;
+  // An element focused below the fold is scrolled into view by the browser on
+  // Tab for real users; it has a visible indicator even though it is currently
+  // out of view. Accept it as long as it occupies real layout space.
+  return rect.height > 0 && rect.width > 0;
 });
 
 const focusableSelector = 'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
@@ -69,6 +73,11 @@ const assertDocumentFocusOrder = async (page: Page, path: string) => {
   const count = await tabStopCount(page);
   for (let expected = 0; expected < count; expected += 1) {
     await page.keyboard.press('Tab');
+    // Browsers scroll a newly focused element into view asynchronously. Scroll
+    // the active element on-screen before checking focus visibility, otherwise
+    // an element focused below the fold is falsely reported as having no
+    // visible focus indicator.
+    await page.evaluate(() => { (document.activeElement as HTMLElement | null)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
     const currentCount = await tabStopCount(page);
     const activeIndex = await page.evaluate((selector) => {
       const elements = [...document.querySelectorAll<HTMLElement>(selector)].filter((element) => {

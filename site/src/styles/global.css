@@ -13,7 +13,7 @@
   --on-primary: #0d1117;
   --shell: #0d1117;
   --shell-text: #e6edf3;
-  --border: #30363d;
+  --border: #6e7681;
   --warning: #e3b341;
   --warning-surface: #211b0d;
   --danger: #f85149;
@@ -88,14 +88,14 @@
     --raised: #eaeef2;
     --text: #1f2328;
     --muted: #57606a;
-    --primary: #0969da;
-    --accent: #9a6700;
+    --primary: #0860c9;
+    --accent: #7d4f00;
     --shell-accent: #bc4c00;
     --on-primary: #ffffff;
     --shell: #f6f8fa;
     --shell-text: #1f2328;
-    --border: #d0d7de;
-    --warning: #9a6700;
+    --border: #7a828c;
+    --warning: #7d4f00;
     --warning-surface: #fff8c5;
     --danger: #cf222e;
     --danger-surface: rgba(207, 34, 46, 0.10);
@@ -105,7 +105,7 @@
 
 * { box-sizing: border-box; }
 html { overflow-wrap: break-word; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
-body { min-inline-size: 0; margin: 0; background: var(--canvas); font-size: 15px; }
+body { min-inline-size: 0; margin: 0; background: var(--canvas); font-size: 16px; }
 button, input, select, textarea, summary { font: inherit; font-size: var(--text-base); line-height: 1.5; }
 small, .supporting, .technical-label { font-size: var(--text-supporting); }
 img, svg, video { max-inline-size: 100%; block-size: auto; }
@@ -113,6 +113,7 @@ a { color: var(--primary); overflow-wrap: anywhere; text-decoration-line: underl
 a:hover { text-decoration-thickness: 0.2em; }
 :where(main, .site-footer) a:not(.action--primary) { text-decoration-line: underline; }
 :focus-visible { outline: var(--focus-width) solid var(--primary); outline-offset: var(--focus-offset); }
+:focus { outline: var(--focus-width) solid var(--primary); outline-offset: var(--focus-offset); }
 .skip { position: absolute; inset-block-start: -5rem; inset-inline-start: var(--space-3); z-index: 10; padding: var(--space-3); color: var(--text); background: var(--surface); border: var(--border-thin) solid var(--border); }
 .skip:focus { inset-block-start: var(--space-3); }
 

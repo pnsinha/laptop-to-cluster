@@ -78,7 +78,7 @@ describe('representative static accessibility coverage', () => {
   it('defines minimum sizes, focus, both schemes, bounded content, forced colors, print, and reduced motion', () => {
     expect(css).toMatch(/--text-base:1rem/);
     expect(css).toMatch(/--text-supporting:\.875rem/);
-    expect(css).toMatch(/:focus-visible\{outline:/);
+    expect(css).toMatch(/:focus-visible[^{]*\{outline:/);
     expect(css).toMatch(/color-scheme:light dark/);
     expect(css).toMatch(/forced-colors:active/);
     expect(css).toMatch(/@media print/);
