@@ -1,5 +1,6 @@
 ---
 import { PROJECT } from '../content/wording';
+import { formatDate } from '../content/format';
 type DegradedState = 'degraded' | 'unavailable';
 const { state, artifact, scope, recovery, validatedAt } = Astro.props as {
   state?: DegradedState;
@@ -24,7 +25,7 @@ if (active) {
   <dl>
     <div><dt>Artifact</dt><dd>{artifact}</dd></div>
     <div><dt>Affected scope</dt><dd>{scope}</dd></div>
-    <div><dt>Validated</dt><dd><time datetime={validatedAt}>{validatedAt}</time></dd></div>
+    <div><dt>Validated</dt><dd><time datetime={validatedAt}>{formatDate(validatedAt)}</time></dd></div>
   </dl>
   <p>{recovery} <a href={PROJECT.issues}>Open an issue</a>; if that channel is unavailable, <a href={PROJECT.contact}>email the maintainer</a>.</p>
 </aside>}

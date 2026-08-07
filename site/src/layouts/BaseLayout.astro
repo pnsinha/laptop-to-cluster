@@ -20,10 +20,12 @@ const canonical = new URL(canonicalPath, CANONICAL_ORIGIN).href;
   <meta name="description" content={description} /><meta property="og:type" content="website" />
   <meta property="og:title" content={title} /><meta property="og:description" content={description} />
   <meta property="og:url" content={canonical} /><link rel="canonical" href={canonical} />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1117" />
   <link rel="alternate" type="application/rss+xml" title="Laptop-to-Cluster updates" href={`${CANONICAL_ORIGIN}/feed.xml`} />
   <link rel="sitemap" href={`${CANONICAL_ORIGIN}/sitemap-index.xml`} /><title>{title} | {PROJECT.name}</title>
 </head><body data-composition-profile={selectedProfile}><a class="skip" href="#main">Skip to content</a>
 <SiteHeader {currentPath} />
 <main id="main" tabindex="-1">{currentPath !== '/' && <Breadcrumbs currentPath={currentPath} currentTitle={title} />}<slot /></main>
-<footer class="site-footer"><p class="acknowledgment">This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.</p><p class="acknowledgment">Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.</p></footer>
+<footer class="site-footer"><p class="acknowledgment">This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.</p></footer>
 </body></html>

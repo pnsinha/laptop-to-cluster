@@ -120,7 +120,7 @@ describe('Astro navigation components', () => {
     expect(html).toContain('<details class="site-nav--compact">');
     expect(html).toContain('<summary>Navigation</summary>');
     expect(html.match(/href="\/resources\/" aria-current="page"/g)).toHaveLength(2);
-    expect(html).toContain('Companion repository<span class="external-label"> (external)</span>');
+    expect(html).toContain('GitHub<span class="external-label"> (external)</span>');
     expect(html).not.toMatch(/<script\b|onclick=/i);
   });
 

@@ -5,7 +5,6 @@ import ContentHeader from '../components/ContentHeader.astro';
 import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
 import SourcesAndScope from '../components/SourcesAndScope.astro';
 import UnvalidatedNotice from '../components/UnvalidatedNotice.astro';
-import ExecutionSafetyNotice from '../components/ExecutionSafetyNotice.astro';
 import ImplementationReference from '../components/ImplementationReference.astro';
 import ModulePager from '../components/ModulePager.astro';
 import Diagrams from '../components/Diagrams.astro';
@@ -36,20 +35,20 @@ const repositoryHref = (reference: RepoRef) => `${reference.repository}/blob/${e
     <p><strong>Type:</strong> {item.module_type}{item.estimated_minutes && <> · <strong>Time:</strong> {item.estimated_minutes} minutes</>}</p>
   </section>
   {projection && <ApplicabilityProjectionView {projection} />}
-  <section class="module-overview" aria-labelledby="module-outcomes">
-    <h2 id="module-outcomes">What you will learn</h2>
+  <section class="module-overview" aria-labelledby="module-overview-heading">
+    <h2 id="module-overview-heading">Before you run this module</h2>
+    <h3>What you will learn</h3>
     <ul>{item.learning_outcomes.map((value) => <li>{value}</li>)}</ul>
-    <h2>Before you begin</h2>
+    <h3>Prerequisites</h3>
     <ul>{item.prerequisites.length ? item.prerequisites.map((value) => <li>{value.check ?? value.id}{value.diagnostic_id && <> — <a href={diagnosticHref(value.diagnostic_id)}>{displayDiagnosticCode(value.diagnostic_id)}</a></>}</li>) : <li>No execution prerequisite is required.</li>}</ul>
     {item.required_resources && <><h3>Required resources</h3><ul>{item.required_resources.map((value) => <li>{value}</li>)}</ul></>}
   </section>
   <UnvalidatedNotice scopes={item.unvalidated_scopes} />
-  {profile === 'learning-runnable' && <ExecutionSafetyNotice />}
-  {profile === 'learning-runnable' && <ImplementationReference reference={IMPLEMENTATION_REFERENCE} />}
   <article class="module-content"><slot /></article>
   {item.id === 'module-1-scheduler-orchestrator' && <Diagrams name="compose-to-hpc" />}
   {item.id === 'module-1-scheduler-orchestrator' && <Diagrams name="readiness-sequence" />}
   {item.id === 'module-2-baseline' && <Diagrams name="single-node-architecture" />}
+  {profile === 'learning-runnable' && <ImplementationReference reference={IMPLEMENTATION_REFERENCE} />}
   <section aria-labelledby="completion"><h2 id="completion">{profile === 'learning-conceptual' ? 'Complete the decision exercise' : 'Check completion'}</h2><p>{item.completion_check?.text}</p>{item.conceptual_check && <p>{item.conceptual_check.text}</p>}</section>
   <section aria-labelledby="related"><h2 id="related">Continue learning</h2><ul>{related.map((entry) => <li><a href={canonicalPath(entry)}>{entry.title}</a></li>)}</ul></section>
   <ModulePager navigation={moduleNavigation} />

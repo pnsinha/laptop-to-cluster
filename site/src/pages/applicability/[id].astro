@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatDate } from '../../content/format';
 export async function getStaticPaths() {
   return (await getCollection('applicability')).map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
 }
@@ -19,9 +20,9 @@ const evidenceHref = `https://github.com/pnsinha/laptop-to-cluster/blob/${encode
       <div><dt>Environment role</dt><dd>{record.environment.fallback ? 'Fallback' : 'Primary'}</dd></div><div><dt>Environment scope</dt><dd>{record.environment.notes}</dd></div>
       <div><dt>Scheduler</dt><dd>{record.scheduler.family} {record.scheduler.version}</dd></div><div><dt>Runtime</dt><dd>{record.runtime.name} {record.runtime.version}</dd></div>
       <div><dt>Workflow revision</dt><dd><code>{record.workflow_revision}</code></dd></div><div><dt>Container image digest</dt><dd><code class="hash">{record.container_digest}</code></dd></div>
-      <div><dt>Execution date</dt><dd><time datetime={record.execution_date}>{record.execution_date}</time></dd></div><div><dt>Validation date</dt><dd><time datetime={record.validation_date}>{record.validation_date}</time></dd></div>
+      <div><dt>Execution date</dt><dd><time datetime={record.execution_date}>{formatDate(record.execution_date)}</time></dd></div><div><dt>Validation date</dt><dd><time datetime={record.validation_date}>{formatDate(record.validation_date)}</time></dd></div>
       <div><dt>Submission ID</dt><dd><code>{record.submission_id}</code></dd></div><div><dt>Terminal result</dt><dd>{record.result.terminal_state}; exit {record.result.exit_code}</dd></div>
-      <div><dt>Review after</dt><dd><time datetime={record.review_after}>{record.review_after}</time></dd></div>
+      <div><dt>Review after</dt><dd><time datetime={record.review_after}>{formatDate(record.review_after)}</time></dd></div>
     </dl>
     <h2>Result checks</h2><ul>{record.result.checks.map((value) => <li>{value}</li>)}</ul>
     <h2>Assumptions</h2><ul>{record.assumptions.map((value) => <li>{value}</li>)}</ul>

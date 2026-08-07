@@ -14,6 +14,7 @@ const route = {
   applicability: 'applicability/m1-baseline-anvil',
   milestone: 'milestones/1', attribution: 'about/attribution',
   accessibility: 'about/accessibility', support: 'about/support',
+  event: 'events/iguide-forum-2026',
 } as const;
 const html = Object.fromEntries(Object.entries(route).map(([key, path]) => [key, readPage(path)])) as Record<keyof typeof route, string>;
 const source = parse(readFileSync(resolve(root, 'site/src/content/applicability/m1-baseline-anvil.yml'), 'utf8')) as any;
@@ -32,7 +33,7 @@ const profiles: Record<keyof typeof route, string> = {
   home: 'landing', resources: 'resources', start: 'start', diagnostics: 'diagnostic',
   conceptual: 'learning-conceptual', runnable: 'learning-runnable',
   applicability: 'applicability', milestone: 'milestone', attribution: 'about',
-  accessibility: 'accessibility', support: 'support',
+  accessibility: 'accessibility', support: 'support', event: 'event',
 };
 
 describe('artifact-aware static composition', () => {
@@ -40,7 +41,7 @@ describe('artifact-aware static composition', () => {
     for (const [key, profile] of Object.entries(profiles)) expect(html[key as keyof typeof route], key).toContain(`data-composition-profile="${profile}"`);
     expect(new Set(Object.values(profiles))).toEqual(new Set([
       'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start', 'diagnostic',
-      'milestone', 'about', 'support', 'accessibility', 'applicability',
+      'milestone', 'about', 'support', 'accessibility', 'applicability', 'event',
     ]));
   });
 
@@ -100,9 +101,8 @@ describe('artifact-aware static composition', () => {
 
   it('keeps critical runnable guidance visible and safely ordered before execution', () => {
     const procedure = html.runnable.indexOf('<h2 id="procedure">');
-    expect(html.runnable.indexOf('Before you begin')).toBeLessThan(procedure);
+    expect(html.runnable.indexOf('Prerequisites')).toBeLessThan(procedure);
     expect(html.runnable.indexOf('Tested workflow scope')).toBeLessThan(procedure);
-    expect(html.runnable.indexOf('<strong>Warning:</strong>')).toBeLessThan(procedure);
     expect(html.runnable).toContain('Safety and scope limitations');
     expect(html.runnable).toContain('PREREQ-SLURM');
     expect(html.runnable).toContain('PREREQ-APPTAINER');
@@ -114,8 +114,8 @@ describe('artifact-aware static composition', () => {
     expect(html.start).toContain('workflows/baseline-slurm-apptainer/slurm/baseline.sbatch');
     expect(html.start).toContain('implementation-reference');
     const disclosures = html.runnable.match(/<details.*?<\/details>/g) ?? [];
-    for (const disclosure of disclosures) expect(disclosure).not.toMatch(/Before you begin|Warning:|Tested workflow scope|Unvalidated content/);
-    expect(html.runnable).not.toMatch(/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>.*?(?:Before you begin|Warning:|applicability-projection)/);
+    for (const disclosure of disclosures) expect(disclosure).not.toMatch(/Prerequisites|Tested workflow scope|Unvalidated content/);
+    expect(html.runnable).not.toMatch(/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>.*?(?:Prerequisites|applicability-projection)/);
   });
 
   it('places sources after substantive content and suppresses healthy support panels', () => {
@@ -148,7 +148,7 @@ describe('reader-choice landing and resources', () => {
     expect(html.resources).not.toContain('Planned for a later milestone');
 
     const cards = html.resources.match(/<a class="resource-tile"[^>]*>.*?<\/a>/g) ?? [];
-    expect(cards).toHaveLength(14);
+    expect(cards).toHaveLength(15);
     for (const card of cards) {
       expect(card).not.toMatch(/resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i);
       expect(card.match(/class="resource-tile__tag"/g)?.length ?? 0).toBeLessThanOrEqual(1);

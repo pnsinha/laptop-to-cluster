@@ -9,7 +9,12 @@ const groups = [
   { id: 'project', title: 'Review the project', question: 'Where are release, milestone, policy, and public-information records?', items: entries.filter((item) => item.artifact_type !== 'learning-module' && item.route_namespace !== 'start' && item.artifact_type !== 'diagnostic') },
 ].filter(({ items }) => items.length);
 const qualifier = (item: typeof entries[number]) => item.artifact_type === 'learning-module'
-  ? `${item.module_type} module` : item.artifact_type === 'diagnostic' ? 'Recovery guide' : undefined;
+  ? `${item.module_type} module` : item.artifact_type === 'diagnostic' ? 'Recovery guide'
+  : item.artifact_type === 'release' ? 'Release'
+  : item.artifact_type === 'milestone' ? 'Milestone'
+  : item.route_namespace === 'about' ? 'Project record'
+  : item.route_namespace === 'events' ? 'Event'
+  : item.artifact_type;
 ---
 <BaseLayout title="Resources" description="Complete index of published Laptop-to-Cluster resources." profile="resources">
   <header class="content-header"><h1>Resources</h1><p class="lede">Every published page, grouped by what you are trying to do. Start with a question, then follow a link.</p></header>
@@ -40,6 +45,7 @@ const qualifier = (item: typeof entries[number]) => item.artifact_type === 'lear
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
     gap: var(--space-4);
+    align-items: start;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -55,17 +61,17 @@ const qualifier = (item: typeof entries[number]) => item.artifact_type === 'lear
     text-decoration: none;
     color: inherit;
   }
-  .resource-tile:hover { border-color: var(--primary); }
-  .resource-tile:active { border-color: var(--primary); }
+  .resource-tile:hover { border-color: var(--primary); background: var(--surface); }
+  .resource-tile:active { border-color: var(--primary); background: var(--surface); }
   .resource-tile:focus-visible { outline-offset: 2px; }
-  .resource-tile h3 { font-size: var(--text-subheading); font-weight: 700; }
+  .resource-tile h3 { font-size: var(--text-subheading); font-weight: 700; flex: none; }
   .resource-tile p { color: var(--muted); font-size: var(--text-fine); line-height: 1.5; flex-grow: 1; }
   .resource-tile__tag {
     align-self: flex-start;
     font-family: var(--font-technical);
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--primary);
+    color: var(--accent);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
