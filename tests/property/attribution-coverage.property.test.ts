@@ -8,9 +8,15 @@ import { COMPOSITION_PROFILES } from '../../site/src/content/projections.js';
 let container: AstroContainer;
 beforeAll(async () => { container = await AstroContainer.create(); });
 
+// The attribution schema rejects placeholder wording (tbd, todo, placeholder,
+// etc.) via superRefine. The word generator must avoid producing those tokens,
+// otherwise the property generates inputs the schema is designed to refuse and
+// fails on the parse rather than on a real invariant. Filter them out.
+const PLACEHOLDER_WORDS = ['tbd', 'todo', 'placeholder', 'pending', 'approval', 'lorem', 'ipsum'];
 const word = fc.array(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789'), {
   minLength: 1, maxLength: 16,
-}).map((characters) => characters.join(''));
+}).map((characters) => characters.join(''))
+  .filter((value) => !PLACEHOLDER_WORDS.includes(value));
 const phrase = fc.array(word, { minLength: 1, maxLength: 4 }).map((words) => words.join(' '));
 const publicPage = fc.record({
   title: phrase,
