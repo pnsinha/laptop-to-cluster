@@ -26,7 +26,7 @@ async function requirePublic(url, expectedText) {
 }
 
 const root = await requirePublic(`${CANONICAL_ORIGIN}/`, 'Bridging the Laptop-to-Cluster Gap');
-for (const text of ['Start here', 'Project records', 'Get started', 'Companion repository']) {
+for (const text of ['Start here', 'Project records', 'Get started', 'GitHub']) {
   check(root.includes(text), CANONICAL_ORIGIN, 'root-content', `missing ${text}`);
 }
 for (const path of [
