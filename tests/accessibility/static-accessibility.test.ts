@@ -43,7 +43,7 @@ describe('representative static accessibility coverage', () => {
         expect(visibleWithoutDisclosure, `${page.path}: unvalidated state`).toContain('Unvalidated content');
       }
     }
-    expect(withoutDisclosures(pages.find(({ kind }) => kind === 'runnable module')!.html)).toMatch(/<strong>Warning:<\/strong>/);
+    expect(withoutDisclosures(pages.find(({ kind }) => kind === 'runnable module')!.html)).toContain('Prerequisites');
     expect(withoutDisclosures(pages.find(({ kind }) => kind === 'start')!.html)).toContain('Confirm these assumptions before execution');
     expect(withoutDisclosures(pages.find(({ kind }) => kind === 'support')!.html)).toContain('project maintainer');
   });
@@ -70,7 +70,7 @@ describe('representative static accessibility coverage', () => {
     expect(css).toMatch(/\.site-nav__link\[aria-current=(?:"page"|page)\]:(?::)?before\{content:"▸ "/);
     expect(css).toMatch(/\.site-nav__link--external\{[^}]*border:/);
     for (const page of pages) expect(page.html, page.path).toContain('(external)');
-    expect(pages.find(({ kind }) => kind === 'support')!.html).toContain('Warning: protect sensitive information');
+    expect(pages.find(({ kind }) => kind === 'support')!.html).toContain('sanitized technical checklist');
     expect(pages.find(({ kind }) => kind === 'milestone')!.html).toMatch(/<strong>Status:<\/strong>/);
     expect(pages.find(({ kind }) => kind === 'home')!.html).toMatch(/<strong>(?:Status|Boundary):<\/strong>/);
   });

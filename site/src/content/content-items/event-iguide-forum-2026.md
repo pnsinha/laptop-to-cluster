@@ -22,7 +22,7 @@ mechanics filled in.
 
 [Download the poster (PDF, 36 x 42 in)](/iguide-forum-2026-poster.pdf)
 
-## The argument in one paragraph
+## The argument
 
 Geospatial AI workflows often break when teams move from cloud development to HPC production.
 Containers package dependencies, but execution assumptions change across schedulers, GPU
@@ -49,19 +49,6 @@ directly.
 run metadata. Status transitions, errors, and artifact URIs belong to the contract, not to
 optional logs.
 
-## Where the poster and this site differ
-
-Worth stating plainly, because you can see both claims within a minute of each other.
-
-The baseline workflow published here was validated on **Anvil**, with Slurm and
-Apptainer. The geospatial production deployment described on the poster runs at the
-**University of Chicago**. Those are two different artifacts.
-
-What has not happened in either case is running the geospatial pipeline itself across multiple
-institutional scheduler policies. That is what the poster's limitations panel refers to, and it
-is the next piece of work. If you operate a facility and want to be the second site, that is
-the conversation to have.
-
 ## Read further
 
 - [Module 1: Scheduler as Orchestrator](/guide/scheduler-as-orchestrator/) is where the runtime
@@ -84,11 +71,3 @@ Ecosystem Conference, University of Illinois Chicago, August 2026.
 
 Parmanand Sinha, Computational Scientist, Research Computing Center, University of Chicago.
 2026 Better Scientific Software Fellow. `pnsinha@uchicago.edu`
-
-## Acknowledgment
-
-Supported in part by a 2026 Better Scientific Software (BSSw) Fellowship. The BSSw Fellowship
-Program is supported by the U.S. Department of Energy, Office of Advanced Scientific Computing
-Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security
-Administration Advanced Simulation and Computing Program via LLNL under Contract
-DE-AC52-07NA27344, and by the National Science Foundation via SHI under Grant No. 2435328.

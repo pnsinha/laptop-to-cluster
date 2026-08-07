@@ -3,19 +3,11 @@ const { name } = Astro.props as { name: string };
 ---
 {name === 'compose-to-hpc' && (
   <figure class="diagram" role="img" aria-label="Compose-to-HPC concept mapping diagram. Docker Compose concepts on the left map to their scheduler-managed HPC equivalents on the right.">
-    <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
-      <style>{`
-        .lbl { font-family: ui-monospace, monospace; font-size: 13px; fill: #e6edf3; }
-        .sub { font-family: system-ui, sans-serif; font-size: 11px; fill: #9da5ae; }
-        .arr { stroke: #58a6ff; stroke-width: 2; fill: none; }
-        .box-l { fill: #30363d; stroke: #7d8590; stroke-width: 1.5; rx: 6; }
-        .box-r { fill: #30363d; stroke: #58a6ff; stroke-width: 1.5; rx: 6; }
-        .hdr { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: #58a6ff; text-transform: uppercase; letter-spacing: 0.05em; }
-      `}</style>
-      <text x="80" y="25" class="hdr" text-anchor="middle">Docker Compose</text>
-      <text x="640" y="25" class="hdr" text-anchor="middle">HPC (Slurm + Apptainer)</text>
-      <line x1="80" y1="35" x2="80" y2="335" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
-      <line x1="640" y1="35" x2="640" y2="335" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+    <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true" style="color: var(--primary);">
+      <text x="80" y="25" class="hdr hdr--primary" text-anchor="middle">Docker Compose</text>
+      <text x="640" y="25" class="hdr hdr--primary" text-anchor="middle">HPC (Slurm + Apptainer)</text>
+      <line x1="80" y1="35" x2="80" y2="335" class="lane"/>
+      <line x1="640" y1="35" x2="640" y2="335" class="lane"/>
 
       <rect x="10" y="50" width="140" height="35" class="box-l"/><text x="80" y="72" class="lbl" text-anchor="middle">service</text>
       <rect x="570" y="50" width="140" height="35" class="box-r"/><text x="640" y="72" class="lbl" text-anchor="middle">srun job step</text>
@@ -41,7 +33,7 @@ const { name } = Astro.props as { name: string };
       <rect x="570" y="300" width="140" height="35" class="box-r"/><text x="640" y="322" class="lbl" text-anchor="middle">--gres=gpu</text>
       <line x1="150" y1="317" x2="570" y2="317" class="arr" marker-end="url(#arrowhead)"/>
 
-      <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/></marker></defs>
+      <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="currentColor"/></marker></defs>
     </svg>
   </figure>
 )}
@@ -49,16 +41,6 @@ const { name } = Astro.props as { name: string };
 {name === 'single-node-architecture' && (
   <figure class="diagram" role="img" aria-label="Single-node architecture diagram. Inside one scheduler allocation: a coordinator service starts first on loopback, a readiness gate polls until the coordinator answers, workers launch only after readiness passes, then a verifier checks all results before writing a success marker.">
     <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
-      <style>{`
-        .lbl { font-family: ui-monospace, monospace; font-size: 12px; fill: #e6edf3; }
-        .sub { font-family: system-ui, sans-serif; font-size: 10px; fill: #9da5ae; }
-        .hdr { font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700; fill: #e6edf3; }
-        .tag { font-family: system-ui, sans-serif; font-size: 9px; font-weight: 600; fill: #3fb950; text-transform: uppercase; letter-spacing: 0.05em; }
-        .box { fill: #30363d; stroke: #7d8590; stroke-width: 1.5; }
-        .alloc-border { fill: none; stroke: #58a6ff; stroke-width: 1.5; stroke-dasharray: 6,4; rx: 8; }
-        .arrow { stroke: #8b949e; stroke-width: 1.5; fill: none; }
-        .gate-arrow { stroke: #3fb950; stroke-width: 2; fill: none; }
-      `}</style>
 
       {/* Allocation boundary */}
       <rect x="20" y="60" width="680" height="340" class="alloc-border"/>
@@ -94,7 +76,7 @@ const { name } = Astro.props as { name: string };
       <text x="150" y="342" class="sub" text-anchor="middle">check count, schema, digests</text>
 
       {/* Scratch */}
-      <rect x="560" y="90" width="110" height="170" fill="#0d1117" stroke="#484f58" stroke-width="1" rx="6"/>
+      <rect x="560" y="90" width="110" height="170" class="recessed" stroke="var(--border)" stroke-width="1" rx="6"/>
       <text x="615" y="120" class="sub" text-anchor="middle">Job-scoped</text>
       <text x="615" y="135" class="sub" text-anchor="middle">scratch</text>
       <text x="615" y="155" class="sub" text-anchor="middle">$SCRATCH/</text>
@@ -104,7 +86,7 @@ const { name } = Astro.props as { name: string };
       <text x="615" y="230" class="sub" text-anchor="middle">logs/</text>
 
       {/* Success marker */}
-      <rect x="50" y="370" width="200" height="35" fill="#0d1117" stroke="#3fb950" stroke-width="1.5" rx="6"/>
+      <rect x="50" y="370" width="200" height="35" class="recessed-ok" rx="6"/>
       <text x="150" y="392" class="tag" text-anchor="middle">result.json (success)</text>
 
       {/* Arrows */}
@@ -120,8 +102,8 @@ const { name } = Astro.props as { name: string };
       <line x1="150" y1="360" x2="150" y2="370" class="arrow" marker-end="url(#ah)"/>
 
       <defs>
-        <marker id="ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#8b949e"/></marker>
-        <marker id="ah-green" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#3fb950"/></marker>
+        <marker id="ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--muted)"/></marker>
+        <marker id="ah-green" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--success)"/></marker>
       </defs>
     </svg>
   </figure>
@@ -130,15 +112,6 @@ const { name } = Astro.props as { name: string };
 {name === 'readiness-sequence' && (
   <figure class="diagram" role="img" aria-label="Readiness gate sequence diagram showing how the coordinator starts first, the readiness gate polls until the coordinator responds, and only then do workers launch.">
     <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
-      <style>{`
-        .lbl { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: #e6edf3; }
-        .step { font-family: ui-monospace, monospace; font-size: 11px; fill: #9da5ae; }
-        .note { font-family: system-ui, sans-serif; font-size: 10px; fill: #9da5ae; }
-        .ok { font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #3fb950; }
-        .no { font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #f85149; }
-        .tl { stroke: #7d8590; stroke-width: 1.5; stroke-dasharray: 3,3; }
-        .bar { fill: #30363d; stroke: #7d8590; stroke-width: 1.5; rx: 4; }
-      `}</style>
       <line x1="10" y1="30" x2="710" y2="30" class="tl"/>
       <text x="10" y="20" class="note">TIME</text>
 
@@ -170,18 +143,18 @@ const { name } = Astro.props as { name: string };
       <text x="340" y="192" class="note">4. still booting</text>
 
       {/* Step 5: coordinator ready */}
-      <rect x="30" y="210" width="100" height="25" fill="#0d1117" stroke="#3fb950" stroke-width="1.5" rx="4"/>
+      <rect x="30" y="210" width="100" height="25" class="ready-bar"/>
       <text x="80" y="227" class="ok" text-anchor="middle">READY</text>
       <text x="145" y="227" class="note">5. /health responds</text>
 
       {/* Step 6: poll 3 - yes */}
-      <rect x="220" y="245" width="80" height="25" fill="#0d1117" stroke="#3fb950" stroke-width="1.5" rx="4"/>
+      <rect x="220" y="245" width="80" height="25" class="ready-bar"/>
       <text x="260" y="262" class="step" text-anchor="middle">poll</text>
       <text x="310" y="262" class="ok">YES</text>
       <text x="340" y="262" class="note">6. readiness confirmed</text>
 
       {/* Step 7: workers launch */}
-      <rect x="440" y="285" width="80" height="30" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5" rx="4"/>
+      <rect x="440" y="285" width="80" height="30" class="launch-bar"/>
       <text x="480" y="305" class="step" text-anchor="middle">launch</text>
       <text x="535" y="305" class="note">7. workers start</text>
 
@@ -193,9 +166,9 @@ const { name } = Astro.props as { name: string };
       {/* Timeline arrows */}
       <line x1="80" y1="130" x2="80" y2="210" class="tl"/>
       <line x1="260" y1="140" x2="260" y2="270" class="tl"/>
-      <line x1="260" y1="270" x2="440" y2="295" stroke="#3fb950" stroke-width="2" marker-end="url(#seq-ah)"/>
+      <line x1="260" y1="270" x2="440" y2="295" class="gate-arrow" marker-end="url(#seq-ah)"/>
 
-      <defs><marker id="seq-ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#3fb950"/></marker></defs>
+      <defs><marker id="seq-ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--success)"/></marker></defs>
     </svg>
   </figure>
 )}

@@ -21,14 +21,6 @@ const landing = projectLandingPage(content.map(({ data }) => data), applicabilit
     <WorkflowFigure />
   </section>
 
-  <aside class="event-band" aria-labelledby="event-band-title">
-    <p class="event-band__eyebrow" id="event-band-title">At I-GUIDE Forum 2026?</p>
-    <p class="event-band__copy">
-      Poster #23 makes the same laptop-to-cluster argument one level up, for geospatial AI.
-      <a href="/events/iguide-forum-2026/">Poster and companion material</a>
-    </p>
-  </aside>
-
   {landing.applicability_projection ? <ApplicabilityProjectionView projection={landing.applicability_projection} /> : <p class="notice notice--info">{landing.validation_unavailable_reason}</p>}
 
   <section aria-labelledby="mapping-title">
@@ -50,11 +42,20 @@ const landing = projectLandingPage(content.map(({ data }) => data), applicabilit
     </ol>
   </section>
 
+  <aside class="event-band" aria-labelledby="event-band-title">
+    <p class="event-band__eyebrow" id="event-band-title">Also at I-GUIDE 2026</p>
+    <p class="event-band__copy">
+      The same laptop-to-cluster argument, one level up for geospatial AI.{' '}
+      <a href="/events/iguide-forum-2026/">Poster and companion material</a>
+    </p>
+  </aside>
+
   <section class="project-links" aria-labelledby="project-links-title">
     <h2 id="project-links-title">Project records</h2>
     <ul>
       <li><a href={landing.release.url}>{landing.release.title}</a></li>
-      <li><a href={landing.milestone.url}>{landing.milestone.title}</a></li>
+      <li><a href="/about/attribution/">Attribution and licenses</a></li>
+      <li><a href="/about/accessibility/">Accessibility</a></li>
     </ul>
   </section>
 </BaseLayout>

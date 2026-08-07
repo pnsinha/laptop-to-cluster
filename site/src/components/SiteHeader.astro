@@ -9,7 +9,7 @@ const links: readonly NavLink[] = [
   { label: 'Resources', href: '/resources/' },
   { label: 'Troubleshooting', href: '/diagnostics/' },
   { label: 'About', href: '/about/project/' },
-  { label: 'Companion repository', href: PROJECT.repository, external: true },
+  { label: 'GitHub', href: PROJECT.repository, external: true },
 ] as const;
 const current = (href: string) => href.startsWith('/') && normalize(href) === path;
 ---

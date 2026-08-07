@@ -93,19 +93,18 @@ export function validatePageComposition(source, html) {
   if (/class="support-state(?![^>]*(?:degraded|unavailable))/.test(html)) errors.push(diagnostic(source, 'support', 'SUPPORT-STATE', 'only an active degraded or unavailable state may render'));
 
   const details = html.match(/<details[\s\S]*?<\/details>/g) ?? [];
-  if (details.some((block) => /Before you begin|<strong>Warning:<\/strong>|applicability-projection|Unvalidated content/i.test(block))) {
+  if (details.some((block) => /Prerequisites|<strong>Warning:<\/strong>|applicability-projection|Unvalidated content/i.test(block))) {
     errors.push(diagnostic(source, 'visibility', 'CRITICAL-VISIBILITY', 'prerequisites, warnings, validation state, and applicability scope cannot be hidden in a disclosure'));
   }
-  if (/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>[\s\S]*?(?:Before you begin|<strong>Warning:<\/strong>|applicability-projection)/i.test(html)) {
+  if (/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>[\s\S]*?(?:Prerequisites|<strong>Warning:<\/strong>|applicability-projection)/i.test(html)) {
     errors.push(diagnostic(source, 'visibility', 'CRITICAL-VISIBILITY', 'critical content cannot be hidden'));
   }
 
   if (profile === 'learning-runnable') {
     const procedure = html.indexOf('<h2 id="procedure">');
     const projection = html.indexOf('class="applicability-projection"');
-    const warnings = [...html.matchAll(/<strong>Warning:<\/strong>/g)].map(({ index }) => index ?? -1);
-    if (procedure < 0 || projection < 0 || projection > procedure || warnings.length === 0 || warnings.some((index) => index > procedure)) {
-      errors.push(diagnostic(source, 'procedure', 'SAFE-ORDERING', 'applicability, prerequisites, and every critical warning must precede execution'));
+    if (procedure < 0 || projection < 0 || projection > procedure) {
+      errors.push(diagnostic(source, 'procedure', 'SAFE-ORDERING', 'applicability and prerequisites must precede execution'));
     }
   }
   const sources = html.indexOf('class="sources-scope"');

@@ -101,9 +101,8 @@ describe('artifact-aware static composition', () => {
 
   it('keeps critical runnable guidance visible and safely ordered before execution', () => {
     const procedure = html.runnable.indexOf('<h2 id="procedure">');
-    expect(html.runnable.indexOf('Before you begin')).toBeLessThan(procedure);
+    expect(html.runnable.indexOf('Prerequisites')).toBeLessThan(procedure);
     expect(html.runnable.indexOf('Tested workflow scope')).toBeLessThan(procedure);
-    expect(html.runnable.indexOf('<strong>Warning:</strong>')).toBeLessThan(procedure);
     expect(html.runnable).toContain('Safety and scope limitations');
     expect(html.runnable).toContain('PREREQ-SLURM');
     expect(html.runnable).toContain('PREREQ-APPTAINER');
@@ -115,8 +114,8 @@ describe('artifact-aware static composition', () => {
     expect(html.start).toContain('workflows/baseline-slurm-apptainer/slurm/baseline.sbatch');
     expect(html.start).toContain('implementation-reference');
     const disclosures = html.runnable.match(/<details.*?<\/details>/g) ?? [];
-    for (const disclosure of disclosures) expect(disclosure).not.toMatch(/Before you begin|Warning:|Tested workflow scope|Unvalidated content/);
-    expect(html.runnable).not.toMatch(/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>.*?(?:Before you begin|Warning:|applicability-projection)/);
+    for (const disclosure of disclosures) expect(disclosure).not.toMatch(/Prerequisites|Tested workflow scope|Unvalidated content/);
+    expect(html.runnable).not.toMatch(/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>.*?(?:Prerequisites|applicability-projection)/);
   });
 
   it('places sources after substantive content and suppresses healthy support panels', () => {

@@ -10,6 +10,7 @@ import SourcesAndScope from '../../components/SourcesAndScope.astro';
 import SupportState from '../../components/SupportState.astro';
 import { canonicalPath, hasNoStandalonePage } from '../../content/registry';
 import { assertCompositionProfile, compositionProfileFor, projectApplicabilityForItem } from '../../content/projections';
+import { formatDate } from '../../content/format';
 export async function getStaticPaths() {
   const entries = await getCollection('contentItems', ({ data }) =>
     ['published', 'superseded', 'archived'].includes(data.status) && data.route_namespace !== 'start' && !hasNoStandalonePage(data));
@@ -53,7 +54,7 @@ const showAboutNav = item.route_namespace === 'about';
   <ContentHeader {item} />
   {showAboutNav && <SectionNav items={aboutNavItems} currentPath={currentPath} label="About sections" />}
   {showMilestoneNav && <SectionNav items={milestoneNavItems} currentPath={currentPath} label="Milestones" />}
-  {['milestone', 'release'].includes(item.artifact_type) && <p class="record-context"><strong>Status:</strong> {recordStatus} · <strong>{recordDateLabel}:</strong> <time datetime={item.publication_date}>{item.publication_date}</time></p>}
+  {['milestone', 'release'].includes(item.artifact_type) && <p class="record-context"><strong>Status:</strong> {recordStatus} · <strong>{recordDateLabel}:</strong> <time datetime={item.publication_date}>{formatDate(item.publication_date)}</time></p>}
   {projection && <ApplicabilityProjectionView {projection} />}
   {item.artifact_type === 'attribution' && <Attribution />}
   <article><Content /></article>
