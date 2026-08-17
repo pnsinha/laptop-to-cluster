@@ -283,8 +283,6 @@ th { font-weight: 600; background: var(--surface); border-block-end-width: var(-
 .implementation-reference .source-excerpt pre { margin-block: var(--space-4); }
 .implementation-reference pre { inline-size: 100%; max-block-size: 34rem; min-inline-size: 0; overflow: auto; }
 .implementation-reference pre code { white-space: pre; }
-.execution-safety { max-inline-size: var(--measure-prose); }
-.execution-safety h2 { font-size: var(--text-subheading); }
 .module-pager { max-inline-size: var(--measure-wide); margin-block-start: var(--flow-section); padding-block-start: var(--space-4); border-block-start: var(--border-thin) solid var(--border); }
 .module-pager ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
 .module-pager ul:has(li:only-child) { grid-template-columns: 1fr; }

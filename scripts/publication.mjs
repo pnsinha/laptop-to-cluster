@@ -128,7 +128,9 @@ export function validatePageComposition(source, html) {
     }
   }
 
-  if (/<script\b|client:(?:load|idle|visible|media|only)|<canvas\b|autoplay|<marquee\b/i.test(html)) errors.push(diagnostic(source, 'html', 'TECHNOLOGY-EXCLUSION', 'client islands, scripts, canvas, autoplay, and marquee output are forbidden'));
+  // Progressive-enhancement policy (2026-08-16): bounded inline scripts and small
+  // client islands are permitted; canvas, autoplay, and marquee remain forbidden.
+  if (/<canvas\b|autoplay|<marquee\b/i.test(html)) errors.push(diagnostic(source, 'html', 'TECHNOLOGY-EXCLUSION', 'canvas, autoplay, and marquee output are forbidden'));
   if (/(?:fonts\.(?:googleapis|gstatic)|use\.typekit\.net|<link[^>]+rel="preconnect"[^>]+font)/i.test(html)) errors.push(diagnostic(source, 'html', 'REMOTE-FONT', 'remote font references are forbidden'));
   return errors;
 }
@@ -170,8 +172,10 @@ export function validateFrontendPolicy(manifest, astroConfig, sourceEntries = []
   if (/ViewTransitions|adapter|server\s*:|session|auth/i.test(astroConfig)) errors.push(diagnostic('site/astro.config.mjs', 'configuration', 'TECHNOLOGY-EXCLUSION', 'view transitions, adapters, server state, sessions, and authentication are forbidden'));
   for (const { path, text } of sourceEntries) {
     if (/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net/i.test(text)) errors.push(diagnostic(path, 'font', 'REMOTE-FONT', 'system font stacks only; remote and bundled font declarations are forbidden'));
-    if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax|autoplay|client:(?:load|idle|visible|media|only)|from\s+['"](?:react|vue|svelte|@astrojs\/(?:react|vue|svelte))['"]/i.test(text)) {
-      errors.push(diagnostic(path, 'source', 'TECHNOLOGY-EXCLUSION', 'decorative motion, client islands, and UI frameworks are forbidden'));
+    if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax|autoplay|from\s+['"](?:react|vue|svelte|@astrojs\/(?:react|vue|svelte))['"]/i.test(text)) {
+      // Progressive-enhancement policy (2026-08-16): client directives are permitted
+      // for bounded Astro islands; decorative motion and UI-framework imports remain forbidden.
+      errors.push(diagnostic(path, 'source', 'TECHNOLOGY-EXCLUSION', 'decorative motion and UI frameworks are forbidden'));
     }
   }
   return errors;

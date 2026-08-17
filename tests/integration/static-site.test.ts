@@ -141,7 +141,7 @@ describe('reader-choice landing and resources', () => {
   });
 
   it('keeps resources complete, ordinary-linked, choice-oriented, and free of internal metadata', () => {
-    expect(html.resources).not.toMatch(/<script\b|client:|Applicability records|Keywords|published ·/i);
+    expect(html.resources).not.toMatch(/Applicability records|Keywords|published ·/i);
     for (const heading of ['Learn the model', 'Run and recover', 'Review the project']) expect(html.resources).toContain(heading);
     expect(html.resources).toContain('href="/guide/scheduler-as-orchestrator/"');
     expect(html.resources).toContain('href="/guide/baseline-single-node-pattern/"');
@@ -236,7 +236,9 @@ describe('static accessibility, metadata, and dependency gates', () => {
     expect(generatedCss).not.toMatch(/@keyframes|animation-name:|animation:|transition:|scroll-timeline|parallax/);
     expect(generatedCss).not.toMatch(/table\{[^}]*display:block/);
     expect(generatedCss).toMatch(/\.table-overflow\{[^}]*overflow-x:auto/);
-    for (const page of pages) expect(page.html, page.route).not.toMatch(/client:(?:load|idle|visible)|<script\b|<canvas\b|autoplay|<marquee\b|fonts\.(?:googleapis|gstatic)|use\.typekit/i);
+    // Progressive-enhancement policy: scripts and islands are permitted; canvas,
+    // autoplay, marquee, and remote fonts remain forbidden.
+    for (const page of pages) expect(page.html, page.route).not.toMatch(/<canvas\b|autoplay|<marquee\b|fonts\.(?:googleapis|gstatic)|use\.typekit/i);
     const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
     expect(pkg.dependencies).toEqual({ '@astrojs/sitemap': '3.7.3', astro: '7.1.3' });
     const config = readFileSync(resolve(root, 'site/astro.config.mjs'), 'utf8');

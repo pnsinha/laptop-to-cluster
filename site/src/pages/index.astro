@@ -4,9 +4,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
 import WorkflowFigure from '../components/WorkflowFigure.astro';
 import { projectLandingPage } from '../content/projections';
+import { canonicalPath } from '../content/registry';
 const content = await getCollection('contentItems');
 const applicability = await getCollection('applicability');
 const landing = projectLandingPage(content.map(({ data }) => data), applicability.map(({ data }) => data));
+// Event promotion band: rendered only while a published event-assets item exists.
+// The editorial copy below belongs to the I-GUIDE Forum 2026 event specifically;
+// a future event replaces both the gate and the copy.
+const publishedEvents = content
+  .map(({ data }) => data)
+  .filter((item) => item.artifact_type === 'event-assets' && item.status === 'published')
+  .sort((a, b) => (b.publication_date ?? '').localeCompare(a.publication_date ?? ''));
+const promotedEvent = publishedEvents.find((item) => canonicalPath(item) === '/events/iguide-forum-2026/');
 ---
 <BaseLayout title="Bridging the Laptop-to-Cluster Gap" description="Translate a multi-service Docker Compose stack to a scheduler-managed HPC allocation with Slurm and Apptainer." canonicalPath="/" profile="landing">
   <section class="hero" aria-labelledby="hero-title">
@@ -42,13 +51,15 @@ const landing = projectLandingPage(content.map(({ data }) => data), applicabilit
     </ol>
   </section>
 
-  <aside class="event-band" aria-labelledby="event-band-title">
-    <p class="event-band__eyebrow" id="event-band-title">Also at I-GUIDE 2026</p>
-    <p class="event-band__copy">
-      The same laptop-to-cluster argument, one level up for geospatial AI.{' '}
-      <a href="/events/iguide-forum-2026/">Poster and companion material</a>
-    </p>
-  </aside>
+  {promotedEvent && (
+    <aside class="event-band" aria-labelledby="event-band-title">
+      <p class="event-band__eyebrow" id="event-band-title">Also at I-GUIDE 2026</p>
+      <p class="event-band__copy">
+        The same laptop-to-cluster argument, one level up for geospatial AI.{' '}
+        <a href="/events/iguide-forum-2026/">Poster and companion material</a>
+      </p>
+    </aside>
+  )}
 
   <section class="project-links" aria-labelledby="project-links-title">
     <h2 id="project-links-title">Project records</h2>

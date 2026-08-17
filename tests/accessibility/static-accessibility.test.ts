@@ -29,7 +29,8 @@ describe('representative static accessibility coverage', () => {
       expect(page.html, page.path).toMatch(/<main id="main" tabindex="-1">/);
       expect(page.html, page.path).toMatch(/<footer class="site-footer">/);
       expect(page.html.match(/<h1(?:\s|>)/g), page.path).toHaveLength(1);
-      expect(page.html, page.path).not.toMatch(/<script\b|onclick=|onkeydown=|client:/i);
+      // Inline handlers remain prohibited under the progressive-enhancement policy.
+      expect(page.html, page.path).not.toMatch(/onclick=|onkeydown=/i);
     }
   });
 
@@ -100,7 +101,7 @@ describe('representative static accessibility coverage', () => {
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/resources/"');
     expect(html.match(/<h1(?:\s|>)/g)).toHaveLength(1);
-    expect(html).not.toMatch(/<script\b|onclick=|onkeydown=|client:/i);
+    expect(html).not.toMatch(/onclick=|onkeydown=/i);
   });
 
   it('ensures warning meaning is not color-dependent (text label always present)', () => {

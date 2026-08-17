@@ -121,7 +121,8 @@ describe('Astro navigation components', () => {
     expect(html).toContain('<summary>Navigation</summary>');
     expect(html.match(/href="\/resources\/" aria-current="page"/g)).toHaveLength(2);
     expect(html).toContain('GitHub<span class="external-label"> (external)</span>');
-    expect(html).not.toMatch(/<script\b|onclick=/i);
+    // Progressive-enhancement policy: scripts are permitted; inline handlers are not.
+    expect(html).not.toMatch(/onclick=/i);
   });
 
   it('renders sequence-projected previous and next module links as ordinary links', async () => {
@@ -137,7 +138,7 @@ describe('Astro navigation components', () => {
     expect(html).toContain('<span>Understand the model</span>');
     expect(html).toContain('<a rel="next" href="/guide/adaptation/">');
     expect(html).toContain('<span>Adapt the workflow</span>');
-    expect(html).not.toMatch(/<button\b|onclick=|<script\b/i);
+    expect(html).not.toMatch(/<button\b|onclick=/i);
   });
 
   it('renders a labelled ordered breadcrumb trail with a current text item', async () => {
