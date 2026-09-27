@@ -78,4 +78,22 @@ publication_date: "2026-07-27"
 **success marker**
 : A machine-readable file written only after the workflow’s documented result checks pass.
 
+**readiness contract**
+: The specific response a service must produce before dependent work starts — the agreed meaning of "ready" that a readiness check enforces.
+
+**verifier**
+: A program that compares workflow outputs against documented success criteria and writes the success marker only when they pass.
+
+**workflow package**
+: The complete, release-pinned code that you download and submit, as opposed to the excerpts shown on the site for teaching.
+
+**teaching excerpt**
+: An annotated fragment of the workflow package shown on a page for explanation; it is not a replacement for the runnable source.
+
+**applicability record**
+: A published record of where the workflow was validated — environment, scheduler, runtime, result, assumptions, and portability boundaries.
+
+**demonstrator vs. template**
+: The two purposes of the reference workflow package: it demonstrates that the pattern runs (producing the evidence bundle), and it is a template you edit for your own application.
+
 Continue with [Scheduler as Orchestrator](/guide/scheduler-as-orchestrator/), the [Baseline Pattern](/guide/baseline-single-node-pattern/), or [Getting started](/start/).

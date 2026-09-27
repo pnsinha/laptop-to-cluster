@@ -6,7 +6,7 @@ description: "A bounded single-node reference workflow with one coordinating ser
 module_number: 2
 topics: [scheduler-as-orchestrator, service-workers]
 status: published
-last_updated: "2026-07-26"
+last_updated: "2026-09-26"
 summary: "Run the smallest service-and-workers pattern inside one allocation, with readiness before workers and verification before success."
 artifact_type: learning-module
 keywords: [Apptainer, readiness, single-node, Slurm, workers]
@@ -15,7 +15,7 @@ milestone: 1
 publication_date: "2026-07-31"
 applicable_release: v0.1.0
 module_type: runnable
-learning_outcomes: ["Explain the coordinator-readiness-worker sequence", "Prepare local-center values before submission", "Verify success from result artifacts rather than process startup alone"]
+learning_outcomes: ["Explain the coordinator-readiness-worker sequence", "Prepare local-center values before submission", "Verify success from result artifacts rather than process startup alone", "Identify which parts of the workflow package to keep and which to replace for your own application"]
 prerequisites:
   - { id: BSSW-PREREQ-SLURM, check: "Run command -v sbatch and confirm an allocation/account is available", diagnostic_id: BSSW-PREREQ-SLURM }
   - { id: BSSW-PREREQ-APPTAINER, check: "Run command -v apptainer and record apptainer --version", diagnostic_id: BSSW-PREREQ-APPTAINER }
@@ -42,7 +42,7 @@ completion_evidence: { id: m1-module-2-publication, path: evidence/README.md, in
 ---
 ## How the baseline works
 
-One allocation contains one coordinator and a bounded worker pool. The launcher prepares private runtime storage, binds the coordinator to loopback, waits for semantic readiness, starts workers, and verifies outputs. A running process is not yet a successful result.
+One allocation contains one coordinator and a bounded worker pool. The launcher prepares private runtime storage, binds the coordinator to [loopback](/about/glossary/), waits for [semantic readiness](/about/glossary/), starts workers, and verifies outputs. A running process is not yet a successful result.
 
 ### Five-step flow
 
@@ -58,17 +58,67 @@ This is the conceptual sequence, not an executable submission script. The releas
 allocation → coordinator → semantic readiness → workers → result verification
 ```
 
+## What the reference workflow is (and is not)
+
+The **workflow package** is the complete, release-pinned code at `workflows/baseline-slurm-apptainer` in tag `v0.1.0` — the thing you download and submit. This page shows only **teaching excerpts**: annotated fragments chosen for explanation, not the runnable source.
+
+The package serves two purposes, and it helps to keep them separate:
+
+- It is a **demonstrator**: it proves the pattern runs end to end under a real scheduler, and its run produced the evidence bundle behind the applicability record above.
+- It is a **template**: you edit it to run your own application, using the seams documented below.
+
+Inside the package, `coordinator.py` and `worker.py` process inert JSON tasks on purpose. They are placeholders that exercise the orchestration mechanics; they are not an application.
+
+## Files the workflow reads and writes
+
+| File | Written by | Read by | Purpose | Needed by the pattern, or evidence-only? |
+|---|---|---|---|---|
+| `inputs/tasks.json` | you | coordinator | application inputs (inert JSON) | pattern |
+| `expected/results.json` | you | verifier | expected outputs the demo verifier compares against | demonstrator/evidence only |
+| `endpoint.json` | coordinator | launcher | loopback endpoint hand-off | pattern |
+| `results.json` | coordinator | verifier | intermediate worker results; NOT a success claim | pattern (renamed `worker-results.json` in v0.2.0) |
+| `result.json` | verifier | you / CI | the only success marker (`status: "success"`) | pattern |
+| `events.jsonl` | launcher | audit tooling | ordered events proving readiness preceded every worker start | evidence |
+| `diagnostics.json` | package | site + humans | stable failure IDs (`BSSW-*`) | pattern |
+| `container/image-lock.json` | package | `acquire.sh` + humans | pinned base-image provenance | pattern |
+
+All of these are machine-parsed JSON; `tasks.json` and `expected/results.json` are the only two a human authors.
+
+> **Warning:** `results.json` and `result.json` differ by one letter and mean different things — the first is intermediate worker output, the second is the success marker. Release v0.2.0 renames the former to `worker-results.json` to remove the ambiguity.
+
+## Adapt it to your own application
+
+Two check layers exist, and they adapt differently:
+
+- **The readiness gate is an orchestration concern.** It replaces Compose `depends_on`: workers must not start until the service can actually serve. Keep the gate; change only the `/health` contract to whatever proves your service can serve.
+- **Result verification is an application concern.** It has no Compose equivalent. Replace `bin/verify.py` with your own success criteria — or remove it only if a zero exit truly means success for you, which is usually not true: a process can exit cleanly after producing wrong, partial, or stale output, and nothing else in the pattern checks that.
+
+| Part | Keep or replace | Why |
+|---|---|---|
+| `#SBATCH` header + adapter variables | adapt values only | same mechanism, local account/partition/bounds |
+| Storage setup (0700 job dir, binds) | keep | private job-scoped state is application-independent |
+| Coordinator launch on loopback | replace with your service | your service is the point |
+| Readiness probe (`bin/readiness.py`) | keep, change the contract | same bounded-gate role, different proof of ready |
+| Worker launch loop (`srun` steps) | replace with your workers | your parallelism and payloads |
+| `bin/verify.py` | replace | the documented replaceable seam for result checks |
+| `expected/` | replace or delete | only the demo verifier consumes it |
+| `container/Apptainer.def` + `image-lock.json` | replace with your image | pinned provenance for your base image |
+
+To run your own application you change **10 files and 14 adapter variables**. The files: `slurm/baseline.sbatch` (directive values and the launch lines), `inputs/tasks.json` and `inputs/tasks.json.sha256`, `expected/results.json` (or delete it), `bin/coordinator.py`, `bin/worker.py`, `bin/verify.py`, `bin/validate_input.py`, `container/Apptainer.def`, and `container/image-lock.json`. Left unchanged: `bin/readiness.py` (change the contract, not the script), `bin/common.py`, `container/acquire.sh`, `diagnostics.json`, and `README.md`. The 14 adapter variables are the ones in the package README's adapter table: `WORKER_COUNT`, `TASK_COUNT`, `READINESS_TIMEOUT`, `CLEANUP_TIMEOUT`, `IMAGE_PATH`, `IMAGE_SHA256_FILE`, `INPUT_PATH`, `INPUT_SHA256_FILE`, `EXPECTED_PATH`, `BSSW_SCRATCH_ROOT`, `BSSW_APPTAINER_CMD`, `BSSW_SRUN_CMD`, `BSSW_SLURM_VERSION_CMD`, and `BSSW_SHA256_CMD`.
+
+A worked example — a swapped worker payload, the demo verifier failing on it, and a replacement verifier — ships with `v0.2.0-rc.1` and will be pinned there.
+
 ## Procedure
 
 1. Open the complete workflow package from the implementation reference above; the annotated excerpts are orientation, not a replacement for the release-pinned source.
 2. Set an approved account and partition, wall time, CPU and memory, runtime module, image path and digest, scratch root, worker count, task count, and readiness timeout.
 3. Run the prerequisite commands listed above.
 4. Submit the baseline script. Keep account names, private hosts, and sensitive paths out of logs.
-5. Wait for the scheduler to finish, then run the workflow verifier.
+5. Wait for the scheduler to finish, then run the workflow [verifier](/about/glossary/).
 
 ## Expected result
 
-A successful run exits zero, writes a machine-readable success result, contains the expected number of unique task results, and reports that every invariant passed. Worker-start events occur only after readiness.
+A successful run exits zero, writes a machine-readable [success marker](/about/glossary/), contains the expected number of unique task results, and reports that every invariant passed. Worker-start events occur only after readiness.
 
 ## Diagnose a failure
 

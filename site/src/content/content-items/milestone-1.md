@@ -22,7 +22,7 @@ Milestone 1 publishes the public site, two foundational modules, and the bounded
 | Module 1: Scheduler as Orchestrator | Published | [Module 1](/guide/scheduler-as-orchestrator/) | Initial publication |
 | Module 2: Baseline Pattern | Published | [Module 2](/guide/baseline-single-node-pattern/) | Initial publication |
 | Getting started and diagnostics | Published | [Getting started](/start/) and [diagnostics](/diagnostics/) | Initial publication |
-| Baseline Slurm + Apptainer workflow | Published | [Workflow source](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/workflows/baseline-slurm-apptainer) | Initial publication |
+| Baseline Slurm + Apptainer workflow | Published | [Workflow package (source)](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/workflows/baseline-slurm-apptainer) | Initial publication |
 | Attribution, accessibility, and support | Published | [Attribution](/about/attribution/), [accessibility](/about/accessibility/), and [support](/about/support/) | Initial publication |
 
 ## Revisions and completion summary

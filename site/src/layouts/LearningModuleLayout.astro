@@ -52,6 +52,6 @@ const repositoryHref = (reference: RepoRef) => `${reference.repository}/blob/${e
   <section aria-labelledby="completion"><h2 id="completion">{profile === 'learning-conceptual' ? 'Complete the decision exercise' : 'Check completion'}</h2><p>{item.completion_check?.text}</p>{item.conceptual_check && <p>{item.conceptual_check.text}</p>}</section>
   <section aria-labelledby="related"><h2 id="related">Continue learning</h2><ul>{related.map((entry) => <li><a href={canonicalPath(entry)}>{entry.title}</a></li>)}</ul></section>
   <ModulePager navigation={moduleNavigation} />
-  <section aria-labelledby="repository"><h2 id="repository">Repository</h2><ul>{item.supporting_artifacts.map((reference) => <li><a href={repositoryHref(reference)}><code>{reference.path}</code> at {reference.release}</a></li>)}</ul></section>
+  <section aria-labelledby="repository"><h2 id="repository">Workflow package on GitHub</h2><ul>{item.supporting_artifacts.map((reference) => <li><a href={repositoryHref(reference)}><code>{reference.path}</code> at {reference.release}</a></li>)}</ul></section>
   <SourcesAndScope references={item.authority} />
 </BaseLayout>
