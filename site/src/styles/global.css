@@ -136,7 +136,7 @@ a:hover { text-decoration-thickness: 0.2em; }
 .site-nav__link:hover { text-decoration: underline; }
 .site-nav__link[aria-current="page"] { border-block-end: var(--border-strong) solid currentColor; font-weight: 700; }
 .site-nav__link[aria-current="page"]::before { content: "▸ "; margin-inline-end: var(--space-1); }
-.site-nav__link--external { border: var(--border-thin) solid var(--border); padding-inline: var(--space-2); border-radius: var(--radius-small); }
+.site-nav__link--external { column-gap: var(--space-1); border: var(--border-thin) solid var(--border); padding-inline: var(--space-2); border-radius: var(--radius-small); }
 .site-nav--compact { display: none; }
 .site-footer p { max-inline-size: var(--measure-wide); }
 .site-footer p + p { margin-block-start: var(--flow-body); }
