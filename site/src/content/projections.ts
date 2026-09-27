@@ -14,7 +14,7 @@ interface MilestoneDeliverableProjection {
   title: string;
   primary_milestone: 1 | 2 | 3 | 4;
   status: 'planned' | 'draft' | 'complete' | 'externally-pending';
-  public_url: string;
+  public_url?: string;
   completion_evidence?: EvidenceReference;
   revisions: ContentItem['revisions'];
 }

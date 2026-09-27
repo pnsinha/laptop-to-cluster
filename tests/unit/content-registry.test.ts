@@ -4,6 +4,7 @@ import {
   applicabilityRecordSchema,
   attributionSchema,
   contentItemSchema,
+  milestoneRecordSchema,
   parseContentItem,
   publicationMediaSchema,
   releaseRecordSchema,
@@ -132,6 +133,19 @@ describe('cross-record validation and lifecycle', () => {
     });
     expect(() => validateRegistry({ content: [deliverable], milestones: [owner('m1', 1), owner('m2', 2)] }))
       .toThrow(/conflicts with owner 2|exactly one primary milestone owner/);
+  });
+
+  it('permits planned milestone rows without public_url and requires it otherwise', () => {
+    const record = (deliverable: Record<string, unknown>) => ({
+      id: 'm2', number: 2, due_date: '2026-12-15', deliverables: [deliverable],
+    });
+    const base = { sow_id: 'M2-D1', item_id: 'guide-1', revisions: [] };
+    expect(milestoneRecordSchema.parse(record({ ...base, status: 'planned' })).deliverables[0].public_url).toBeUndefined();
+    expect(milestoneRecordSchema.parse(record({ ...base, status: 'planned', public_url: '/guide/guide-one/' })).deliverables[0].public_url)
+      .toBe('/guide/guide-one/');
+    expect(() => milestoneRecordSchema.parse(record({ ...base, status: 'complete' }))).toThrow(/public_url/);
+    expect(() => milestoneRecordSchema.parse(record({ ...base, status: 'draft' }))).toThrow(/public_url/);
+    expect(() => milestoneRecordSchema.parse(record({ ...base, status: 'planned', public_url: 'not-a-path' }))).toThrow();
   });
 });
 

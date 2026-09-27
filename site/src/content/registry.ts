@@ -215,7 +215,7 @@ function validateMilestoneOwnership(registry: ValidatedRegistry, issues: string[
       if (!item) issues.push(`${milestone.id}: missing deliverable item ${deliverable.item_id}`);
       else {
         if (item.milestone !== milestone.number) issues.push(`${item.id}: milestone ${item.milestone} conflicts with owner ${milestone.number}`);
-        if (canonicalPath(item) !== deliverable.public_url) issues.push(`${milestone.id}.${item.id}: public_url is not canonical`);
+        if (deliverable.public_url !== undefined && canonicalPath(item) !== deliverable.public_url) issues.push(`${milestone.id}.${item.id}: public_url is not canonical`);
       }
     }
   }

@@ -11,7 +11,7 @@ last_updated: "2026-09-26"
 summary: "Find out whether this guide is for you, what it assumes you already have, how to check readiness, and where to start for your goal."
 artifact_type: learning-module
 keywords: [orientation, prerequisites, readiness, HPC, Compose]
-audiences: [first-time HPC learners, HPC learners, scientific software practitioners, HPC center staff]
+audiences: [HPC learners, scientific software practitioners, HPC center staff]
 milestone: 2
 applicable_release: v0.1.0
 module_type: conceptual
@@ -33,7 +33,7 @@ authority:
 ---
 ## Who this guide is for
 
-This guide serves three tiers of reader:
+This guide serves three kinds of reader:
 
 - **A researcher adapting their own Compose stack** gets a bounded, tested pattern for moving a multi-service stack onto a shared cluster, plus the places where they must substitute their own values.
 - **A research software engineer supporting several groups** gets a reusable translation model and a reference workflow they can hand to teams without re-deriving the readiness and verification mechanics each time.
@@ -45,7 +45,7 @@ Everything on this site answers one of three problems you will hit moving a stac
 
 ### Why does `docker compose up` not work here?
 
-Shared clusters run no Docker daemon, give you no root access, and let a scheduler own every resource. The [allocation](/about/glossary/) plus a launch script become the orchestrator instead: services start as tracked steps, [semantic readiness](/about/glossary/) is proven before workers start, and results are verified before anyone calls the run a success. Modules 1–3 teach this reframe. A cross-site dispatch approach using Globus Compute is an alternative answer on the roadmap — see the [Milestone 2 record](/milestones/2/).
+Shared clusters run no Docker daemon, give you no root access, and let a scheduler own every resource. The [allocation](/about/glossary/) plus a launch script become the orchestrator instead: services start as tracked steps, [semantic readiness](/about/glossary/) is proven before workers start, and results are verified before anyone calls the run a success. Modules 1–2 teach this reframe. A cross-site dispatch approach (Globus Compute) is a later alternative answer, not covered yet.
 
 ### Why does my script break on the next cluster?
 
@@ -53,7 +53,18 @@ Account names, partitions, scratch paths, and module names differ at every cente
 
 ### Why am I rebuilding the same stack for every GPU type?
 
-Building one monolithic image per GPU architecture duplicates the whole CPU stack every time. Splitting a shared CPU provider tree from a thin GPU layer means only the GPU package rebuilds — 95.0% of packages reused (19 of 20) — and each extra target adds 1,412 files instead of 10,772 (7.6×), with +5 files of arrangement overhead at one target and 1.77× fewer files at two. Module 5 (planned) walks through this; see the [Milestone 2 roadmap](/milestones/2/).
+Building one image per GPU architecture rebuilds and stores the whole CPU stack every time; splitting a shared CPU layer from a thin GPU layer means only the GPU-specific part is rebuilt. Module 5 (planned) shows this with measured evidence; see the [Milestone 2 roadmap](/milestones/2/).
+
+## Four words that change meaning
+
+| On your laptop (Compose) | On the cluster | Where it is explained |
+|---|---|---|
+| `service` | a tracked job step inside one [allocation](/about/glossary/) | Module 1 |
+| `depends_on` / `healthcheck` | a bounded [readiness gate](/about/glossary/) that proves the coordinator can serve | Modules 1–2 |
+| `volumes` | a bind to [job-scoped scratch](/about/glossary/) approved by your center | Module 2 |
+| `ports` | [loopback](/about/glossary/) inside the node, reached by an approved tunnel if at all | Module 1 |
+
+Every linked term has a fuller definition in the [glossary](/about/glossary/).
 
 ## What we assume you already know
 
@@ -61,7 +72,7 @@ This guide does not teach these prerequisites; each links to an authoritative re
 
 - **Docker Compose basics:** what a service, image, volume, port, and `depends_on` mean — see the [Docker Compose overview](https://docs.docker.com/compose/).
 - **A Unix shell:** navigating directories and running commands in a terminal — see the [Software Carpentry shell lesson](https://swcarpentry.github.io/shell-novice/).
-- **Submitting a batch job:** you have submitted at least one job on a shared cluster — see the [Slurm quickstart](https://slurm.schedmd.com/quickstart.html).
+- **Submitting a batch job:** you have submitted at least one job on a shared cluster. If you have not, take the [Slurm quickstart](https://slurm.schedmd.com/quickstart.html) first.
 
 ## What you need access to
 
@@ -88,10 +99,19 @@ The guide is not a single linear read. Pick the row that matches your goal:
 | Understand the model | [Module 1: Scheduler as Orchestrator](/guide/scheduler-as-orchestrator/) |
 | Run the baseline and verify it | [Getting started](/start/), then [Module 2](/guide/baseline-single-node-pattern/) |
 | Adapt the workflow to my own application | Module 2's [adaptation section](/guide/baseline-single-node-pattern/#adapt-it-to-your-own-application) |
-| Move between schedulers and runtimes | Modules 3–5 (portability tier, in progress; see the [Milestone 2 roadmap](/milestones/2/)) |
+| Move between schedulers and runtimes | Modules 4–5 (planned; see the [Milestone 2 roadmap](/milestones/2/)) |
 | Evaluate for my center | Module 1, Module 2's limitations, and the [applicability record](/applicability/m1-baseline-anvil/) |
 
-The modules sit on three tiers: **baseline** (the entry path: Modules 0–2 and Getting started), **portability** (the middle tier: Modules 3–5 and the launch templates), and **advanced layered builds** (for center staff assembling multi-service stacks).
+## How to read evidence status
+
+<dl>
+<dt><strong>Validated</strong></dt>
+<dd>run on a representative cluster, with a published evidence bundle and an <a href="/about/glossary/">applicability record</a> you can open.</dd>
+<dt><strong>Shim-tested</strong></dt>
+<dd>passes the deterministic fake-runtime fixtures only; no cluster run backs it. Treat as unvalidated.</dd>
+<dt><strong>Planned</strong></dt>
+<dd>on the roadmap; no content or evidence yet.</dd>
+</dl>
 
 ## How the site is organized
 

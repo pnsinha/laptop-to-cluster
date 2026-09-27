@@ -240,10 +240,14 @@ export const milestoneDeliverableSchema = z.object({
   sow_id: nonEmpty,
   item_id: nonEmpty,
   status: z.enum(['planned', 'draft', 'complete', 'externally-pending']),
-  public_url: path,
+  public_url: path.optional(),
   completion_evidence: evidenceReferenceSchema.optional(),
   revisions: z.array(revisionSchema).default([]),
-}).strict();
+}).strict().superRefine((deliverable, context) => {
+  if (deliverable.status !== 'planned' && deliverable.public_url === undefined) {
+    context.addIssue({ code: 'custom', path: ['public_url'], message: 'is required unless status is planned' });
+  }
+});
 export const milestoneRecordSchema = z.object({
   id: nonEmpty,
   number: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
