@@ -1,0 +1,40 @@
+0.38
+[CH COMPOSE START Wed Aug 12 13:52:28 UTC 2026] host=a006.example.invalid ch-run=
+
+########## Phase 0: minimal Ubuntu 24.04 rootfs (docker pull -> sandbox) ##########
+rootfs exists: ${BSSW_SCRATCH_ROOT}/union-anvil/charliecloud/ubuntu24.04-dir
+
+=== rootfs sanity (ch-run can enter) ===
+ERROR: ld.so: object '/apps/site/external/apps/xalt2/xalt/xalt/lib64/libxalt_init.so' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.
+ERROR: ld.so: object '/apps/site/external/apps/xalt2/xalt/xalt/lib64/libxalt_init.so' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.
+ERROR: ld.so: object '/apps/site/external/apps/xalt2/xalt/xalt/lib64/libxalt_init.so' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.
+  inside: PRETTY_NAME="Ubuntu 24.04.4 LTS"
+ERROR: ld.so: object '/apps/site/external/apps/xalt2/xalt/xalt/lib64/libxalt_init.so' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.
+
+########## Phase 1: compose both layers + verify cross-tree RPATH ##########
+ERROR: ld.so: object '/apps/site/external/apps/xalt2/xalt/xalt/lib64/libxalt_init.so' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.
+--- (a) both layers visible at canonical paths ---
+provider:    36 package dirs
+specialized: 1 package dirs
+/tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx
+/tmp/e4s-specialized-amrex-sm80/linux-x86_64_v3/amrex-26.06-a2ugptk
+
+--- (b) cross-tree DT_RPATH (readelf) ---
+binary: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/lib/libheffte.so
+
+--- (c) ldd resolves deps from canonical trees (LD_LIBRARY_PATH unset) ---
+	libmpi.so.12 => not found
+	libfftw3.so.3 => /tmp/e4s-provider-cpu/linux-x86_64_v3/fftw-3.3.11-v5yfeyr/lib/libfftw3.so.3 (0x0000147add423000)
+	libfftw3f.so.3 => /tmp/e4s-provider-cpu/linux-x86_64_v3/fftw-3.3.11-v5yfeyr/lib/libfftw3f.so.3 (0x0000147add101000)
+	libstdc++.so.6 => /tmp/e4s-provider-cpu/linux-x86_64_v3/gcc-runtime-13.3.0-p4x6yaa/lib/libstdc++.so.6 (0x0000147adce81000)
+	libgcc_s.so.1 => /tmp/e4s-provider-cpu/linux-x86_64_v3/gcc-runtime-13.3.0-p4x6yaa/lib/libgcc_s.so.1 (0x0000147adcd6a000)
+
+--- (d) specialized amrex static lib present ---
+lrwxrwxrwx 1 bsswuser bsswgrp   13 Aug  8 22:56 /tmp/e4s-specialized-amrex-sm80/linux-x86_64_v3/amrex-26.06-a2ugptk/lib/libamrex.a -> libamrex_3d.a
+-rw-r--r-- 1 bsswuser bsswgrp  90M Aug  8 22:53 /tmp/e4s-specialized-amrex-sm80/linux-x86_64_v3/amrex-26.06-a2ugptk/lib/libamrex_1d.a
+-rw-r--r-- 1 bsswuser bsswgrp 140M Aug  8 22:54 /tmp/e4s-specialized-amrex-sm80/linux-x86_64_v3/amrex-26.06-a2ugptk/lib/libamrex_2d.a
+-rw-r--r-- 1 bsswuser bsswgrp 159M Aug  8 22:56 /tmp/e4s-specialized-amrex-sm80/linux-x86_64_v3/amrex-26.06-a2ugptk/lib/libamrex_3d.a
+
+not-found count: 1
+GATE: FAIL (1 unresolved deps)
+[CH COMPOSE DONE Wed Aug 12 13:52:29 UTC 2026] rc=0

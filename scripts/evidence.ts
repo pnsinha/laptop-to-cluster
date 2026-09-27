@@ -18,8 +18,42 @@ const safeRelativePath = z.string().min(1).refine((value) => {
   return !normalized.startsWith('/') && !normalized.split('/').includes('..');
 }, 'must be a safe relative path');
 
+export const evidenceProfileSchema = z.enum(['baseline-service-workers', 'layered-install-trees']);
+export type EvidenceProfile = z.infer<typeof evidenceProfileSchema>;
+
+export const layeredSubmissionRoleSchema = z.enum([
+  'provider-build', 'specialized-build', 'apptainer-compose-gpu',
+  'charliecloud-compose', 'charliecloud-gpu', 'startup-cost',
+]);
+export type LayeredSubmissionRole = z.infer<typeof layeredSubmissionRoleSchema>;
+
+const layeredSubmissionSchema = z.object({
+  jobId: z.string().min(1), role: layeredSubmissionRoleSchema,
+  schedulerLog: z.string().min(1),
+  terminalState: z.string().min(1), exitCode: z.number().int(),
+  startedAt: isoDateTime.optional(), endedAt: isoDateTime.optional(),
+}).strict();
+
+const layeredManifestSubmissionSchema = layeredSubmissionSchema.extend({
+  schedulerLog: safeRelativePath,
+}).strict();
+
+export const layeredGateSchema = z.object({
+  name: z.enum(['spack-reuse', 'no-unresolved-symbols', 'gpu-checksum', 'runtime-replication']),
+  jobId: z.string().min(1),
+  artifact: safeRelativePath, artifactSecondary: safeRelativePath.optional(),
+  passed: z.boolean(), detail: z.string().min(1),
+  expected: z.object({
+    reused: z.number().int().nonnegative(), built: z.number().int().nonnegative(),
+  }).strict().optional(),
+  allowedUnresolved: z.array(z.string().min(1)).optional(),
+  reason: z.string().min(1).optional(),
+}).strict();
+export type LayeredGate = z.infer<typeof layeredGateSchema>;
+
 export const recordRunMetadataSchema = z.object({
   schemaVersion: z.literal(1),
+  profile: evidenceProfileSchema.default('baseline-service-workers'),
   evidenceId: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   evidenceKind: z.enum(['success', 'readiness-timeout']),
   workflowId: z.string().min(1), workflowRevision: revision, releaseCandidate: z.string().min(1),
@@ -28,30 +62,65 @@ export const recordRunMetadataSchema = z.object({
     primaryUnavailableReason: z.string().min(1).optional(),
   }).strict(),
   schedulerVersion: z.string().min(1), runtimeVersion: z.string().min(1), containerDigest: digest,
+  secondaryRuntimeVersion: z.string().min(1).optional(),
   submissionId: z.string().min(1), startedAt: isoDateTime, endedAt: isoDateTime,
-  nodes: z.literal(1), coordinatorCount: z.literal(1), workerCount: z.number().int().min(1).max(16),
+  nodes: z.literal(1).optional(), coordinatorCount: z.literal(1).optional(),
+  workerCount: z.number().int().min(1).max(16).optional(),
   terminalState: z.string().min(1), exitCode: z.number().int(), reviewAfter: isoDate,
+  submissions: z.array(layeredSubmissionSchema).min(1).optional(),
+  gates: z.array(layeredGateSchema).min(4).optional(),
+  artifacts: z.array(z.object({ source: z.string().min(1), target: safeRelativePath }).strict()).optional(),
   assumptions: z.array(z.string().min(1)).min(1), limitations: z.array(z.string().min(1)).min(1),
   portabilityBoundaries: z.array(z.string().min(1)).min(1), reviewer: z.string().min(1),
   redactValues: z.array(z.string().min(1)).default([]),
 }).strict().superRefine((metadata, context) => {
+  const issue = (path: string, message: string) => context.addIssue({ code: 'custom', path: path.split('.'), message });
   if (metadata.environment.publicName === 'Purdue Anvil' && metadata.environment.fallback) {
-    context.addIssue({ code: 'custom', path: ['environment', 'fallback'], message: 'Purdue Anvil is the primary environment' });
+    issue('environment.fallback', 'Purdue Anvil is the primary environment');
   }
   if (metadata.environment.publicName === 'SDSC Expanse' && (!metadata.environment.fallback || !metadata.environment.primaryUnavailableReason)) {
-    context.addIssue({ code: 'custom', path: ['environment'], message: 'Expanse requires fallback true and a primary-unavailable reason' });
+    issue('environment', 'Expanse requires fallback true and a primary-unavailable reason');
+  }
+  if (metadata.profile === 'baseline-service-workers') {
+    for (const key of ['nodes', 'coordinatorCount', 'workerCount'] as const) {
+      if (metadata[key] === undefined) issue(key, 'is required for the baseline-service-workers profile');
+    }
+    for (const key of ['submissions', 'gates', 'artifacts', 'secondaryRuntimeVersion'] as const) {
+      if (metadata[key] !== undefined) issue(key, 'is only valid for the layered-install-trees profile');
+    }
+  } else {
+    if (metadata.evidenceKind !== 'success') issue('evidenceKind', 'layered-install-trees profile supports success evidence only');
+    if (!metadata.submissions) issue('submissions', 'is required for the layered-install-trees profile');
+    if (!metadata.gates) issue('gates', 'is required for the layered-install-trees profile');
+    if (!metadata.secondaryRuntimeVersion) issue('secondaryRuntimeVersion', 'is required for the layered-install-trees profile');
+    const submissions = metadata.submissions ?? [];
+    const roles = new Set<LayeredSubmissionRole>();
+    for (const submission of submissions) {
+      if (roles.has(submission.role)) issue('submissions', `duplicate submission role ${submission.role}`);
+      roles.add(submission.role);
+    }
+    const primary = submissions.find((submission) => submission.role === 'apptainer-compose-gpu');
+    if (!primary) issue('submissions', 'requires an apptainer-compose-gpu submission');
+    else if (primary.jobId !== metadata.submissionId) {
+      issue('submissionId', 'must equal the apptainer-compose-gpu submission jobId');
+    }
   }
 });
 export type RecordRunMetadata = z.infer<typeof recordRunMetadataSchema>;
 
 const evidenceEventSchema = z.object({
   sequence: z.number().int().nonnegative(), at: isoDateTime,
-  type: z.enum(['coordinator-started', 'ready', 'workers-started', 'verified', 'failed']),
+  type: z.enum([
+    'coordinator-started', 'ready', 'workers-started', 'verified', 'failed',
+    'provider-built', 'specialized-built', 'composed', 'gpu-verified', 'runtime-replicated',
+  ]),
   code: z.string().regex(/^BSSW-[A-Z0-9-]+$/).transform(canonicalDiagnosticId).optional(),
+  detail: z.string().min(1).optional(),
 }).strict();
 
 export const evidenceManifestSchema = z.object({
   schemaVersion: z.literal(1), evidenceId: z.string().min(1),
+  profile: evidenceProfileSchema.default('baseline-service-workers'),
   evidenceKind: z.enum(['success', 'readiness-timeout']), workflowId: z.string().min(1),
   workflowRevision: revision, releaseCandidate: z.string().min(1),
   representativeEnvironment: z.object({
@@ -60,17 +129,44 @@ export const evidenceManifestSchema = z.object({
   }).strict(),
   run: z.object({
     schedulerVersion: z.string().min(1), runtimeVersion: z.string().min(1), containerDigest: digest,
+    secondaryRuntimeVersion: z.string().min(1).optional(),
     submissionId: z.string().min(1), startedAt: isoDateTime, endedAt: isoDateTime,
-    nodes: z.literal(1), coordinatorCount: z.literal(1), workerCount: z.number().int().min(1).max(16),
+    nodes: z.literal(1).optional(), coordinatorCount: z.literal(1).optional(),
+    workerCount: z.number().int().min(1).max(16).optional(),
     terminalState: z.string().min(1), exitCode: z.number().int(),
+    submissions: z.array(layeredManifestSubmissionSchema).min(1).optional(),
   }).strict(),
   events: z.array(evidenceEventSchema).min(1),
+  gates: z.array(layeredGateSchema).min(4).optional(),
   checks: z.array(z.object({ name: z.string().min(1), passed: z.boolean(), detail: z.string().min(1) }).strict()).min(1),
   artifacts: z.array(z.object({ path: safeRelativePath, sha256: digest, mediaType: z.string().min(1) }).strict()).min(1),
   redactions: z.array(z.string().min(1)).min(1), assumptions: z.array(z.string().min(1)).min(1),
   limitations: z.array(z.string().min(1)).min(1), portabilityBoundaries: z.array(z.string().min(1)).min(1),
   reviewer: z.string().min(1), reviewAfter: isoDate,
-}).strict();
+}).strict().superRefine((manifest, context) => {
+  const issue = (path: string, message: string) => context.addIssue({ code: 'custom', path: path.split('.'), message });
+  if (manifest.profile === 'baseline-service-workers') {
+    for (const key of ['nodes', 'coordinatorCount', 'workerCount'] as const) {
+      if (manifest.run[key] === undefined) issue(`run.${key}`, 'is required for the baseline-service-workers profile');
+    }
+  } else {
+    if (manifest.evidenceKind !== 'success') issue('evidenceKind', 'layered-install-trees profile supports success evidence only');
+    if (!manifest.gates) issue('gates', 'is required for the layered-install-trees profile');
+    if (!manifest.run.submissions) issue('run.submissions', 'is required for the layered-install-trees profile');
+    if (!manifest.run.secondaryRuntimeVersion) issue('run.secondaryRuntimeVersion', 'is required for the layered-install-trees profile');
+    const submissions = manifest.run.submissions ?? [];
+    const roles = new Set<string>();
+    for (const submission of submissions) {
+      if (roles.has(submission.role)) issue('run.submissions', `duplicate submission role ${submission.role}`);
+      roles.add(submission.role);
+    }
+    const primary = submissions.find((submission) => submission.role === 'apptainer-compose-gpu');
+    if (!primary) issue('run.submissions', 'requires an apptainer-compose-gpu submission');
+    else if (primary.jobId !== manifest.run.submissionId) {
+      issue('run.submissionId', 'must equal the apptainer-compose-gpu submission jobId');
+    }
+  }
+});
 export type EvidenceManifest = z.infer<typeof evidenceManifestSchema>;
 
 export interface EvidenceValidationReport {
@@ -142,7 +238,34 @@ function mediaType(path: string): string {
   return 'text/plain';
 }
 
-function collectSourceFiles(runDirectory: string, schedulerLog: string, kind: RecordRunMetadata['evidenceKind']): Array<{ source: string; target: string }> {
+const layeredRoleEvent: Record<LayeredSubmissionRole, EvidenceManifest['events'][number]['type']> = {
+  'provider-build': 'provider-built',
+  'specialized-build': 'specialized-built',
+  'apptainer-compose-gpu': 'composed',
+  'charliecloud-compose': 'runtime-replicated',
+  'charliecloud-gpu': 'gpu-verified',
+  'startup-cost': 'composed',
+};
+
+function layeredSubmissionTarget(role: LayeredSubmissionRole, jobId: string): string {
+  return `scheduler/${role}-${jobId}.log`;
+}
+
+function collectSourceFiles(runDirectory: string, schedulerLog: string, metadata: RecordRunMetadata): Array<{ source: string; target: string }> {
+  if (metadata.profile === 'layered-install-trees') {
+    const files = [...(metadata.artifacts ?? []).map(({ source, target }) => ({ source, target }))];
+    const submissionSources = new Set<string>();
+    for (const submission of metadata.submissions ?? []) {
+      const source = resolve(submission.schedulerLog);
+      submissionSources.add(source);
+      files.push({ source, target: layeredSubmissionTarget(submission.role, submission.jobId) });
+    }
+    if (!submissionSources.has(resolve(schedulerLog))) files.push({ source: schedulerLog, target: 'scheduler.log' });
+    for (const file of files) {
+      if (!existsSync(file.source) || !statSync(file.source).isFile()) throw new Error(`required run output is missing: ${file.source}`);
+    }
+    return files;
+  }
   const files = [
     { source: schedulerLog, target: 'scheduler.log' },
     { source: join(runDirectory, 'events.jsonl'), target: 'artifacts/events.jsonl' },
@@ -152,7 +275,7 @@ function collectSourceFiles(runDirectory: string, schedulerLog: string, kind: Re
   if (existsSync(logs)) {
     for (const name of readdirSync(logs).sort()) files.push({ source: join(logs, name), target: `logs/${name}` });
   }
-  if (kind === 'success') {
+  if (metadata.evidenceKind === 'success') {
     files.push({ source: join(runDirectory, 'result.json'), target: 'artifacts/result.json' });
     files.push({ source: join(runDirectory, 'results.json'), target: 'artifacts/results.json' });
   }
@@ -175,8 +298,103 @@ function orderedIndex(events: EvidenceManifest['events'], type: EvidenceManifest
   return events.find((event) => event.type === type)?.sequence ?? -1;
 }
 
+function layeredArtifactText(bundleDirectory: string, relativePath: string): string {
+  const absolute = resolve(bundleDirectory, relativePath);
+  if (!absolute.startsWith(`${resolve(bundleDirectory)}${sep}`) || !existsSync(absolute)) {
+    throw new Error(`gate artifact is missing or unsafe: ${relativePath}`);
+  }
+  return readFileSync(absolute, 'utf8');
+}
+
+export function recomputeLayeredGate(gate: LayeredGate, bundleDirectory: string): { passed: boolean; detail: string } {
+  switch (gate.name) {
+    case 'spack-reuse': {
+      const expected = gate.expected;
+      if (!expected) throw new Error('spack-reuse gate requires expected {reused, built}');
+      const lines = layeredArtifactText(bundleDirectory, gate.artifact).split(/\r?\n/);
+      const reused = lines.filter((line) => /^\[\^\]/.test(line)).length;
+      const built = lines.filter((line) => /^ -   /.test(line)).length;
+      const total = reused + built;
+      const detail = `${reused} of ${total} buildable reused (${total ? ((reused / total) * 100).toFixed(1) : '0.0'}%)`;
+      return reused === expected.reused && built === expected.built
+        ? { passed: true, detail }
+        : { passed: false, detail: `${detail}; expected ${expected.reused} reused / ${expected.built} built` };
+    }
+    case 'no-unresolved-symbols': {
+      const count = layeredArtifactText(bundleDirectory, gate.artifact).split(/\r?\n/)
+        .filter((line) => /=> not found/.test(line)).length;
+      return count === 0
+        ? { passed: true, detail: 'zero unresolved symbols with LD_LIBRARY_PATH unset' }
+        : { passed: false, detail: `${count} unresolved symbol line(s)` };
+    }
+    case 'gpu-checksum': {
+      const log = layeredArtifactText(bundleDirectory, gate.artifact);
+      return /mismatches=0/.test(log) && /^RESULT: PASS$/m.test(log)
+        ? { passed: true, detail: 'RESULT: PASS with mismatches=0' }
+        : { passed: false, detail: 'missing mismatches=0 or RESULT: PASS' };
+    }
+    case 'runtime-replication': {
+      if (!gate.artifactSecondary) throw new Error('runtime-replication gate requires artifactSecondary');
+      if (!/^RESULT: PASS$/m.test(layeredArtifactText(bundleDirectory, gate.artifact))) {
+        return { passed: false, detail: 'secondary-runtime GPU log lacks RESULT: PASS' };
+      }
+      const unresolved = layeredArtifactText(bundleDirectory, gate.artifactSecondary).split(/\r?\n/)
+        .filter((line) => /=> not found/.test(line)).map((line) => line.split('=>')[0].trim());
+      const allowed = new Set(gate.allowedUnresolved ?? []);
+      const unexpected = unresolved.filter((library) => !allowed.has(library));
+      return unexpected.length === 0
+        ? { passed: true, detail: `secondary runtime PASS; unresolved limited to allowlist (${unresolved.join(', ') || 'none'})` }
+        : { passed: false, detail: `unlisted unresolved libraries: ${unexpected.join(', ')}` };
+    }
+  }
+}
+
+function layeredSemanticErrors(manifest: EvidenceManifest, bundleDirectory: string): string[] {
+  const errors: string[] = [];
+  if (manifest.run.terminalState !== 'COMPLETED' || manifest.run.exitCode !== 0) {
+    errors.push('layered success evidence requires terminal COMPLETED and exit code 0 on the primary submission');
+  }
+  const provider = orderedIndex(manifest.events, 'provider-built');
+  const specialized = orderedIndex(manifest.events, 'specialized-built');
+  const composed = orderedIndex(manifest.events, 'composed');
+  const gpuVerified = orderedIndex(manifest.events, 'gpu-verified');
+  const replicated = orderedIndex(manifest.events, 'runtime-replicated');
+  if (!(provider >= 0 && provider < specialized && specialized < composed && composed <= gpuVerified)) {
+    errors.push('layered event ordering must be provider-built < specialized-built < composed <= gpu-verified');
+  }
+  if (!(replicated > composed)) errors.push('runtime-replicated event must follow composed');
+  const artifactPaths = new Set(manifest.artifacts.map((artifact) => artifact.path));
+  const submissions = manifest.run.submissions ?? [];
+  for (const submission of submissions) {
+    if (!artifactPaths.has(submission.schedulerLog)) {
+      errors.push(`submission ${submission.jobId} scheduler log is not listed in artifacts`);
+    }
+  }
+  for (const gate of manifest.gates ?? []) {
+    const submission = submissions.find((entry) => entry.jobId === gate.jobId);
+    if (!submission) errors.push(`gate ${gate.name} jobId ${gate.jobId} is not a recorded submission`);
+    for (const path of [gate.artifact, gate.artifactSecondary].filter(Boolean)) {
+      if (!artifactPaths.has(path!)) errors.push(`gate ${gate.name} artifact ${path} is not listed in artifacts`);
+    }
+    try {
+      const recomputed = recomputeLayeredGate(gate, bundleDirectory);
+      if (!recomputed.passed) errors.push(`gate ${gate.name} recomputation failed: ${recomputed.detail}`);
+      if (recomputed.passed !== gate.passed) errors.push(`gate ${gate.name} declared passed flag does not match recomputation`);
+    } catch (error) {
+      errors.push(`gate ${gate.name}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  const checkNames = new Set(manifest.checks.map((check) => check.name));
+  for (const gate of manifest.gates ?? []) {
+    if (!checkNames.has(gate.name)) errors.push(`gate ${gate.name} has no matching check entry`);
+  }
+  if (manifest.checks.some((check) => !check.passed)) errors.push('layered evidence contains a failed check');
+  return errors;
+}
+
 function semanticErrors(manifest: EvidenceManifest, bundleDirectory: string): string[] {
   const errors: string[] = [];
+  if (manifest.profile === 'layered-install-trees') return layeredSemanticErrors(manifest, bundleDirectory);
   const coordinator = orderedIndex(manifest.events, 'coordinator-started');
   const ready = orderedIndex(manifest.events, 'ready');
   const worker = orderedIndex(manifest.events, 'workers-started');
@@ -216,13 +434,32 @@ export function recordRun(options: {
   mkdirSync(temporary, { recursive: true, mode: 0o755 });
   try {
     const redactions = new Set<string>();
-    const copied = collectSourceFiles(resolve(options.runDirectory), resolve(options.schedulerLog), metadata.evidenceKind);
+    const copied = collectSourceFiles(resolve(options.runDirectory), resolve(options.schedulerLog), metadata);
     for (const file of copied) {
       for (const name of copyRedacted(file.source, join(temporary, file.target), metadata.redactValues)) redactions.add(name);
     }
     if (redactions.size === 0) redactions.add('reviewed; no sensitive values detected by configured rules');
-    const events = parseEvents(join(temporary, 'artifacts/events.jsonl'));
-    const checks = metadata.evidenceKind === 'success' ? [
+    const layered = metadata.profile === 'layered-install-trees';
+    const events = layered
+      ? (metadata.submissions ?? []).map((submission, sequence) => evidenceEventSchema.parse({
+          sequence,
+          at: submission.endedAt ?? statSync(join(temporary, layeredSubmissionTarget(submission.role, submission.jobId))).mtime.toISOString(),
+          type: layeredRoleEvent[submission.role],
+          detail: submission.endedAt
+            ? `timestamp from submission endedAt (${submission.role}, job ${submission.jobId})`
+            : `timestamp from scheduler log mtime (${submission.role}, job ${submission.jobId})`,
+        }))
+      : parseEvents(join(temporary, 'artifacts/events.jsonl'));
+    const layeredChecks: Array<{ name: string; passed: boolean; detail: string }> = [];
+    const gates = (metadata.gates ?? []).map((gate) => {
+      const recomputed = recomputeLayeredGate(gate, temporary);
+      if (recomputed.passed !== gate.passed) {
+        throw new Error(`gate ${gate.name}: declared passed=${gate.passed} but recomputation gives ${recomputed.passed} (${recomputed.detail})`);
+      }
+      layeredChecks.push({ name: gate.name, passed: recomputed.passed, detail: recomputed.detail });
+      return { ...gate, detail: recomputed.detail };
+    });
+    const checks = layered ? layeredChecks : metadata.evidenceKind === 'success' ? [
       { name: 'scheduler completion', passed: metadata.terminalState === 'COMPLETED' && metadata.exitCode === 0, detail: `${metadata.terminalState} exit ${metadata.exitCode}` },
       { name: 'success marker', passed: existsSync(join(temporary, 'artifacts/result.json')), detail: 'artifacts/result.json exists and is schema-checked' },
       { name: 'event ordering', passed: true, detail: 'coordinator readiness precedes worker start and verification' },
@@ -233,17 +470,26 @@ export function recordRun(options: {
     ];
     const artifacts = copied.map(({ target }) => ({ path: target, sha256: sha256File(join(temporary, target)), mediaType: mediaType(target) }));
     const manifest = evidenceManifestSchema.parse({
-      schemaVersion: 1, evidenceId: metadata.evidenceId, evidenceKind: metadata.evidenceKind,
+      schemaVersion: 1, evidenceId: metadata.evidenceId, profile: metadata.profile, evidenceKind: metadata.evidenceKind,
       workflowId: metadata.workflowId, workflowRevision: metadata.workflowRevision,
       releaseCandidate: metadata.releaseCandidate, representativeEnvironment: metadata.environment,
       run: {
         schedulerVersion: metadata.schedulerVersion, runtimeVersion: metadata.runtimeVersion,
         containerDigest: metadata.containerDigest, submissionId: metadata.submissionId,
-        startedAt: metadata.startedAt, endedAt: metadata.endedAt, nodes: metadata.nodes,
-        coordinatorCount: metadata.coordinatorCount, workerCount: metadata.workerCount,
+        startedAt: metadata.startedAt, endedAt: metadata.endedAt,
+        ...(metadata.secondaryRuntimeVersion ? { secondaryRuntimeVersion: metadata.secondaryRuntimeVersion } : {}),
+        ...(metadata.nodes !== undefined ? { nodes: metadata.nodes } : {}),
+        ...(metadata.coordinatorCount !== undefined ? { coordinatorCount: metadata.coordinatorCount } : {}),
+        ...(metadata.workerCount !== undefined ? { workerCount: metadata.workerCount } : {}),
         terminalState: metadata.terminalState, exitCode: metadata.exitCode,
+        ...(metadata.submissions ? {
+          submissions: metadata.submissions.map((submission) => ({
+            ...submission, schedulerLog: layeredSubmissionTarget(submission.role, submission.jobId),
+          })),
+        } : {}),
       },
-      events, checks, artifacts, redactions: [...redactions].sort(), assumptions: metadata.assumptions,
+      events, checks, artifacts, ...(gates.length ? { gates } : {}),
+      redactions: [...redactions].sort(), assumptions: metadata.assumptions,
       limitations: metadata.limitations, portabilityBoundaries: metadata.portabilityBoundaries,
       reviewer: metadata.reviewer, reviewAfter: metadata.reviewAfter,
     });
@@ -360,6 +606,12 @@ export function validateApplicabilityAgainstManifest(record: ApplicabilityRecord
     errors.push(`${record.id}: representative environment or fallback designation does not match manifest`);
   }
   if (manifest.run.schedulerVersion !== record.scheduler.version || manifest.run.runtimeVersion !== record.runtime.version) errors.push(`${record.id}: scheduler/runtime versions do not match manifest`);
+  if (manifest.profile === 'layered-install-trees') {
+    if (!record.secondary_runtime) errors.push(`${record.id}: layered profile requires secondary_runtime`);
+    else if (record.secondary_runtime.version !== manifest.run.secondaryRuntimeVersion) {
+      errors.push(`${record.id}: secondary runtime version does not match manifest`);
+    }
+  }
   if (manifest.run.submissionId !== record.submission_id) errors.push(`${record.id}: submission ID does not match manifest`);
   if (manifest.run.startedAt.slice(0, 10) !== record.execution_date) errors.push(`${record.id}: execution date does not match manifest`);
   if (manifest.run.terminalState !== record.result.terminal_state || manifest.run.exitCode !== record.result.exit_code) errors.push(`${record.id}: terminal result does not match manifest`);

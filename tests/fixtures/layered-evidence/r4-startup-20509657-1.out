@@ -1,0 +1,15 @@
+[R4 task 1 node=a069.example.invalid start=Tue Sep  8 22:40:36 UTC 2026]
+heflib=/tmp/e4s-specialized-heffte-sm80/linux-x86_64_v3/heffte-2.4.1-wdcwwsk/lib/libheffte.so.2.4.1  monolib=/tmp/e4s-monolithic-amrex-sm80/linux-x86_64_v3/zlib-ng-2.3.3-nyk4twq/lib/libz.so.1.3.1.zlib-ng
+provider-resolved-deps=4 (sanity, expect >=2)
+COLD_MS bare=289 layered=373 monolithic=337
+WARM_MS i=1 bare=314 layered=377 monolithic=350
+WARM_MS i=2 bare=339 layered=359 monolithic=349
+WARM_MS i=3 bare=322 layered=349 monolithic=337
+WARM_MS i=4 bare=333 layered=359 monolithic=352
+WARM_MS i=5 bare=311 layered=398 monolithic=343
+WARM_MS i=6 bare=312 layered=351 monolithic=329
+WARM_MS i=7 bare=284 layered=355 monolithic=362
+WARM_MS i=8 bare=323 layered=357 monolithic=364
+WARM_MS i=9 bare=328 layered=360 monolithic=333
+WARM_MS i=10 bare=315 layered=369 monolithic=323
+[R4 task 1 done Tue Sep  8 22:40:49 UTC 2026]

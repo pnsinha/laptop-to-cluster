@@ -164,6 +164,7 @@ export const applicabilityRecordSchema = z.object({
   }).strict(),
   scheduler: z.object({ family: nonEmpty, version: nonEmpty }).strict(),
   runtime: z.object({ name: nonEmpty, version: nonEmpty }).strict(),
+  secondary_runtime: z.object({ name: nonEmpty, version: nonEmpty }).strict().optional(),
   container_digest: sha256,
   workflow_revision: z.string().regex(/^(?:[a-f0-9]{40}|v?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?)$/i),
   validation_date: isoDate,

@@ -1,0 +1,27 @@
+[START Wed Aug 12 14:09:44 UTC 2026] host=g003.example.invalid
+=== host GPU + driver ===
+NVIDIA A100-SXM4-40GB, 580.105.08, 8.0
+host libcuda: /usr/lib64/libcuda.so.580.105.08
+
+########## A. bundled libcuda (Julia 610.43.02) ##########
+libcuda: /opt/julia-central/depot/artifacts/2c8e4324b86fc70a7c041ce8dc72b5f9b41a7a98/lib/libcuda.so
+compile_rc=0
+--- RUN (bundled 610) ---
+GPU: NVIDIA A100-SXM4-40GB
+compute_cap: 8.0 (sm_80)
+driver/CUDA runtime OK
+kernel ran: N=1048576, mismatches=0
+RESULT: PASS
+smoke_exit=0
+
+########## B. host driver libcuda (580.105.08) ##########
+libcuda: /hostlibs/libcuda.so
+compile_rc=0
+--- RUN (host 580) ---
+GPU: NVIDIA A100-SXM4-40GB
+compute_cap: 8.0 (sm_80)
+driver/CUDA runtime OK
+kernel ran: N=1048576, mismatches=0
+RESULT: PASS
+smoke_exit=0
+[DONE Wed Aug 12 14:09:48 UTC 2026]

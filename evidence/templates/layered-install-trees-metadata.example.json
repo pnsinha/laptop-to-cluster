@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "profile": "layered-install-trees",
+  "evidenceId": "anvil-layered-trees-YYYYMMDD",
+  "evidenceKind": "success",
+  "workflowId": "module-5-layered-install-trees",
+  "workflowRevision": "v0.2.0",
+  "releaseCandidate": "v0.2.0",
+  "environment": { "publicName": "Purdue Anvil", "fallback": false },
+  "schedulerVersion": "RECORD_FROM_RUN",
+  "runtimeVersion": "RECORD_FROM_RUN",
+  "secondaryRuntimeVersion": "RECORD_FROM_RUN",
+  "containerDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "submissionId": "PRIMARY_APPTAINER_COMPOSE_GPU_JOBID",
+  "startedAt": "YYYY-MM-DDTHH:MM:SSZ",
+  "endedAt": "YYYY-MM-DDTHH:MM:SSZ",
+  "terminalState": "COMPLETED",
+  "exitCode": 0,
+  "reviewAfter": "YYYY-MM-DD",
+  "submissions": [
+    { "jobId": "PROVIDER_JOBID", "role": "provider-build", "schedulerLog": "/secure/logs/provider-JOBID.out", "terminalState": "COMPLETED", "exitCode": 0, "endedAt": "YYYY-MM-DDTHH:MM:SSZ" },
+    { "jobId": "SPECIALIZED_JOBID", "role": "specialized-build", "schedulerLog": "/secure/logs/specialized-JOBID.out", "terminalState": "COMPLETED", "exitCode": 0, "endedAt": "YYYY-MM-DDTHH:MM:SSZ" },
+    { "jobId": "APPTAINER_JOBID", "role": "apptainer-compose-gpu", "schedulerLog": "/secure/logs/gpu-compose-JOBID.out", "terminalState": "COMPLETED", "exitCode": 0, "endedAt": "YYYY-MM-DDTHH:MM:SSZ" },
+    { "jobId": "CH_COMPOSE_JOBID", "role": "charliecloud-compose", "schedulerLog": "/secure/logs/ch-compose2-JOBID.out", "terminalState": "COMPLETED", "exitCode": 0, "endedAt": "YYYY-MM-DDTHH:MM:SSZ" },
+    { "jobId": "CH_GPU_JOBID", "role": "charliecloud-gpu", "schedulerLog": "/secure/logs/ch-cuda-fn-JOBID.out", "terminalState": "COMPLETED", "exitCode": 0, "endedAt": "YYYY-MM-DDTHH:MM:SSZ" },
+    { "jobId": "STARTUP_JOBID", "role": "startup-cost", "schedulerLog": "/secure/logs/r4-startup-JOBID-1.out", "terminalState": "COMPLETED", "exitCode": 0, "endedAt": "YYYY-MM-DDTHH:MM:SSZ" }
+  ],
+  "artifacts": [
+    { "source": "/secure/logs/concretize-specialized.txt", "target": "artifacts/concretize-specialized.txt" }
+  ],
+  "gates": [
+    { "name": "spack-reuse", "jobId": "SPECIALIZED_JOBID", "artifact": "artifacts/concretize-specialized.txt", "passed": true, "detail": "RECOMPUTED_BY_RECORD_RUN", "expected": { "reused": 19, "built": 1 } },
+    { "name": "no-unresolved-symbols", "jobId": "APPTAINER_JOBID", "artifact": "scheduler/apptainer-compose-gpu-APPTAINER_JOBID.log", "passed": true, "detail": "RECOMPUTED_BY_RECORD_RUN" },
+    { "name": "gpu-checksum", "jobId": "APPTAINER_JOBID", "artifact": "scheduler/apptainer-compose-gpu-APPTAINER_JOBID.log", "passed": true, "detail": "RECOMPUTED_BY_RECORD_RUN" },
+    { "name": "runtime-replication", "jobId": "CH_GPU_JOBID", "artifact": "scheduler/charliecloud-gpu-CH_GPU_JOBID.log", "artifactSecondary": "scheduler/charliecloud-compose-CH_COMPOSE_JOBID.log", "passed": true, "detail": "RECOMPUTED_BY_RECORD_RUN", "allowedUnresolved": ["libmpi.so.12"], "reason": "container-external MPI absent from the minimal rootfs; not a mechanism failure" }
+  ],
+  "assumptions": ["Canonical install trees persist on GPFS between stages"],
+  "limitations": ["Single-site evidence; no multi-node or BLAS-swap coverage"],
+  "portabilityBoundaries": ["Site scratch root, accounts, GPU partition/QOS, runtime module policy"],
+  "reviewer": "RECORD_REVIEWER_NAME",
+  "redactValues": ["RECORD_SCRATCH_ROOT", "RECORD_USERNAME", "RECORD_ACCOUNT"]
+}

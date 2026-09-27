@@ -1,0 +1,101 @@
+[PROVIDER START Sat Aug  8 21:58:46 UTC 2026] host=a058.example.invalid SLURM_JOB_ID=19747042
+=== spack 1.2.1 (2f80bed397c15a7f04607051315ea56881351ce4) ===
+=== CONCRETIZE (provider, unify=true) ===
+ -   cv5n26p      ^py-pip@26.1.2 build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3
+ -   rkrnifl      ^py-wheel@0.45.1 build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3
+[e]  bqfkrxx      ^python@3.12.12+bz2+crypt+ctypes+dbm~debug+libxml2+lzma~optimizations+pic+pyexpat+pythoncmd+readline+shared+sqlite3+ssl~static~tests~tkinter+uuid+zlib build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3
+ -   3wb2dja      ^python-venv@1.0 build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3
+
+=== root specs concretized ===
+=== INSTALL (provider) ===
+[e] bqfkrxx python@3.12.12 /opt/python/pkgs/python-3.12.12 (0s)
+[e] jj453jr glibc@2.39 /usr (0s)
+[e] jt2squ5 gcc@13.3.0 /usr (0s)
+[e] 4x4sp2v mpich@4.3.2 /opt/mpi/pkgs/mpich-4.3.2 (0s)
+[ ] 5ras4ko compiler-wrapper@1.1.0 staging (0s)
+[ ] sghkyxj ca-certificates-mozilla@2026-03-19 staging (0s)
+[ ] p4x6yaa gcc-runtime@13.3.0 staging (0s)
+[ ] 3wb2dja python-venv@1.0 staging (0s)
+==> No patches needed for python-venv
+[ ] 5ras4ko compiler-wrapper@1.1.0 install (0s)
+[ ] 3wb2dja python-venv@1.0 install (0s)
+[ ] p4x6yaa gcc-runtime@13.3.0 install (0s)
+[ ] sghkyxj ca-certificates-mozilla@2026-03-19 install (0s)
+==> python-venv: Executing phase: 'install'
+==> [2026-08-08-14:59:16.492036] /opt/python/pkgs/python-3.12.12/bin/python3.12 -m venv --without-pip /tmp/e4s-provider-cpu/linux-x86_64_v3/python-venv-1.0-3wb2dja
+[+] sghkyxj ca-certificates-mozilla@2026-03-19 /tmp/e4s-provider-cpu/linux-x86_64_v3/ca-certificates-mozilla-2026-03-19-sghkyxj (0s)
+[+] 5ras4ko compiler-wrapper@1.1.0 /tmp/e4s-provider-cpu/linux-x86_64_v3/compiler-wrapper-1.1.0-5ras4ko (0s)
+==> Warning: Module file ${BSSW_SCRATCH_ROOT}/union-anvil/spack-v1.2.1/share/spack/modules/linux-ubuntu24.04-x86_64_v3/python-venv/1.0-3wb2dja exists and will not be overwritten
+[+] 3wb2dja python-venv@1.0 /tmp/e4s-provider-cpu/linux-x86_64_v3/python-venv-1.0-3wb2dja (0s)
+[ ] cv5n26p py-pip@26.1.2 staging (0s)
+==> Using cached archive: ${BSSW_SCRATCH_ROOT}/union-anvil/mirror/_source-cache/archive/38/382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5715cab.whl
+==> No patches needed for py-pip
+[ ] cv5n26p py-pip@26.1.2 install (0s)
+==> py-pip: Executing phase: 'install'
+==> [2026-08-08-14:59:16.732650] /tmp/e4s-provider-cpu/linux-x86_64_v3/python-venv-1.0-3wb2dja/bin/python3 ${BSSW_SCRATCH_ROOT}/union-anvil/stage/spack-stage-py-pip-26.1.2-cv5n26p5zqi2h5laggxbk6xg4pxmmxnd/pip-26.1.2-py3-none-any.whl/pip -vvv --no-input --no-cache-dir --disable-pip-version-check install --no-deps --ignore-installed --no-build-isolation --no-warn-script-location --no-index --prefix=/tmp/e4s-provider-cpu/linux-x86_64_v3/py-pip-26.1.2-cv5n26p ${BSSW_SCRATCH_ROOT}/union-anvil/stage/spack-stage-py-pip-26.1.2-cv5n26p5zqi2h5laggxbk6xg4pxmmxnd/pip-26.1.2-py3-none-any.whl
+[+] p4x6yaa gcc-runtime@13.3.0 /tmp/e4s-provider-cpu/linux-x86_64_v3/gcc-runtime-13.3.0-p4x6yaa (0s)
+[ ] 4zoij3h gmake@4.4.1 staging (0s)
+Using pip 26.1.2 from ${BSSW_SCRATCH_ROOT}/union-anvil/stage/spack-stage-py-pip-26.1.2-cv5n26p5zqi2h5laggxbk6xg4pxmmxnd/pip-26.1.2-py3-none-any.whl/pip (python 3.12)
+Non-user install due to --prefix or --target option
+Ignoring indexes: https://pypi.org/simple
+Created temporary directory: /tmp/pip-build-tracker-qtbjwx00
+Initialized build tracking at /tmp/pip-build-tracker-qtbjwx00
+Created build tracker: /tmp/pip-build-tracker-qtbjwx00
+Entered build tracker: /tmp/pip-build-tracker-qtbjwx00
+Created temporary directory: /tmp/pip-install-62ng06o7
+Created temporary directory: /tmp/pip-ephem-wheel-cache-p0aerncq
+Processing ${BSSW_SCRATCH_ROOT}/union-anvil/stage/spack-stage-py-pip-26.1.2-cv5n26p5zqi2h5laggxbk6xg4pxmmxnd/pip-26.1.2-py3-none-any.whl
+Created temporary directory: /tmp/pip-unpack-3sei9gjh
+Installing collected packages: pip
+[ ] 4zoij3h gmake@4.4.1 install (1s)
+[... truncated for fixture ...]
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_fft3d.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_magma_helpers.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_pack3d.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_backend_cuda.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_backend_vector.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_reshape3d.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_c_defines.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_backend_fftw.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/stock_fft
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/stock_fft/heffte_stock_vec_types.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/stock_fft/heffte_stock_complex.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/stock_fft/heffte_stock_algos.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/stock_fft/heffte_stock_allocator.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/stock_fft/heffte_stock_tree.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_trace.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_backends.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_config.cmake.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_compute_transform.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_r2r_executor.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/include/heffte_config.h
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/HeffteMakefile.in
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/testing/CMakeLists.txt
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/CMakeLists.txt
+-- Up-to-date: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_r2c.cpp
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_fftw.f90
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_r2r.cpp
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_c.c
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_gpu.cpp
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_options.cpp
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_vectors.cpp
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_sycl.cpp
+-- Installing: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/examples/heffte_example_fftw.cpp
+==> [2026-08-08-15:12:41.161856] Installing /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/share/heffte/testing to /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/.spack/test/testing
+==> Warning: Module file ${BSSW_SCRATCH_ROOT}/union-anvil/spack-v1.2.1/share/spack/modules/linux-ubuntu24.04-x86_64_v3/heffte/2.4.1 exists and will not be overwritten
+[+] ksq3blx heffte@2.4.1 /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx (39s)
+[ ] ym56bx6 amrex@26.06 install (2m15s)
+[+] ym56bx6 amrex@26.06 /tmp/e4s-provider-cpu/linux-x86_64_v3/amrex-26.06-ym56bx6 (2m17s)
+=== spack install exit=0 ===
+=== installed roots ===
+=== footprint (inodes/size) ===
+files: 15245
+840M	/tmp/e4s-provider-cpu
+[INSTALL rc=0 Sat Aug  8 22:14:21 UTC 2026]
+=== persist /tmp/e4s-provider-cpu -> ${BSSW_SCRATCH_ROOT}/union-anvil/trees/e4s-provider-cpu ===
+GPFS copy: 2.9G, 15245 files
+=== VERIFY: RPATH is canonical /tmp path (amrex lib, has cross-tree deps) ===
+sample binary: 
+[PROVIDER DONE Sat Aug  8 22:14:33 UTC 2026] rc=0

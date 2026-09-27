@@ -1,0 +1,26 @@
+==> Concretized 1 spec:
+ -   a2ugptk  amrex@26.06~amrdata~ascent~catalyst~conduit+cuda+eb+fft~fortran+gpu_rdc~hdf5~hypre~ipo+linear_solvers+mpi~openmp~particles~petsc~pic~plotfile_tools~rocm~shared~simd~sundials~sycl~tiny_profile build_system=cmake build_type=Release cuda_arch:=80 dimensions:=1,2,3 generator=make precision=double platform=linux os=ubuntu24.04 target=x86_64_v3 %c,cxx,fortran=gcc@13.3.0
+[^]  brs7nmc      ^cmake@3.31.11~doc+ncurses+ownlibs~qtgui build_system=generic build_type=Release platform=linux os=ubuntu24.04 target=x86_64_v3 %c,cxx=gcc@13.3.0
+[^]  vpkli65          ^curl@8.20.0~gssapi~ldap~libidn2~librtmp~libssh~libssh2+nghttp2 build_system=autotools libs:=shared,static tls:=openssl platform=linux os=ubuntu24.04 target=x86_64_v3 %c,cxx=gcc@13.3.0
+[^]  va3dkf6              ^nghttp2@1.67.1 build_system=autotools platform=linux os=ubuntu24.04 target=x86_64_v3 %c,cxx=gcc@13.3.0
+[^]  y5gfteq                  ^diffutils@3.12 build_system=autotools platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+[^]  okz7dhn                      ^libiconv@1.18 build_system=autotools libs:=shared,static platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+[^]  bgtst3r              ^openssl@3.6.1~docs+shared build_system=generic certs=mozilla platform=linux os=ubuntu24.04 target=x86_64_v3 %c,cxx=gcc@13.3.0
+[^]  sghkyxj                  ^ca-certificates-mozilla@2026-03-19 build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3
+[^]  pjxwrx2                  ^perl@5.42.0+cpanm+opcode+open+shared+threads build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+[^]  ep2gbvj                      ^berkeley-db@18.1.40+cxx~docs+stl build_system=autotools patches:=26090f4,b231fcc platform=linux os=ubuntu24.04 target=x86_64_v3 %c,cxx=gcc@13.3.0
+[^]  jxtvfqg                      ^bzip2@1.0.8~debug~pic+shared build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+[^]  666sb36                      ^gdbm@1.26 build_system=autotools platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+[^]  zndqxc6                          ^readline@8.3 build_system=autotools patches:=21f0a03,72dee13,e273643 platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+[^]  3pvz36m                      ^less@692 build_system=autotools platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+[^]  wxxg7de          ^ncurses@6.6~symlinks+termlib abi=none build_system=autotools patches:=7a351bc platform=linux os=ubuntu24.04 target=x86_64_v3 %c,cxx=gcc@13.3.0
+[^]  nyk4twq          ^zlib-ng@2.3.3+compat+new_strategies+opt+pic+shared build_system=autotools platform=linux os=ubuntu24.04 target=x86_64_v3 %c,cxx=gcc@13.3.0
+[^]  5ras4ko      ^compiler-wrapper@1.1.0 build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3
+[e]  oionxrv      ^cuda@12.9.1~allow-unsupported-compilers~dev build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3
+[e]  jt2squ5      ^gcc@13.3.0+binutils+bootstrap~graphite+libsanitizer~mold~nvptx~piclibs~profiled~strip build_system=autotools build_type=RelWithDebInfo languages:='c,c++,fortran' platform=linux os=ubuntu24.04 target=x86_64_v3
+[^]  p4x6yaa      ^gcc-runtime@13.3.0 build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3
+[e]  jj453jr      ^glibc@2.39 build_system=autotools platform=linux os=ubuntu24.04 target=x86_64_v3
+[^]  4zoij3h      ^gmake@4.4.1~guile build_system=generic platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+[e]  4x4sp2v      ^mpich@4.3.2~argobots~cuda+fortran~hwloc+hydra~level_zero+libxml2+pci~rocm+romio~slurm~vci~verbs~wrapperrpath~xpmem build_system=autotools datatype-engine=auto device=ch4 netmod=ofi pmi=default platform=linux os=ubuntu24.04 target=x86_64_v3
+[^]  koeln2z      ^pkgconf@2.5.1 build_system=autotools platform=linux os=ubuntu24.04 target=x86_64_v3 %c=gcc@13.3.0
+

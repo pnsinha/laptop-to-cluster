@@ -1,0 +1,37 @@
+[GPU COMPOSE START Wed Aug 12 01:17:15 UTC 2026] host=g003.example.invalid job=19806294
+=== host GPU ===
+0, NVIDIA A100-SXM4-40GB, 8.0, 580.105.08
+########## (a) both layers visible in-container ##########
+provider:    36 package dirs
+specialized: 1 package dirs
+/tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx
+/tmp/e4s-specialized-amrex-sm80/linux-x86_64_v3/amrex-26.06-a2ugptk
+
+########## (b) cross-tree RPATH resolves (ldd, no LD_LIBRARY_PATH) ##########
+binary: /tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/lib/libheffte.so
+ 0x000000000000000f (RPATH)              Library rpath: [/tmp/e4s-provider-cpu/linux-x86_64_v3/heffte-2.4.1-ksq3blx/lib:/tmp/e4s-provider-cpu/linux-x86_64_v3/gcc-runtime-13.3.0-p4x6yaa/lib:/opt/mpi/pkgs/mpich-4.3.2/lib:/opt/mpi/pkgs/mpich-4.3.2/lib:/tmp/e4s-provider-cpu/linux-x86_64_v3/fftw-3.3.11-v5yfeyr/lib:/apps/spack/site/apps/gcc/11.2.0-gcc-8.4.1-qjtdkvs/lib64]
+ldd: deps from canonical trees?
+	libmpi.so.12 => /opt/mpi/pkgs/mpich-4.3.2/lib/libmpi.so.12 (0x00001532fda5b000)
+	libfftw3.so.3 => /tmp/e4s-provider-cpu/linux-x86_64_v3/fftw-3.3.11-v5yfeyr/lib/libfftw3.so.3 (0x00001532fd77a000)
+	libfftw3f.so.3 => /tmp/e4s-provider-cpu/linux-x86_64_v3/fftw-3.3.11-v5yfeyr/lib/libfftw3f.so.3 (0x00001532fd458000)
+	libstdc++.so.6 => /tmp/e4s-provider-cpu/linux-x86_64_v3/gcc-runtime-13.3.0-p4x6yaa/lib/libstdc++.so.6 (0x00001532fd1da000)
+	libgcc_s.so.1 => /tmp/e4s-provider-cpu/linux-x86_64_v3/gcc-runtime-13.3.0-p4x6yaa/lib/libgcc_s.so.1 (0x00001532fe8da000)
+	libyaksa.so.0 => /opt/mpi/pkgs/yaksa-0.4/lib/libyaksa.so.0 (0x00001532fcaae000)
+	libfabric.so.1 => /opt/mpi/pkgs/libfabric-2.5.1/lib/libfabric.so.1 (0x00001532fc9b4000)
+	libpciaccess.so.0 => /opt/mpi/pkgs/libpciaccess-0.17/lib/libpciaccess.so.0 (0x00001532fe894000)
+	libxml2.so.16 => /opt/mpi/pkgs/libxml2-2.15.1/lib/libxml2.so.16 (0x00001532fc875000)
+	libiconv.so.2 => /opt/mpi/pkgs/libiconv-1.18/lib/libiconv.so.2 (0x00001532fc763000)
+
+########## (c) GPU present in-container ##########
+NVIDIA A100-SXM4-40GB, 8.0, 580.105.08
+
+########## (d) arch-adaptive cuda_smoke ##########
+detected compute_cap: 8.0 -> sm_80
+compile rc=0
+GPU: NVIDIA A100-SXM4-40GB
+compute_cap: 8.0 (sm_80)
+driver/CUDA runtime OK
+kernel ran: N=1048576, mismatches=0
+RESULT: PASS
+smoke exit=0
+[GPU COMPOSE DONE Wed Aug 12 01:17:20 UTC 2026] rc=0
