@@ -1,0 +1,190 @@
+packages:
+  gcc:
+    externals:
+    - extra_attributes:
+        compilers:
+          c: /usr/bin/gcc
+          cxx: /usr/bin/g++
+          fortran: /usr/bin/gfortran
+      prefix: /usr
+      spec: gcc@13.3.0 languages:='c,c++,fortran'
+  all:
+    providers:
+      blas: [openblas, amdblis]
+      lapack: [openblas, amdlibflame]
+      tbb: [intel-tbb]
+      awk: [gawk]
+      armci: [armcimpi]
+      c: [gcc, llvm, intel-oneapi-compilers]
+      cxx: [gcc, llvm, intel-oneapi-compilers]
+      daal: [intel-oneapi-daal]
+      elf: [elfutils]
+      fftw-api: [fftw, amdfftw]
+      flame: [libflame, amdlibflame]
+      fortran: [gcc, llvm, intel-oneapi-compilers]
+      fortran-rt: [gcc-runtime, intel-oneapi-runtime]
+      fuse: [libfuse]
+      gl: [glx, osmesa]
+      glu: [mesa-glu, openglu]
+      golang: [go, gcc]
+      go-or-gccgo-bootstrap: [go-bootstrap, gcc]
+      iconv: [libiconv]
+      ipp: [intel-oneapi-ipp]
+      java: [openjdk, jdk]
+      jpeg: [libjpeg-turbo, libjpeg]
+      libc: [glibc, musl]
+      libgfortran: [gcc-runtime]
+      libglx: [mesa+glx]
+      libifcore: [intel-oneapi-runtime]
+      libllvm: [llvm]
+      lua-lang: [lua, lua-luajit-openresty, lua-luajit]
+      luajit: [lua-luajit-openresty, lua-luajit]
+      mariadb-client: [mariadb-c-client, mariadb]
+      mkl: [intel-oneapi-mkl]
+      mpe: [mpe2]
+      mpi: [openmpi, mpich]
+      mysql-client: [mysql, mariadb-c-client]
+      opencl: [pocl]
+      onedal: [intel-oneapi-dal]
+      pbs: [openpbs, torque]
+      pil: [py-pillow]
+      pkgconfig: [pkgconf, pkg-config]
+      qmake: [qt-base, qt]
+      rpc: [libtirpc]
+      scalapack: [netlib-scalapack, amdscalapack]
+      sycl: [hipsycl]
+      szip: [libaec, libszip]
+      unwind: [libunwind]
+      uuid: [util-linux-uuid, libuuid]
+      wasi-sdk: [wasi-sdk-prebuilt]
+      xkbdata-api: [xkeyboard-config, xkbdata]
+      xxd: [xxd-standalone, vim]
+      yacc: [bison, byacc]
+      ziglang: [zig]
+      zlib-api: [zlib-ng+compat, zlib]
+    require:
+    - '@:99999999'
+    - target=x86_64_v3
+    target:
+    - x86_64_v3
+    variants: +mpi
+    permissions:
+      read: world
+      write: user
+  binutils:
+    variants: +ld +gold +headers +libiberty ~nls
+  blas:
+    require: openblas
+  c:
+    require:
+    - gcc@13.3.0
+  cmake:
+    require:
+    - ~qtgui
+    - target=x86_64_v3
+  cuda:
+    externals:
+    - prefix: /usr/local/cuda-12.9
+      spec: cuda@12.9.1
+    prefer:
+    - '@12.9.1'
+  cxx:
+    require:
+    - gcc@13.3.0
+  fortran:
+    require:
+    - gcc@13.3.0
+  gmake:
+    require:
+    - ~guile
+    - target=x86_64_v3
+  hdf5:
+    variants: +fortran +hl +shared
+  julia:
+    buildable: false
+    externals:
+    - prefix: /usr/local/julia
+      spec: julia@1.12.6
+  lapack:
+    require: openblas
+  libfabric:
+    variants: fabrics=sockets,tcp,udp,rxm
+  libglx:
+    require: mesa
+  libllvm:
+    require: llvm
+  libunwind:
+    variants: +pic +xz
+  llvm:
+    prefer:
+    - ~lldb~lld~libomptarget~polly~gold
+    require:
+    - build_type=MinSizeRel
+    - target=x86_64_v3
+  mpi:
+    require: mpich
+  mpich:
+    buildable: false
+    externals:
+    - prefix: /opt/mpi/pkgs/mpich-4.3.2
+      spec: mpich@4.3.2~hwloc+hydra+libxml2+romio~verbs~wrapperrpath device=ch4 netmod=ofi
+  openblas:
+    variants: threads=openmp
+  paraview:
+    variants: +qt +examples
+  python:
+    externals:
+    - prefix: /opt/python/pkgs/python-3.12.12
+      spec: python@3.12.12+bz2+crypt+ctypes+dbm+lzma+pyexpat+pythoncmd+readline+sqlite3+ssl~tkinter+uuid+zlib
+    prefer:
+    - '@3.12.12'
+  qt:
+    require:
+    - '@5.15.16'
+    - target=x86_64_v3
+  raja:
+    variants: +plugins
+  tbb:
+    require: intel-tbb
+  trilinos:
+    variants: +amesos +amesos2 +anasazi +aztec +belos +boost +epetra +epetraext +ifpack +ifpack2 +intrepid +intrepid2 +isorropia +kokkos +ml +minitensor +muelu +nox +piro +phalanx +rol +rythmos +sacado +stk +shards +shylu +stokhos +stratimikos +teko +tempus +tpetra +trilinoscouplings +zoltan +zoltan2 +superlu-dist gotype=long_long
+  vtk-m:
+    require:
+    - +examples
+    - target=x86_64_v3
+  cce:
+    buildable: false
+  cray-fftw:
+    buildable: false
+  cray-libsci:
+    buildable: false
+  cray-mpich:
+    buildable: false
+  cray-mvapich2:
+    buildable: false
+  cray-pmi:
+    buildable: false
+  egl:
+    buildable: false
+  essl:
+    buildable: false
+  fj:
+    buildable: false
+  fujitsu-mpi:
+    buildable: false
+  fujitsu-ssl2:
+    buildable: false
+  glibc:
+    buildable: false
+  hpcx-mpi:
+    buildable: false
+  iconv:
+    prefer: [libiconv]
+  mpt:
+    buildable: false
+  musl:
+    buildable: false
+  spectrum-mpi:
+    buildable: false
+  xl:
+    buildable: false

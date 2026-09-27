@@ -1,0 +1,19 @@
+# Specialized (GPU, Layer 2) — rebuilds ONLY the GPU package (amrex), sm_80 for A100.
+# Reuses the CPU provider (Layer 1) via upstreams -> [^] markers, ~95.8% reuse.
+# NOTE: upstreams MUST be a top-level key in spack.yaml (Spack 1.x does not read a
+# standalone upstreams.yaml from the env dir). Verified on Anvil 2026-08-08.
+spack:
+  upstreams:
+    e4s-provider-cpu:
+      install_tree: /tmp/e4s-provider-cpu
+  specs:
+  - amrex +cuda cuda_arch=80
+  view: false
+  concretizer:
+    unify: true
+  config:
+    install_tree:
+      root: /tmp/e4s-specialized-amrex-sm80
+    shared_linking:
+      type: rpath
+      bind: false

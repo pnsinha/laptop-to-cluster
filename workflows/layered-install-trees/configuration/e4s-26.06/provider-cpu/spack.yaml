@@ -1,0 +1,16 @@
+# Provider (CPU, Layer 1) — E4S-faithful representative subset.
+# CPU-generic at x86_64_v3; NO cuda_arch (placement rule). Portable.
+spack:
+  specs:
+  - heffte +fftw
+  - amrex ~cuda
+  - py-numpy
+  view: false
+  concretizer:
+    unify: true
+  config:
+    install_tree:
+      root: /tmp/e4s-provider-cpu
+    shared_linking:
+      type: rpath
+      bind: false
