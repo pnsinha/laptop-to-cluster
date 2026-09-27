@@ -130,6 +130,8 @@ describe('layered-install-trees evidence profile', () => {
     expect(recomputeLayeredGate(gate({ expected: { reused: 18, built: 1 } }), layeredFixtures).passed).toBe(false);
     expect(recomputeLayeredGate(gate({ name: 'no-unresolved-symbols', expected: undefined, artifact: 'gpu-compose-19806294.out' }), layeredFixtures).passed).toBe(true);
     expect(recomputeLayeredGate(gate({ name: 'no-unresolved-symbols', expected: undefined, artifact: 'ch-compose2-19831461.out' }), layeredFixtures).passed).toBe(false);
+    expect(recomputeLayeredGate(gate({ name: 'no-unresolved-symbols', expected: undefined, artifact: 'concretize-specialized.txt' }), layeredFixtures))
+      .toMatchObject({ passed: false, detail: 'no ldd output found in artifact' });
     expect(recomputeLayeredGate(gate({ name: 'gpu-checksum', expected: undefined, artifact: 'gpu-compose-19806294.out' }), layeredFixtures).passed).toBe(true);
     expect(recomputeLayeredGate(gate({ name: 'gpu-checksum', expected: undefined, artifact: 'ch-compose2-19831461.out' }), layeredFixtures).passed).toBe(false);
     const replication = gate({
@@ -138,6 +140,8 @@ describe('layered-install-trees evidence profile', () => {
     });
     expect(recomputeLayeredGate(replication, layeredFixtures).passed).toBe(true);
     expect(recomputeLayeredGate(gate({ ...replication, allowedUnresolved: [] }), layeredFixtures).passed).toBe(false);
+    expect(recomputeLayeredGate(gate({ ...replication, artifactSecondary: 'r4-startup-20509657-1.out' }), layeredFixtures))
+      .toMatchObject({ passed: false, detail: 'no ldd output found in artifact' });
   });
 
   it('parses both profiles and enforces layered-only invariants', () => {
@@ -150,6 +154,11 @@ describe('layered-install-trees evidence profile', () => {
     expect(() => recordRunMetadataSchema.parse(layeredMetadata({
       gates: [{ name: 'spack-reuse', jobId: '19747874', artifact: 'artifacts/concretize-specialized.txt', passed: true, detail: 'd', expected: { reused: 19, built: 1 } }],
     }))).toThrow();
+    const duplicated = layeredMetadata().gates;
+    duplicated[3] = { ...duplicated[0], name: 'gpu-checksum' };
+    expect(() => recordRunMetadataSchema.parse(layeredMetadata({ gates: duplicated }))).toThrow(/exactly once/);
+    const missing = layeredMetadata().gates.slice(0, 3).concat({ ...layeredMetadata().gates[0], name: 'gpu-checksum', jobId: '19806294', artifact: 'scheduler/apptainer-compose-gpu-19806294.log' });
+    expect(() => recordRunMetadataSchema.parse(layeredMetadata({ gates: missing }))).toThrow(/exactly once/);
   });
 
   it('records a layered bundle from a dry run and validates it', () => {
@@ -165,8 +174,9 @@ describe('layered-install-trees evidence profile', () => {
     expect(manifest.run.submissions).toHaveLength(6);
     expect(manifest.gates).toHaveLength(4);
     expect(manifest.events.map((event) => event.type)).toEqual([
-      'provider-built', 'specialized-built', 'composed', 'runtime-replicated', 'gpu-verified', 'composed',
+      'provider-built', 'specialized-built', 'composed', 'runtime-replicated', 'gpu-verified',
     ]);
+    expect(manifest.run.submissions?.some((submission) => submission.role === 'startup-cost')).toBe(true);
     expect(validateEvidenceBundle(bundle)).toMatchObject({ valid: true, evidenceId: 'anvil-layered-dryrun' });
   });
 

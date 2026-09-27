@@ -38,6 +38,8 @@ const layeredManifestSubmissionSchema = layeredSubmissionSchema.extend({
   schedulerLog: safeRelativePath,
 }).strict();
 
+const layeredGateNames = ['spack-reuse', 'no-unresolved-symbols', 'gpu-checksum', 'runtime-replication'] as const;
+
 export const layeredGateSchema = z.object({
   name: z.enum(['spack-reuse', 'no-unresolved-symbols', 'gpu-checksum', 'runtime-replication']),
   jobId: z.string().min(1),
@@ -104,6 +106,11 @@ export const recordRunMetadataSchema = z.object({
     else if (primary.jobId !== metadata.submissionId) {
       issue('submissionId', 'must equal the apptainer-compose-gpu submission jobId');
     }
+    const gateNames = (metadata.gates ?? []).map((gate) => gate.name);
+    if (metadata.gates && (new Set(gateNames).size !== 4
+      || !layeredGateNames.every((name) => gateNames.includes(name)))) {
+      issue('gates', `must name each of ${layeredGateNames.join(', ')} exactly once`);
+    }
   }
 });
 export type RecordRunMetadata = z.infer<typeof recordRunMetadataSchema>;
@@ -164,6 +171,11 @@ export const evidenceManifestSchema = z.object({
     if (!primary) issue('run.submissions', 'requires an apptainer-compose-gpu submission');
     else if (primary.jobId !== manifest.run.submissionId) {
       issue('run.submissionId', 'must equal the apptainer-compose-gpu submission jobId');
+    }
+    const gateNames = (manifest.gates ?? []).map((gate) => gate.name);
+    if (manifest.gates && (new Set(gateNames).size !== 4
+      || !layeredGateNames.every((name) => gateNames.includes(name)))) {
+      issue('gates', `must name each of ${layeredGateNames.join(', ')} exactly once`);
     }
   }
 });
@@ -238,13 +250,13 @@ function mediaType(path: string): string {
   return 'text/plain';
 }
 
-const layeredRoleEvent: Record<LayeredSubmissionRole, EvidenceManifest['events'][number]['type']> = {
+const layeredRoleEvent: Record<LayeredSubmissionRole, EvidenceManifest['events'][number]['type'] | undefined> = {
   'provider-build': 'provider-built',
   'specialized-build': 'specialized-built',
   'apptainer-compose-gpu': 'composed',
   'charliecloud-compose': 'runtime-replicated',
   'charliecloud-gpu': 'gpu-verified',
-  'startup-cost': 'composed',
+  'startup-cost': undefined,
 };
 
 function layeredSubmissionTarget(role: LayeredSubmissionRole, jobId: string): string {
@@ -321,8 +333,11 @@ export function recomputeLayeredGate(gate: LayeredGate, bundleDirectory: string)
         : { passed: false, detail: `${detail}; expected ${expected.reused} reused / ${expected.built} built` };
     }
     case 'no-unresolved-symbols': {
-      const count = layeredArtifactText(bundleDirectory, gate.artifact).split(/\r?\n/)
-        .filter((line) => /=> not found/.test(line)).length;
+      const lines = layeredArtifactText(bundleDirectory, gate.artifact).split(/\r?\n/);
+      if (!lines.some((line) => /=> \S*\//.test(line))) {
+        return { passed: false, detail: 'no ldd output found in artifact' };
+      }
+      const count = lines.filter((line) => /=> not found/.test(line)).length;
       return count === 0
         ? { passed: true, detail: 'zero unresolved symbols with LD_LIBRARY_PATH unset' }
         : { passed: false, detail: `${count} unresolved symbol line(s)` };
@@ -338,7 +353,11 @@ export function recomputeLayeredGate(gate: LayeredGate, bundleDirectory: string)
       if (!/^RESULT: PASS$/m.test(layeredArtifactText(bundleDirectory, gate.artifact))) {
         return { passed: false, detail: 'secondary-runtime GPU log lacks RESULT: PASS' };
       }
-      const unresolved = layeredArtifactText(bundleDirectory, gate.artifactSecondary).split(/\r?\n/)
+      const secondaryLines = layeredArtifactText(bundleDirectory, gate.artifactSecondary).split(/\r?\n/);
+      if (!secondaryLines.some((line) => /=> \S*\//.test(line))) {
+        return { passed: false, detail: 'no ldd output found in artifact' };
+      }
+      const unresolved = secondaryLines
         .filter((line) => /=> not found/.test(line)).map((line) => line.split('=>')[0].trim());
       const allowed = new Set(gate.allowedUnresolved ?? []);
       const unexpected = unresolved.filter((library) => !allowed.has(library));
@@ -441,7 +460,8 @@ export function recordRun(options: {
     if (redactions.size === 0) redactions.add('reviewed; no sensitive values detected by configured rules');
     const layered = metadata.profile === 'layered-install-trees';
     const events = layered
-      ? (metadata.submissions ?? []).map((submission, sequence) => evidenceEventSchema.parse({
+      ? (metadata.submissions ?? []).filter((submission) => layeredRoleEvent[submission.role] !== undefined)
+        .map((submission, sequence) => evidenceEventSchema.parse({
           sequence,
           at: submission.endedAt ?? statSync(join(temporary, layeredSubmissionTarget(submission.role, submission.jobId))).mtime.toISOString(),
           type: layeredRoleEvent[submission.role],
