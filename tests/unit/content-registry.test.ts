@@ -73,6 +73,11 @@ describe('target-state content schemas and release gates', () => {
     expect(() => contentItemSchema.parse(item({ unexpected: true }))).toThrow(/unrecognized/i);
   });
 
+  it('accepts module_number 0 for the orientation module and rejects negative numbers', () => {
+    expect(contentItemSchema.parse(moduleItem({ module_number: 0 })).module_number).toBe(0);
+    expect(() => contentItemSchema.parse(moduleItem({ module_number: -1 }))).toThrow();
+  });
+
   it('progressively requires review, maintainer, and complete v1 metadata', () => {
     const technical = moduleItem();
     expect(() => parseContentItem(technical, 'm2')).toThrow(/last_reviewed/);

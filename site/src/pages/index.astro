@@ -23,8 +23,8 @@ const promotedEvent = publishedEvents.find((item) => canonicalPath(item) === '/e
       <h1 id="hero-title">Bridging the Laptop‑to‑Cluster Gap</h1>
       <p class="lede">A multi-service stack is trivial to run with Docker Compose on a laptop. On a shared cluster there is no Docker daemon, and the scheduler owns every resource. This guide is the translation.</p>
       <div class="hero__actions" aria-label="Start learning">
-        <a class="action action--primary" href="/start/">Get started</a>
-        <a class="hero__secondary-link" href={landing.learning_path[0].url}>Understand the model</a>
+        <a class="action action--primary" href={landing.orientation?.url ?? '/start/'}>{landing.orientation ? 'Start with Module 0' : 'Get started'}</a>
+        <a class="hero__secondary-link" href="/start/">Check you can run this</a>
       </div>
     </div>
     <WorkflowFigure />
@@ -45,9 +45,9 @@ const promotedEvent = publishedEvents.find((item) => canonicalPath(item) === '/e
   <section aria-labelledby="path-title">
     <h2 id="path-title">Start here</h2>
     <ol class="path-list">
-      <li><a href={landing.learning_path[0].url}><strong>Baseline Orchestration:</strong> Establish single-node parity with local development environments.</a></li>
-      <li><a href={landing.learning_path[1].url}><strong>Prerequisites and center values:</strong> The values that differ at every HPC facility — account, partition, scratch path, and module names.</a></li>
-      <li><a href={landing.learning_path[2].url}><strong>Run the baseline:</strong> Submit the single-node workflow and verify success from result artifacts.</a></li>
+      {landing.learning_path.map(({ label, summary, url }) => (
+        <li><a href={url}><strong>{label}:</strong> {summary}</a></li>
+      ))}
     </ol>
   </section>
 

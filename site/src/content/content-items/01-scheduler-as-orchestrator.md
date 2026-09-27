@@ -16,7 +16,8 @@ publication_date: "2026-07-31"
 applicable_release: v0.1.0
 module_type: conceptual
 learning_outcomes: ["Map Compose responsibilities to scheduler-managed HPC concepts", "Identify where readiness, storage, networking, and privilege assumptions require adaptation"]
-prerequisites: []
+prerequisites:
+  - { id: module-0-orientation, check: "Read Module 0: How to use this guide" }
 estimated_minutes: 20
 section_kinds: [concept, limitations, next-steps]
 completion_check: { kind: decision-exercise, text: "Choose one local Compose stack and record who should own allocation, startup order, runtime state, access, and accelerators on your center." }
@@ -35,7 +36,7 @@ completion_evidence: { id: m1-module-1-publication, path: evidence/README.md, in
 ---
 ## Why the scheduler becomes the orchestrator
 
-A laptop Compose stack uses one tool to start services, connect them, and manage their lifetime. On shared HPC, one scheduler allocation becomes that boundary. A launch script starts each component as a tracked step, uses a rootless runtime, keeps writable state in approved storage, and verifies results before the allocation ends.
+A laptop Compose stack uses one tool to start services, connect them, and manage their lifetime. On shared HPC, one scheduler [allocation](/about/glossary/) becomes that boundary. A launch script starts each component as a tracked step, uses a [rootless runtime](/about/glossary/), keeps writable state in approved storage, and verifies results before the allocation ends.
 
 ## Map each responsibility
 
@@ -43,9 +44,9 @@ A laptop Compose stack uses one tool to start services, connect them, and manage
 |---|---|---|
 | service | tracked step inside one allocation | Which process coordinates, and which processes are workers? |
 | image or build | immutable image launched by a rootless runtime | Who builds and approves the image? |
-| dependency or health check | bounded semantic readiness gate | What response proves the coordinator is ready? |
-| volume | explicit job-scoped scratch or approved storage bind | Which state is temporary, and which must persist? |
-| port | loopback or a center-approved access path | Who needs access, and what does policy permit? |
+| dependency or health check | bounded [semantic readiness](/about/glossary/) gate | What response proves the coordinator is ready? |
+| volume | explicit [job-scoped scratch](/about/glossary/) or approved storage bind | Which state is temporary, and which must persist? |
+| port | [loopback](/about/glossary/) or a center-approved access path | Who needs access, and what does policy permit? |
 | device request | scheduler CPU, memory, wall-time, or accelerator request | Which resources must be requested before launch? |
 
 ## Make the local decisions

@@ -113,7 +113,7 @@ const completionCheckSchema = z.object({
   kind: z.enum(['result', 'review-question', 'mapping-checklist', 'decision-exercise']), text: nonEmpty,
 }).strict();
 export const learningModuleSchema = z.object({
-  ...commonFields, artifact_type: z.literal('learning-module'), module_number: z.number().int().positive(),
+  ...commonFields, artifact_type: z.literal('learning-module'), module_number: z.number().int().nonnegative(),
   module_type: z.enum(['conceptual', 'runnable', 'hybrid']), learning_outcomes: z.array(nonEmpty).min(1),
   prerequisites: z.array(prerequisiteSchema),
   section_kinds: z.array(z.enum(['concept', 'procedure', 'expected-result', 'limitations', 'next-steps'])).default([]),

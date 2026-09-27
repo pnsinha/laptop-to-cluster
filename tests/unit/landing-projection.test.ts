@@ -66,6 +66,19 @@ describe('landing page projection', () => {
     expect(projection.release.url).toBe('/releases/v0-1-0/');
   });
 
+  it('prepends a published module 0 and omits it when absent or draft', () => {
+    const orientation = { ...common, id: 'orientation', stable_slug: 'orient', artifact_type: 'learning-module', module_number: 0, estimated_minutes: 5, title: 'Orientation', summary: 'Get oriented.' } as unknown as ContentItem;
+    const withOrientation = projectLandingPage([orientation, ...content], [anvil]);
+    expect(withOrientation.learning_path.map(({ url }) => url)).toEqual(['/guide/orient/', '/guide/model/', '/start/', '/guide/baseline/']);
+    expect(withOrientation.orientation).toEqual({ title: 'Orientation', url: '/guide/orient/' });
+    expect(withOrientation.estimated_minutes).toBe(45);
+    const draft = { ...orientation, status: 'draft' } as ContentItem;
+    const withoutOrientation = projectLandingPage([draft, ...content], [anvil]);
+    expect(withoutOrientation.learning_path.map(({ url }) => url)).toEqual(['/guide/model/', '/start/', '/guide/baseline/']);
+    expect(withoutOrientation.orientation).toBeUndefined();
+    expect(withoutOrientation.estimated_minutes).toBe(40);
+  });
+
   it('does not claim validation when latest applicability records conflict', () => {
     const conflicting = { ...anvil, id: 'second' };
     const changed = content.map((item) => item.id === 'baseline'

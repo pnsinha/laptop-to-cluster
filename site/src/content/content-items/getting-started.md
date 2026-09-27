@@ -19,11 +19,13 @@ authority: [{ kind: project-decision, citation: "Milestone 1 bounded workflow", 
 ---
 ## Can I run this?
 
+New to this guide? Read [Module 0: How to use this guide](/guide/how-to-use-this-guide/) first for audience, assumed skills, and a readiness checklist; this page stays focused on running the baseline.
+
 Confirm these assumptions before execution:
 
 - **Allocation:** you have authorized Slurm access, an account, and permission to request the needed CPU, memory, and wall time.
 - **Security and network:** the coordinator can use loopback within one node; no root access, privileged daemon, or inbound public port is required.
-- **Storage:** a center-approved job-scoped path has enough quota for the image, cache, runtime state, and outputs.
+- **Storage:** a center-approved [job-scoped](/about/glossary/) path has enough quota for the image, cache, runtime state, and outputs.
 - **Runtime and image:** Apptainer is available on compute nodes, and you have an approved image path and digest.
 - **Readiness:** a bounded semantic probe can reach the coordinator before any worker starts.
 
@@ -46,7 +48,7 @@ Write down the account or project, partition or queue, wall time, CPU and memory
 
 ## Verify
 
-Accept success only when the scheduler state, exit status, result file, expected item count, uniqueness, and verifier output agree. [Module 2](/guide/baseline-single-node-pattern/) states the complete result-based completion check.
+Accept success only when the scheduler state, exit status, result file, expected item count, uniqueness, and [verifier](/about/glossary/) output agree. [Module 2](/guide/baseline-single-node-pattern/) states the complete result-based completion check.
 
 ## If execution still fails
 

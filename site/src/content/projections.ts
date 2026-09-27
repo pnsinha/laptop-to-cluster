@@ -419,6 +419,7 @@ export interface LandingPageProjection {
   applicability_projection?: ApplicabilityProjection;
   validation_unavailable_reason?: string;
   learning_path: Array<{ label: string; title: string; summary: string; url: string }>;
+  orientation?: { title: string; url: string };
   estimated_minutes: number;
   release: { title: string; status: ContentItem['status']; url: string };
   milestone: { title: string; url: string };
@@ -430,6 +431,7 @@ export function projectLandingPage(
   applicability: ApplicabilityRecord[],
 ): LandingPageProjection {
   const published = content.filter(({ status }) => ['published', 'superseded', 'archived'].includes(status));
+  const orientation = published.find((item) => item.artifact_type === 'learning-module' && item.module_number === 0);
   const model = published.find((item) => item.artifact_type === 'learning-module' && item.module_number === 1);
   const baseline = published.find((item) => item.artifact_type === 'learning-module' && item.module_number === 2);
   const start = published.find((item) => item.route_namespace === 'start');
@@ -438,7 +440,8 @@ export function projectLandingPage(
   if (missing.length) throw new RegistryValidationError([`landing projection is missing ${missing.join(', ')}`]);
 
   const modules = [model!, baseline!];
-  const missingDurations = modules.filter((item) => item.artifact_type === 'learning-module' && !item.estimated_minutes);
+  const pathModules = [orientation, ...modules].filter((item): item is ContentItem => Boolean(item));
+  const missingDurations = pathModules.filter((item) => item.artifact_type === 'learning-module' && !item.estimated_minutes);
   if (missingDurations.length) {
     throw new RegistryValidationError(missingDurations.map((item) => `${item.id}.estimated_minutes is required by the landing learning path`));
   }
@@ -462,8 +465,12 @@ export function projectLandingPage(
     validation_unavailable_reason: current ? undefined : records.length
       ? 'Multiple applicability records share the latest validation date.'
       : 'No current applicability record is published.',
-    learning_path: [step('Understand the model', model!), step('Check your center', start!), step('Run the baseline', baseline!)],
-    estimated_minutes: modules.reduce((total, item) => total + (item.artifact_type === 'learning-module' ? item.estimated_minutes ?? 0 : 0), 0),
+    learning_path: [
+      ...(orientation ? [step('Orient yourself', orientation)] : []),
+      step('Understand the model', model!), step('Check your center', start!), step('Run the baseline', baseline!),
+    ],
+    orientation: orientation ? { title: orientation.title, url: canonicalPath(orientation) } : undefined,
+    estimated_minutes: pathModules.reduce((total, item) => total + (item.artifact_type === 'learning-module' ? item.estimated_minutes ?? 0 : 0), 0),
     release: { title: release.title, status: release.status, url: canonicalPath(release) },
     milestone: { title: milestone!.title, url: canonicalPath(milestone!) },
   };
