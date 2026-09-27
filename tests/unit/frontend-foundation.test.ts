@@ -7,7 +7,7 @@ const css = readFileSync(`${root}/site/src/styles/global.css`, 'utf8');
 
 describe('frontend foundation styles', () => {
   it('defines shared measures, focus, and bounded technical content', () => {
-    expect(css).toMatch(/--measure-prose:\s*68ch/);
+    expect(css).toMatch(/--measure-prose:\s*66ch/);
     expect(css).toMatch(/--measure-(?:wide|data):/);
     expect(css).toMatch(/:focus-visible[^{]*\{[^}]*outline/s);
     expect(css).toMatch(/pre\s*\{[^}]*overflow-x:\s*auto/s);

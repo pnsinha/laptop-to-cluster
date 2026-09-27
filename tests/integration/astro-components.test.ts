@@ -169,10 +169,17 @@ describe('finalized presentation: header identity, nav, release, support, Sectio
   });
 
   it('shows only v0.1.0 as the release identifier with no "publication candidate" language', async () => {
-    const html = await render(SiteHeader, { currentPath: '/' });
-    expect(html).toContain('v0.1.0');
-    expect(html.toLowerCase()).not.toContain('publication candidate');
-    expect(html.toLowerCase()).not.toContain('release candidate');
+    const header = await render(SiteHeader, { currentPath: '/' });
+    expect(header).not.toContain('v0.1.0');
+    const BaseLayout = (await import('../../site/src/layouts/BaseLayout.astro')).default;
+    const page = await container.renderToString(BaseLayout, {
+      props: { title: 'Test', description: 'Test page', profile: 'landing' },
+      slots: { default: '<p>Body</p>' },
+    });
+    const footer = page.slice(page.indexOf('<footer'));
+    expect(footer).toContain('v0.1.0');
+    expect(footer.toLowerCase()).not.toContain('publication candidate');
+    expect(footer.toLowerCase()).not.toContain('release candidate');
   });
 
   it('renders the healthy support action "Found a problem? Open an issue." without a status panel', async () => {
