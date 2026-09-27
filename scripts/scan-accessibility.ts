@@ -410,10 +410,10 @@ try {
   noScript.on('request', (request) => noScriptRequests.push({ url: request.url(), type: request.resourceType() }));
   const noScriptPage = await noScript.newPage();
   if (await open(noScriptPage, '/')) {
-    const primaryAction = noScriptPage.getByRole('link', { name: 'Get started', exact: true });
-    if (await primaryAction.getAttribute('href') !== '/start/') fail('/:no-script', 'A11Y-NOJS', 'primary action must remain a normal link');
+    const primaryAction = noScriptPage.getByRole('link', { name: 'Start with Module 0', exact: true });
+    if (await primaryAction.getAttribute('href') !== '/guide/how-to-use-this-guide/') fail('/:no-script', 'A11Y-NOJS', 'primary action must remain a normal link');
     await primaryAction.click();
-    if (new URL(noScriptPage.url()).pathname !== '/start/') fail('/:no-script', 'A11Y-NOJS', 'primary action must navigate without JavaScript');
+    if (new URL(noScriptPage.url()).pathname !== '/guide/how-to-use-this-guide/') fail('/:no-script', 'A11Y-NOJS', 'primary action must navigate without JavaScript');
   }
   if (await open(noScriptPage, '/resources/')) {
     await verifyNativeDisclosure(noScriptPage, '.site-nav--compact', 'Navigation', '/resources/:no-script');

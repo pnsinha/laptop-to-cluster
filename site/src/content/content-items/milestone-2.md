@@ -9,6 +9,7 @@ keywords: [deliverables, Milestone 2, status]
 audiences: [fellowship reviewers, project adopters]
 milestone: 2
 status: published
+applicability_records: [m1-baseline-anvil]
 publication_date: "2026-09-26"
 related: [module-0-orientation, module-2-baseline]
 ---
@@ -17,7 +18,7 @@ Milestone 2 extends the Milestone 1 baseline toward portability across scheduler
 | Deliverable | Status | Public URL | Revision |
 |---|---|---|---|
 | Module 0: How to use this guide | Published | [Module 0](/guide/how-to-use-this-guide/) | Initial publication |
-| Module 3: Compose-to-HPC Translation | Draft | [Module 3](/guide/compose-to-hpc-translation/) | In progress |
+| Module 3: Compose-to-HPC Translation | Draft | `/guide/compose-to-hpc-translation/` (no page while draft) | In progress |
 | Adaptation-seam documentation in Module 2 | Published | [Module 2](/guide/baseline-single-node-pattern/) | Revised 2026-09-26 |
 | Scheduler launch templates (Slurm and PBS family) | Planned | — | Not started |
 | Dissemination (I-GUIDE Forum 2026 and follow-ups) | In progress | [I-GUIDE Forum 2026](/events/iguide-forum-2026/) | Initial publication |

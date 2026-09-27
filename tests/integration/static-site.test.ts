@@ -148,7 +148,7 @@ describe('reader-choice landing and resources', () => {
     expect(html.resources).not.toContain('Planned for a later milestone');
 
     const cards = html.resources.match(/<a class="resource-tile"[^>]*>.*?<\/a>/g) ?? [];
-    expect(cards).toHaveLength(15);
+    expect(cards).toHaveLength(17);
     for (const card of cards) {
       expect(card).not.toMatch(/resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i);
       expect(card.match(/class="resource-tile__tag"/g)?.length ?? 0).toBeLessThanOrEqual(1);
