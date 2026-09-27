@@ -39,6 +39,22 @@ This guide serves three tiers of reader:
 - **A research software engineer supporting several groups** gets a reusable translation model and a reference workflow they can hand to teams without re-deriving the readiness and verification mechanics each time.
 - **Center staff evaluating a deployment pattern** get an explicit statement of what the pattern assumes about scheduler, runtime, storage, and network policy, and a record of where it was validated.
 
+## Three questions this guide answers
+
+Everything on this site answers one of three problems you will hit moving a stack from a laptop to a shared cluster.
+
+### Why does `docker compose up` not work here?
+
+Shared clusters run no Docker daemon, give you no root access, and let a scheduler own every resource. The [allocation](/about/glossary/) plus a launch script become the orchestrator instead: services start as tracked steps, [semantic readiness](/about/glossary/) is proven before workers start, and results are verified before anyone calls the run a success. Modules 1–3 teach this reframe. A cross-site dispatch approach using Globus Compute is an alternative answer on the roadmap — see the [Milestone 2 record](/milestones/2/).
+
+### Why does my script break on the next cluster?
+
+Account names, partitions, scratch paths, and module names differ at every center, so the launch template is the thing that changes — the pattern does not. Runtimes differ too (Apptainer versus Charliecloud), but your install trees do not have to. Module 4 (launch templates, planned) and Module 5's runtime section (planned) cover this; see the [Milestone 2 roadmap](/milestones/2/).
+
+### Why am I rebuilding the same stack for every GPU type?
+
+Building one monolithic image per GPU architecture duplicates the whole CPU stack every time. Splitting a shared CPU provider tree from a thin GPU layer means only the GPU package rebuilds — 95.0% of packages reused (19 of 20) — and each extra target adds 1,412 files instead of 10,772 (7.6×), with +5 files of arrangement overhead at one target and 1.77× fewer files at two. Module 5 (planned) walks through this; see the [Milestone 2 roadmap](/milestones/2/).
+
 ## What we assume you already know
 
 This guide does not teach these prerequisites; each links to an authoritative reference you can use to fill the gap:
@@ -72,10 +88,10 @@ The guide is not a single linear read. Pick the row that matches your goal:
 | Understand the model | [Module 1: Scheduler as Orchestrator](/guide/scheduler-as-orchestrator/) |
 | Run the baseline and verify it | [Getting started](/start/), then [Module 2](/guide/baseline-single-node-pattern/) |
 | Adapt the workflow to my own application | Module 2's [adaptation section](/guide/baseline-single-node-pattern/#adapt-it-to-your-own-application) |
-| Move between schedulers and runtimes | Module 3 (portability tier, in progress) |
+| Move between schedulers and runtimes | Modules 3–5 (portability tier, in progress; see the [Milestone 2 roadmap](/milestones/2/)) |
 | Evaluate for my center | Module 1, Module 2's limitations, and the [applicability record](/applicability/m1-baseline-anvil/) |
 
-The modules sit on three tiers: **baseline** (the entry path: Modules 0–2 and Getting started), **portability** (the middle tier: Module 3 and the scheduler/runtime templates), and **advanced layered builds** (for center staff assembling multi-service stacks).
+The modules sit on three tiers: **baseline** (the entry path: Modules 0–2 and Getting started), **portability** (the middle tier: Modules 3–5 and the launch templates), and **advanced layered builds** (for center staff assembling multi-service stacks).
 
 ## How the site is organized
 

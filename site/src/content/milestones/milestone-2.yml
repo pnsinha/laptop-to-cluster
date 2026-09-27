@@ -3,7 +3,9 @@ number: 2
 due_date: "2026-12-15"
 deliverables:
   - { sow_id: M2-MODULE-0, item_id: module-0-orientation, status: complete, public_url: /guide/how-to-use-this-guide/, revisions: [] }
-  - { sow_id: M2-MODULE-3, item_id: module-3-compose-to-hpc-translation, status: draft, public_url: /guide/compose-to-hpc-translation/, revisions: [] }
+  - { sow_id: M2-MODULE-3-SUPPORTING, item_id: module-3-compose-to-hpc-translation, status: draft, public_url: /guide/compose-to-hpc-translation/, revisions: [] }
+  - { sow_id: M2-MODULE-4, item_id: module-4-launch-templates, status: planned, public_url: /guide/launch-templates/, revisions: [] }
+  - { sow_id: M2-MODULE-5, item_id: module-5-layered-install-trees, status: planned, public_url: /guide/layered-install-trees/, revisions: [] }
   - { sow_id: M2-ADAPTATION-SEAMS, item_id: module-2-baseline, status: complete, public_url: /guide/baseline-single-node-pattern/, revisions: [] }
   - { sow_id: M2-TEMPLATES, item_id: milestone-2, status: planned, public_url: /milestones/2/, revisions: [] }
   - { sow_id: M2-DISSEMINATION, item_id: event-iguide-forum-2026, status: planned, public_url: /events/iguide-forum-2026/, revisions: [] }

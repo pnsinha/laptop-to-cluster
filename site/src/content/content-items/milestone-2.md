@@ -19,17 +19,24 @@ Milestone 2 extends the Milestone 1 baseline toward portability across scheduler
 |---|---|---|---|
 | Module 0: How to use this guide | Published | [Module 0](/guide/how-to-use-this-guide/) | Initial publication |
 | Module 3: Compose-to-HPC Translation | Draft | `/guide/compose-to-hpc-translation/` (no page while draft) | In progress |
+| Module 4: Slurm and PBS-family launch templates | Planned | — | SOW topic 2 |
+| Module 5: Layered install trees | Planned | — | SOW topic 3; draft due 2026-11-13 |
 | Adaptation-seam documentation in Module 2 | Published | [Module 2](/guide/baseline-single-node-pattern/) | Revised 2026-09-26 |
-| Scheduler launch templates (Slurm and PBS family) | Planned | — | Not started |
-| Dissemination (I-GUIDE Forum 2026 and follow-ups) | Planned | [I-GUIDE Forum 2026](/events/iguide-forum-2026/) | I-GUIDE Forum 2026 delivered; second engagement pending |
+| Dissemination (I-GUIDE Forum 2026, SC26, and follow-ups) | Planned | [I-GUIDE Forum 2026](/events/iguide-forum-2026/) | I-GUIDE Forum 2026 delivered; SC26 page due before 2026-11-15 |
 
 ## Scope notes
 
 Module 0 is additive to the fellowship statement of work: it is not a SOW-listed deliverable. It was added in response to reviewer feedback and is tracked here as `M2-MODULE-0` for transparency.
 
-Module 3 counts toward the SOW "portability modules" deliverable only after it gains a portability-boundaries section. Until then it remains a draft and does not satisfy the deliverable wording.
+Modules 4 and 5 are the SOW "portability modules" deliverable (SOW topics 2 and 3). Module 3 is supporting material for that deliverable, not a SOW-listed deliverable itself; it still needs a portability-boundaries section before it can publish.
 
 The adaptation-seam documentation in Module 2 names which parts of the workflow package to keep and which to replace, separating the readiness gate (an orchestration concern) from result verification (an application concern).
+
+## Planned
+
+- **Module 5: Layered install trees** (SOW topic 3, runtime portability) — draft due 2026-11-13. Applicability record `m2-layered-trees-anvil`, recorded on Anvil only.
+- **Module 4: Slurm and PBS-family launch templates** (SOW topic 2) — planned; scope to be determined.
+- **SC26 event page** (dissemination) — before 2026-11-15.
 
 ## Feedback traceability
 

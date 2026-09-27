@@ -34,7 +34,7 @@ learning_stage: baseline
 authority:
   - { kind: sow, citation: "Fellowship SOW, Milestone 2", scope: "Expand portability patterns across schedulers, runtimes, and workflow shapes." }
   - { kind: project-decision, citation: "Milestone 2 scope", scope: "Publish a cross-cutting concept module before releasing scheduler-specific templates." }
-sow_deliverable_id: M2-MODULE-3
+sow_deliverable_id: M2-MODULE-3-SUPPORTING
 deliverable_status: draft
 ---
 
