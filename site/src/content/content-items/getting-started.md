@@ -41,7 +41,7 @@ Write down the account or project, partition or queue, wall time, CPU and memory
 
 ## Run
 
-1. Open the release-pinned [sbatch workflow](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/slurm/baseline.sbatch) or review the annotated implementation reference in [Module 2](/guide/baseline-single-node-pattern/#implementation-reference).
+1. Open the [release-pinned](/about/glossary/) [sbatch workflow](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/slurm/baseline.sbatch) or review the annotated implementation reference in [Module 2](/guide/baseline-single-node-pattern/#implementation-reference).
 2. Apply the local values without exceeding the documented worker, task, or timeout bounds.
 3. Submit the baseline script once.
 4. Confirm the readiness gate passes before workers start. If it expires, use [READINESS-TIMEOUT](/diagnostics/#bssw-readiness-timeout).

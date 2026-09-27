@@ -46,7 +46,7 @@ One allocation contains one coordinator and a bounded worker pool. The launcher 
 
 ### Five-step flow
 
-This is the conceptual sequence, not an executable submission script. The release-pinned implementation and annotated source excerpts appear below before the procedure.
+This is the conceptual sequence, not an executable submission script. The [release-pinned](/about/glossary/) implementation and annotated source excerpts appear below before the procedure.
 
 1. **Storage:** create private state and output directories for the allocation.
 2. **Coordinator:** start one service on loopback.

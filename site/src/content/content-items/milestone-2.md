@@ -1,7 +1,7 @@
 ---
 id: milestone-2
 stable_slug: milestone-2
-title: "Milestone 2: Portability and Adaptation"
+title: "Milestone 2: Portability and Dissemination"
 summary: "What is planned and in progress for the December 15, 2026 portability milestone, and where to find it."
 artifact_type: milestone
 topics: [milestone-2]
@@ -21,7 +21,7 @@ Milestone 2 extends the Milestone 1 baseline toward portability across scheduler
 | Module 3: Compose-to-HPC Translation | Draft | `/guide/compose-to-hpc-translation/` (no page while draft) | In progress |
 | Adaptation-seam documentation in Module 2 | Published | [Module 2](/guide/baseline-single-node-pattern/) | Revised 2026-09-26 |
 | Scheduler launch templates (Slurm and PBS family) | Planned | — | Not started |
-| Dissemination (I-GUIDE Forum 2026 and follow-ups) | In progress | [I-GUIDE Forum 2026](/events/iguide-forum-2026/) | Initial publication |
+| Dissemination (I-GUIDE Forum 2026 and follow-ups) | Planned | [I-GUIDE Forum 2026](/events/iguide-forum-2026/) | I-GUIDE Forum 2026 delivered; second engagement pending |
 
 ## Scope notes
 

@@ -26,6 +26,12 @@ publication_date: "2026-07-27"
 **job step**
 : A process the scheduler launches and tracks within an allocation; one job can contain several steps.
 
+**coordinator**
+: The single service process in the service-plus-workers pattern that accepts tasks and hands out work; it must reach readiness before any worker starts.
+
+**worker**
+: A process in the service-plus-workers pattern that takes tasks from the coordinator and produces results; workers start only after the coordinator is ready.
+
 **orchestration boundary**
 : The system responsible for starting and connecting processes. Compose fills this role on a laptop; on HPC, the scheduler allocation and launch script fill it together.
 
@@ -92,6 +98,9 @@ publication_date: "2026-07-27"
 
 **applicability record**
 : A published record of where the workflow was validated — environment, scheduler, runtime, result, assumptions, and portability boundaries.
+
+**release-pinned**
+: Referring to an immutable tagged release of the repository (such as `v0.1.0`) rather than a moving branch, so the cited code cannot drift.
 
 **demonstrator vs. template**
 : The two purposes of the reference workflow package: it demonstrates that the pattern runs (producing the evidence bundle), and it is a template you edit for your own application.

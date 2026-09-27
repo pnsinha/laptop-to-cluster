@@ -44,7 +44,7 @@ This guide serves three tiers of reader:
 This guide does not teach these prerequisites; each links to an authoritative reference you can use to fill the gap:
 
 - **Docker Compose basics:** what a service, image, volume, port, and `depends_on` mean — see the [Docker Compose overview](https://docs.docker.com/compose/).
-- **A Unix shell:** navigating directories and running commands in a terminal — see the [Software Carpentries shell lesson](https://swcarpentry.github.io/shell-novice/).
+- **A Unix shell:** navigating directories and running commands in a terminal — see the [Software Carpentry shell lesson](https://swcarpentry.github.io/shell-novice/).
 - **Submitting a batch job:** you have submitted at least one job on a shared cluster — see the [Slurm quickstart](https://slurm.schedmd.com/quickstart.html).
 
 ## What you need access to
@@ -71,7 +71,7 @@ The guide is not a single linear read. Pick the row that matches your goal:
 |---|---|
 | Understand the model | [Module 1: Scheduler as Orchestrator](/guide/scheduler-as-orchestrator/) |
 | Run the baseline and verify it | [Getting started](/start/), then [Module 2](/guide/baseline-single-node-pattern/) |
-| Adapt the workflow to my own application | Module 2's [adaptation section](/guide/baseline-single-node-pattern/) |
+| Adapt the workflow to my own application | Module 2's [adaptation section](/guide/baseline-single-node-pattern/#adapt-it-to-your-own-application) |
 | Move between schedulers and runtimes | Module 3 (portability tier, in progress) |
 | Evaluate for my center | Module 1, Module 2's limitations, and the [applicability record](/applicability/m1-baseline-anvil/) |
 
@@ -87,7 +87,7 @@ The modules sit on three tiers: **baseline** (the entry path: Modules 0–2 and 
 
 ## What this guide does not cover
 
-This guide does not teach container runtimes, scheduler usage, or center onboarding; it does not cover production operations, multi-node networking, or performance tuning. For those, use the [Apptainer documentation](https://apptainer.org/docs/), the [Software Carpentries lessons](https://software-carpentry.org/lessons/), and your own center's documentation.
+This guide does not teach container runtimes, scheduler usage, or center onboarding; it does not cover production operations, multi-node networking, or performance tuning. For those, use the [Apptainer documentation](https://apptainer.org/docs/), the [Software Carpentry lessons](https://software-carpentry.org/lessons/), and your own center's documentation.
 
 ## Next step
 
