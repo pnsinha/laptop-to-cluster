@@ -36,7 +36,7 @@ const repositoryHref = (reference: RepoRef) => `${reference.repository}/blob/${e
   </section>
   {projection && <ApplicabilityProjectionView {projection} />}
   <section class="module-overview" aria-labelledby="module-overview-heading">
-    <h2 id="module-overview-heading">Before you run this module</h2>
+    <h2 id="module-overview-heading">{item.module_type === 'conceptual' ? 'Before you start' : 'Before you run this module'}</h2>
     <h3>What you will learn</h3>
     <ul>{item.learning_outcomes.map((value) => <li>{value}</li>)}</ul>
     <h3>Prerequisites</h3>
