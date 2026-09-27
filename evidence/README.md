@@ -54,6 +54,8 @@ Recording uses the same command with `templates/layered-install-trees-metadata.e
 npm run record-run -- --metadata /secure/layered.json --run-dir /secure/any --scheduler-log /secure/gpu-compose-JOBID.out --output-root evidence
 ```
 
-Applicability records for layered runs must also declare `secondary_runtime`
-(the second container runtime), which is compared to the manifest's
-`run.secondaryRuntimeVersion`.
+The profile's scheduler and runtime version strings must come from the
+`BSSW_VERSIONS` lines the rerun orchestration prints into the primary scheduler
+log. Applicability records for layered runs must also declare
+`secondary_runtime` (the second container runtime), which is compared to the
+manifest's `run.secondaryRuntimeVersion`.

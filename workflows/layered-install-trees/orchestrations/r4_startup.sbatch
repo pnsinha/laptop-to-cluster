@@ -15,6 +15,9 @@
 # Order: COLD bare (container start) first, then COLD layered / COLD monolithic
 # (tree pages still cold, container start warm). Record and report as such.
 set +e
+echo "BSSW_VERSIONS slurm=$(scontrol --version 2>/dev/null | head -1)"
+echo "BSSW_VERSIONS apptainer=$(apptainer --version 2>/dev/null || echo unavailable)"
+echo "BSSW_VERSIONS charliecloud=$(ch-run --version 2>&1 | head -1 || echo unavailable)"
 U=${BSSW_SCRATCH_ROOT}/union-anvil
 SIF=${BSSW_SCRATCH_ROOT}/containers/e4s-cuda-26.06-cuda80.sif
 PROV=$U/trees/e4s-provider-cpu

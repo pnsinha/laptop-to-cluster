@@ -12,6 +12,9 @@
 # Stage 2 — Build GPU specialized (Layer 2), reuses CPU provider via upstreams.
 # cuda_arch=80 (A100). Canonical /tmp/e4s-specialized-amrex-sm80; persisted to GPFS.
 set +e
+echo "BSSW_VERSIONS slurm=$(scontrol --version 2>/dev/null | head -1)"
+echo "BSSW_VERSIONS apptainer=$(apptainer --version 2>/dev/null || echo unavailable)"
+echo "BSSW_VERSIONS charliecloud=$(ch-run --version 2>&1 | head -1 || echo unavailable)"
 U=${BSSW_SCRATCH_ROOT}/union-anvil
 SIF=${BSSW_SCRATCH_ROOT}/containers/e4s-cuda-26.06-cuda80.sif
 ENV=$U/configuration/e4s-26.06/specialized-amrex-sm80

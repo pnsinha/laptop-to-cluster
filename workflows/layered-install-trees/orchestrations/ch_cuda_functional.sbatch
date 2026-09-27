@@ -14,6 +14,9 @@
 # Charliecloud functional GPU test — bundled libcuda (Julia 610) vs host driver (580).
 set +e
 export PATH=${BSSW_CHARLIECLOUD_PREFIX}/bin:$PATH
+echo "BSSW_VERSIONS slurm=$(scontrol --version 2>/dev/null | head -1)"
+echo "BSSW_VERSIONS apptainer=$(apptainer --version 2>/dev/null || echo unavailable)"
+echo "BSSW_VERSIONS charliecloud=$(ch-run --version 2>&1 | head -1 || echo unavailable)"
 U=${BSSW_SCRATCH_ROOT}/union-anvil
 SQSH=${BSSW_SCRATCH_ROOT}/charliecloud-build/e4s-cuda-26.06-cuda80.sqsh
 JULIA_LIB=${BSSW_BUNDLED_LIBCUDA_DIR}

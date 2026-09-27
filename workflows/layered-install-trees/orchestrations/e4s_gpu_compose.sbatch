@@ -14,6 +14,9 @@
 # Stage 3 (Apptainer) — compose provider + specialized, run arch-adaptive cuda_smoke on A100.
 # This is the Apptainer lane; Charliecloud GPU test (19805890) runs independently.
 set +e
+echo "BSSW_VERSIONS slurm=$(scontrol --version 2>/dev/null | head -1)"
+echo "BSSW_VERSIONS apptainer=$(apptainer --version 2>/dev/null || echo unavailable)"
+echo "BSSW_VERSIONS charliecloud=$(ch-run --version 2>&1 | head -1 || echo unavailable)"
 U=${BSSW_SCRATCH_ROOT}/union-anvil
 SIF=${BSSW_SCRATCH_ROOT}/containers/e4s-cuda-26.06-cuda80.sif
 P=$U/trees/e4s-provider-cpu

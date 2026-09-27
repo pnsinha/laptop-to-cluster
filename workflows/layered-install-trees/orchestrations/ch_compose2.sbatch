@@ -13,6 +13,9 @@
 # Uses minimal Ubuntu 24.04 rootfs (same glibc 2.39 as E4S image, ~80 MB not 32 GB).
 set +e
 export PATH=${BSSW_CHARLIECLOUD_PREFIX}/bin:$PATH
+echo "BSSW_VERSIONS slurm=$(scontrol --version 2>/dev/null | head -1)"
+echo "BSSW_VERSIONS apptainer=$(apptainer --version 2>/dev/null || echo unavailable)"
+echo "BSSW_VERSIONS charliecloud=$(ch-run --version 2>&1 | head -1 || echo unavailable)"
 U=${BSSW_SCRATCH_ROOT}/union-anvil
 P=$U/trees/e4s-provider-cpu
 S=$U/trees/e4s-specialized-amrex-sm80
