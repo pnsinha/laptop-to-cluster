@@ -32,7 +32,7 @@ const STANDARD_PROJECTION_CONSUMER = Object.freeze({
 const CANONICAL_ONLY_PATTERN = /<dt>Submission ID<\/dt>|<dt>Container (?:image )?digest<\/dt>|<h2[^>]*>Result checks<\/h2>|<h2[^>]*>Evidence and integrity<\/h2>|<h2[^>]*>Provenance<\/h2>/i;
 
 const occurrences = (text, pattern) => text.match(pattern)?.length ?? 0;
-const stripTags = (value = '') => value.replace(/<[^>]+>/g, '').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').trim();
+const stripTags = (value = '') => value.replace(/<[^>]+>/g, '').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&#x27;', "'").replaceAll('&middot;', '·').replaceAll('&#183;', '·').replaceAll('&#xB7;', '·').replaceAll('&nbsp;', ' ').trim();
 const standardProjectionBlocks = (html) => html.match(new RegExp(`${PROJECTION_SECTION.source}[\\s\\S]*?<\\/section>`, 'g')) ?? [];
 const diagnosticProjectionBlocks = (html) => html.match(/<aside class="diagnostic-applicability"[\s\S]*?<\/aside>/g) ?? [];
 const definitionValue = (html, label) => stripTags(html.match(new RegExp(`<dt>${label}<\\/dt><dd>([\\s\\S]*?)<\\/dd>`, 'i'))?.[1]);
@@ -203,6 +203,70 @@ export function validatePageComposition(source, html) {
   return errors;
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** '2026-07-25' -> 'Jul 2026' (en-US, UTC, no Intl dependency); undefined for anything else. */
+export function formatMonthYear(isoDate) {
+  const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(isoDate ?? '');
+  const month = Number(match?.[2]);
+  return match && month >= 1 && month <= 12 ? `${MONTHS[month - 1]} ${match[1]}` : undefined;
+}
+/** The C1 badge text for a record status; undefined when a needed value is missing. */
+export function evidenceBadgeText(status, environment, validationDate) {
+  const when = formatMonthYear(validationDate);
+  if (status === 'validated') return environment && when ? `Tested on ${environment} · ${when}` : undefined;
+  if (status === 'stale') return environment && when ? `Review due: last tested on ${environment} · ${when}` : undefined;
+  if (status === 'failed') return 'Last run failed: see the test record';
+  if (status === 'unvalidated') return 'Not yet tested on a cluster';
+  return undefined;
+}
+export const RELATED_EVIDENCE_HEADING = 'Related evidence';
+const ROW_SOURCE = Object.freeze({ Tested: 'result.checks', 'You need': 'assumptions', 'Depends on your center': 'portability_boundaries' });
+const TRACE_REF = /^(assumptions|portability_boundaries|limitations|result\.checks|related_evidence)(?:\.(\d+))?$/;
+/** Items of the canonical page's related-evidence list (A7: `ul.related-evidence`, or the list under `#related-evidence`); never read from an h2. */
+const relatedEvidenceItems = (html) => {
+  const list = html.match(/<ul[^>]*class="[^"]*\brelated-evidence\b[^"]*"[^>]*>([\s\S]*?)<\/ul>/i)?.[1]
+    ?? html.match(/id="related-evidence"[^>]*>[\s\S]*?<ul[^>]*>([\s\S]*?)<\/ul>/i)?.[1] ?? '';
+  return [...list.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)].map((match) => stripTags(match[1]));
+};
+const canonicalLists = (html) => ({
+  'result.checks': sectionList(html, 'Result checks'),
+  assumptions: sectionList(html, 'Assumptions'),
+  limitations: sectionList(html, 'Limitations'),
+  portability_boundaries: sectionList(html, 'Portability boundaries'),
+  related_evidence: relatedEvidenceItems(html),
+});
+/** undefined when a data-from reference resolves on the canonical page, otherwise the reason. */
+export const traceProblem = (ref, lists) => {
+  const match = TRACE_REF.exec(ref);
+  const list = match && lists[match[1]];
+  if (!match || !list) return `traces to an unknown source ${ref}`;
+  return (match[2] === undefined ? list.length === 0 : Number(match[2]) >= list.length) ? `traces to ${ref}, which is not on the canonical record page` : undefined;
+};
+export { canonicalLists };
+/** Messages for rows that do not agree with the canonical record page. */
+export function rowAgreementIssues(rows, lists) {
+  const issues = [];
+  for (const row of rows ?? []) {
+    const traced = row.items.filter((item) => item.from.length);
+    if (traced.length && traced.length !== row.items.length) {
+      issues.push(`row "${row.label}" mixes traced and literal items`);
+      continue;
+    }
+    if (!traced.length) {
+      const expected = lists[ROW_SOURCE[row.label]] ?? [];
+      if (row.items.map((item) => item.text).join('\n') !== expected.join('\n')) issues.push(`row "${row.label}" must list the record's ${ROW_SOURCE[row.label]} exactly when it has no traces`);
+      continue;
+    }
+    for (const item of traced) {
+      if (!item.text) issues.push(`row "${row.label}" has an empty traced item`);
+      for (const ref of item.from) {
+        const problem = traceProblem(ref, lists);
+        if (problem) issues.push(`row "${row.label}" ${problem}`);
+      }
+    }
+  }
+  return issues;
+}
 export function validateProjectionSourceAgreement(source, projectionHtml, canonicalSource, canonicalHtml) {
   const errors = [];
   const sourceId = projectionHtml.match(/data-source-id="([^"]+)"/)?.[1];
@@ -211,21 +275,20 @@ export function validateProjectionSourceAgreement(source, projectionHtml, canoni
     errors.push(diagnostic(source, 'sourceId', 'SOURCE-AGREEMENT', 'projection source ID must resolve to the matching canonical applicability route'));
     return errors;
   }
-  const scheduler = definitionValue(canonicalHtml, 'Scheduler').split(' ')[0];
-  const runtime = definitionValue(canonicalHtml, 'Runtime').split(' ')[0];
   const status = definitionValue(canonicalHtml, 'Status');
   const environment = definitionValue(canonicalHtml, 'Environment');
-  const expectedScope = `The baseline workflow was ${status === 'validated' ? 'validated' : 'recorded'} on ${environment} with ${scheduler} and ${runtime}.`;
-  const statusText = {
-    failed: 'This recorded run failed; use the linked record before attempting the workflow.',
-    unvalidated: 'This workflow scope is unvalidated; do not treat it as executable evidence.',
-    stale: 'This validation is stale and requires review before reuse.',
-  };
-  const expectedSupplement = statusText[status] ?? sectionList(canonicalHtml, 'Portability boundaries')[0];
+  const validationDate = definitionValue(canonicalHtml, 'Validation date');
   const linkId = projectionHtml.match(/href="\/applicability\/([^"]+)\/"/)?.[1];
-  if (linkId !== sourceId || !projectionHtml.includes(expectedScope) || !expectedSupplement || !projectionHtml.includes(expectedSupplement)) {
-    errors.push(diagnostic(source, 'projection', 'SOURCE-AGREEMENT', 'projection ID, canonical link, tested scope, or status/boundary supplement is stale'));
+  if (linkId !== sourceId) errors.push(diagnostic(source, 'canonicalLink', 'SOURCE-AGREEMENT', 'projection canonical link must match the source ID'));
+  const escalated = projectionHtml.slice(0, projectionHtml.indexOf('>')).includes('applicability-projection--escalated');
+  if (escalated !== (status !== 'validated')) errors.push(diagnostic(source, 'projection', 'SOURCE-AGREEMENT', `a ${status || '<missing>'} record ${status === 'validated' ? 'must not render' : 'must render'} the escalated projection`));
+  const expectedBadge = evidenceBadgeText(status, environment, validationDate);
+  const badge = paragraphs(projectionHtml).find((paragraph) => /(?:^|\s)evidence-badge(?:\s|$)/.test(paragraph.classes));
+  const badgeText = badge ? stripTags(badge.inner).replace(/^Warning:\s*/, '') : undefined;
+  if (!expectedBadge || badgeText !== expectedBadge) {
+    errors.push(diagnostic(source, 'badge', 'SOURCE-AGREEMENT', 'badge text must be generated from the record status, environment public name and validation month'));
   }
+  for (const issue of rowAgreementIssues(evidenceRows(projectionHtml), canonicalLists(canonicalHtml))) errors.push(diagnostic(source, 'rows', 'SOURCE-AGREEMENT', issue));
   return errors;
 }
 
