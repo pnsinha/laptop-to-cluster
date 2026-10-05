@@ -180,7 +180,7 @@ const DOOR_ROWS = [
   ['Already have a Compose file?', 'Translate it', '/guide/compose-to-hpc-translation/'],
   ['Research software engineers & center staff', 'Evaluate and adopt', '/adoption/evaluate/'],
 ];
-function homeFixture(options: { badHref?: boolean; untaggedSbatch?: boolean; noRows?: boolean; stackOverlap?: boolean; foit?: boolean } = {}) {
+function homeFixture(options: { badHref?: boolean; untaggedSbatch?: boolean; noRows?: boolean; stackOverlap?: boolean; foit?: boolean; localFallback?: boolean; hiddenNav?: boolean } = {}) {
   const steps = LABELS.map((label, index) => `<li class="timeline__step" data-step="${index + 1}"><strong>${label}</strong> <span class="timeline__caption">Caption ${index + 1}</span></li>`).join('');
   const doors = DOOR_ROWS.map(([who, title, href], index) => `<li class="door" id="door-${index}"><p class="door__who">${who}</p><h3 class="door__title">${title}</h3><p class="door__summary">s</p><p class="door__go"><a class="door__link" href="${options.badHref && index === 1 ? '/wrong/' : href}">Go ${index}</a></p></li>`).join('');
   const terms = CONCEPT_KEYS.map((key, index) => `<div class="crosswalk__term" data-concept="${key}"><dt><span class="crosswalk__mark" aria-hidden="true">m</span> ${key}</dt><dd>was ${WAS[index]}</dd></div>`).join('');
@@ -193,9 +193,11 @@ function homeFixture(options: { badHref?: boolean; untaggedSbatch?: boolean; noR
 .crosswalk__panes{display:grid;gap:8px}.crosswalk__pane{margin:0}
 @media (min-width:48rem){.crosswalk__panes{grid-template-columns:1fr 1fr}.crosswalk__pane[data-pane=compose]{grid-row:1/3}}
 ${options.stackOverlap ? '.crosswalk__pane{position:absolute;top:0;left:0;width:90%}' : ''}
+${options.localFallback ? '@font-face{font-family:"Source Serif 4 Fallback";src:local("Arial"),local("Helvetica"),local("Liberation Sans");font-display:swap}.lede{font-family:"Source Serif 4 Fallback",serif}' : ''}
+${options.hiddenNav ? '.dup-nav{display:none}' : ''}
 ${options.foit ? '@font-face{font-family:Missing;src:url(/fonts/missing.woff2) format("woff2");font-display:block}h1{visibility:hidden}' : '@font-face{font-family:Missing;src:url(/fonts/missing.woff2) format("woff2");font-display:swap}h1{font-family:Missing,serif}'}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title><style>${css}</style></head><body>
-<header><nav class="site-nav"><a href="/a">Get started</a></nav></header><main><h1>Title</h1><p class="lede">Lede text</p><p>Intro</p>
+<header>${options.hiddenNav ? '<nav class="site-nav dup-nav"><a href="/dup">Hidden duplicate</a></nav>' : ''}<nav class="site-nav"><a href="/a">Get started</a></nav></header>${options.foit ? '<script>fetch("/fonts/probe.txt").then(()=>{document.querySelector("h1").style.visibility="visible"}).catch(()=>{})</script>' : ''}<main><h1>Title</h1><p class="lede">Lede text</p><p>Intro</p>
 <a class="action action--primary" href="#big-idea">Start with the big idea</a><div class="gap"></div>
 <section id="big-idea"><h2>Big idea</h2><figure class="timeline" aria-labelledby="tt"><figcaption id="tt">One allocation</figcaption><ol class="timeline__steps">${steps}</ol></figure><a href="/after">after</a></section>
 <section><ul class="doors" id="doors">${doors}</ul></section>
@@ -239,8 +241,20 @@ describe('font failure check', () => {
   }, 90_000);
 
   it('reports text that stays hidden until the web font arrives', async () => {
-    const server = await serveFixtures({ '/': { body: homeFixture({ foit: true }) } });
+    const server = await serveFixtures({ '/': { body: homeFixture({ foit: true }) }, '/fonts/probe.txt': { body: 'ok' } });
     try { expect((await checkFontBlocking(browser, server.origin, '/')).map((entry) => entry.message).join('\n')).toMatch(/text is hidden while fonts are unavailable: h1/); } finally { await server.close(); }
+  }, 90_000);
+});
+
+describe('font failure check false positives', () => {
+  it('does not count a local() fallback face as a loaded web font', async () => {
+    const server = await serveFixtures({ '/': { body: homeFixture({ localFallback: true }) } });
+    try { expect(await checkFontBlocking(browser, server.origin, '/')).toEqual([]); } finally { await server.close(); }
+  }, 90_000);
+
+  it('does not trip on a hidden duplicate nav that is hidden in the normal render too', async () => {
+    const server = await serveFixtures({ '/': { body: homeFixture({ hiddenNav: true }) } });
+    try { expect(await checkFontBlocking(browser, server.origin, '/')).toEqual([]); } finally { await server.close(); }
   }, 90_000);
 });
 

@@ -391,6 +391,8 @@ export async function checkPrimaryAction(browser: Browser, origin: string, path:
 }
 
 /** §10 Font failure: with /fonts/* blocked, text stays visible, nothing overflows, and the page height stays within 25% of the normal render. */
+const FONT_PROBE_SELECTORS = ['h1', '.lede', '.site-nav a', 'main p', '.timeline__step strong', '.door__title'];
+
 export async function checkFontBlocking(browser: Browser, origin: string, path: string): Promise<Issue[]> {
   const scope = `${path}:font-failure`;
   const issues: Issue[] = [];
@@ -400,6 +402,7 @@ export async function checkFontBlocking(browser: Browser, origin: string, path: 
     const normalPage = await normal.newPage();
     await normalPage.goto(url, { waitUntil: 'networkidle' });
     const normalHeight = await normalPage.evaluate(() => document.documentElement.scrollHeight);
+    const readable = await normalPage.evaluate((selectors) => selectors.filter((selector) => [...document.querySelectorAll(selector)].some((element) => element.checkVisibility({ visibilityProperty: true, opacityProperty: true }) && (element.textContent ?? '').trim().length > 0)), FONT_PROBE_SELECTORS);
     await normal.close();
 
     const blocked = await browser.newContext({ viewport: { width, height: 900 } });
@@ -407,21 +410,23 @@ export async function checkFontBlocking(browser: Browser, origin: string, path: 
     await blocked.route('**/fonts/**', (route) => { attempts += 1; return route.abort(); });
     const page = await blocked.newPage();
     await page.goto(url, { waitUntil: 'networkidle' });
-    const state = await page.evaluate(() => {
+    const state = await page.evaluate((selectors) => {
       const root = document.documentElement;
-      const hidden = ['h1', '.lede', '.site-nav a', 'main p', '.timeline__step strong', '.door__title'].filter((selector) => {
-        const element = document.querySelector(selector);
-        if (!element) return false;
+      const hidden = selectors.filter((selector) => ![...document.querySelectorAll(selector)].some((element) => {
         const style = getComputedStyle(element);
-        return !(element.checkVisibility({ visibilityProperty: true, opacityProperty: true }) && (element.textContent ?? '').trim().length > 0 && style.color !== 'rgba(0, 0, 0, 0)');
-      });
+        return element.checkVisibility({ visibilityProperty: true, opacityProperty: true }) && (element.textContent ?? '').trim().length > 0 && style.color !== 'rgba(0, 0, 0, 0)';
+      }));
+      // Only the self-hosted families count. Metric-adjusted fallback faces use local() sources and load from system fonts by design.
+      const selfHosted = /^["']?(Source Serif 4|IBM Plex Sans|IBM Plex Mono|L2C Marks)["']?$/;
       return {
         height: root.scrollHeight,
         overflow: Math.max(root.scrollWidth, document.body.scrollWidth) > root.clientWidth + 1,
         hidden,
-        loaded: [...document.fonts].filter((face) => face.status === 'loaded').length,
+        loaded: [...document.fonts].filter((face) => face.status === 'loaded' && selfHosted.test(face.family.trim())).length,
       };
-    });
+    }, FONT_PROBE_SELECTORS);
+    // A selector only counts as hidden when it was readable in the normal render, so duplicate or collapsed copies cannot trip the check.
+    state.hidden = state.hidden.filter((selector) => readable.includes(selector));
     if (width === 1280 && path === '/' && attempts === 0) issues.push(issue(scope, 'A11Y-FONT-FAILURE', 'the home page requested no /fonts/ file, so this check proved nothing'));
     if (state.loaded > 0) issues.push(issue(scope, 'A11Y-FONT-FAILURE', `${state.loaded} font face(s) loaded although /fonts/ was blocked`));
     if (state.hidden.length) issues.push(issue(`${scope}:${width}px`, 'A11Y-FONT-FAILURE', `text is hidden while fonts are unavailable: ${state.hidden.join(', ')}`));
