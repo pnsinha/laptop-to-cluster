@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runBoundaryScan } from './boundary.mjs';
 
 export const CANONICAL_ORIGIN = 'https://laptop-to-cluster.org';
 export const REDIRECT_HOSTS = Object.freeze([
@@ -11,10 +12,38 @@ export const REDIRECT_HOSTS = Object.freeze([
 ]);
 const FORBIDDEN_ORIGIN = /https:\/\/(?:www\.laptop-to-cluster\.org|laptoptocluster\.org|laptop-to-cluster\.pnsinha\.com|[^/\s"'<>]+\.pages\.dev)/i;
 const SHA256 = /^[a-f0-9]{64}$/;
+// One matcher for the projection section, with or without modifier classes
+// (for example applicability-projection--escalated). Used by composition checks and by tests.
+export const PROJECTION_SECTION = /<section class="applicability-projection(?: [^"]*)?"/;
+export const isProjectionSection = (html) => PROJECTION_SECTION.test(html);
+export const EVIDENCE_ROW_LABELS = Object.freeze(['Tested', 'You need', 'Depends on your center']);
+export const UNTESTED_HREF = '/adoption/evaluate/#not-tested';
 const COMPOSITION_PROFILES = new Set([
   'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start', 'diagnostic',
   'milestone', 'release', 'about', 'support', 'accessibility', 'applicability', 'event', 'not-found',
+  'adoption',
 ]);
+export const FONT_FAMILIES = Object.freeze(['Source Serif 4', 'IBM Plex Sans', 'IBM Plex Mono', 'L2C Marks']);
+const REMOTE_FONT = /@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net|fonts\.bunny\.net|cdn\.jsdelivr\.net\/fontsource/i;
+const SRC_ENTRY = /^(?:local\(\s*(?:["'][^"']+["']|[A-Za-z][A-Za-z0-9 -]*)\s*\)|url\(\s*["']?\/fonts\/[a-z0-9.-]+\/[A-Za-z0-9._-]+\.woff2["']?\s*\)\s*format\(\s*["']woff2["']\s*\))$/;
+const FONT_LEAD = String.raw`(?:"?(?:Source Serif 4|IBM Plex Sans|IBM Plex Mono|L2C Marks)(?: Fallback)?"?\s*,\s*)*`;
+// Motion that is actually motion: `transition: none` and `animation: none` are the reduced-motion resets and stay legal.
+const MOTION = /@keyframes|animation-name\s*:|animation\s*:\s*(?!none\b)|transition\s*:\s*(?!none\b)|scroll-timeline|parallax/i;
+/** REMOTE-FONT: third-party hosts and @import url are forbidden; every @font-face is an allowlisted family served from /fonts/*.woff2 (or local()), with font-display: swap for downloads. */
+export function fontFaceIssues(text) {
+  const issues = REMOTE_FONT.test(text) ? ['third-party font hosts and @import url are forbidden'] : [];
+  for (const block of text.match(/@font-face\s*\{[^}]*\}/gi) ?? []) {
+    const family = block.match(/font-family\s*:\s*["']?([^;"'}]+)/i)?.[1]?.trim() ?? '';
+    const entries = (block.match(/\bsrc\s*:\s*([^;}]+)/i)?.[1] ?? '').split(/,(?![^()]*\))/).map((entry) => entry.trim()).filter(Boolean);
+    const known = FONT_FAMILIES.some((name) => family === name || family === `${name} Fallback`);
+    if (!known || !entries.length || !entries.every((entry) => SRC_ENTRY.test(entry))) {
+      issues.push(`@font-face "${family || '<unnamed>'}" must be an allowlisted family served from /fonts/*.woff2 or local()`);
+    } else if (entries.some((entry) => entry.startsWith('url(')) && !/font-display\s*:\s*swap/i.test(block)) {
+      issues.push(`@font-face "${family}" must use font-display: swap`);
+    }
+  }
+  return issues;
+}
 const STANDARD_PROJECTION_CONSUMER = Object.freeze({
   landing: 'landing',
   'learning-runnable': 'runnable-module',
@@ -24,11 +53,100 @@ const STANDARD_PROJECTION_CONSUMER = Object.freeze({
 const CANONICAL_ONLY_PATTERN = /<dt>Submission ID<\/dt>|<dt>Container (?:image )?digest<\/dt>|<h2[^>]*>Result checks<\/h2>|<h2[^>]*>Evidence and integrity<\/h2>|<h2[^>]*>Provenance<\/h2>/i;
 
 const occurrences = (text, pattern) => text.match(pattern)?.length ?? 0;
-const stripTags = (value = '') => value.replace(/<[^>]+>/g, '').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').trim();
-const standardProjectionBlocks = (html) => html.match(/<section class="applicability-projection"[\s\S]*?<\/section>/g) ?? [];
+const stripTags = (value = '') => value.replace(/<[^>]+>/g, '').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&#x27;', "'").replaceAll('&middot;', '·').replaceAll('&#183;', '·').replaceAll('&#xB7;', '·').replaceAll('&nbsp;', ' ').trim();
+const standardProjectionBlocks = (html) => html.match(new RegExp(`${PROJECTION_SECTION.source}[\\s\\S]*?<\\/section>`, 'g')) ?? [];
 const diagnosticProjectionBlocks = (html) => html.match(/<aside class="diagnostic-applicability"[\s\S]*?<\/aside>/g) ?? [];
 const definitionValue = (html, label) => stripTags(html.match(new RegExp(`<dt>${label}<\\/dt><dd>([\\s\\S]*?)<\\/dd>`, 'i'))?.[1]);
+/** ISO date from `<dd><time datetime="ISO">Long date</time></dd>` (the canonical page markup); falls back to the dd text, which must then be bare ISO. */
+const definitionDate = (html, label) => html.match(new RegExp(`<dt>${label}<\\/dt><dd>\\s*<time[^>]*\\bdatetime="([^"]+)"`, 'i'))?.[1] ?? definitionValue(html, label);
 const sectionList = (html, heading) => [...(html.match(new RegExp(`<h2[^>]*>${heading}<\\/h2><ul>([\\s\\S]*?)<\\/ul>`, 'i'))?.[1] ?? '').matchAll(/<li>([\s\S]*?)<\/li>/g)].map((match) => stripTags(match[1]));
+const paragraphs = (html) => [...html.matchAll(/<p(\s[^>]*)?>([\s\S]*?)<\/p>/g)].map((match) => ({ classes: match[1]?.match(/class="([^"]*)"/)?.[1] ?? '', inner: match[2] }));
+/** Parses `<dl class="evidence-rows">` into [{ label, items: [{ text, from }] }]; undefined when the list is absent. `from` comes from an optional data-from attribute on each <li>. */
+export function evidenceRows(html) {
+  const list = html.match(/<dl class="evidence-rows">([\s\S]*?)<\/dl>/)?.[1];
+  if (list === undefined) return undefined;
+  const rows = [...list.matchAll(/<div class="evidence-row">\s*<dt>([\s\S]*?)<\/dt>\s*<dd>\s*<ul>([\s\S]*?)<\/ul>\s*<\/dd>\s*<\/div>/g)].map((match) => ({
+    label: stripTags(match[1]),
+    items: [...match[2].matchAll(/<li(\s[^>]*)?>([\s\S]*?)<\/li>/g)].map((item) => ({
+      text: stripTags(item[2]),
+      from: item[1]?.match(/data-from="([^"]*)"/)?.[1]?.split(/\s+/).filter(Boolean) ?? [],
+    })),
+  }));
+  return occurrences(list, /class="evidence-row"/g) === rows.length ? rows : undefined;
+}
+export function projectionShapeIssues(block) {
+  const issues = [];
+  const opening = block.slice(0, block.indexOf('>') + 1);
+  const escalated = opening.includes('applicability-projection--escalated');
+  const rest = block.slice(opening.length);
+  if (/applicability-projection/.test(rest)) issues.push('inner classes must not contain applicability-projection');
+  const details = rest.match(/<details[\s\S]*?<\/details>/g) ?? [];
+  const outside = details.reduce((text, part) => text.replace(part, ''), rest);
+  const outsideParagraphs = paragraphs(outside);
+  const linkParagraph = outsideParagraphs[1];
+  if (!linkParagraph || linkParagraph.classes !== 'evidence-link' || occurrences(linkParagraph.inner, /<a\s[^>]*href="\/applicability\/[^"]+\/"/g) !== 1) {
+    issues.push('the second paragraph must be the single canonical-link paragraph (class evidence-link)');
+  }
+  const rows = evidenceRows(rest);
+  if (!rows || rows.map((row) => row.label).join('|') !== EVIDENCE_ROW_LABELS.join('|') || rows.some((row) => row.items.length === 0)) {
+    issues.push(`evidence rows must be exactly ${EVIDENCE_ROW_LABELS.join(' / ')} in order, each with at least one item`);
+  }
+  if (escalated) {
+    if (details.length) issues.push('stale, failed and unvalidated projections must not use a disclosure');
+    const badge = outsideParagraphs[0];
+    if (!badge || badge.classes !== 'evidence-badge evidence-badge--warning' || !badge.inner.startsWith('<strong>Warning:</strong>')) {
+      issues.push('an escalated projection starts with a warning badge (class evidence-badge evidence-badge--warning, label Warning:)');
+    }
+    const extra = outsideParagraphs[2];
+    if (outsideParagraphs.length > 3 || outsideParagraphs.length < 2 || (extra && extra.classes !== 'evidence-untested')) {
+      issues.push('an escalated projection permits only the badge, the canonical link, and an optional evidence-untested paragraph');
+    }
+  } else {
+    const badge = outsideParagraphs[0];
+    if (!badge || badge.classes !== 'evidence-badge') issues.push('a validated projection starts with the badge paragraph (class evidence-badge)');
+    if (outsideParagraphs.length !== 2) issues.push('a validated projection has exactly two top-level paragraphs (badge and canonical link)');
+    if (details.length !== 1 || !details[0].startsWith('<details class="evidence-panel">') || !/<summary>[^<]+<\/summary>/.test(details[0])) {
+      issues.push('a validated projection has exactly one <details class="evidence-panel"> with a summary');
+    } else {
+      const untested = paragraphs(details[0].replace(/<dl class="evidence-rows">[\s\S]*?<\/dl>/, ''));
+      if (untested.length !== 1 || untested[0].classes !== 'evidence-untested' || !untested[0].inner.includes(`href="${UNTESTED_HREF}"`)) {
+        issues.push(`the panel ends with one evidence-untested paragraph linking to ${UNTESTED_HREF}`);
+      }
+      if (!details[0].includes('<dl class="evidence-rows">')) issues.push('the evidence rows belong inside the panel');
+    }
+  }
+  return issues;
+}
+
+/** Required labels (frozen model, spec §15.3), in order. Captions are never pinned. */
+export const TIMELINE_LABELS = Object.freeze(['Get an allocation', 'Start coordinator', 'Readiness gate', 'Run workers', 'Verify results', 'Clean up']);
+/** TIMELINE: at most one six-step figure per page, labelled, with the six strong labels in order (C2 `Timeline.astro`). */
+export function timelineIssues(html) {
+  const issues = [];
+  const figures = html.match(/<figure class="timeline"[^>]*>[\s\S]*?<\/figure>/g) ?? [];
+  if (figures.length > 1) issues.push('at most one six-step timeline is allowed per page');
+  for (const figure of figures) {
+    if (!/aria-labelledby="timeline-title"/.test(figure.slice(0, figure.indexOf('>'))) || !/<figcaption id="timeline-title" class="timeline__title">[^<]+<\/figcaption>/.test(figure)) {
+      issues.push('the timeline needs a figcaption (id timeline-title) that labels the figure');
+    }
+    const lists = figure.match(/<ol class="timeline__steps">[\s\S]*?<\/ol>/g) ?? [];
+    if (lists.length !== 1) {
+      issues.push('the timeline holds exactly one ordered list (class timeline__steps)');
+      continue;
+    }
+    const steps = [...lists[0].matchAll(/<li class="timeline__step"([^>]*)>([\s\S]*?)<\/li>/g)];
+    const labels = steps.map((step) => stripTags(step[2].match(/<strong>([\s\S]*?)<\/strong>/)?.[1]));
+    if (labels.join('|') !== TIMELINE_LABELS.join('|')) issues.push(`the step labels must read ${TIMELINE_LABELS.join(', ')} in that order`);
+    if (steps.some((step, index) => step[1].match(/data-step="(\d+)"/)?.[1] !== String(index + 1))) issues.push('each step carries data-step 1 to 6 in order');
+    if (steps.filter((step) => /aria-current="step"/.test(step[1])).length > 1) issues.push('at most one step is aria-current');
+    if (steps.some((step) => !/class="timeline__bars" aria-hidden="true"/.test(step[2]))) issues.push('the decorative bars of every step are aria-hidden');
+  }
+  const outside = figures.reduce((text, figure) => text.replace(figure, ''), html);
+  for (const list of outside.match(/<ol\b[\s\S]*?<\/ol>/g) ?? []) {
+    if ([...list.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]).join('|') === TIMELINE_LABELS.join('|')) issues.push('the six-step sequence appears outside the timeline figure');
+  }
+  return issues;
+}
 
 export function validatePageComposition(source, html) {
   const errors = [];
@@ -59,8 +177,10 @@ export function validatePageComposition(source, html) {
     const links = [...block.matchAll(/href="(\/applicability\/([^"]+)\/)"/g)];
     if (!sourceId || projectionId !== `${expectedConsumer}:${sourceId}`) errors.push(diagnostic(source, 'projectionId', 'SOURCE-AGREEMENT', 'projection discriminator must match its profile consumer and source ID'));
     if (links.length !== 1 || links[0]?.[2] !== sourceId) errors.push(diagnostic(source, 'canonicalLink', 'SOURCE-AGREEMENT', 'exactly one canonical applicability link must match the source ID'));
-    if (occurrences(block, /<p(?:\s|>)/g) !== 3 || occurrences(block, /class="applicability-supplement/g) !== 1) {
-      errors.push(diagnostic(source, 'projection', 'PROJECTION-SHAPE', 'projection requires one tested-scope sentence, one supplement, and one canonical-link paragraph'));
+    for (const issue of projectionShapeIssues(block)) errors.push(diagnostic(source, 'projection', 'PROJECTION-SHAPE', issue));
+    const headerEnd = html.indexOf('</header>', html.indexOf('<header class="content-header">'));
+    if (html.includes('<header class="content-header">') && html.indexOf(block) < headerEnd) {
+      errors.push(diagnostic(source, 'projection', 'PROJECTION-SHAPE', 'the projection is placed after the content header'));
     }
     if (CANONICAL_ONLY_PATTERN.test(block)) errors.push(diagnostic(source, 'projection', 'CANONICAL-ONLY', 'concise projection leaked exhaustive applicability detail'));
   }
@@ -81,7 +201,7 @@ export function validatePageComposition(source, html) {
     for (const heading of ['Result checks', 'Assumptions', 'Limitations', 'Portability boundaries', 'Evidence and integrity', 'Provenance']) {
       if (!new RegExp(`<h2[^>]*>${heading}<\\/h2>`, 'i').test(html)) errors.push(diagnostic(source, heading, 'EXHAUSTIVE-APPLICABILITY', 'canonical applicability section is required'));
     }
-  } else if (CANONICAL_ONLY_PATTERN.test(html.replace(standard.join(''), '').replace(diagnostics.join(''), '')) || /class="applicability-record"/.test(html)) {
+  } else if (CANONICAL_ONLY_PATTERN.test(standard.concat(diagnostics).reduce((text, block) => text.replace(block, ''), html)) || /class="applicability-record"/.test(html)) {
     errors.push(diagnostic(source, 'applicability', 'CANONICAL-ONLY', 'exhaustive applicability detail leaked outside its canonical route'));
   }
 
@@ -93,16 +213,17 @@ export function validatePageComposition(source, html) {
   if (/class="support-state(?![^>]*(?:degraded|unavailable))/.test(html)) errors.push(diagnostic(source, 'support', 'SUPPORT-STATE', 'only an active degraded or unavailable state may render'));
 
   const details = html.match(/<details[\s\S]*?<\/details>/g) ?? [];
-  if (details.some((block) => /Prerequisites|<strong>Warning:<\/strong>|applicability-projection|Unvalidated content/i.test(block))) {
+  if (details.some((block) => /Prerequisites|<strong>Warning:<\/strong>|applicability-projection|evidence-badge|Unvalidated content/i.test(block))) {
     errors.push(diagnostic(source, 'visibility', 'CRITICAL-VISIBILITY', 'prerequisites, warnings, validation state, and applicability scope cannot be hidden in a disclosure'));
   }
-  if (/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>[\s\S]*?(?:Prerequisites|<strong>Warning:<\/strong>|applicability-projection)/i.test(html)) {
+  const hiddenBlocks = [...html.matchAll(/<(section|aside|article)\b[^>]*(?:\shidden(?=[\s>=])|aria-hidden="true")[^>]*>([\s\S]*?)<\/\1>/gi)].map((match) => match[2]);
+  if (hiddenBlocks.some((block) => /Prerequisites|<strong>Warning:<\/strong>|evidence-badge|applicability-projection/i.test(block))) {
     errors.push(diagnostic(source, 'visibility', 'CRITICAL-VISIBILITY', 'critical content cannot be hidden'));
   }
 
   if (profile === 'learning-runnable') {
     const procedure = html.indexOf('<h2 id="procedure">');
-    const projection = html.indexOf('class="applicability-projection"');
+    const projection = html.search(PROJECTION_SECTION);
     if (procedure < 0 || projection < 0 || projection > procedure) {
       errors.push(diagnostic(source, 'procedure', 'SAFE-ORDERING', 'applicability and prerequisites must precede execution'));
     }
@@ -117,24 +238,88 @@ export function validatePageComposition(source, html) {
     }
   }
 
-  if (profile === 'landing') {
-    const figure = html.match(/<figure class="workflow-figure">([\s\S]*?)<\/figure>/)?.[1] ?? '';
-    const labels = [...figure.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
-    if (!/<figcaption>[^<]+<\/figcaption>/.test(figure) || !/<ol>/.test(figure)
-      || labels.join('|') !== 'Allocation|Coordinator|Readiness gate|Workers|Verification'
-      || occurrences(figure, /<i aria-hidden="true">/g) !== 4
-      || !/Verification<\/strong>\s?<span>[^<]*before success is recorded/.test(figure)) {
-      errors.push(diagnostic(source, 'workflowFigure', 'WORKFLOW-SEMANTICS', 'captioned allocation-to-verification ordered semantics and hidden decorative connectors are required'));
-    }
+  for (const issue of timelineIssues(html)) errors.push(diagnostic(source, 'timeline', 'TIMELINE', issue));
+  if (profile === 'landing' && occurrences(html, /<figure class="timeline"/g) !== 1) {
+    errors.push(diagnostic(source, 'timeline', 'TIMELINE', 'the landing page requires exactly one six-step timeline'));
   }
 
   // Progressive-enhancement policy (2026-08-16): bounded inline scripts and small
   // client islands are permitted; canvas, autoplay, and marquee remain forbidden.
   if (/<canvas\b|autoplay|<marquee\b/i.test(html)) errors.push(diagnostic(source, 'html', 'TECHNOLOGY-EXCLUSION', 'canvas, autoplay, and marquee output are forbidden'));
-  if (/(?:fonts\.(?:googleapis|gstatic)|use\.typekit\.net|<link[^>]+rel="preconnect"[^>]+font)/i.test(html)) errors.push(diagnostic(source, 'html', 'REMOTE-FONT', 'remote font references are forbidden'));
+  if (/(?:fonts\.(?:googleapis|gstatic)|use\.typekit\.net|fonts\.bunny\.net|cdn\.jsdelivr\.net\/fontsource|<link[^>]+rel="preconnect"[^>]+font)/i.test(html)) errors.push(diagnostic(source, 'html', 'REMOTE-FONT', 'remote font references are forbidden'));
+  for (const preload of html.match(/<link\b[^>]*\brel="preload"[^>]*>/g) ?? []) {
+    if (!/\bas="font"/.test(preload)) continue;
+    if (!/\bhref="\/fonts\/[^"]+\.woff2"/.test(preload) || !/\btype="font\/woff2"/.test(preload) || !/\bcrossorigin\b/.test(preload)) {
+      errors.push(diagnostic(source, 'html', 'FONT-PRELOAD', 'a font preload must point at /fonts/*.woff2 with type="font/woff2" and crossorigin'));
+    }
+  }
   return errors;
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** '2026-07-25' -> 'Jul 2026' (en-US, UTC, no Intl dependency); undefined for anything else. */
+export function formatMonthYear(isoDate) {
+  const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(isoDate ?? '');
+  const month = Number(match?.[2]);
+  return match && month >= 1 && month <= 12 ? `${MONTHS[month - 1]} ${match[1]}` : undefined;
+}
+/** The C1 badge text for a record status; undefined when a needed value is missing. */
+export function evidenceBadgeText(status, environment, validationDate) {
+  const when = formatMonthYear(validationDate);
+  if (status === 'validated') return environment && when ? `Tested on ${environment} · ${when}` : undefined;
+  if (status === 'stale') return environment && when ? `Review due: last tested on ${environment} · ${when}` : undefined;
+  if (status === 'failed') return 'Last run failed: see the test record';
+  if (status === 'unvalidated') return 'Not yet tested on a cluster';
+  return undefined;
+}
+export const RELATED_EVIDENCE_HEADING = 'Related evidence';
+const ROW_SOURCE = Object.freeze({ Tested: 'result.checks', 'You need': 'assumptions', 'Depends on your center': 'portability_boundaries' });
+const TRACE_REF = /^(assumptions|portability_boundaries|limitations|result\.checks|related_evidence)(?:\.(\d+))?$/;
+/** Items of the canonical page's related-evidence list (A7: `ul.related-evidence`, or the list under `#related-evidence`); never read from an h2. */
+const relatedEvidenceItems = (html) => {
+  const list = html.match(/<ul[^>]*class="[^"]*\brelated-evidence\b[^"]*"[^>]*>([\s\S]*?)<\/ul>/i)?.[1]
+    ?? html.match(/id="related-evidence"[^>]*>[\s\S]*?<ul[^>]*>([\s\S]*?)<\/ul>/i)?.[1] ?? '';
+  return [...list.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)].map((match) => stripTags(match[1]));
+};
+const canonicalLists = (html) => ({
+  'result.checks': sectionList(html, 'Result checks'),
+  assumptions: sectionList(html, 'Assumptions'),
+  limitations: sectionList(html, 'Limitations'),
+  portability_boundaries: sectionList(html, 'Portability boundaries'),
+  related_evidence: relatedEvidenceItems(html),
+});
+/** undefined when a data-from reference resolves on the canonical page, otherwise the reason. */
+export const traceProblem = (ref, lists) => {
+  const match = TRACE_REF.exec(ref);
+  const list = match && lists[match[1]];
+  if (!match || !list) return `traces to an unknown source ${ref}`;
+  return (match[2] === undefined ? list.length === 0 : Number(match[2]) >= list.length) ? `traces to ${ref}, which is not on the canonical record page` : undefined;
+};
+export { canonicalLists };
+/** Messages for rows that do not agree with the canonical record page. */
+export function rowAgreementIssues(rows, lists) {
+  const issues = [];
+  for (const row of rows ?? []) {
+    const traced = row.items.filter((item) => item.from.length);
+    if (traced.length && traced.length !== row.items.length) {
+      issues.push(`row "${row.label}" mixes traced and literal items`);
+      continue;
+    }
+    if (!traced.length) {
+      const expected = lists[ROW_SOURCE[row.label]] ?? [];
+      if (row.items.map((item) => item.text).join('\n') !== expected.join('\n')) issues.push(`row "${row.label}" must list the record's ${ROW_SOURCE[row.label]} exactly when it has no traces`);
+      continue;
+    }
+    for (const item of traced) {
+      if (!item.text) issues.push(`row "${row.label}" has an empty traced item`);
+      for (const ref of item.from) {
+        const problem = traceProblem(ref, lists);
+        if (problem) issues.push(`row "${row.label}" ${problem}`);
+      }
+    }
+  }
+  return issues;
+}
 export function validateProjectionSourceAgreement(source, projectionHtml, canonicalSource, canonicalHtml) {
   const errors = [];
   const sourceId = projectionHtml.match(/data-source-id="([^"]+)"/)?.[1];
@@ -143,21 +328,20 @@ export function validateProjectionSourceAgreement(source, projectionHtml, canoni
     errors.push(diagnostic(source, 'sourceId', 'SOURCE-AGREEMENT', 'projection source ID must resolve to the matching canonical applicability route'));
     return errors;
   }
-  const scheduler = definitionValue(canonicalHtml, 'Scheduler').split(' ')[0];
-  const runtime = definitionValue(canonicalHtml, 'Runtime').split(' ')[0];
   const status = definitionValue(canonicalHtml, 'Status');
   const environment = definitionValue(canonicalHtml, 'Environment');
-  const expectedScope = `The baseline workflow was ${status === 'validated' ? 'validated' : 'recorded'} on ${environment} with ${scheduler} and ${runtime}.`;
-  const statusText = {
-    failed: 'This recorded run failed; use the linked record before attempting the workflow.',
-    unvalidated: 'This workflow scope is unvalidated; do not treat it as executable evidence.',
-    stale: 'This validation is stale and requires review before reuse.',
-  };
-  const expectedSupplement = statusText[status] ?? sectionList(canonicalHtml, 'Portability boundaries')[0];
+  const validationDate = definitionDate(canonicalHtml, 'Validation date');
   const linkId = projectionHtml.match(/href="\/applicability\/([^"]+)\/"/)?.[1];
-  if (linkId !== sourceId || !projectionHtml.includes(expectedScope) || !expectedSupplement || !projectionHtml.includes(expectedSupplement)) {
-    errors.push(diagnostic(source, 'projection', 'SOURCE-AGREEMENT', 'projection ID, canonical link, tested scope, or status/boundary supplement is stale'));
+  if (linkId !== sourceId) errors.push(diagnostic(source, 'canonicalLink', 'SOURCE-AGREEMENT', 'projection canonical link must match the source ID'));
+  const escalated = projectionHtml.slice(0, projectionHtml.indexOf('>')).includes('applicability-projection--escalated');
+  if (escalated !== (status !== 'validated')) errors.push(diagnostic(source, 'projection', 'SOURCE-AGREEMENT', `a ${status || '<missing>'} record ${status === 'validated' ? 'must not render' : 'must render'} the escalated projection`));
+  const expectedBadge = evidenceBadgeText(status, environment, validationDate);
+  const badge = paragraphs(projectionHtml).find((paragraph) => /(?:^|\s)evidence-badge(?:\s|$)/.test(paragraph.classes));
+  const badgeText = badge ? stripTags(badge.inner).replace(/^Warning:\s*/, '') : undefined;
+  if (!expectedBadge || badgeText !== expectedBadge) {
+    errors.push(diagnostic(source, 'badge', 'SOURCE-AGREEMENT', 'badge text must be generated from the record status, environment public name and validation month'));
   }
+  for (const issue of rowAgreementIssues(evidenceRows(projectionHtml), canonicalLists(canonicalHtml))) errors.push(diagnostic(source, 'rows', 'SOURCE-AGREEMENT', issue));
   return errors;
 }
 
@@ -171,8 +355,8 @@ export function validateFrontendPolicy(manifest, astroConfig, sourceEntries = []
   if (!/^sitemap\(\),canonicalPolicy\(\)(?:,accessibleTables\(\))?$/.test(integrations ?? '')) errors.push(diagnostic('site/astro.config.mjs', 'integrations', 'INTEGRATION-EXCLUSION', 'only sitemap and the repository-owned canonical policy and accessible tables integrations are allowed'));
   if (/ViewTransitions|adapter|server\s*:|session|auth/i.test(astroConfig)) errors.push(diagnostic('site/astro.config.mjs', 'configuration', 'TECHNOLOGY-EXCLUSION', 'view transitions, adapters, server state, sessions, and authentication are forbidden'));
   for (const { path, text } of sourceEntries) {
-    if (/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net/i.test(text)) errors.push(diagnostic(path, 'font', 'REMOTE-FONT', 'system font stacks only; remote and bundled font declarations are forbidden'));
-    if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax|autoplay|from\s+['"](?:react|vue|svelte|@astrojs\/(?:react|vue|svelte))['"]/i.test(text)) {
+    for (const issue of fontFaceIssues(text)) errors.push(diagnostic(path, 'font', 'REMOTE-FONT', issue));
+    if (MOTION.test(text) || /autoplay|from\s+['"](?:react|vue|svelte|@astrojs\/(?:react|vue|svelte))['"]/i.test(text)) {
       // Progressive-enhancement policy (2026-08-16): client directives are permitted
       // for bounded Astro islands; decorative motion and UI-framework imports remain forbidden.
       errors.push(diagnostic(path, 'source', 'TECHNOLOGY-EXCLUSION', 'decorative motion and UI frameworks are forbidden'));
@@ -252,6 +436,115 @@ export function validateCanonicalConfig(configText) {
   return errors;
 }
 
+export const recordSummaryBlocks = (html) => html.match(/<section class="record-summary"[\s\S]*?<\/section>/g) ?? [];
+
+/** Facts read from every built canonical applicability page: { byId: Map, errors }. */
+export function collectApplicabilityFacts(builtPages) {
+  const errors = [];
+  const byId = new Map();
+  for (const page of builtPages.filter(({ html }) => html.includes('data-composition-profile="applicability"'))) {
+    const sourceId = page.html.match(/class="applicability-record" data-source-id="([^"]+)"/)?.[1];
+    if (!sourceId || page.source !== `/applicability/${sourceId}/`) {
+      errors.push(diagnostic(page.source, 'sourceId', 'SOURCE-AGREEMENT', 'canonical applicability route and source ID must agree'));
+      continue;
+    }
+    const scheduler = definitionValue(page.html, 'Scheduler');
+    const runtime = definitionValue(page.html, 'Runtime');
+    byId.set(sourceId, {
+      sourceId,
+      canonicalSource: page.source,
+      canonicalHtml: page.html,
+      environment: definitionValue(page.html, 'Environment'),
+      status: definitionValue(page.html, 'Status'),
+      schedulerFamily: scheduler.split(' ')[0],
+      schedulerVersion: scheduler.slice(scheduler.indexOf(' ') + 1),
+      runtimeName: runtime.split(' ')[0],
+      runtimeVersion: runtime.slice(runtime.indexOf(' ') + 1),
+      executionDate: definitionValue(page.html, 'Execution date'),
+      validationDate: definitionValue(page.html, 'Validation date'),
+      validationDateIso: definitionDate(page.html, 'Validation date'),
+      submissionId: definitionValue(page.html, 'Submission ID'),
+      boundary: sectionList(page.html, 'Portability boundaries')[0],
+      checks: sectionList(page.html, 'Result checks'),
+      evidenceId: stripTags(page.html.match(/<h2[^>]*>Evidence and integrity<\/h2><p><a[^>]*>([^<]+)<\/a>/i)?.[1]),
+      integrity: page.html.match(/sha256:[a-f0-9]{64}/i)?.[0],
+    });
+  }
+  return { byId, errors };
+}
+
+/** Messages for one RecordSummary block that disagrees with its canonical record page. */
+export function recordSummaryIssues(block, facts, others = []) {
+  const issues = [];
+  const links = [...block.matchAll(/href="\/applicability\/([^"]+)\/"/g)];
+  if (links.length !== 1 || links[0][1] !== facts.sourceId) issues.push('exactly one canonical record link that matches the source ID is required');
+  const tested = stripTags(block.match(/<p class="record-summary__tested">([\s\S]*?)<\/p>/)?.[1]);
+  if (!tested) issues.push('the tested sentence (record-summary__tested) is required');
+  if (/\b\d{4}\b/.test(tested) && !tested.includes(formatMonthYear(facts.validationDateIso ?? facts.validationDate) ?? '\0')) issues.push('the tested sentence states a date that is not the record validation month');
+  if (/Tested on|Review due/.test(tested) && !tested.includes(facts.environment)) issues.push('the tested sentence names a different environment from the record');
+  const lists = canonicalLists(facts.canonicalHtml);
+  const known = new Set(Object.values(lists).flat());
+  const scope = block.match(/<ul class="record-summary__scope">([\s\S]*?)<\/ul>/)?.[1] ?? '';
+  for (const item of scope.matchAll(/<li(\s[^>]*)?>([\s\S]*?)<\/li>/g)) {
+    const refs = item[1]?.match(/data-from="([^"]*)"/)?.[1]?.split(/\s+/).filter(Boolean) ?? [];
+    if (!refs.length) {
+      const text = stripTags(item[2]);
+      const labelled = text.match(/^(Scheduler|Runtime|Workflow revision): (.+)$/);
+      const onRecord = labelled !== null && definitionValue(facts.canonicalHtml, labelled[1]) === labelled[2];
+      if (!known.has(text) && !onRecord) issues.push('a scope item is neither traced nor an item of the canonical record page');
+      continue;
+    }
+    for (const ref of refs) {
+      const problem = traceProblem(ref, lists);
+      if (problem) issues.push(`a scope item ${problem}`);
+    }
+  }
+  const own = new Set([facts.environment, facts.schedulerVersion, facts.runtimeVersion, facts.executionDate, facts.validationDate, facts.submissionId]);
+  for (const other of others) {
+    const foreign = [other.environment, other.schedulerVersion, other.runtimeVersion, other.executionDate, other.validationDate, other.submissionId]
+      .filter((value) => typeof value === 'string' && value.length > 3 && !own.has(value));
+    if (foreign.some((value) => block.includes(value))) issues.push('the summary repeats a value that belongs to a different record');
+  }
+  return issues;
+}
+
+/** RECORD-SUMMARY: adoption pages only, and every block agrees with its canonical record. */
+export function validateRecordSummaries(builtPages, byId) {
+  const errors = [];
+  for (const page of builtPages) {
+    const profile = page.html.match(/data-composition-profile="([^"]+)"/)?.[1];
+    for (const block of recordSummaryBlocks(page.html)) {
+      if (profile !== 'adoption') errors.push(diagnostic(page.source, 'recordSummary', 'RECORD-SUMMARY', `profile ${profile ?? '<missing>'} forbids a record summary; only the adoption profile may render one`));
+      const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
+      const facts = byId.get(sourceId);
+      if (!facts) {
+        errors.push(diagnostic(page.source, 'recordSummary', 'RECORD-SUMMARY', `record summary references missing canonical source ${sourceId ?? '<missing>'}`));
+        continue;
+      }
+      for (const issue of recordSummaryIssues(block, facts, [...byId.values()].filter((other) => other !== facts))) errors.push(diagnostic(page.source, 'recordSummary', 'RECORD-SUMMARY', issue));
+    }
+  }
+  return errors;
+}
+
+/** SOURCE-DUPLICATION: canonical-only values may appear only in generated projections, record summaries, and the canonical pages. */
+export function validateSourceDuplication(builtPages, byId) {
+  const errors = [];
+  for (const facts of byId.values()) {
+    for (const page of builtPages.filter(({ source }) => !source.startsWith('/applicability/'))) {
+      const generatedRemoved = [...standardProjectionBlocks(page.html), ...diagnosticProjectionBlocks(page.html), ...recordSummaryBlocks(page.html)]
+        .reduce((text, block) => text.replace(block, ''), page.html);
+      const forbiddenValues = [facts.environment, facts.schedulerVersion, facts.runtimeVersion, facts.executionDate,
+        facts.validationDate, facts.submissionId, facts.evidenceId, facts.integrity, facts.boundary, ...facts.checks]
+        .filter((value) => typeof value === 'string' && value.length > 3);
+      if (forbiddenValues.some((value) => generatedRemoved.includes(value))) {
+        errors.push(diagnostic(page.source, 'applicability', 'SOURCE-DUPLICATION', 'handwritten or canonical-only applicability value appears outside its generated projection'));
+      }
+    }
+  }
+  return errors;
+}
+
 function publicPathForFile(dist, file) {
   const path = relative(dist, file).replaceAll('\\', '/');
   if (path === 'index.html') return '/';
@@ -288,34 +581,9 @@ export function validateBuiltOutput(dist) {
     }
   }
 
-  const applicabilityById = new Map();
-  for (const page of builtPages.filter(({ html }) => html.includes('data-composition-profile="applicability"'))) {
-    const sourceId = page.html.match(/class="applicability-record" data-source-id="([^"]+)"/)?.[1];
-    if (!sourceId || page.source !== `/applicability/${sourceId}/`) {
-      errors.push(diagnostic(page.source, 'sourceId', 'SOURCE-AGREEMENT', 'canonical applicability route and source ID must agree'));
-      continue;
-    }
-    const scheduler = definitionValue(page.html, 'Scheduler');
-    const runtime = definitionValue(page.html, 'Runtime');
-    applicabilityById.set(sourceId, {
-      sourceId,
-      canonicalSource: page.source,
-      canonicalHtml: page.html,
-      environment: definitionValue(page.html, 'Environment'),
-      status: definitionValue(page.html, 'Status'),
-      schedulerFamily: scheduler.split(' ')[0],
-      schedulerVersion: scheduler.slice(scheduler.indexOf(' ') + 1),
-      runtimeName: runtime.split(' ')[0],
-      runtimeVersion: runtime.slice(runtime.indexOf(' ') + 1),
-      executionDate: definitionValue(page.html, 'Execution date'),
-      validationDate: definitionValue(page.html, 'Validation date'),
-      submissionId: definitionValue(page.html, 'Submission ID'),
-      boundary: sectionList(page.html, 'Portability boundaries')[0],
-      checks: sectionList(page.html, 'Result checks'),
-      evidenceId: stripTags(page.html.match(/<h2[^>]*>Evidence and integrity<\/h2><p><a[^>]*>([^<]+)<\/a>/i)?.[1]),
-      integrity: page.html.match(/sha256:[a-f0-9]{64}/i)?.[0],
-    });
-  }
+  const applicability = collectApplicabilityFacts(builtPages);
+  errors.push(...applicability.errors);
+  const applicabilityById = applicability.byId;
   for (const page of builtPages) {
     for (const block of standardProjectionBlocks(page.html)) {
       const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
@@ -333,18 +601,8 @@ export function validateBuiltOutput(dist) {
       if (!permitted) errors.push(diagnostic(page.source, 'diagnostic', 'SOURCE-AGREEMENT', 'diagnostic discriminator is stale or does not match its canonical source'));
     }
   }
-  for (const facts of applicabilityById.values()) {
-    for (const page of builtPages.filter(({ source }) => source !== `/applicability/${facts.sourceId}/`)) {
-      const conciseRemoved = standardProjectionBlocks(page.html).concat(diagnosticProjectionBlocks(page.html))
-        .reduce((text, block) => text.replace(block, ''), page.html);
-      const forbiddenValues = [facts.environment, facts.schedulerVersion, facts.runtimeVersion, facts.executionDate,
-        facts.validationDate, facts.submissionId, facts.evidenceId, facts.integrity, facts.boundary, ...facts.checks]
-        .filter((value) => typeof value === 'string' && value.length > 3);
-      if (forbiddenValues.some((value) => conciseRemoved.includes(value))) {
-        errors.push(diagnostic(page.source, 'applicability', 'SOURCE-DUPLICATION', 'handwritten or canonical-only applicability value appears outside its generated projection'));
-      }
-    }
-  }
+  errors.push(...validateRecordSummaries(builtPages, applicabilityById), ...validateSourceDuplication(builtPages, applicabilityById));
+  errors.push(...validateAcknowledgments(dist, builtPages), ...validateBudgets(dist, builtPages), ...validateFragmentLinks(builtPages), ...validateRequiredFragments(builtPages));
 
   for (const name of ['sitemap-index.xml', 'sitemap-0.xml', 'feed.xml', 'url-manifest.json']) {
     const file = join(dist, name);
@@ -372,22 +630,190 @@ export function validateBuiltOutput(dist) {
   for (const url of new Set([...canonicalUrls, ...sitemapUrls, ...manifestUrls])) {
     if (!canonicalUrls.has(url) || !sitemapUrls.has(url) || !manifestUrls.has(url)) errors.push(diagnostic(url, 'url', 'DISCOVERY-AGREEMENT', 'canonical, sitemap, and URL manifest disagree'));
   }
-  for (const file of filesUnder(dist).filter((candidate) => candidate.endsWith('.css'))) {
+  errors.push(...validateStylesheets(dist));
+  return errors;
+}
+/** SEMANTIC-TOKENS, size tokens, colour scheme and font stacks for the stylesheet that defines the :root tokens. */
+export function validateTokenStylesheet(cssPath, css) {
+  const errors = [];
+  if (!/color-scheme\s*:\s*light dark/.test(css)) errors.push(diagnostic(cssPath, 'css', 'COLOR-SCHEME', 'color-scheme must advertise light and dark support'));
+  // Literal aliases (--shell, --shell-text, --text-base, --text-supporting) are defined in every theme block (D5).
+  for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'shell-text', 'border', 'warning']) {
+    if (!new RegExp(`--${token}\\s*:`).test(css)) errors.push(diagnostic(cssPath, `--${token}`, 'SEMANTIC-TOKENS', 'semantic role must be defined'));
+  }
+  const stack = (name, tail) => new RegExp(`--${name}:\\s*${FONT_LEAD}${tail}`).test(css);
+  if (!stack('font-display', '(?:ui-serif|system-ui|Georgia)') || !stack('font-reading', '(?:ui-serif|Georgia)') || !stack('font-body', 'system-ui')
+    || !stack('font-technical', 'ui-monospace') || !/--font-marks:\s*"?L2C Marks"?\s*,/.test(css)
+    || !/--text-base:\s*1rem/.test(css) || !/--text-supporting:\s*0?\.875rem/.test(css)) {
+    errors.push(diagnostic(cssPath, 'typography', 'SYSTEM-TYPOGRAPHY', 'allowlisted self-hosted families that fall back to system serif, sans and mono stacks, the L2C Marks stack, and literal 16px/14px size tokens are required'));
+  }
+  return errors;
+}
+
+/** Every emitted stylesheet: fonts, gradients, motion and font files; exactly one stylesheet, and it defines the tokens; no inline <style> blocks in built HTML. */
+export function validateStylesheets(dist) {
+  const errors = [];
+  const files = filesUnder(dist).filter((candidate) => candidate.endsWith('.css'));
+  const tokenSheets = [];
+  for (const file of files) {
     const css = readFileSync(file, 'utf8');
     const cssPath = relative(dist, file);
-    if (/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net|linear-gradient|radial-gradient|backdrop-filter/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'VISUAL-DEPENDENCY', 'remote or bundled fonts, gradients, textures, and glass effects are forbidden'));
-    if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'MOTION-EXCLUSION', 'decorative animation, transitions, and parallax are forbidden'));
-    if (!/color-scheme:light dark/.test(css)) errors.push(diagnostic(cssPath, 'css', 'COLOR-SCHEME', 'color-scheme must advertise light and dark support'));
-    for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'border', 'warning']) {
-      if (!new RegExp(`--${token}:`, '').test(css)) errors.push(diagnostic(cssPath, `--${token}`, 'SEMANTIC-TOKENS', 'semantic role must be defined'));
+    for (const issue of fontFaceIssues(css)) errors.push(diagnostic(cssPath, 'css', 'VISUAL-DEPENDENCY', issue));
+    for (const [, fontPath] of css.matchAll(/url\(\s*["']?(\/fonts\/[^"')\s]+)["']?\s*\)/g)) {
+      if (!existsSync(join(dist, fontPath))) errors.push(diagnostic(cssPath, 'font', 'INTERNAL-LINK', `font file missing: ${fontPath}`));
     }
-    if (!/--font-display:\s*(?:ui-serif|system-ui|Georgia)/.test(css) || !/--font-body:\s*system-ui/.test(css) || !/--font-technical:\s*ui-monospace/.test(css)
-      || !/--text-base:\s*1rem/.test(css) || !/--text-supporting:\s*0?\.875rem/.test(css)) {
-      errors.push(diagnostic(cssPath, 'typography', 'SYSTEM-TYPOGRAPHY', 'system-only serif or sans display, sans body, mono technical with 16px/14px minimum sizes are required'));
+    if (/linear-gradient|radial-gradient|backdrop-filter/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'VISUAL-DEPENDENCY', 'gradients, textures, and glass effects are forbidden'));
+    if (MOTION.test(css)) errors.push(diagnostic(cssPath, 'css', 'MOTION-EXCLUSION', 'decorative animation, transitions, and parallax are forbidden'));
+    if (/--canvas\s*:/.test(css)) {
+      tokenSheets.push(cssPath);
+      errors.push(...validateTokenStylesheet(cssPath, css));
+    }
+  }
+  for (const page of filesUnder(dist).filter((candidate) => candidate.endsWith('.html'))) {
+    if (/<style\b/i.test(readFileSync(page, 'utf8'))) errors.push(diagnostic(relative(dist, page), 'html', 'STYLESHEET-SPLIT', 'inline <style> blocks are forbidden; component styles go in global.css (C3)'));
+  }
+  if (files.length && (tokenSheets.length !== 1 || files.length !== 1)) {
+    errors.push(diagnostic('site/dist', 'css', 'STYLESHEET-SPLIT', `exactly one stylesheet that defines the :root tokens is required; found ${files.length} stylesheet(s), ${tokenSheets.length} with tokens`));
+  }
+  return errors;
+}
+
+/* ACK-VERBATIM. The text lives only in site/src/content/acknowledgment.ts; this is the SHA-256 of its 605-character statement + " " + disclaimer. A unit test keeps the two in step. */
+export const ACKNOWLEDGMENT_SHA256 = '408cbbb41af6fe9b3ddfa9f90aedc6a91e2a24d967362aa75f51e357203f8ea9';
+const normalizeSpace = (value) => value.replace(/\s+/g, ' ').trim();
+const acknowledgmentHash = (inner) => sha256(normalizeSpace(stripTags(inner)));
+
+export function validateAcknowledgments(dist, builtPages) {
+  const errors = [];
+  for (const { source, html } of builtPages) {
+    const footer = html.match(/<footer class="site-footer"[\s\S]*?<\/footer>/)?.[0] ?? '';
+    const paragraphs = [...footer.matchAll(/<p class="acknowledgment">([\s\S]*?)<\/p>/g)];
+    if (paragraphs.length !== 1 || acknowledgmentHash(paragraphs[0][1]) !== ACKNOWLEDGMENT_SHA256) {
+      errors.push(diagnostic(source, 'footer', 'ACK-VERBATIM', 'the footer needs exactly one acknowledgment paragraph that matches the approved text'));
+    }
+    const events = [...html.matchAll(/<section class="event-acknowledgment"[^>]*>([\s\S]*?)<\/section>/g)];
+    const wrongEvent = events.some((event) => {
+      const inner = [...event[1].matchAll(/<p>([\s\S]*?)<\/p>/g)];
+      return inner.length !== 1 || acknowledgmentHash(inner[0][1]) !== ACKNOWLEDGMENT_SHA256;
+    });
+    if (events.length > 1 || wrongEvent) errors.push(diagnostic(source, 'event', 'ACK-VERBATIM', 'the event acknowledgment must be one paragraph that matches the approved text'));
+  }
+  for (const file of filesUnder(dist).filter((candidate) => /\.(?:html|xml|json|txt)$/i.test(candidate))) {
+    if (/Scientific Computing Research/.test(readFileSync(file, 'utf8'))) {
+      errors.push(diagnostic(relative(dist, file).replaceAll('\\', '/'), 'text', 'ACK-VERBATIM', 'the phrase "Scientific Computing Research" is not part of the approved acknowledgment'));
     }
   }
   return errors;
 }
+
+/* BUDGET (spec S6): fonts <= 140 KiB per page, <= 2 font preloads, inline + external JS <= 2 KiB, no third-party requests. */
+export const BUDGETS = Object.freeze({ fontBytes: 140000, fontPreloads: 2, scriptBytes: 2048 });
+const unicodeRanges = (value) => value.split(',').map((range) => range.trim()).filter(Boolean).map((range) => {
+  const match = /^U\+([0-9A-F?]+)(?:-([0-9A-F]+))?$/i.exec(range);
+  if (!match) return undefined;
+  if (match[1].includes('?')) return [parseInt(match[1].replaceAll('?', '0'), 16), parseInt(match[1].replaceAll('?', 'F'), 16)];
+  return [parseInt(match[1], 16), parseInt(match[2] ?? match[1], 16)];
+}).filter(Boolean);
+/** Font files a browser would download for a page: faces without a unicode-range, plus faces whose range covers a character on the page. */
+export function fontFilesForPage(css, pageText) {
+  const codepoints = [...new Set([...pageText].map((character) => character.codePointAt(0)))];
+  const files = new Set();
+  for (const block of css.match(/@font-face\s*\{[^}]*\}/gi) ?? []) {
+    const urls = [...block.matchAll(/url\(\s*["']?(\/fonts\/[^"')\s]+)["']?\s*\)/g)].map((match) => match[1]);
+    if (!urls.length) continue;
+    const range = block.match(/unicode-range\s*:\s*([^;}]+)/i)?.[1];
+    const ranges = range ? unicodeRanges(range) : undefined;
+    if (!ranges || codepoints.some((point) => ranges.some(([from, to]) => point >= from && point <= to))) urls.forEach((url) => files.add(url));
+  }
+  return [...files];
+}
+const isThirdParty = (url) => /^(?:https?:)?\/\//i.test(url) && !url.startsWith(CANONICAL_ORIGIN);
+const localSize = (dist, url) => {
+  const file = join(dist, decodeURI(url.split(/[?#]/, 1)[0]).replace(/^\//, ''));
+  return existsSync(file) ? readFileSync(file).byteLength : 0;
+};
+export function validateBudgets(dist, builtPages) {
+  const errors = [];
+  for (const { source, html } of builtPages) {
+    const text = stripTags(html.replace(/<(script|style)\b[\s\S]*?<\/\1>/g, ' '));
+    const sheets = (html.match(/<link\b[^>]*\brel="stylesheet"[^>]*>/g) ?? []).map((tag) => tag.match(/\bhref="([^"]+)"/)?.[1]).filter(Boolean);
+    const fonts = new Set();
+    for (const sheet of sheets) {
+      if (isThirdParty(sheet)) continue;
+      const file = join(dist, decodeURI(sheet.split(/[?#]/, 1)[0]).replace(/^\//, ''));
+      if (!existsSync(file)) continue;
+      const css = readFileSync(file, 'utf8');
+      fontFilesForPage(css, text).forEach((url) => fonts.add(url));
+      if (/url\(\s*["']?(?:https?:)?\/\/(?!laptop-to-cluster\.org)/i.test(css) || /@import\s+["']?(?:https?:)?\/\//i.test(css)) {
+        errors.push(diagnostic(source, sheet, 'BUDGET', 'third-party request: the stylesheet loads a remote resource'));
+      }
+    }
+    const fontBytes = [...fonts].reduce((total, url) => total + localSize(dist, url), 0);
+    if (fontBytes > BUDGETS.fontBytes) errors.push(diagnostic(source, 'fonts', 'BUDGET', `fonts total ${fontBytes} bytes; the limit is ${BUDGETS.fontBytes}`));
+    const preloads = occurrences(html, /<link\b[^>]*\brel="preload"[^>]*\bas="font"|<link\b[^>]*\bas="font"[^>]*\brel="preload"/g);
+    if (preloads > BUDGETS.fontPreloads) errors.push(diagnostic(source, 'preload', 'BUDGET', `${preloads} font preloads; the limit is ${BUDGETS.fontPreloads}`));
+    let scriptBytes = 0;
+    for (const [, attributes, body] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+      const src = attributes.match(/\bsrc="([^"]+)"/)?.[1];
+      const type = attributes.match(/\btype="([^"]*)"/)?.[1];
+      if (src) scriptBytes += isThirdParty(src) ? 0 : localSize(dist, src);
+      else if (!type || /^(?:module|text\/javascript)$/i.test(type)) scriptBytes += Buffer.byteLength(body);
+    }
+    if (scriptBytes > BUDGETS.scriptBytes) errors.push(diagnostic(source, 'scripts', 'BUDGET', `client JavaScript totals ${scriptBytes} bytes; the limit is ${BUDGETS.scriptBytes}`));
+    const requests = [
+      ...(html.match(/<(?:script|img|iframe|source|video|audio|embed|track)\b[^>]*>/g) ?? []).flatMap((tag) => [tag.match(/\bsrc="([^"]+)"/)?.[1], ...(tag.match(/\bsrcset="([^"]+)"/)?.[1] ?? '').split(',').map((candidate) => candidate.trim().split(/\s+/)[0])]),
+      ...(html.match(/<link\b[^>]*>/g) ?? []).filter((tag) => /\brel="[^"]*\b(?:stylesheet|preload|modulepreload|prefetch|preconnect|dns-prefetch|icon|manifest|apple-touch-icon)\b/.test(tag)).map((tag) => tag.match(/\bhref="([^"]+)"/)?.[1]),
+    ].filter((url) => url && isThirdParty(url));
+    if (requests.length) errors.push(diagnostic(source, 'requests', 'BUDGET', `third-party request: ${requests.length} resource(s) load from another origin`));
+  }
+  return errors;
+}
+
+/* FRAGMENT-LINK (D11). Duplicated from contracts.ts REQUIRED_FRAGMENTS, keyed by route; a unit test keeps them in step. */
+export const REQUIRED_FRAGMENTS = Object.freeze({
+  '/': ['big-idea', 'doors', 'crosswalk'],
+  '/milestones/2/': ['release-v0-2-0'],
+  '/adoption/evaluate/': ['not-tested', 'when-not'],
+  '/about/attribution/': ['licenses'],
+  '/about/glossary/': ['allocation', 'job-step', 'readiness-gate', 'verification', 'job-scoped-scratch', 'loopback', 'ssh-tunnel', 'coordinator', 'worker', 'batch-scheduler'],
+});
+const pageIds = (html) => new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
+export function validateFragmentLinks(builtPages) {
+  const errors = [];
+  const ids = new Map(builtPages.map(({ source, html }) => [source, pageIds(html)]));
+  for (const { source, html } of builtPages) {
+    for (const [, href] of html.matchAll(/<a\b[^>]*\shref="([^"]*#[^"]*)"/g)) {
+      const [pathPart, rawFragment] = [href.slice(0, href.indexOf('#')), href.slice(href.indexOf('#') + 1)];
+      if (!rawFragment || rawFragment.startsWith(':~:')) continue;
+      if (/^(?:mailto:|tel:)/i.test(pathPart) || (/^https?:\/\//i.test(pathPart) && !pathPart.startsWith(CANONICAL_ORIGIN))) continue;
+      let target = source;
+      if (pathPart) {
+        const path = decodeURI(new URL(pathPart.replace(CANONICAL_ORIGIN, ''), `${CANONICAL_ORIGIN}${source}`).pathname);
+        target = path.endsWith('/') || path.endsWith('.html') ? path : `${path}/`;
+      }
+      const targetIds = ids.get(target);
+      if (!targetIds) continue;
+      let fragment = rawFragment;
+      try { fragment = decodeURIComponent(rawFragment); } catch { /* keep the raw fragment */ }
+      if (!targetIds.has(fragment)) errors.push(diagnostic(source, href, 'FRAGMENT-LINK', `the fragment does not exist on ${target}`));
+    }
+  }
+  return errors;
+}
+export function validateRequiredFragments(builtPages) {
+  const errors = [];
+  for (const [route, required] of Object.entries(REQUIRED_FRAGMENTS)) {
+    const page = builtPages.find(({ source }) => source === route);
+    if (!page) {
+      errors.push(diagnostic(route, 'page', 'FRAGMENT-LINK', 'a page that must carry contract fragments is missing'));
+      continue;
+    }
+    const present = pageIds(page.html);
+    for (const id of required) if (!present.has(id)) errors.push(diagnostic(route, `#${id}`, 'FRAGMENT-LINK', 'required fragment id is missing'));
+  }
+  return errors;
+}
+
 export function validateHostnamePolicy(policy) {
   const errors = [];
   if (policy.schemaVersion !== 1) errors.push(diagnostic('hostname-redirects.v1.json', 'schemaVersion', 'REDIRECT-POLICY', 'must be 1'));
@@ -457,16 +883,135 @@ export function validateReleaseManifest(record, artifactManifest) {
   return errors;
 }
 
-export function validateDeploymentWorkflow(workflowText) {
+export function validateDeploymentWorkflow(workflowText, file = '.github/workflows/publication.yml', jobName = 'deploy') {
   const errors = [];
-  const deploy = workflowText.match(/\n  deploy:[\s\S]*?(?=\n  [a-zA-Z][\w-]*:|$)/)?.[0] ?? '';
-  if (!deploy) return [diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'BUILD-ONCE', 'deployment job is missing')];
+  const where = `jobs.${jobName}`;
+  const deploy = jobBlock(workflowText, jobName);
+  if (!deploy) return [diagnostic(file, where, 'BUILD-ONCE', 'deployment job is missing')];
   for (const pattern of [/npm\s+(?:ci|install)/i, /astro\s+(?:build|sync|check)/i, /npm\s+run\s+build/i, />\s*site\/dist|cp\s+.*site\/dist|mv\s+.*site\/dist/i]) {
-    if (pattern.test(deploy)) errors.push(diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'BUILD-ONCE', `forbidden deployment operation: ${pattern}`));
+    if (pattern.test(deploy)) errors.push(diagnostic(file, where, 'BUILD-ONCE', `forbidden deployment operation: ${pattern}`));
   }
-  if (!/actions\/download-artifact@/.test(deploy)) errors.push(diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'BUILD-ONCE', 'must download the retained artifact'));
-  if (!/cloudflare\/wrangler-action@/.test(deploy) || !/pages deploy site\/dist/.test(deploy)) errors.push(diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'DIRECT-UPLOAD', 'must invoke wrangler Pages Direct Upload'));
-  if (!/publication\.mjs verify/.test(deploy)) errors.push(diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'ARTIFACT-IDENTITY', 'must verify checksums immediately before upload'));
+  if (!/actions\/download-artifact@/.test(deploy)) errors.push(diagnostic(file, where, 'BUILD-ONCE', 'must download the retained artifact'));
+  if (!/cloudflare\/wrangler-action@/.test(deploy) || !/pages deploy site\/dist/.test(deploy)) errors.push(diagnostic(file, where, 'DIRECT-UPLOAD', 'must invoke wrangler Pages Direct Upload'));
+  if (!/publication\.mjs verify/.test(deploy)) errors.push(diagnostic(file, where, 'ARTIFACT-IDENTITY', 'must verify checksums immediately before upload'));
+  return errors;
+}
+
+/** The one release-version rule (A12): RELEASE_VERSION, else the newest releases/<v>/release-candidate.json. Never defaults to v0.1.0. Kept in step with site/src/content/release.ts by a unit test. */
+export function resolveReleaseVersion(root = '.', env = process.env) {
+  const fromEnv = env.RELEASE_VERSION?.trim();
+  if (fromEnv) return fromEnv;
+  const directory = join(root, 'releases');
+  const versions = existsSync(directory) ? readdirSync(directory).filter((name) => /^v\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?$/.test(name) && existsSync(join(directory, name, 'release-candidate.json'))) : [];
+  const parts = (version) => version.slice(1).split(/[.-]/).map((part) => Number(part) || 0);
+  const newest = versions.sort((a, b) => { const pa = parts(a); const pb = parts(b); for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pb[i] - pa[i]; return 0; })[0];
+  if (!newest) throw new Error('resolveReleaseVersion: set RELEASE_VERSION or add releases/<version>/release-candidate.json');
+  return JSON.parse(readFileSync(join(directory, newest, 'release-candidate.json'), 'utf8')).version ?? newest;
+}
+
+/** GitHub Actions tag filter semantics for the characters we use: * (no slash), ** (anything), ? and + (as in a regular expression), [] classes. */
+export function tagPatternMatches(pattern, tag) {
+  let source = '';
+  for (let index = 0; index < pattern.length; index++) {
+    const character = pattern[index];
+    if (character === '*') {
+      if (pattern[index + 1] === '*') { source += '.*'; index++; } else source += '[^/]*';
+    } else if (character === '?' || character === '+') source += character;
+    else if (character === '[') {
+      const end = pattern.indexOf(']', index);
+      if (end < 0) return false;
+      source += pattern.slice(index, end + 1);
+      index = end;
+    } else source += character.replace(/[.\\^$(){}|]/g, '\\$&');
+  }
+  return new RegExp(`^${source}$`).test(tag);
+}
+/** Ordered include/!-exclude evaluation: the last matching pattern decides. */
+export function tagTriggers(patterns, tag) {
+  let triggers = false;
+  for (const pattern of patterns) {
+    if (pattern.startsWith('!')) { if (tagPatternMatches(pattern.slice(1), tag)) triggers = false; }
+    else if (tagPatternMatches(pattern, tag)) triggers = true;
+  }
+  return triggers;
+}
+function jobBlock(text, name) {
+  return text.match(new RegExp(`\\n  ${name}:[\\s\\S]*?(?=\\n  [a-zA-Z][\\w-]*:|$)`))?.[0] ?? '';
+}
+function workflowList(text, key) {
+  const flow = text.match(new RegExp(`\\n\\s+${key}:[ \\t]*\\[([^\\n]*)\\][ \\t]*(?=\\n|$)`))?.[1];
+  const raw = flow ?? text.match(new RegExp(`\\n\\s+${key}:[ \\t]*((?:\\n\\s+- [^\\n]+)+)`))?.[1] ?? '';
+  return raw.split(flow === undefined ? /\n/ : /,/).map((item) => item.replace(/^\s*-\s*/, '').trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+}
+/** Reads a single-line flow list up to the last ] on its line (character classes contain ]), or a block list. */
+export function workflowTagPatterns(text) {
+  return workflowList(text, 'tags');
+}
+function jobNeeds(block) {
+  const match = block.match(/\n    needs:[ \t]*([^\n]*)((?:\n      - [^\n]+)*)/);
+  if (!match) return [];
+  return `${match[1]},${match[2].replace(/\n\s+- /g, ',')}`.replace(/[\[\]]/g, '').split(',').map((item) => item.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+}
+function jobGate(block) {
+  const condition = (block.match(/\n    if:[ \t]*([^\n]+)/)?.[1] ?? '').replace(/\$\{\{|\}\}/g, '').replace(/\s+/g, '');
+  return /^needs\.plan\.outputs\.preview==['"]?1['"]?$/.test(condition) ? 'preview' : /^needs\.plan\.outputs\.preview!=['"]?1['"]?$/.test(condition) ? 'production' : 'other';
+}
+const artifactName = (prefix) => new RegExp(`^${prefix}-\\$\\{\\{\\s*needs\\.plan\\.outputs\\.version\\s*\\}\\}-\\$\\{\\{\\s*github\\.sha\\s*\\}\\}$`);
+
+/** The v0.2.0 release workflow (written by W8): the properties of contract A11 that the policy gate requires. */
+export function validateReleaseWorkflow(text, file = '.github/workflows/release.yml') {
+  const errors = [];
+  const fail = (field, check, message) => errors.push(diagnostic(file, field, check, message));
+  const patterns = workflowTagPatterns(text);
+  if (!patterns.length) fail('on.push.tags', 'RELEASE-WORKFLOW', 'tag triggers are required');
+  for (const tag of ['v0.2.0', 'v0.2.0-rc.1']) if (!tagTriggers(patterns, tag)) fail('on.push.tags', 'RELEASE-WORKFLOW', `no tag pattern triggers ${tag}`);
+  if (tagTriggers(patterns, 'v0.1.0')) fail('on.push.tags', 'RELEASE-WORKFLOW', 'the tag patterns match the frozen v0.1.0 tag; add a !v0.1.0 filter');
+  if (/v0\.1\.0/.test(text.replace(/!v0\.1\.0/g, ''))) fail('release', 'RELEASE-WORKFLOW', 'v0.1.0 may appear only inside the !v0.1.0 filter');
+  if (!workflowList(text, 'branches').includes('v0.2.0-showcase')) fail('on.push.branches', 'RELEASE-WORKFLOW', 'the preview trigger on branch v0.2.0-showcase is required');
+  if (!/^permissions:\s*\n\s+contents:\s*read\s*$/m.test(text)) fail('permissions', 'RELEASE-WORKFLOW', 'top-level permissions must be contents: read');
+  if (!/L2C_BOUNDARY_PATTERN:\s*\$\{\{\s*secrets\.L2C_BOUNDARY_PATTERN\s*\}\}/.test(text)) fail('env', 'RELEASE-WORKFLOW', 'L2C_BOUNDARY_PATTERN must be mapped from the secret of the same name');
+  for (const secret of ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_ZONE_ID']) if (!new RegExp(`secrets\\.${secret}\\b`).test(text)) fail('secrets', 'RELEASE-WORKFLOW', `secrets.${secret} must be used`);
+  const plan = jobBlock(text, 'plan');
+  if (!/\n    outputs:\s*\n(?:\s+[a-z]+:[^\n]*\n)*?\s+version:/.test(`${plan}\n`)) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job must output the release version');
+  if (!plan) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job is missing');
+  const build = jobBlock(text, 'build-once');
+  if (!build) fail('jobs.build-once', 'BUILD-ONCE', 'the build-once job is missing');
+  else {
+    if (!/fetch-depth:\s*0/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'checkout needs fetch-depth: 0 for the history scan');
+    if (!jobNeeds(build).includes('plan')) fail('jobs.build-once', 'BUILD-ONCE', 'build-once must need plan');
+    if (!/npm run validate(?![:\w-])/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'the full npm run validate chain is required');
+    const artifact = build.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
+    if (!artifactName('validated-site').test(artifact.trim())) fail('jobs.build-once', 'BUILD-ONCE', 'the retained artifact name must contain the release version (validated-site-${{ needs.plan.outputs.version }}-${{ github.sha }})');
+  }
+  for (const [index, step] of [...text.matchAll(/actions\/checkout@[^\n]*\n([\s\S]*?)(?=\n      - |\n  [a-zA-Z]|$)/g)].entries()) if (!/fetch-depth:\s*0/.test(step[1])) fail('jobs', 'RELEASE-WORKFLOW', `checkout step ${index + 1} needs fetch-depth: 0`);
+  for (const name of ['CLOUDFLARE_PAGES_PROJECT', 'CLOUDFLARE_CUSTOM_DOMAIN_ID', 'CLOUDFLARE_REDIRECT_LIST_ID', 'CLOUDFLARE_REDIRECT_RULE_ID']) if (!new RegExp(`vars\\.${name}\\b`).test(text)) fail('vars', 'RELEASE-WORKFLOW', `vars.${name} must be used as in publication.yml`);
+  const preview = jobBlock(text, 'deploy-preview');
+  const production = jobBlock(text, 'deploy');
+  errors.push(...validateDeploymentWorkflow(text, file, 'deploy-preview'), ...validateDeploymentWorkflow(text, file, 'deploy'));
+  for (const [name, block] of [['deploy-preview', preview], ['deploy', production]]) {
+    if (block && jobGate(block) !== (name === 'deploy' ? 'production' : 'preview')) fail(`jobs.${name}`, 'RELEASE-WORKFLOW', `${name} must be gated on the plan preview output (${name === 'deploy' ? "!= '1'" : "== '1'"})`);
+    if (block && !jobNeeds(block).includes('build-once')) fail(`jobs.${name}`, 'BUILD-ONCE', `${name} must need build-once`);
+  }
+  const count = (block, needle) => block.split(needle).length - 1;
+  if (count(text, '--branch=preview') !== count(preview, '--branch=preview') || !count(preview, '--branch=preview')) fail('jobs.deploy-preview', 'DIRECT-UPLOAD', '--branch=preview must appear only in deploy-preview, and there it is required');
+  if (count(text, '--branch=main') !== count(production, '--branch=main') || !count(production, '--branch=main')) fail('jobs.deploy', 'DIRECT-UPLOAD', '--branch=main must appear only in deploy, and there it is required');
+  for (const script of ['generate-release-record.mjs', 'update-recovery-index.mjs']) {
+    if (count(text, script) !== count(production, script)) fail('jobs.deploy-preview', 'RELEASE-WORKFLOW', `${script} belongs to the production job only`);
+    if (!production.includes(script)) fail('jobs.deploy', 'RELEASE-WORKFLOW', `${script} must run in the deploy job`);
+  }
+  const post = jobBlock(text, 'post-deploy-release-checks');
+  const releaseRecord = production.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
+  if (!artifactName('release-record').test(releaseRecord.trim())) fail('jobs.deploy', 'RELEASE-WORKFLOW', 'the release record artifact name must be release-record-${{ needs.plan.outputs.version }}-${{ github.sha }}');
+  if (!jobNeeds(post).includes('deploy') || !/check-public-release\.mjs/.test(post)) fail('jobs.post-deploy-release-checks', 'RELEASE-WORKFLOW', 'a post-deploy job that needs deploy and runs check-public-release.mjs is required');
+  return errors;
+}
+
+/** publication.yml stays frozen for v0.1.0: its tag trigger and every checkout are pinned to that tag. */
+export function validateFrozenPublicationWorkflow(text, file = '.github/workflows/publication.yml') {
+  const errors = [];
+  if (workflowTagPatterns(text).join('|') !== 'v0.1.0') errors.push(diagnostic(file, 'on.push.tags', 'FROZEN-RELEASE', 'the tag trigger must be exactly v0.1.0'));
+  const checkouts = text.split(/\n      - /).filter((step) => step.startsWith('uses: actions/checkout@'));
+  if (!checkouts.length || checkouts.some((step) => !/\bref:\s*v0\.1\.0\b/.test(step))) errors.push(diagnostic(file, 'jobs', 'FROZEN-RELEASE', 'every checkout must be pinned with ref: v0.1.0 so a manual dispatch cannot deploy another revision'));
   return errors;
 }
 function printErrors(errors) {
@@ -512,12 +1057,40 @@ if (invoked) {
       const text = readFileSync(file, 'utf8');
       if (REDIRECT_HOSTS.some((host) => text.includes(host))) errors.push(diagnostic(relative(root, file), 'hostname', 'REDIRECT-POLICY', 'hostname rules must remain outside content redirects'));
     }
+    const requireRelease = args.includes('--require-release-workflow') || process.env.CI === 'true';
+    const releasePath = join(root, '.github/workflows/release.yml');
+    const releaseErrors = existsSync(releasePath)
+      ? validateReleaseWorkflow(readFileSync(releasePath, 'utf8'))
+      : [diagnostic('.github/workflows/release.yml', 'file', 'RELEASE-WORKFLOW', 'the release workflow is missing')];
+    const frozenErrors = validateFrozenPublicationWorkflow(readFileSync(join(root, '.github/workflows/publication.yml'), 'utf8'));
+    if (requireRelease) errors.push(...releaseErrors, ...frozenErrors);
+    else for (const message of [...releaseErrors, ...frozenErrors]) console.error(`WARNING: ${message}`);
     if (printErrors(errors)) console.log('Canonical, Cloudflare redirect, and build-once deployment policies are valid.');
   } else if (command === 'cloudflare-readiness') {
     const input = JSON.parse(readFileSync(args[0], 'utf8'));
     if (printErrors(validateCloudflareReadiness(input))) console.log('Cloudflare identifiers, DNS, certificate, and rule readiness are valid.');
+  } else if (command === 'release-version') {
+    try {
+      console.log(resolveReleaseVersion(resolve(args[0] ?? '.')));
+    } catch (error) {
+      console.error(`ERROR: ${error.message}`);
+      process.exitCode = 1;
+    }
+  } else if (command === 'boundary') {
+    const historyAt = args.indexOf('--history');
+    const history = historyAt >= 0 ? args[historyAt + 1] : undefined;
+    if (historyAt >= 0 && (!history || history.startsWith('--'))) {
+      console.error('Usage: publication.mjs boundary <root> [--require] [--history <ref>]');
+      process.exitCode = 2;
+    } else {
+      const root = resolve(args[0] && !args[0].startsWith('--') ? args[0] : '.');
+      const result = runBoundaryScan({ root, require: args.includes('--require'), history });
+      for (const line of result.stdout) console.log(line);
+      for (const line of result.stderr) console.error(line);
+      process.exitCode = result.exitCode;
+    }
   } else {
-    console.error('Usage: publication.mjs manifest <dist> <output> | verify <dist> <manifest> | built-output <dist> | policy <root> | cloudflare-readiness <input>');
+    console.error('Usage: publication.mjs manifest <dist> <output> | verify <dist> <manifest> | built-output <dist> | policy <root> | cloudflare-readiness <input> | boundary <root> [--require] [--history <ref>] | release-version [<root>]');
     process.exitCode = 2;
   }
 }
