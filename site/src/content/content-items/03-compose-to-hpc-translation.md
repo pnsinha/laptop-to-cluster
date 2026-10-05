@@ -1,191 +1,171 @@
 ---
 id: module-3-compose-to-hpc-translation
 stable_slug: compose-to-hpc-translation
-title: "Compose-to-HPC Translation: Basic Concepts"
-description: "A primer on moving Docker Compose stacks to scheduler-managed, rootless-container workflows on shared HPC clusters."
+title: "Translate a Compose file"
+description: "A step-by-step guide to moving a multi-service Docker Compose file onto a scheduler-managed cluster allocation: inventory, construct map, template edits, run and verify."
+summary: "See what each part of your Compose file becomes on a cluster, then edit the example job to run your own services."
 module_number: 3
 topics: [compose-to-hpc-translation, scheduler-as-orchestrator, rootless-containers]
-status: draft
-last_updated: "2026-07-31"
-summary: "Learn the core mapping between Docker Compose concepts and HPC-native equivalents, and why the scheduler becomes the new orchestration boundary."
-artifact_type: learning-module
-keywords: [Compose, HPC, orchestration, scheduler, Apptainer, Charliecloud, readiness, portability]
+keywords: [Compose, HPC, orchestration, scheduler, Apptainer, readiness, translation]
 audiences: [HPC learners, scientific software practitioners]
 milestone: 2
-publication_date: "2026-07-31"
+status: published
+publication_date: "2026-10-15"
+last_updated: "2026-10-15"
+last_reviewed: "2026-10-15"
 applicable_release: v0.1.0
+artifact_type: learning-module
 module_type: conceptual
 learning_outcomes:
-  - "Map Docker Compose services, images, volumes, ports, and dependencies to scheduler-managed HPC concepts."
-  - "Explain why rootless runtimes replace Docker on shared clusters."
-  - "Identify where center policy affects storage, networking, ports, and GPUs."
+  - "Decide whether your stack suits a one-allocation pattern, and list what each service needs."
+  - "Map each Compose construct to its cluster form, and tell the Tested rows from the Designed, not run rows."
+  - "Know which files of the example job you keep and which you replace to run your own services."
 prerequisites:
-  - { id: module-1-scheduler-orchestrator, check: "Read Module 1: Scheduler as Orchestrator" }
-  - { id: module-2-baseline, check: "Read Module 2: Baseline Single-Node Pattern" }
+  - { id: module-1-scheduler-orchestrator, check: "Read Module 1: Scheduler as Orchestrator, or take the five-minute tour" }
 section_kinds: [concept, limitations, next-steps]
 estimated_minutes: 25
 completion_check:
   kind: decision-exercise
-  text: "Pick one Compose stack you use. List each Compose concept and the HPC equivalent you would need at your center, including the actual scheduler, runtime, scratch path, and GPU request syntax."
-schedulers: [slurm, pbs-family]
-container_runtimes: [apptainer, charliecloud]
-related: [module-1-scheduler-orchestrator, module-2-baseline, start-guide]
+  text: "Pick one Compose stack you use. Fill in the Step 1 worksheet, write the cluster form of each construct from the Step 2 table, and mark each row Tested or Designed, not run."
+schedulers: [slurm]
+container_runtimes: [apptainer]
+related: [module-1-scheduler-orchestrator, module-2-baseline, start-guide, adoption-evaluate]
 learning_stage: baseline
 authority:
   - { kind: sow, citation: "Fellowship SOW, Milestone 2", scope: "Expand portability patterns across schedulers, runtimes, and workflow shapes." }
-  - { kind: project-decision, citation: "Milestone 2 scope", scope: "Publish a cross-cutting concept module before releasing scheduler-specific templates." }
+  - { kind: project-decision, citation: "Milestone 2 scope", scope: "Publish a cross-cutting translation guide before releasing scheduler-specific templates." }
 sow_deliverable_id: M2-MODULE-3-SUPPORTING
 deliverable_status: draft
 ---
+You have a Docker Compose file and a shared cluster. This page takes you from one to the other in six steps, numbered 0 to 5. You can read it without a cluster account. If "allocation" or "job step" is new to you, take the [five-minute tour](/guide/tour/) first.
 
-## Why this translation is necessary
+The method: keep the example job's orchestration (the allocation, the readiness gate and the cleanup), and replace its placeholder services and its result check with yours. The example job is the baseline workflow in this project's repository, [pinned to a release on GitHub](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/workflows/baseline-slurm-apptainer).
 
-Research software is often a multi-service stack. A typical project has a dashboard, a database, a message queue, CPU workers, and sometimes GPU workers. On a laptop or a cloud VM, `docker compose up` starts all of these with one command.
+## Step 0: Is this the right pattern?
 
-Shared HPC clusters break that command in several ways at once:
+This pattern runs your stack once, for a bounded time, inside a single allocation, and then stops. Two questions decide whether that fits.
 
-- Docker daemons are disabled or forbidden for security reasons.
-- A batch scheduler owns every resource. Services cannot "just stay up"; the scheduler allocates and reclaims them.
-- Users do not have root, and privileged containers are blocked.
-- Storage, networking, ports, and GPU access are controlled by center policy.
+1. Does your stack produce **results**, or is **staying up** the product?
+2. If one service dies, is restarting the whole stack acceptable?
 
-The result is that the same stack that works locally must be re-expressed in scheduler-managed, rootless-container terms.
+Results plus an acceptable restart means continue. A stable public endpoint, a service that must outlive a wall-time limit, or a component that has to recover by itself points elsewhere: read [when not to use this pattern](/adoption/evaluate/#when-not) first.
 
-## The central reframe
+## Step 1: Inventory your Compose file
 
-On a laptop, Docker Compose is the orchestration boundary. It starts services, connects them, and manages their lifetime. On HPC, a scheduler allocation and a launch script take over that role.
+Make a copy of this worksheet and add one row for each service.
 
-```text
-allocation -> coordinator -> semantic readiness -> workers -> result verification
-```
+| Service | Role | Waits for | Writes | Listens on | Needs a GPU? |
+|---|---|---|---|---|---|
+| (name) | coordinator, worker, one-shot job, data store or interface | the service it depends on, and what proves that service is ready | the paths it writes | the port it serves | yes or no |
 
-This module explains the mapping between Compose concepts and their HPC equivalents. Because the mapping is deterministic, it can be taught, reviewed, and eventually automated.
+Then flag anything that has no direct cluster equivalent.
 
-## Compose to HPC: the core dictionary
+- **`restart:` policies.** Nothing restarts a service that dies. The allocation ends instead, so decide how a failure should show up.
+- **Service DNS names.** Services on one node reach each other on loopback (127.0.0.1), at a port the coordinator picks and writes to a file. A name like `db` becomes an address read from that file.
+- **State you need next time.** Job storage is temporary. Copy out what you keep before the job ends.
+- **Root entrypoints.** Rootless runtimes cannot change file ownership, bind privileged ports or switch users. An image that assumes root needs a different entrypoint.
+- **Ports meant for other people.** Nothing outside the node reaches your services unless your center approves a path.
+- **GPUs.** A GPU is a scheduler request plus a runtime flag. The example job has no GPU step, so treat that part as Designed, not run.
 
-| Compose concept | HPC-native mapping | Decision to make |
-|-----------------|--------------------|------------------|
-| `service` | Tracked step inside one scheduler allocation | Which process coordinates, and which are workers? |
-| `image` or `build` | Immutable image launched by a rootless runtime | Who builds and approves the image? |
-| `depends_on` or `healthcheck` | Bounded semantic readiness gate | What response proves the coordinator is ready? |
-| `volumes` | Explicit job-scoped scratch or approved storage bind | Which state is temporary, and which must persist? |
-| `ports` | Loopback or a center-approved access path | Who needs access, and what does policy permit? |
-| `device_requests` (GPU) | Scheduler CPU, memory, wall-time, or accelerator request | Which resources must be requested before launch? |
-| `restart` policy | None; the job ends when the allocation ends | How is failure surfaced and recovered? |
+## Step 2: Map each construct
 
-The rest of this module expands each row.
+For each construct in your Compose file, find its cluster form. The terms [job step](/about/glossary/#job-step), [readiness gate](/about/glossary/#readiness-gate), [job-scoped scratch](/about/glossary/#job-scoped-scratch) and [loopback](/about/glossary/#loopback) are defined in the glossary.
 
-## Rootless container runtimes
+| Compose construct | Cluster form | Status |
+|---|---|---|
+| `docker compose up` and `down` | One `sbatch` submission. The script is the composition. | [Tested](/adoption/evaluate/#not-tested) |
+| a `service` | An `srun --exclusive` job step | [Tested](/adoption/evaluate/#not-tested) |
+| `deploy.replicas` | A loop that starts each worker, then waits on each one | [Tested](/adoption/evaluate/#not-tested) |
+| `healthcheck` with `depends_on: service_healthy` | A two-stage readiness gate: wait for the coordinator's address file, then require its exact answer within a time limit | [Tested](/adoption/evaluate/#not-tested) |
+| `depends_on: service_completed_successfully` | Plain sequential flow in the script | [Tested](/adoption/evaluate/#not-tested) |
+| a named volume | A private job folder with owner-only permissions, bound into the container | [Tested](/adoption/evaluate/#not-tested) |
+| `ports`, for services that talk to each other | Loopback on a port the coordinator picks, with its address written to a file | [Tested](/adoption/evaluate/#not-tested) |
+| `ports`, to reach a service from your laptop | An SSH tunnel, where your center allows one | Designed, not run |
+| `build:` | A prebuilt image, checked against a recorded checksum before use | [Tested](/adoption/evaluate/#not-tested) |
+| cleanup on `down` | A cleanup step, registered at the start, that runs on any exit and stops every job step | [Tested](/adoption/evaluate/#not-tested) |
+| stopping a stuck service by force, and the scheduler's time-limit signal | A short grace period, then a forced stop | Designed, not run |
+| a GPU device request | A scheduler GPU request plus the runtime's GPU flag | Designed, not run |
+| the same pattern on PBS-family schedulers or with Charliecloud | The same structure with different commands | Designed, not run |
 
-HPC sites reject Docker because it requires a privileged daemon. The project focuses on runtimes that work without root.
+**Tested** rows ran in the example job on a cluster. [What was tested where](/adoption/evaluate/#not-tested) names the cluster and links the full test record. Rows marked Designed, not run follow the same pattern, but nobody has run them yet.
 
-Apptainer runs through user namespaces or setuid and uses `.sif` images. It is common on ACCESS and NAIRR systems. Singularity is the predecessor to Apptainer and is largely compatible, though module names vary by center. Charliecloud is fully unprivileged through user namespaces and appears at centers that enable user namespaces.
+## Step 3: Fill in the template
 
-The translation rules are the same across all three. The differences appear in bind semantics, image formats, and whether `fakeroot` is available for builds.
+Open the [example job](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/workflows/baseline-slurm-apptainer). To run your own application you change the files below and a small set of settings.
 
-## Readiness checks replace `depends_on`
+**Keep**
 
-Compose `depends_on` waits for a container to start, not for it to be ready. On HPC, the replacement is an explicit readiness gate in the launch script. Semantic readiness means checking that the service can do its job, not just that a port is open.
+- The allocation request structure and the private job folder setup.
+- The readiness gate: the bounded wait, the exact-answer check and the stop-with-a-named-error behavior.
+- The cleanup step that runs on any exit.
 
-Examples:
+**Replace or edit**
 
-- For PostgreSQL, run `pg_isready` or connect and issue a trivial query.
-- For an HTTP API, request a health endpoint and expect the correct status.
-- For a queue service, confirm it accepts a test message.
+| File | What to do |
+|---|---|
+| `slurm/baseline.sbatch` | Set your account, partition, wall time and CPUs, and swap the coordinator and worker launch lines for your services. |
+| `bin/coordinator.py` | Replace with your coordinating service. The health answer it gives is at [lines 27-28](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/bin/coordinator.py#L27-L28). |
+| `bin/readiness.py` | Keep the script and its bounds, but change what "ready" means. The exact answer it waits for is at [lines 29-31](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/bin/readiness.py#L29-L31) and must match what your service returns. |
+| `bin/worker.py` | Replace with your workers. |
+| `bin/common.py` | Edit it if your tasks differ. It checks the example's task format (an id and a payload with a message and a repeat count), so another shape is rejected as invalid input. |
+| `bin/verify.py` | Replace with your own definition of correct. Checking that every result is right belongs to your application, not to the pattern. |
+| `bin/validate_input.py` and `inputs/` | Replace with your inputs and their checksum record. |
+| `expected/` | Replace or delete. Only the example's verifier reads it. |
+| `container/Apptainer.def` and `container/image-lock.json` | Replace with your image and its pinned base. |
+| `container/acquire.sh`, `diagnostics.json` and `README.md` | Leave unchanged. |
 
-A fixed `sleep` is not a substitute. It is slower and less reliable than a real check.
+**Settings.** The job takes 14 adapter variables, set with `sbatch --export` or a wrapper your center owns. The [package README](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/README.md) lists the defaults and limits: `WORKER_COUNT`, `TASK_COUNT`, `READINESS_TIMEOUT`, `CLEANUP_TIMEOUT`, `IMAGE_PATH`, `IMAGE_SHA256_FILE`, `INPUT_PATH`, `INPUT_SHA256_FILE`, `EXPECTED_PATH`, `BSSW_SCRATCH_ROOT`, `BSSW_APPTAINER_CMD`, `BSSW_SRUN_CMD`, `BSSW_SLURM_VERSION_CMD` and `BSSW_SHA256_CMD`.
 
-## Storage: job-scoped scratch and explicit binds
+Set `BSSW_SCRATCH_ROOT` explicitly, to a private job-scoped path your center names. Without it the script falls back to the scheduler's temporary directory and then to `/tmp`, and on a shared node that fallback is not private. Check that the allocation has enough CPUs for the workers you ask for: the example gives each step one CPU, so raise the CPU request along with `WORKER_COUNT`.
 
-Container images on HPC are read-only. Anything a service writes at runtime must be bound to approved, job-scoped storage.
+## Step 4: Run it
 
-Use the center's job-scoped scratch path, such as `$SLURM_SCRATCH` or `$SCRATCH`. Create a private directory per job, bind it explicitly into the container, and never fall back silently to shared persistent storage or a world-writable path.
+[Run the example](/start/) walks through checking your center, fetching the image and submitting the job. In short, check the input against its checksum record, then submit with absolute paths. Run both from the repository root. The checksum record names a bare `tasks.json`, so the check runs inside the `inputs` folder. Slurm runs a copy of the batch script from its own spool folder, so the script cannot find the workflow folder by itself; the `--export` list gives it absolute paths. If your center names a private scratch path, add `BSSW_SCRATCH_ROOT=<your-private-scratch-path>` to the `--export` list.
 
 ```bash
-SCRATCH_DIR=$SLURM_SCRATCH/myjob-$SLURM_JOB_ID
-mkdir -p "$SCRATCH_DIR"
-apptainer exec --bind "$SCRATCH_DIR:/data" myapp.sif /run.sh
+(cd workflows/baseline-slurm-apptainer/inputs && sha256sum -c tasks.json.sha256)
+W="$PWD/workflows/baseline-slurm-apptainer"
+sbatch --export=ALL,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",IMAGE_PATH="$W/container/baseline.sif",INPUT_SHA256_FILE="$W/inputs/tasks.json.sha256" "$W/slurm/baseline.sbatch"
 ```
 
-## Networking and ports
+When the job finishes, it prints that the workflow completed and where its result is.
 
-On a single-node baseline, services communicate over loopback (`127.0.0.1`). This avoids publishing ports broadly and respects center network policy. For interactive access to a dashboard or API, use SSH tunneling from your local machine to the compute node rather than exposing a public port. Multi-node service discovery is outside the single-node baseline.
+## Step 5: Verify the result
 
-## GPU access
+A zero exit code is not success. Success has two parts, both in the job's private folder.
 
-GPU access is the hardest translation rule. Docker Compose `device_requests` becomes three things:
+- `result.json` exists and contains `"status": "success"`. Only a full pass of your verification check writes it. (`results.json`, with an s, holds intermediate worker output and is not a success claim.)
+- `events.jsonl` shows the readiness gate passing before any worker started.
 
-1. A scheduler GPU request (`--gres=gpu` in Slurm, `-l select=1:ngpus=` in PBS).
-2. Binding the host CUDA driver libraries into the container.
-3. Setting `CUDA_VISIBLE_DEVICES` so the application sees the right devices.
+If either is missing, start with [Troubleshooting](/diagnostics/). Each failure the script reports has a named ID there.
 
-Example with Apptainer:
+## Common mistakes
 
-```bash
-sbatch --gres=gpu:1 --wrap="apptainer exec --nv img.sif python gpu_worker.py"
-```
-
-On Charliecloud, GPU driver libraries are bound into the container explicitly.
-
-> Example pending: a version validated on the project's test system will replace this.
-
-
-## Services that assume root, especially databases
-
-Many official container images run an entrypoint that calls `chown`, binds a privileged port, or drops to a system user. None of that works under a rootless runtime. The workaround is to invoke the binary directly with non-root data directories and unprivileged ports:
-
-> Example pending: a version validated on the project's test system will replace this.
-
-
-Building the image may also require `--fakeroot` so that files can be owned by root inside the image without needing root on the host.
+- **Waiting on the coordinator.** The coordinator runs in the background for the whole job. If the script waits for it, the job runs until the wall-time limit. Wait for the workers instead.
+- **Checking a port instead of an answer.** An open port, or a fixed `sleep`, does not show that the service can serve. Require the exact response your service gives when it is healthy, and bound the wait.
+- **Assuming your center sets a scratch variable.** Names differ between centers. Set `BSSW_SCRATCH_ROOT` explicitly.
+- **Accepting the temporary-directory fallback.** On a shared node it is not private to your job.
+- **Treating a clean exit as a correct result.** Only your verification check can say the results are right.
 
 ## What varies by center
 
-The translation rules apply everywhere; the exact values do not. Every center differs in:
+The structure stays the same. These values change from center to center.
 
-- Scheduler syntax and partition or account names.
-- Which container runtime is installed and how it is loaded.
-- Job-scratch paths and quota.
-- Network policy, including loopback restrictions and tunneling rules.
-- GPU binding conventions and driver locations.
-- Whether user namespaces and `fakeroot` are allowed.
+- Account, partition and wall-time limits, and the scheduler's command names.
+- How the container runtime is loaded, and whether single-task job steps are allowed.
+- Which path is private, job-scoped scratch, and how long it lasts.
+- Whether compute-node loopback is allowed, and what access beyond the node your center approves.
+- GPU request syntax and driver locations.
 
-Before adapting a workflow, record your local values: account, partition, wall time, CPU and memory, runtime module, image path and digest, scratch root, worker and task bounds, readiness timeout, and GPU request syntax.
+Record your local values before you adapt anything. [Run the example](/start/) lists them.
 
-## Optional cross-site remote triggering
+## Key points
 
-For workflows that span centers or must be triggered without a login shell, the project optionally uses Globus Compute (and, where appropriate, Globus Flows) for cross-site triggering and transfer. This is an optional path, not the core architecture. The core model remains scheduler plus rootless containers.
-
-## Example: a minimal service-plus-workers job
-
-The simplest useful multi-service shape is one coordinator plus several workers inside a single allocation:
-
-```bash
-#!/bin/bash
-#SBATCH --job-name=svc-workers-baseline
-#SBATCH --nodes=1
-#SBATCH --ntasks=5
-#SBATCH --time=00:30:00
-
-SCRATCH_DIR=$SLURM_SCRATCH/svc-workers-baseline
-mkdir -p "$SCRATCH_DIR"
-
-# 1. Start the coordinating service in the background
-srun --exclusive -n1 apptainer exec --bind "$SCRATCH_DIR:/data" service.sif /start-service.sh &
-
-# 2. Readiness check replaces Compose's depends_on
-while ! nc -z localhost 6379; do sleep 1; done
-
-# 3. Start workers only after the service is confirmed ready
-srun --exclusive -n4 apptainer exec --bind "$SCRATCH_DIR:/data" worker.sif /start-worker.sh
-
-wait
-```
-
-## Limitations
-
-This module covers concepts, not production deployment. It does not establish multi-node networking, durable services, cross-center portability, performance scaling, or production support. Those topics are addressed in later modules.
+- Translate by construct: a service becomes a job step, `depends_on` becomes a readiness gate, a named volume becomes job-scoped scratch, and a published port becomes loopback.
+- Keep the gate and the cleanup. Replace the services and the verification check with yours.
+- Success is `result.json` with `"status": "success"`, written by your verifier, plus readiness before any worker.
+- Rows marked Designed, not run follow the pattern but have not been run.
 
 ## Next step
 
-If you have not already done so, run the local-center checks in the [Getting started guide](/start/), then move to the [Baseline Pattern](/guide/baseline-single-node-pattern/) for a runnable single-node example.
+Run the unmodified example first with [Run the example](/start/), then change one service at a time. To judge whether the pattern fits your center, read [Evaluate and adopt](/adoption/evaluate/).

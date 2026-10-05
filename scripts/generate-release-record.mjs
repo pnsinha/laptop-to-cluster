@@ -1,12 +1,21 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { validateDeploymentRecord, validateReleaseManifest } from './publication.mjs';
+import { assertReleaseVersion, resolveReleaseVersion } from './release-version.mjs';
 
 const root = resolve(process.argv[2] ?? '.');
-const version = process.env.RELEASE_VERSION ?? 'v0.1.0';
+const version = assertReleaseVersion(resolveReleaseVersion(root));
+if (process.env.PREVIEW === '1') {
+  console.log(`Preview run: no deployment or release record is generated for ${version}.`);
+  process.exit(0);
+}
 const directory = join(root, 'publication', version);
 const artifact = JSON.parse(readFileSync(join(directory, 'artifact-manifest.json'), 'utf8'));
 const binding = JSON.parse(readFileSync(join(directory, 'release-binding.json'), 'utf8'));
+if (binding.version !== version) {
+  console.error(`ERROR: release-binding.json is for ${binding.version}, not ${version}`);
+  process.exit(1);
+}
 const deployment = {
   schemaVersion: 1,
   release: version,

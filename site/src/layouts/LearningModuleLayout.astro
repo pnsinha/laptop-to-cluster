@@ -1,20 +1,24 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from './BaseLayout.astro';
+import BodySegments from '../components/BodySegments.astro';
 import ContentHeader from '../components/ContentHeader.astro';
 import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
-import SourcesAndScope from '../components/SourcesAndScope.astro';
-import UnvalidatedNotice from '../components/UnvalidatedNotice.astro';
+import Diagrams from '../components/Diagrams.astro';
 import ImplementationReference from '../components/ImplementationReference.astro';
 import ModulePager from '../components/ModulePager.astro';
-import Diagrams from '../components/Diagrams.astro';
+import SourcesAndScope from '../components/SourcesAndScope.astro';
+import Timeline from '../components/Timeline.astro';
+import UnvalidatedNotice from '../components/UnvalidatedNotice.astro';
+import { TIMELINE_CAPTIONS } from '../content/home';
 import { canonicalPath } from '../content/registry';
 import { diagnosticHref, displayDiagnosticCode } from '../content/diagnostics';
 import { IMPLEMENTATION_REFERENCE } from '../content/implementation';
+import { DIAGRAMS_BY_ITEM, TIMELINE_BY_ITEM, learningPathNavigation, slotNames } from '../content/page-chrome';
 import { assertCompositionProfile, projectApplicabilityForItem, projectModuleNavigation } from '../content/projections';
 import type { ContentItem, RepoRef } from '../content/schema';
 type LearningModule = Extract<ContentItem, { artifact_type: 'learning-module' }>;
-const { item } = Astro.props as { item: LearningModule };
+const { item, bodyHtml } = Astro.props as { item: LearningModule; bodyHtml?: string };
 const profile = item.module_type === 'conceptual' ? 'learning-conceptual' : 'learning-runnable';
 assertCompositionProfile(item, profile);
 const applicability = profile === 'learning-runnable'
@@ -26,32 +30,43 @@ const projection = profile === 'learning-runnable'
 const contentItems = (await getCollection('contentItems')).map(({ data }) => data);
 const contentById = new Map(contentItems.map((data) => [data.id, data]));
 const related = item.related.flatMap((id) => contentById.get(id) ?? []);
-const moduleNavigation = projectModuleNavigation(contentItems)[item.id] ?? {};
+const navigation = learningPathNavigation(contentItems, item.id) ?? projectModuleNavigation(contentItems)[item.id] ?? {};
 const repositoryHref = (reference: RepoRef) => `${reference.repository}/blob/${encodeURIComponent(reference.release)}/${reference.path.split('/').map(encodeURIComponent).join('/')}${reference.line_anchor ?? ''}`;
+const markers = new Set(bodyHtml ? slotNames(bodyHtml) : []);
+const timeline = TIMELINE_BY_ITEM[item.id];
+const diagrams = DIAGRAMS_BY_ITEM[item.id] ?? [];
+const runnable = profile === 'learning-runnable';
 ---
 <BaseLayout title={item.title} description={item.summary} {profile}>
   <ContentHeader {item} />
-  <section class="module-facts" aria-label="Module details">
-    <p><strong>Type:</strong> {item.module_type}{item.estimated_minutes && <> · <strong>Time:</strong> {item.estimated_minutes} minutes</>}</p>
-  </section>
   {projection && <ApplicabilityProjectionView {projection} />}
   <section class="module-overview" aria-labelledby="module-overview-heading">
-    <h2 id="module-overview-heading">{item.module_type === 'conceptual' ? 'Before you start' : 'Before you run this module'}</h2>
-    <h3>What you will learn</h3>
+    <h2 id="module-overview-heading">In this module</h2>
     <ul>{item.learning_outcomes.map((value) => <li>{value}</li>)}</ul>
-    <h3>Prerequisites</h3>
-    <ul>{item.prerequisites.length ? item.prerequisites.map((value) => <li>{value.check ?? value.id}{value.diagnostic_id && <> — <a href={diagnosticHref(value.diagnostic_id)}>{displayDiagnosticCode(value.diagnostic_id)}</a></>}</li>) : <li>No execution prerequisite is required.</li>}</ul>
+    {(runnable || item.prerequisites.length > 0) && <>
+      <h3>Prerequisites</h3>
+      <ul>{item.prerequisites.length ? item.prerequisites.map((value) => <li>{value.check ?? value.id}{value.diagnostic_id && <> — <a href={diagnosticHref(value.diagnostic_id)}>{displayDiagnosticCode(value.diagnostic_id)}</a></>}</li>) : <li>No execution prerequisite is required.</li>}</ul>
+    </>}
     {item.required_resources && <><h3>Required resources</h3><ul>{item.required_resources.map((value) => <li>{value}</li>)}</ul></>}
   </section>
   <UnvalidatedNotice scopes={item.unvalidated_scopes} />
-  <article class="module-content"><slot /></article>
-  {item.id === 'module-1-scheduler-orchestrator' && <Diagrams name="compose-to-hpc" />}
-  {item.id === 'module-1-scheduler-orchestrator' && <Diagrams name="readiness-sequence" />}
-  {item.id === 'module-2-baseline' && <Diagrams name="single-node-architecture" />}
-  {profile === 'learning-runnable' && <ImplementationReference reference={IMPLEMENTATION_REFERENCE} />}
+  {timeline && !markers.has('timeline') && <Timeline highlight={timeline.highlight} captions={TIMELINE_CAPTIONS} />}
+  <article class="module-content">
+    {bodyHtml ? (
+      <BodySegments html={bodyHtml}>
+        <Fragment slot="timeline">{timeline && <Timeline highlight={timeline.highlight} captions={TIMELINE_CAPTIONS} />}</Fragment>
+        <Fragment slot="diagram-compose-to-hpc">{diagrams.includes('compose-to-hpc') && <Diagrams name="compose-to-hpc" />}</Fragment>
+        <Fragment slot="diagram-readiness-sequence">{diagrams.includes('readiness-sequence') && <Diagrams name="readiness-sequence" />}</Fragment>
+        <Fragment slot="diagram-single-node-architecture">{diagrams.includes('single-node-architecture') && <Diagrams name="single-node-architecture" />}</Fragment>
+        <Fragment slot="implementation-reference">{runnable && <ImplementationReference reference={IMPLEMENTATION_REFERENCE} />}</Fragment>
+      </BodySegments>
+    ) : <slot />}
+  </article>
+  {diagrams.filter((name) => !markers.has(`diagram-${name}`)).map((name) => <Diagrams {name} />)}
+  {runnable && !markers.has('implementation-reference') && <ImplementationReference reference={IMPLEMENTATION_REFERENCE} />}
   <section aria-labelledby="completion"><h2 id="completion">{profile === 'learning-conceptual' ? 'Complete the decision exercise' : 'Check completion'}</h2><p>{item.completion_check?.text}</p>{item.conceptual_check && <p>{item.conceptual_check.text}</p>}</section>
-  <section aria-labelledby="related"><h2 id="related">Continue learning</h2><ul>{related.map((entry) => <li><a href={canonicalPath(entry)}>{entry.title}</a></li>)}</ul></section>
-  <ModulePager navigation={moduleNavigation} />
-  <section aria-labelledby="repository"><h2 id="repository">Workflow package on GitHub</h2><ul>{item.supporting_artifacts.map((reference) => <li><a href={repositoryHref(reference)}><code>{reference.path}</code> at {reference.release}</a></li>)}</ul></section>
+  {related.length > 0 && <section aria-labelledby="related"><h2 id="related">Continue learning</h2><ul>{related.map((entry) => <li><a href={canonicalPath(entry)}>{entry.title}</a></li>)}</ul></section>}
+  <ModulePager {navigation} />
+  {item.supporting_artifacts.length > 0 && <section aria-labelledby="repository"><h2 id="repository">Workflow package on GitHub</h2><ul>{item.supporting_artifacts.map((reference) => <li><a href={repositoryHref(reference)}><code>{reference.path}</code> at {reference.release}</a></li>)}</ul></section>}
   <SourcesAndScope references={item.authority} />
 </BaseLayout>

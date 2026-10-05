@@ -1,5 +1,8 @@
 name: release
 
+# Preview: a push to v0.2.0-showcase (fast gate) or a vX.Y.Z-rc.N tag (full gate) deploys to the preview alias.
+# Production: an exact vX.Y.Z tag deploys to main through the same job chain as publication.yml.
+# The first release is frozen and published only by publication.yml. scripts/release-plan.mjs decides which of these a run is.
 on:
   push:
     branches: [v0.2.0-showcase]
@@ -7,13 +10,18 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
       - '!v0.1.0'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Release tag to publish after the merge to main (for example v0.2.0)
+        required: true
 
 permissions:
   contents: read
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/heads/') }}
+  cancel-in-progress: ${{ github.ref_type == 'branch' }}
 
 jobs:
   plan:
@@ -23,35 +31,32 @@ jobs:
       mode: ${{ steps.plan.outputs.mode }}
       version: ${{ steps.plan.outputs.version }}
       date: ${{ steps.plan.outputs.date }}
+      sha: ${{ steps.plan.outputs.sha }}
+      preview: ${{ steps.plan.outputs.preview }}
+      full-gate: ${{ steps.plan.outputs.full-gate }}
       artifact-name: ${{ steps.plan.outputs.artifact-name }}
-      record-name: ${{ steps.plan.outputs.record-name }}
+      record-artifact-name: ${{ steps.plan.outputs.record-artifact-name }}
     steps:
       - uses: actions/checkout@v4.2.2
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release) || github.sha }}
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22.15.0'
       - id: plan
-        name: Decide mode, version and artifact names
+        name: Decide what this run may do
+        env:
+          INPUT_RELEASE: ${{ inputs.release }}
         run: |
-          if [[ "$GITHUB_REF" =~ ^refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            MODE=production
-            VERSION="${BASH_REMATCH[1]}"
-          elif [[ "$GITHUB_REF" =~ ^refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)-rc\.[0-9]+$ ]]; then
-            MODE=preview
-            VERSION="${BASH_REMATCH[1]}"
-          elif [[ "$GITHUB_REF" =~ ^refs/heads/ ]]; then
-            MODE=preview
-            NEWEST=$(ls releases/*/release-candidate.json | sed -E 's#releases/(v[0-9.]+)/.*#\1#' | sort -V | tail -n 1)
-            VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('releases/${NEWEST}/release-candidate.json','utf8')).version")
-          else
-            echo "::error::unsupported ref ${GITHUB_REF}"; exit 1
-          fi
-          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::no valid release version"; exit 1; }
-          {
-            echo "mode=${MODE}"
-            echo "version=${VERSION}"
-            echo "date=$(git log -1 --format=%cs HEAD)"
-            echo "artifact-name=validated-site-${VERSION}-${GITHUB_SHA}"
-            echo "record-name=release-record-${VERSION}-${GITHUB_SHA}"
-          } >> "$GITHUB_OUTPUT"
+          RELEASE_SHA="$(git rev-parse HEAD)" node scripts/release-plan.mjs . > "$RUNNER_TEMP/plan.txt"
+          cat "$RUNNER_TEMP/plan.txt"
+          cat "$RUNNER_TEMP/plan.txt" >> "$GITHUB_OUTPUT"
+      - name: A production release must already be on main
+        if: steps.plan.outputs.mode == 'production'
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor HEAD origin/main || { echo "::error::the release commit is not on main: merge first, then tag"; exit 1; }
 
   build-once:
     needs: plan
@@ -60,23 +65,37 @@ jobs:
     env:
       RELEASE_VERSION: ${{ needs.plan.outputs.version }}
       RELEASE_DATE: ${{ needs.plan.outputs.date }}
-      PREVIEW: ${{ needs.plan.outputs.mode == 'preview' && '1' || '' }}
+      PREVIEW: ${{ needs.plan.outputs.preview }}
     steps:
       - uses: actions/checkout@v4.2.2
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/setup-node@v4.4.0
         with:
           node-version: '22.15.0'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx --no-install playwright install --with-deps chromium
-      - name: Full validation chain (builds the site exactly once)
+      - name: Install accessibility browser
+        if: needs.plan.outputs.full-gate == 'true'
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Full release gate (check, tests, one build, validators, prepare)
+        if: needs.plan.outputs.full-gate == 'true'
         run: npm run validate
         env:
           L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
-      - name: Require a complete accessibility review for production
+      - name: Accessibility review must be signed for production
         if: needs.plan.outputs.mode == 'production'
-        run: npx --no-install tsx scripts/validate-accessibility-review.ts "releases/${RELEASE_VERSION}/accessibility-review.yml" --require-complete
+        run: npx --no-install tsx scripts/validate-accessibility-review.ts --require-complete
+      - name: Fast preview gate (check, one build, publication validators, prepare)
+        if: needs.plan.outputs.full-gate != 'true'
+        run: |
+          npm run check
+          npm run build
+          npm run publication:validate
+          npm run publication:prepare
+        env:
+          L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
       - uses: actions/upload-artifact@v4.6.2
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
@@ -87,15 +106,17 @@ jobs:
           retention-days: ${{ needs.plan.outputs.mode == 'production' && 90 || 30 }}
 
   deploy-preview:
-    if: needs.plan.outputs.mode == 'preview'
     needs: [plan, build-once]
+    if: needs.plan.outputs.mode == 'preview'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4.2.2
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
@@ -109,7 +130,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-hash=${{ github.sha }} --commit-dirty=false
+          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
       - name: Smoke-check the preview deployment
         env:
           DEPLOYMENT_URL: ${{ steps.direct-upload.outputs.deployment-url }}
@@ -120,8 +141,8 @@ jobs:
           { echo "### Preview deployment"; echo "- Deployment: ${DEPLOYMENT_URL}"; echo "- Branch alias: ${ALIAS_URL}"; } >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
-    if: needs.plan.outputs.mode == 'production'
     needs: [plan, build-once]
+    if: needs.plan.outputs.mode == 'production'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
@@ -132,7 +153,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4.2.2
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
@@ -158,7 +181,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ github.sha }} --commit-dirty=false
+          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
       - name: Capture Cloudflare deployment identity
         id: cloudflare
         env:
@@ -186,26 +209,34 @@ jobs:
           node scripts/update-recovery-index.mjs "publication/${VERSION}/recovery-index.json" "publication/${VERSION}/deployment-record.json"
       - uses: actions/upload-artifact@v4.6.2
         with:
-          name: ${{ needs.plan.outputs.record-name }}
+          name: ${{ needs.plan.outputs.record-artifact-name }}
           path: publication/${{ needs.plan.outputs.version }}/
           if-no-files-found: error
           retention-days: 365
 
   post-deploy-release-checks:
-    if: needs.plan.outputs.mode == 'production'
     needs: [plan, deploy]
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4.2.2
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/download-artifact@v4.3.0
         with:
-          name: ${{ needs.plan.outputs.record-name }}
+          name: ${{ needs.plan.outputs.artifact-name }}
+          path: .
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: ${{ needs.plan.outputs.record-artifact-name }}
           path: publication/${{ needs.plan.outputs.version }}
       - name: Apex, redirect, fallback, repository, and anonymous-access checks
         env:
+          RELEASE_VERSION: ${{ needs.plan.outputs.version }}
           PAGES_DEV_FALLBACK_URL: ${{ needs.deploy.outputs.pages-url }}
           RELEASE_RECORD_PATH: publication/${{ needs.plan.outputs.version }}/release-manifest.json
           REPOSITORY_URL: https://github.com/pnsinha/laptop-to-cluster
         run: node scripts/check-public-release.mjs
+      - name: The apex serves this release, not the previous one
+        run: node scripts/verify-live-release.mjs --origin https://laptop-to-cluster.org --dist site/dist
