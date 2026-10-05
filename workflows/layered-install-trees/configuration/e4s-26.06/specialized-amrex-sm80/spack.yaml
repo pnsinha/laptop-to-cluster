@@ -1,7 +1,7 @@
 # Specialized (GPU, Layer 2) — rebuilds ONLY the GPU package (amrex), sm_80 for A100.
-# Reuses the CPU provider (Layer 1) via upstreams -> [^] markers, ~95.8% reuse.
+# Reuses the CPU provider (Layer 1) via upstreams -> [^] markers: 19 of 20 buildable packages reused (95.0%); most reused packages are build tools.
 # NOTE: upstreams MUST be a top-level key in spack.yaml (Spack 1.x does not read a
-# standalone upstreams.yaml from the env dir). Verified on Anvil 2026-08-08.
+# standalone upstreams.yaml from the env dir).
 spack:
   upstreams:
     e4s-provider-cpu:
