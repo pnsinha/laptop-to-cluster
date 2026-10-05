@@ -72,3 +72,66 @@ artifacts:
     copyrightHolder: Microsoft Corporation
     license: Apache-2.0
     modificationStatus: unmodified
+  - name: Source Serif 4 (variable roman)
+    kind: vendored-font
+    version: 5.3.0
+    source: https://www.npmjs.com/package/@fontsource-variable/source-serif-4/v/5.3.0
+    copyrightHolder: The Source Serif 4 Project Authors
+    license: OFL-1.1
+    modificationStatus: unmodified
+    files:
+      - site/public/fonts/source-serif-4-5.3.0/source-serif-4-latin-wght-normal.woff2
+    licenseFile: site/public/fonts/source-serif-4-5.3.0/OFL.txt
+    sha256:
+      site/public/fonts/source-serif-4-5.3.0/source-serif-4-latin-wght-normal.woff2: c1df4596be5029233ed2afbb8b2f6ea20784b3fb1aa5d6b5c6519ccd85eb3dfb
+  - name: Source Serif 4 (italic)
+    kind: vendored-font
+    version: 5.3.0
+    source: https://www.npmjs.com/package/@fontsource/source-serif-4/v/5.3.0
+    copyrightHolder: The Source Serif 4 Project Authors
+    license: OFL-1.1
+    modificationStatus: unmodified
+    files:
+      - site/public/fonts/source-serif-4-5.3.0/source-serif-4-latin-400-italic.woff2
+    licenseFile: site/public/fonts/source-serif-4-5.3.0/OFL.txt
+    sha256:
+      site/public/fonts/source-serif-4-5.3.0/source-serif-4-latin-400-italic.woff2: 882b7c150c29f29d4f8daae6b8dcae8662aac7f28ca34b34615305154136ecfd
+  - name: IBM Plex Sans
+    kind: vendored-font
+    version: 1.1.0
+    source: https://www.npmjs.com/package/@ibm/plex-sans/v/1.1.0
+    copyrightHolder: IBM Corp.
+    license: OFL-1.1
+    modificationStatus: unmodified
+    files:
+      - site/public/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-Regular-Latin1.woff2
+      - site/public/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-SemiBold-Latin1.woff2
+    licenseFile: site/public/fonts/ibm-plex-sans-1.1.0/LICENSE.txt
+    sha256:
+      site/public/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-Regular-Latin1.woff2: b5ad7bd39f996144915f0ad9849a90183b27d8c28ad97ed98af5b1bebc51f6b1
+      site/public/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-SemiBold-Latin1.woff2: fff0ab3a88b0b4aa0b693e4f0201359a15183b08e3fa5696d1918d8f0ade8ad5
+  - name: IBM Plex Mono
+    kind: vendored-font
+    version: 2.5.0
+    source: https://www.npmjs.com/package/@ibm/plex-mono/v/2.5.0
+    copyrightHolder: IBM Corp.
+    license: OFL-1.1
+    modificationStatus: unmodified
+    files:
+      - site/public/fonts/ibm-plex-mono-2.5.0/IBMPlexMono-Regular-Latin1.woff2
+    licenseFile: site/public/fonts/ibm-plex-mono-2.5.0/LICENSE.txt
+    sha256:
+      site/public/fonts/ibm-plex-mono-2.5.0/IBMPlexMono-Regular-Latin1.woff2: e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56
+  - name: L2C Marks (Noto Sans Symbols 2 subset)
+    kind: vendored-font
+    version: 5.3.0
+    source: https://www.npmjs.com/package/@fontsource/noto-sans-symbols-2/v/5.3.0
+    copyrightHolder: The Noto Project Authors
+    license: OFL-1.1
+    modificationStatus: modified
+    modificationDescription: Subset to U+25A0 U+25B2 U+25C6 U+25CF with fontTools 4.63.0 pyftsubset; layout features and hinting removed. Command and source file are in SUBSET.txt next to the font.
+    files:
+      - site/public/fonts/l2c-marks-noto-sans-symbols-2-5.3.0/L2CMarks-Regular.woff2
+    licenseFile: site/public/fonts/l2c-marks-noto-sans-symbols-2-5.3.0/OFL.txt
+    sha256:
+      site/public/fonts/l2c-marks-noto-sans-symbols-2-5.3.0/L2CMarks-Regular.woff2: dce8ff5a07e38b39082fb1eaba1d87e50188e01de727cfe386176b0074dde608

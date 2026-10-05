@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { execSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import picomatch from 'picomatch';
@@ -20,6 +21,14 @@ export type ThirdPartyArtifact = {
   license: string;
   modificationStatus: 'unmodified' | 'modified' | 'adapted';
   modificationDescription?: string;
+  /** 'npm' (the default) must match a direct dependency. 'vendored-font' ships files under site/public/fonts/. */
+  kind?: 'npm' | 'vendored-font';
+  /** vendored-font only: repository-relative paths of the shipped font binaries. */
+  files?: string[];
+  /** vendored-font only: repository-relative path of the licence text shipped next to the files. */
+  licenseFile?: string;
+  /** vendored-font only: sha256 (hex) of every file, keyed by repository-relative path. */
+  sha256?: Record<string, string>;
 };
 export type Provenance = { schemaVersion: number; artifacts: ThirdPartyArtifact[] };
 export type PackageManifest = {
@@ -28,6 +37,7 @@ export type PackageManifest = {
 };
 
 const ignoredPrefixes = ['.git/', '.kiro/', 'node_modules/', 'site/dist/', 'site/.astro/', 'coverage/', 'publication/'];
+const FONT_PATH = /^site\/public\/fonts\/[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9._-]+$/;
 
 export function loadPolicyData(root: string): {
   inventory: Inventory;
@@ -88,6 +98,7 @@ export function validatePolicyData(
 
   const dependencies = { ...(manifest.dependencies ?? {}), ...(manifest.devDependencies ?? {}) };
   const records = new Map<string, ThirdPartyArtifact>();
+  const npmRecords = new Map<string, ThirdPartyArtifact>();
   for (const artifact of provenance.artifacts ?? []) {
     const fields = [artifact.name, artifact.version, artifact.source, artifact.copyrightHolder, artifact.license, artifact.modificationStatus];
     if (fields.some((field) => typeof field !== 'string' || field.trim() === '')) {
@@ -101,16 +112,29 @@ export function validatePolicyData(
     if (artifact.modificationStatus !== 'unmodified' && !artifact.modificationDescription?.trim()) {
       errors.push(`THIRD_PARTY.yml: ${artifact.name} requires a modificationDescription`);
     }
+    const kind = artifact.kind ?? 'npm';
+    if (kind !== 'npm' && kind !== 'vendored-font') errors.push(`THIRD_PARTY.yml: ${artifact.name} has invalid kind`);
+    if (kind === 'vendored-font') {
+      if (!Array.isArray(artifact.files) || artifact.files.length === 0) errors.push(`THIRD_PARTY.yml: ${artifact.name} requires files`);
+      for (const file of artifact.files ?? []) {
+        if (!FONT_PATH.test(file)) errors.push(`THIRD_PARTY.yml: ${artifact.name} file ${file} must be under site/public/fonts/<family-version>/`);
+        if (!/^[0-9a-f]{64}$/.test(artifact.sha256?.[file] ?? '')) errors.push(`THIRD_PARTY.yml: ${artifact.name} requires a sha256 for ${file}`);
+      }
+      if (!artifact.licenseFile || !FONT_PATH.test(artifact.licenseFile)) {
+        errors.push(`THIRD_PARTY.yml: ${artifact.name} requires a licenseFile under site/public/fonts/`);
+      }
+    }
     if (records.has(artifact.name)) errors.push(`THIRD_PARTY.yml: duplicate artifact ${artifact.name}`);
     records.set(artifact.name, artifact);
+    if (kind === 'npm') npmRecords.set(artifact.name, artifact);
   }
   for (const [name, version] of Object.entries(dependencies)) {
     if (/^[~^*><=]|\s\|\||\bx\b/i.test(version)) errors.push(`package.json: ${name} must use an exact version`);
-    const record = records.get(name);
+    const record = npmRecords.get(name);
     if (!record) errors.push(`THIRD_PARTY.yml: missing direct dependency ${name}`);
     else if (record.version !== version) errors.push(`THIRD_PARTY.yml: ${name} version ${record.version} does not match ${version}`);
   }
-  for (const name of records.keys()) {
+  for (const name of npmRecords.keys()) {
     if (!(name in dependencies)) errors.push(`THIRD_PARTY.yml: undeclared third-party package ${name}`);
   }
   return errors;
@@ -149,6 +173,7 @@ export function validateRepositoryDeclarations(root: string): string[] {
     return [`policy declarations could not be loaded: ${(error as Error).message}`];
   }
   const errors = validatePolicyData(data.inventory, data.provenance, data.manifest);
+  errors.push(...validateVendoredFonts(root, data.provenance.artifacts ?? []));
   for (const declaration of data.inventory.licenseDeclarations ?? []) {
     try {
       const text = readFileSync(join(root, declaration.file), 'utf8');
@@ -160,27 +185,15 @@ export function validateRepositoryDeclarations(root: string): string[] {
     }
   }
 
-  const categoryMatchers = (data.inventory.categories ?? []).map((category) => ({
-    category,
-    matches: picomatch(category.paths, { dot: true }),
-  }));
-  const exclusions = (data.inventory.excluded ?? []).map((entry) => ({
-    entry,
-    matches: picomatch(entry.paths, { dot: true }),
-  }));
   for (const exclusion of data.inventory.excluded ?? []) {
     if (!exclusion.reason?.trim() || !exclusion.paths?.length) {
       errors.push('artifact-inventory.yml: every exclusion requires paths and a reason');
     }
   }
   for (const file of walk(root)) {
-    const matchingCategories = categoryMatchers.filter(({ matches }) => matches(file));
-    const matchingExclusions = exclusions.filter(({ matches }) => matches(file));
-    if (matchingCategories.length + matchingExclusions.length === 0) {
-      errors.push(`artifact-inventory.yml: ${file} has no artifact category or justified exclusion`);
-    } else if (matchingCategories.length + matchingExclusions.length > 1) {
-      errors.push(`artifact-inventory.yml: ${file} has ambiguous category/exclusion coverage`);
-    }
+    const where = classifyArtifactPath(data.inventory, file);
+    if (where === 'uncovered') errors.push(`artifact-inventory.yml: ${file} has no artifact category or justified exclusion`);
+    else if (where === 'ambiguous') errors.push(`artifact-inventory.yml: ${file} has ambiguous category/exclusion coverage`);
   }
   return errors;
 }
@@ -191,4 +204,68 @@ export function assertRegularFile(root: string, path: string): string | undefine
   } catch {
     return `${path}: required file is missing`;
   }
+}
+
+type Matchers = {
+  categories: Array<{ id: string; matches: (path: string) => boolean }>;
+  exclusions: Array<(path: string) => boolean>;
+};
+const matcherCache = new WeakMap<Inventory, Matchers>();
+
+function matchersFor(inventory: Inventory): Matchers {
+  let cached = matcherCache.get(inventory);
+  if (!cached) {
+    cached = {
+      categories: (inventory.categories ?? []).map((category) => ({ id: category.id, matches: picomatch(category.paths ?? [], { dot: true }) })),
+      exclusions: (inventory.excluded ?? []).map((entry) => picomatch(entry.paths ?? [], { dot: true })),
+    };
+    matcherCache.set(inventory, cached);
+  }
+  return cached;
+}
+
+/** Exactly one category or one exclusion must cover each tracked file. */
+export function classifyArtifactPath(inventory: Inventory, file: string): 'excluded' | 'uncovered' | 'ambiguous' | `category:${string}` {
+  const { categories, exclusions } = matchersFor(inventory);
+  const hits = categories.filter(({ matches }) => matches(file)).map(({ id }) => id);
+  const excluded = exclusions.filter((matches) => matches(file)).length;
+  if (hits.length + excluded === 0) return 'uncovered';
+  if (hits.length + excluded > 1) return 'ambiguous';
+  return excluded === 1 ? 'excluded' : `category:${hits[0]}`;
+}
+
+/** Checks that every vendored font file and its licence exist, that sha256 pins match, and that OFL records ship the OFL text. */
+export function validateVendoredFonts(root: string, artifacts: ThirdPartyArtifact[]): string[] {
+  const errors: string[] = [];
+  for (const artifact of artifacts) {
+    if (artifact.kind !== 'vendored-font') continue;
+    const label = `THIRD_PARTY.yml: ${artifact.name}`;
+    const files = artifact.files ?? [];
+    for (const path of [...files, ...(artifact.licenseFile ? [artifact.licenseFile] : [])]) {
+      const problem = assertRegularFile(root, path);
+      if (problem) errors.push(`${label}: ${problem}`);
+    }
+    for (const [path, expected] of Object.entries(artifact.sha256 ?? {})) {
+      if (!files.includes(path)) {
+        errors.push(`${label}: sha256 given for ${path}, which is not listed in files`);
+        continue;
+      }
+      try {
+        const actual = createHash('sha256').update(readFileSync(join(root, path))).digest('hex');
+        if (actual !== expected) errors.push(`${label}: file ${path} sha256 mismatch`);
+      } catch {
+        /* a missing file is already reported above */
+      }
+    }
+    if (artifact.license === 'OFL-1.1' && artifact.licenseFile) {
+      try {
+        if (!readFileSync(join(root, artifact.licenseFile), 'utf8').includes('SIL OPEN FONT LICENSE Version 1.1')) {
+          errors.push(`${label}: ${artifact.licenseFile} does not contain the OFL 1.1 text`);
+        }
+      } catch {
+        /* a missing licence is already reported above */
+      }
+    }
+  }
+  return errors;
 }
