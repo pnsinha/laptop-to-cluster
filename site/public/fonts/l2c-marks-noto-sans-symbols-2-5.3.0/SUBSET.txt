@@ -1,0 +1,8 @@
+L2C Marks 1.0
+Derived from Noto Sans Symbols 2, copyright 2022 The Noto Project Authors, licensed under the
+SIL Open Font License 1.1 (OFL.txt in this folder). Noto declares no Reserved Font Name.
+Source file: noto-sans-symbols-2-symbols-400-normal.woff2 from npm package @fontsource/noto-sans-symbols-2@5.3.0.
+Modification: reduced to four glyphs (U+25A0 U+25B2 U+25C6 U+25CF); layout features and hinting removed.
+Tools: fontTools 4.63.0 (pyftsubset) with brotli 1.2.0.
+Command:
+pyftsubset noto-sans-symbols-2-symbols-400-normal.woff2 --unicodes=U+25A0,U+25B2,U+25C6,U+25CF --flavor=woff2 --layout-features= --no-hinting --name-IDs='*' --no-notdef-glyph --output-file=L2CMarks-Regular.woff2
