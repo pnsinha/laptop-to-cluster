@@ -180,8 +180,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     }
     const requireComplete = process.argv.includes('--require-complete');
     const fileArgument = process.argv.slice(2).find((argument) => !argument.startsWith('--'));
-    // An explicit file is validated as the release it declares; otherwise the release comes from RELEASE_VERSION or the newest candidate record.
-    const version = fileArgument ? undefined : assertReleaseVersion(resolveReleaseVersion('.'));
+    // An explicit file is validated as the release named by its releases/<v>/ directory, and as the declared release only when the path has no such segment; otherwise the release comes from RELEASE_VERSION or the newest candidate record.
+    const pathVersion = fileArgument?.match(/(?:^|[\\/])releases[\\/](v\d+\.\d+\.\d+)[\\/]accessibility-review\.yml$/)?.[1];
+    const version = fileArgument ? pathVersion : assertReleaseVersion(resolveReleaseVersion('.'));
     const file = resolve(fileArgument ?? `releases/${version}/accessibility-review.yml`);
     const record = parse(readFileSync(file, 'utf8')) as ReviewRecord;
     const releaseVersion = assertReleaseVersion(version ?? String(record.release));

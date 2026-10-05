@@ -143,6 +143,27 @@ describe('validate-accessibility-review CLI', () => {
     expect(result.stdout).toContain('is complete');
   });
 
+  it('rejects a review whose declared release differs from its releases/<v>/ directory', () => {
+    const root = checkout();
+    mkdirSync(join(root, 'releases/v0.1.0'), { recursive: true });
+    writeFileSync(join(root, 'releases/v0.1.0/release-candidate.json'), JSON.stringify({
+      schemaVersion: 1, version: 'v0.1.0', status: 'candidate', repositoryTag: 'v0.1.0', canonicalOrigin: 'https://laptop-to-cluster.org',
+      evidenceIds: ['m1-baseline-anvil', 'accessibility-review-v0.1.0'], changes: [{ class: 'added', itemId: 'x' }],
+    }));
+    writeFileSync(join(root, 'releases/v0.2.0/accessibility-review.yml'), stringify(review(reviewProfile('v0.1.0', 'm1-baseline-anvil'), true)));
+    const result = run(root, ['releases/v0.2.0/accessibility-review.yml', '--require-complete']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('must identify v0.2.0');
+  });
+
+  it('validates an explicit releases/v0.2.0 path as v0.2.0', () => {
+    const root = checkout();
+    writeFileSync(join(root, 'releases/v0.2.0/accessibility-review.yml'), stringify(review(reviewProfile('v0.2.0', RECORD), true)));
+    const result = run(root, ['releases/v0.2.0/accessibility-review.yml', '--require-complete']);
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('is complete');
+  });
+
   it('prints an unsigned template that a reviewer can sign', () => {
     const root = checkout();
     const printed = run(root, ['--print-template']);
