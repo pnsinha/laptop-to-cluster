@@ -102,12 +102,19 @@ export const PROJECT_RECORDS = {
   visitHref: '/about/talks-and-papers/',
 } as const;
 
-/** Credibility strip links. The version comes from currentReleaseVersion() and the notes link from landing.release.href (R10), both at build time. */
-export function projectRecordLinks(version: string, releaseNotesLink: string): PathStep[] {
+/** Version label for a release item id such as `release-v0-2-0`. Throws on any other shape so label and link cannot drift apart. */
+export function releaseVersionFromId(id: string): string {
+  const match = /^release-v(\d+)-(\d+)-(\d+)$/.exec(id);
+  if (!match) throw new Error(`releaseVersionFromId: expected release-vX-Y-Z, got "${id}"`);
+  return `v${match[1]}.${match[2]}.${match[3]}`;
+}
+
+/** Credibility strip links. The release notes label and link both come from one release item (landing.release: id and href) at build time. The footer's version comes from currentReleaseVersion() instead. */
+export function projectRecordLinks(release: { id: string; href: string }): PathStep[] {
   return [
     { label: `${HOME_TITLE}: a 2026 Better Scientific Software Fellowship project`, href: '/about/attribution/' },
     { label: 'Talks, posters & papers', href: '/about/talks-and-papers/' },
-    { label: `${version} release notes`, href: releaseNotesLink },
+    { label: `${releaseVersionFromId(release.id)} release notes`, href: release.href },
     { label: 'Code Apache-2.0 · text CC BY 4.0', href: '/about/attribution/#licenses' },
   ];
 }

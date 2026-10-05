@@ -6,7 +6,6 @@ import { parse } from 'yaml';
 import { CONCEPTS, DOORS, REQUIRED_FRAGMENTS, TIMELINE_STEPS } from '../../site/src/content/contracts';
 import { CROSSWALK } from '../../site/src/content/crosswalk';
 import { EVENT_BAND, eventBandLead, resolveLearningPath } from '../../site/src/content/home';
-import { currentReleaseVersion } from '../../site/src/content/release';
 import type { ContentItem, Talk } from '../../site/src/content/schema';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -154,17 +153,24 @@ describe('home page, built output', () => {
   });
 
   it('renders the project records strip with the funded title and the release notes from the release version', () => {
-    const version = currentReleaseVersion(root);
     const strip = sectionFrom('<section class="project-links"');
     expect(strip).toContain('<h2 id="project-links-title">Project records</h2>');
     expect.soft([...strip.matchAll(/<li><a href="([^"]+)">([^<]+)<\/a><\/li>/g)].map(([, href, label]) => [href, decode(label)])).toEqual([
       ['/about/attribution/', 'Bridging the Laptop-to-Cluster Gap: a 2026 Better Scientific Software Fellowship project'],
       ['/about/talks-and-papers/', 'Talks, posters & papers'],
-      ['/milestones/2/#release-v0-2-0', `${version} release notes`],
+      ['/milestones/2/#release-v0-2-0', 'v0.2.0 release notes'],
       ['/about/attribution/#licenses', 'Code Apache-2.0 · text CC BY 4.0'],
     ]);
     expect(strip).toContain('<p>Here from the SC26 poster or the US-RSE ’26 talk? <a href="/about/talks-and-papers/">Talk and poster links</a></p>');
     expect(strip).not.toMatch(/ParaTools|Department of Energy|National Science Foundation/);
+  });
+
+  it('labels the release notes with the version in the link fragment', () => {
+    const strip = sectionFrom('<section class="project-links"');
+    const [, href, label] = strip.match(/<li><a href="([^"]*#release-v\d+-\d+-\d+)">([^<]*release notes)<\/a><\/li>/) ?? [];
+    expect(href).toBeDefined();
+    const [, major, minor, patch] = href.match(/#release-v(\d+)-(\d+)-(\d+)$/)!;
+    expect(decode(label)).toBe(`v${major}.${minor}.${patch} release notes`);
   });
 
   it('keeps system names, versions, dates, job IDs and digests inside the projection only', () => {
