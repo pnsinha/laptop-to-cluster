@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -219,5 +219,107 @@ describe('Evaluate and adopt page', () => {
   it('keeps retired names out and mentions other runtimes only under Designed, not run', () => {
     expect(body).not.toMatch(/container union/i);
     expect(body.indexOf('Charliecloud')).toBeGreaterThan(body.indexOf('<h2 id="not-tested">'));
+  });
+});
+
+describe('The five-minute tour (Module 0)', () => {
+  const { data, body } = readItem('00-tour.md');
+
+  it('is Module 0 renamed to the tour: same id, new slug, first on the learning path', () => {
+    const item = contentItemSchema.parse(data);
+    expect(item.id).toBe('module-0-orientation');
+    expect(data.stable_slug).toBe('tour');
+    expect(data.title).toBe('The five-minute tour');
+    expect(canonicalPath(item)).toBe('/guide/tour/');
+    expect(item.artifact_type === 'learning-module' && item.module_number).toBe(0);
+    expect(item.status).toBe('published');
+    expect(LEARNING_PATH[0]).toBe(item.id);
+    expect(existsSync(resolve(items, '00-how-to-use-this-guide.md'))).toBe(false);
+    expect(readdirSync(items).filter((file) => file.startsWith('00-'))).toEqual(['00-tour.md']);
+  });
+
+  it('follows the outline in order', () => {
+    expect(h2s(body)).toEqual([
+      'Why Compose stops working', 'The big idea', 'The six steps in detail', 'Four ideas that change meaning',
+      'The gate is not the verifier', 'Did this really run?', 'Who this guide is for', 'Key points', 'Next step',
+    ]);
+  });
+
+  it('explains the six steps as headed sections that match the timeline labels, and holds no second list of steps', () => {
+    const steps = [...section(body, 'The six steps in detail').matchAll(/^### (\d)\. (.+)$/gm)].map((match) => ({ n: Number(match[1]), label: match[2] }));
+    expect(steps).toEqual(TIMELINE_STEPS.map(({ n, label }) => ({ n, label })));
+    expect(body).not.toMatch(/<ol\b/);
+    expect(body).not.toMatch(/^\s*\d+\.\s/m);
+  });
+
+  it('places the timeline marker once, after "The big idea" and before the steps in detail', () => {
+    expect(body.match(/^<!-- l2c:timeline -->$/gm)).toHaveLength(1);
+    const marker = body.indexOf('<!-- l2c:timeline -->');
+    expect(marker).toBeGreaterThan(body.indexOf('## The big idea'));
+    expect(marker).toBeLessThan(body.indexOf('## The six steps in detail'));
+  });
+
+  it('puts the plain-language name before the technical term', () => {
+    const lower = body.toLowerCase();
+    expect(lower.indexOf('local-only access')).toBeGreaterThan(-1);
+    expect(lower.indexOf('local-only access')).toBeLessThan(lower.indexOf('loopback'));
+    expect(lower.indexOf('program the scheduler launches and tracks inside your allocation')).toBeLessThan(lower.indexOf('job step'));
+    expect(lower.indexOf('temporary job storage')).toBeLessThan(lower.indexOf('job-scoped scratch'));
+    expect(lower.indexOf('a fixed share of one machine')).toBeLessThan(lower.indexOf('[allocation]'));
+  });
+
+  it('states the gate versus verification distinction in the frozen vocabulary', () => {
+    const gate = section(body, 'The gate is not the verifier');
+    expect(gate).toMatch(/can the coordinator serve/i);
+    expect(gate).toMatch(/are the results right/i);
+    expect(gate).toMatch(/keep it/i);
+    expect(gate).toMatch(/replace the example check with your own/i);
+  });
+
+  it('defines the evidence labels without a system, version or date, and links what was tested', () => {
+    const vocabulary = section(body, 'Did this really run?');
+    for (const label of ['Tested', 'Shim-tested', DESIGNED_NOT_RUN]) expect(vocabulary, label).toContain(`**${label}**`);
+    expect(body).not.toMatch(SYSTEM_OR_DATE);
+    expect(vocabulary).toContain('/adoption/evaluate/#not-tested');
+  });
+
+  it('answers who it is for, what to know and what access is needed, and where to start', () => {
+    const audience = section(body, 'Who this guide is for');
+    for (const heading of ['What you should already know', 'What you need access to', 'How to progress']) expect(audience, heading).toContain(`### ${heading}`);
+    expect(audience).toMatch(/submitted at least one batch job/);
+    expect(audience).toMatch(/To read: nothing/);
+    expect(audience).toContain('/start/');
+  });
+
+  it('ends with a plain link list to the destinations, not the door cards', () => {
+    const next = section(body, 'Next step');
+    const links = next.split('\n').filter((line) => line.startsWith('- ') && line.includes(']('));
+    expect(links.length).toBeGreaterThanOrEqual(3);
+    expect(next).toContain('(/guide/compose-to-hpc-translation/)');
+    expect(next).toContain('(/adoption/evaluate/)');
+    expect(body).not.toMatch(/class="doors?"|door__/);
+  });
+
+  it('uses each concept class once in the four-ideas table', () => {
+    const table = section(body, 'Four ideas that change meaning');
+    for (const concept of ['c-step', 'c-gate', 'c-scratch', 'c-net']) expect(table.match(new RegExp(`class="${concept}"`, 'g')), concept).toHaveLength(1);
+  });
+
+  it('links only to pages and fragments that exist and keeps retired wording out', () => {
+    expect(linkProblems(body)).toEqual([]);
+    expect(body).not.toMatch(/reservation|\bElsa\b|container union/i);
+  });
+
+  it('does not attribute the audience section to named program staff in its metadata', () => {
+    const serialized = JSON.stringify(data);
+    expect(serialized).not.toMatch(/Elsa|requested|asked for/i);
+    expect(serialized).toContain('program review');
+    expect(data.related).toEqual(expect.arrayContaining(['module-1-scheduler-orchestrator', 'start-guide', 'module-3-compose-to-hpc-translation', 'adoption-evaluate']));
+  });
+
+  it('stays within the tour word budget', () => {
+    const count = words(body);
+    expect(count).toBeGreaterThan(600);
+    expect(count).toBeLessThanOrEqual(1200);
   });
 });

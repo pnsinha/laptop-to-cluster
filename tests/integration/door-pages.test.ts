@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -119,5 +119,48 @@ describe('Evaluate and adopt page', () => {
       .map((entry) => resolve(entry.parentPath, entry.name));
     const withSummary = files.filter((file) => readFileSync(file, 'utf8').includes('class="record-summary"'));
     expect(withSummary).toEqual([resolve(dist, 'adoption/evaluate/index.html')]);
+  });
+});
+
+describe('The five-minute tour', () => {
+  const html = page('guide/tour');
+
+  it('builds at the tour route with the conceptual shell and the header line', () => {
+    expect(html).toContain('data-composition-profile="learning-conceptual"');
+    /* R10: conceptual modules read "Reading", not "Concepts". */
+    expect(html).toContain('<p class="content-header__line">Module 0 · Reading · about 5 min</p>');
+    expect(html).toContain('>In this module</h2>');
+    expect(html).not.toContain('Workflow package');
+    expect(html).not.toContain('l2c:');
+  });
+
+  it('shows one unlit timeline between "The big idea" and the steps in detail', () => {
+    expect(html.match(/<figure class="timeline"/g)).toHaveLength(1);
+    expect(html.match(/<ol class="timeline__steps">/g)).toHaveLength(1);
+    expect(html).not.toContain('aria-current="step"');
+    expect(at(html, 'id="the-big-idea"')).toBeLessThan(at(html, '<figure class="timeline"'));
+    expect(at(html, '<figure class="timeline"')).toBeLessThan(at(html, 'id="the-six-steps-in-detail"'));
+  });
+
+  it('has the six steps as headed sections, not a second ordered list', () => {
+    expect(html.match(/<h3 id="[1-6]-/g)).toHaveLength(6);
+    /* The breadcrumbs chrome is also an <ol>; the content itself holds only the timeline's. */
+    expect(html.match(/<article[\s\S]*?<\/article>/)![0].match(/<ol\b/g)).toHaveLength(1);
+  });
+
+  it('closes with a plain link list, not the door cards', () => {
+    expect(html).not.toMatch(/class="doors?"|class="door__/);
+    expect(html).toMatch(/href="\/guide\/compose-to-hpc-translation\/"/);
+    expect(html).toMatch(/href="\/adoption\/evaluate\/"/);
+  });
+
+  it('is first on the learning path, and the old Module 0 route is gone', () => {
+    expect(html).not.toContain('rel="prev"');
+    expect(html).toContain('<a rel="next" href="/guide/scheduler-as-orchestrator/">');
+    expect(existsSync(resolve(dist, 'guide/how-to-use-this-guide'))).toBe(false);
+  });
+
+  it('keeps Sources after the article', () => {
+    expect(at(html, 'class="sources-scope"')).toBeGreaterThan(html.lastIndexOf('</article>'));
   });
 });
