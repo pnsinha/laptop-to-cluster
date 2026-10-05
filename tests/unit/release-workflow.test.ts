@@ -90,6 +90,14 @@ describe('release workflow: deploy paths', () => {
     }
   });
 
+  it('checks out with full history in every job', () => {
+    for (const [name, job] of Object.entries<any>(workflow.jobs)) {
+      const checkouts = job.steps.filter((step: any) => String(step.uses).startsWith('actions/checkout@'));
+      expect(checkouts.length, name).toBeGreaterThan(0);
+      for (const step of checkouts) expect(step.with?.['fetch-depth'], name).toBe(0);
+    }
+  });
+
   it('pins every action to an exact version and holds read-only permissions', () => {
     const uses = [...text.matchAll(/uses:\s*([^\s]+)/g)].map((match) => match[1]);
     expect(uses.length).toBeGreaterThan(0);
