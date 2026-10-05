@@ -138,3 +138,86 @@ describe('Translate page (Module 3)', () => {
     expect(count).toBeLessThanOrEqual(1800);
   });
 });
+
+describe('Evaluate and adopt page', () => {
+  const { data, body } = readItem('adoption-evaluate.md');
+  /* Markdown headings plus the two raw <h2 id="..."> headings that carry the contract fragment ids. */
+  const headings = [...body.matchAll(/^(?:## (.+)|<h2 id="[a-z-]+">(.+)<\/h2>)$/gm)].map((match) => match[1] ?? match[2]);
+  const tail = (heading: string) => body.slice(body.indexOf(heading));
+
+  it('is a published adoption checklist at the Evaluate route, last on the learning path', () => {
+    const item = contentItemSchema.parse(data);
+    expect(item.id).toBe('adoption-evaluate');
+    expect(item.artifact_type).toBe('checklist');
+    expect(item.route_namespace).toBe('adoption');
+    expect(item.status).toBe('published');
+    expect(canonicalPath(item)).toBe('/adoption/evaluate/');
+    expect(LEARNING_PATH.at(-1)).toBe(item.id);
+    expect(data.title).toBe('Evaluate and adopt');
+    expect(data.applicability_records ?? []).toEqual([]);
+  });
+
+  it('carries the contract fragment ids as explicit heading ids, once each', () => {
+    for (const fragment of REQUIRED_FRAGMENTS.evaluate) expect(body.match(new RegExp(`<h2 id="${fragment}">`, 'g')), fragment).toHaveLength(1);
+  });
+
+  it('follows the outline in order', () => {
+    const expected = ['What it is', 'Assumptions', 'What was tested where', 'Limits', 'When not to use this pattern', 'results or uptime', 'Draft adoption checklist', 'Key points'];
+    expect(headings).toHaveLength(expected.length);
+    expected.forEach((start, index) => expect(headings[index].toLowerCase().includes(start.toLowerCase()), headings[index]).toBe(true));
+  });
+
+  it('lists the assumptions with a "How to check" column and no empty cell', () => {
+    const rows = section(body, 'Assumptions').split('\n').filter((line) => line.startsWith('|'));
+    const [header, , ...dataRows] = rows;
+    expect(header).toMatch(/Assumption.*How to check/);
+    expect(dataRows.length).toBeGreaterThanOrEqual(7);
+    for (const row of dataRows) for (const cell of row.split('|').slice(1, -1)) expect(cell.trim().length, row).toBeGreaterThan(0);
+    for (const needle of [/srun/, /exclusive/i, /Apptainer/, /loopback/i, /BSSW_SCRATCH_ROOT/, /sha256sum/]) expect(rows.join('\n')).toMatch(needle);
+  });
+
+  it('puts the record summary marker between the Tested heading and the hand-written lists, with no system or date in the text', () => {
+    const tested = tail('<h2 id="not-tested">');
+    expect(body.match(/<!-- l2c:record-summary -->/g)).toHaveLength(1);
+    expect(tested.indexOf('<!-- l2c:record-summary -->')).toBeGreaterThan(0);
+    expect(tested.indexOf('<!-- l2c:record-summary -->')).toBeLessThan(tested.indexOf('**Shim-tested'));
+    expect(tested.indexOf('**Shim-tested')).toBeLessThan(tested.indexOf(`**${DESIGNED_NOT_RUN}`));
+    expect(body).not.toMatch(SYSTEM_OR_DATE);
+    expect(body).not.toMatch(/\b(?:Tested|validated) on\b/i);
+    expect(body.match(/^<!-- l2c:/gm)).toHaveLength(1);
+  });
+
+  it('lists what is Designed, not run', () => {
+    const designed = tail(`**${DESIGNED_NOT_RUN}`).split('\n## ')[0].split('<h2 ')[0];
+    for (const needle of [/other centers/i, /PBS/, /Charliecloud/, /GPU/, /more than one node|multiple nodes/i, /more than two workers/i, /SSH tunnel/i, /wall-time signal|force-stop/i, /Compose file/i]) {
+      expect(designed, String(needle)).toMatch(needle);
+    }
+  });
+
+  it('says when not to use the pattern, covering all seven cases', () => {
+    const whenNot = tail('<h2 id="when-not">').split('\n## ')[0];
+    for (const needle of [/stable public endpoint/i, /multi-tenant/i, /persist beyond the allocation|outlive the allocation/i, /monitoring|backups/i, /recover on (?:its|their) own/i, /multi-node|multiple nodes/i, /already (?:offers|runs)/i]) {
+      expect(whenNot, String(needle)).toMatch(needle);
+    }
+  });
+
+  it('marks the adoption checklist as a draft that v1.0 completes', () => {
+    const checklist = section(body, 'Draft adoption checklist');
+    expect(checklist).toMatch(/v1\.0 arrives with the final release/);
+    expect(checklist.split('\n').filter((line) => line.startsWith('- ')).length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('links only to pages and fragments that exist, avoids the door cards, and stays within its word budget', () => {
+    expect(linkProblems(body)).toEqual([]);
+    expect(body).not.toMatch(/class="doors?"|door__/);
+    expect(body).not.toMatch(/reservation|\bElsa\b|program administrator/i);
+    const count = words(body);
+    expect(count).toBeGreaterThan(500);
+    expect(count).toBeLessThanOrEqual(1300);
+  });
+
+  it('keeps retired names out and mentions other runtimes only under Designed, not run', () => {
+    expect(body).not.toMatch(/container union/i);
+    expect(body.indexOf('Charliecloud')).toBeGreaterThan(body.indexOf('<h2 id="not-tested">'));
+  });
+});
