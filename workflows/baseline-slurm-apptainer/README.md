@@ -36,9 +36,15 @@ Content from that source was rephrased for licensing compliance.
 ## Validate and submit
 
 ```sh
-sha256sum -c workflows/baseline-slurm-apptainer/inputs/tasks.json.sha256
-sbatch workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
+(cd workflows/baseline-slurm-apptainer/inputs && sha256sum -c tasks.json.sha256)
+W="$PWD/workflows/baseline-slurm-apptainer"
+sbatch --export=ALL,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",IMAGE_PATH="$W/container/baseline.sif",INPUT_SHA256_FILE="$W/inputs/tasks.json.sha256" "$W/slurm/baseline.sbatch"
 ```
+
+Run both from the repository root. The checksum sidecar names a bare
+`tasks.json`, so check it from the `inputs` directory. Slurm runs a spooled copy
+of the batch script, so the script cannot find the workflow directory from its
+own location; the `--export` list gives it absolute paths instead.
 
 Defaults expect four tasks, two workers, a 30-second readiness deadline, and the
 acquired image beside its checksum. The launcher records Slurm, Apptainer, image,
@@ -102,10 +108,9 @@ claim.
 ## Representative-environment re-verification checklist
 
 The fixtures above prove orchestration logic; they do **not** prove the image
-builds or the job runs on a real cluster. Neither has happened yet. The findings
-below were distilled from center documentation (not from observed failed jobs)
-and are the things to confirm explicitly on the first Anvil (or Expanse fallback)
-run, because they are properties of the site rather than of this code:
+builds or the job runs on a real cluster. The checks below are properties of
+the site rather than of this code, so confirm each one on any cluster before you
+trust a run there:
 
 - [ ] **Job-scoped scratch.** Confirm whether the allocation exports
   `$SLURM_TMPDIR`. Anvil provides `$SCRATCH` but not `$SLURM_SCRATCH`; if
@@ -115,8 +120,7 @@ run, because they are properties of the site rather than of this code:
 - [ ] **Single-image build.** `container/acquire.sh` runs `apptainer build`
   from `Apptainer.def`. Confirm it builds unprivileged (no `--fakeroot` needed,
   since `%post` installs nothing) and that the resulting `baseline.sif` loads
-  and serves `/health` at `/opt/bssw/bin/coordinator.py`. This image model is
-  unbuilt on real metal — only `apptainer build` + `sbatch` confirms it.
+  and serves `/health` at `/opt/bssw/bin/coordinator.py`.
 - [ ] **Loopback on shared partitions.** The coordinator binds `127.0.0.1` on
   an ephemeral port. Confirm compute-node loopback connections are permitted
   on the target partition (the SSH-tunnel access pattern the SOW describes).
@@ -125,6 +129,7 @@ run, because they are properties of the site rather than of this code:
 - [ ] **Exclusive step launch.** `srun --exclusive --ntasks=1` per step; confirm
   the center permits exclusive single-task steps within the allocation.
 
-When the first successful run completes, record it as an applicability record
-(`evidence/`) and flip the published validation status from `unvalidated`. Until
-then, the applicability record correctly reads `NOT RUN`.
+When a run on a new cluster completes, record it as an applicability record
+(`evidence/`) and set the published validation status from its manifest.
+
+Validation record: https://laptop-to-cluster.org/applicability/m1-baseline-anvil/

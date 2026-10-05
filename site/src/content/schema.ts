@@ -209,6 +209,53 @@ export const applicabilityRecordSchema = z.object({
   if (record.status === 'unvalidated' && record.result.terminal_state === 'COMPLETED' && record.result.exit_code === 0) {
     issue('result', 'unvalidated status cannot contain a successful representative result');
   }
+  const listLengths: Record<string, number> = {
+    assumptions: record.assumptions.length,
+    portability_boundaries: record.portability_boundaries.length,
+    limitations: record.limitations.length,
+    'result.checks': record.result.checks.length,
+    related_evidence: record.related_evidence.length,
+  };
+  if (record.plain_language) {
+    const covered = new Set<string>();
+    const items = [
+      { path: 'plain_language.tested', item: record.plain_language.tested },
+      ...record.plain_language.you_need.map((item, index) => ({ path: `plain_language.you_need.${index}`, item })),
+      ...record.plain_language.depends_on_center.map((item, index) => ({ path: `plain_language.depends_on_center.${index}`, item })),
+    ];
+    if (!record.plain_language.tested.from.some((reference) => /^result\.checks(?:\.\d+)?$/.test(reference))) {
+      issue('plain_language.tested.from', 'must cite result.checks');
+    }
+    for (const { path, item } of items) {
+      for (const reference of item.from) {
+        const [, list, position] = /^(.+?)(?:\.(\d+))?$/.exec(reference) ?? [];
+        const length = listLengths[list] ?? 0;
+        const indices = position === undefined ? [...Array(length).keys()] : [Number(position)];
+        if (length === 0 || indices.some((index) => index >= length)) {
+          issue(`${path}.from`, `${reference} does not resolve to an existing ${list} entry`);
+          continue;
+        }
+        for (const index of indices) covered.add(`${list}.${index}`);
+      }
+    }
+    for (const list of ['assumptions', 'portability_boundaries'] as const) {
+      record[list].forEach((_, index) => {
+        if (!covered.has(`${list}.${index}`)) issue('plain_language', `${list}.${index} is not covered by any plain-language item`);
+      });
+    }
+  }
+  const relatedIds = new Set<string>();
+  for (const [index, related] of record.related_evidence.entries()) {
+    if (related.id === record.evidence.id || related.path === record.evidence.path) {
+      issue(`related_evidence.${index}`, 'must differ from the primary evidence reference');
+    }
+    if (relatedIds.has(related.id)) issue(`related_evidence.${index}.id`, `duplicate related evidence ${related.id}`);
+    relatedIds.add(related.id);
+  }
+  if (record.superseded_by === record.id) issue('superseded_by', 'a record cannot supersede itself');
+  if (record.review_extension && record.review_extension.review_by <= record.review_after) {
+    issue('review_extension.review_by', 'must be later than review_after');
+  }
 });
 export type ApplicabilityRecord = z.infer<typeof applicabilityRecordSchema>;
 

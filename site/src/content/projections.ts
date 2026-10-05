@@ -6,7 +6,9 @@ import {
   type EvidenceReference,
   type ReleaseRecord,
 } from './schema.js';
-import { RegistryValidationError, canonicalPath, generateCanonicalRoutes, hasNoStandalonePage } from './registry.js';
+import { RegistryValidationError, canonicalPath, generateCanonicalRoutes, hasNoStandalonePage, releaseNotesHref } from './registry.js';
+import { EVIDENCE_ROW_LABELS, LEARNING_PATH, UNTESTED_HREF, type EvidenceRowLabel } from './contracts.js';
+import { evidenceStatusText } from './wording.js';
 
 interface MilestoneDeliverableProjection {
   sow_id: string;
@@ -121,6 +123,21 @@ export function projectModuleNavigation(content: ContentItem[]): Record<string, 
   }]));
 }
 
+/** The published items of LEARNING_PATH, in learning order; unpublished entries are skipped. */
+export function projectLearningPath(content: ContentItem[]): ModuleNavigationNode[] {
+  const published = new Map(content.filter(isPublic).map((item) => [item.id, item]));
+  return LEARNING_PATH.flatMap((id) => {
+    const item = published.get(id);
+    return item ? [{ id: item.id, title: item.title, url: canonicalPath(item) }] : [];
+  });
+}
+
+/** Previous and next links along LEARNING_PATH, keyed by item id (the ModulePager input shape). */
+export function projectLearningPathNavigation(content: ContentItem[]): Record<string, ModuleNavigation> {
+  const path = projectLearningPath(content);
+  return Object.fromEntries(path.map((node, index) => [node.id, { previous: path[index - 1], next: path[index + 1] }]));
+}
+
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[character]!);
@@ -194,7 +211,7 @@ export function projectDiscovery(content: ContentItem[], fixedPublicPaths: strin
 export const COMPOSITION_PROFILES = [
   'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start',
   'diagnostic', 'milestone', 'release', 'about', 'support', 'accessibility', 'applicability',
-  'event', 'not-found',
+  'event', 'adoption', 'not-found',
 ] as const;
 export type CompositionProfile = typeof COMPOSITION_PROFILES[number];
 export type ApplicabilityConsumer = 'landing' | 'runnable-module' | 'milestone' | 'release';
@@ -206,6 +223,78 @@ export interface ApplicabilityProjection {
   canonicalPath: `/applicability/${string}/`;
   testedScope: string;
   supplement: ApplicabilitySupplement;
+  panel: EvidencePanelProjection;
+}
+
+export type EvidenceStatus = ApplicabilityRecord['status'];
+export interface EvidenceItem { text: string; from: string[] }
+export interface EvidencePanelProjection {
+  recordId: string;
+  canonicalPath: `/applicability/${string}/`;
+  status: EvidenceStatus;
+  badgeText: string;
+  collapsible: boolean;
+  rows: { label: EvidenceRowLabel; items: EvidenceItem[] }[];
+  untestedHref: '/adoption/evaluate/#not-tested';
+}
+
+const monthYearFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+/** '2026-07-25' -> 'Jul 2026' (en-US, UTC). Month precision only, so the exact date stays on the canonical record page. */
+export function formatMonthYear(isoDate: string): string {
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(isoDate) ? `${isoDate}T00:00:00Z` : Number.NaN);
+  if (Number.isNaN(date.getTime())) throw new RangeError(`formatMonthYear: not an ISO date: ${isoDate}`);
+  return monthYearFormatter.format(date);
+}
+
+const literalItems = (list: 'result.checks' | 'assumptions' | 'portability_boundaries', values: string[]): EvidenceItem[] =>
+  values.map((text, index) => ({ text, from: [`${list}.${index}`] }));
+const tracedItem = ({ text, from }: { text: string; from: string[] }): EvidenceItem => ({ text, from: [...from] });
+
+/** The badge and its three rows, generated only from the record (plain_language when present, else the literal lists). */
+export function projectEvidencePanel(record: ApplicabilityRecord): EvidencePanelProjection {
+  const plain = record.plain_language;
+  const items: Record<EvidenceRowLabel, EvidenceItem[]> = plain ? {
+    Tested: [tracedItem(plain.tested)],
+    'You need': plain.you_need.map(tracedItem),
+    'Depends on your center': plain.depends_on_center.map(tracedItem),
+  } : {
+    Tested: literalItems('result.checks', record.result.checks),
+    'You need': literalItems('assumptions', record.assumptions),
+    'Depends on your center': literalItems('portability_boundaries', record.portability_boundaries),
+  };
+  return {
+    recordId: record.id,
+    canonicalPath: `/applicability/${record.id}/`,
+    status: record.status,
+    badgeText: evidenceStatusText(record.status, record.environment.public_name, formatMonthYear(record.validation_date)),
+    collapsible: record.status === 'validated',
+    rows: EVIDENCE_ROW_LABELS.map((label) => ({ label, items: items[label] })),
+    untestedHref: UNTESTED_HREF,
+  };
+}
+
+/** The newest record by validation_date among records that are not superseded; undefined when none is left or the newest date is shared. */
+export function currentRecord(records: ApplicabilityRecord[]): ApplicabilityRecord | undefined {
+  const live = records.filter(({ superseded_by }) => !superseded_by);
+  const latest = live.map(({ validation_date }) => validation_date).sort().at(-1);
+  const newest = live.filter(({ validation_date }) => validation_date === latest);
+  return newest.length === 1 ? newest[0] : undefined;
+}
+
+/** What RecordSummary renders: the badge sentence plus scope values copied verbatim from the record. */
+export function summarizeRecord(record: ApplicabilityRecord): { tested: string; scope: string[] } {
+  const panel = projectEvidencePanel(record);
+  return {
+    tested: panel.badgeText,
+    scope: [
+      `Scheduler: ${record.scheduler.family} ${record.scheduler.version}`,
+      `Runtime: ${record.runtime.name} ${record.runtime.version}`,
+      `Workflow revision: ${record.workflow_revision}`,
+      ...panel.rows[0].items.map(({ text }) => text),
+      ...record.limitations,
+    ],
+  };
 }
 export interface DiagnosticApplicabilityContext {
   projectionId: `diagnostic:${string}:${string}`;
@@ -264,6 +353,13 @@ export function compositionProfileFor(item: ContentItem): CompositionProfile {
     return 'accessibility';
   }
 
+  /* Evaluation and adoption checklists. Not an applicability consumer: tested claims
+     on this profile come only from RecordSummary. */
+  if (item.artifact_type === 'checklist') {
+    assertProfileNamespace(item, 'adoption');
+    return 'adoption';
+  }
+
   /* Conference and event material. canonicalPath() routes event-assets to
      /events/{slug}/. These are prose articles (poster companions, talk notes),
      not the resource-card grid the resources profile requires, so they get a
@@ -314,6 +410,7 @@ export function projectApplicability(record: ApplicabilityRecord, consumer: Appl
     canonicalPath: `/applicability/${record.id}/`,
     testedScope: `The baseline workflow was ${record.status === 'validated' ? 'validated' : 'recorded'} on ${record.environment.public_name} with ${record.scheduler.family} and ${record.runtime.name}.`,
     supplement,
+    panel: projectEvidencePanel(record),
   };
 }
 
@@ -421,7 +518,7 @@ export interface LandingPageProjection {
   learning_path: Array<{ label: string; title: string; summary: string; url: string }>;
   orientation?: { title: string; url: string };
   estimated_minutes: number;
-  release: { title: string; status: ContentItem['status']; url: string };
+  release: { id: string; title: string; status: ContentItem['status']; url: string; href: string };
   milestone: { title: string; url: string };
 }
 
@@ -446,15 +543,12 @@ export function projectLandingPage(
     throw new RegistryValidationError(missingDurations.map((item) => `${item.id}.estimated_minutes is required by the landing learning path`));
   }
 
-  const records = baseline!.applicability_records.flatMap((id) => {
-    const record = applicability.find((candidate) => candidate.id === id && candidate.workflow_id === baseline!.id);
-    return record ? [record] : [];
-  });
-  const latestDate = records.map(({ validation_date }) => validation_date).sort().at(-1);
-  const currentRecords = latestDate ? records.filter(({ validation_date }) => validation_date === latestDate) : [];
-  const current = currentRecords.length === 1 ? currentRecords[0] : undefined;
-  const release = published.find((item) => item.artifact_type === 'release'
-    && (!current || item.applicability_records.includes(current.id)));
+  const records = applicability.filter((candidate) => baseline!.applicability_records.includes(candidate.id)
+    && candidate.workflow_id === baseline!.id);
+  const current = currentRecord(records);
+  const [release] = published
+    .filter((item) => item.artifact_type === 'release' && item.status === 'published')
+    .sort((a, b) => (b.publication_date ?? '').localeCompare(a.publication_date ?? '') || b.id.localeCompare(a.id));
   if (!release) throw new RegistryValidationError(['landing projection is missing the current release record']);
 
   const step = (label: string, item: ContentItem) => ({
@@ -462,16 +556,17 @@ export function projectLandingPage(
   });
   return {
     applicability_projection: current ? projectApplicability(current, 'landing') : undefined,
-    validation_unavailable_reason: current ? undefined : records.length
-      ? 'Multiple applicability records share the latest validation date.'
-      : 'No current applicability record is published.',
+    validation_unavailable_reason: current ? undefined
+      : records.length === 0 ? 'No current applicability record is published.'
+        : records.every(({ superseded_by }) => superseded_by) ? 'Every listed applicability record is superseded.'
+          : 'Multiple applicability records share the latest validation date.',
     learning_path: [
       ...(orientation ? [step('Orient yourself', orientation)] : []),
       step('Understand the model', model!), step('Check your center', start!), step('Run the baseline', baseline!),
     ],
     orientation: orientation ? { title: orientation.title, url: canonicalPath(orientation) } : undefined,
     estimated_minutes: pathModules.reduce((total, item) => total + (item.artifact_type === 'learning-module' ? item.estimated_minutes ?? 0 : 0), 0),
-    release: { title: release.title, status: release.status, url: canonicalPath(release) },
+    release: { id: release.id, title: release.title, status: release.status, url: canonicalPath(release), href: releaseNotesHref(release) },
     milestone: { title: milestone!.title, url: canonicalPath(milestone!) },
   };
 }

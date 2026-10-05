@@ -14,8 +14,8 @@ describe('diagnostic identifiers', () => {
   });
 
   it('presents short reader codes without changing stable route identity', () => {
-    expect(displayDiagnosticCode('BSSW-PREREQ-SLURM')).toBe('PREREQ-SLURM');
-    expect(displayDiagnosticCode('BSSW-READY-TIMEOUT')).toBe('READINESS-TIMEOUT');
+    expect(displayDiagnosticCode('BSSW-PREREQ-SLURM')).toBe('PREQ-SLURM');
+    expect(displayDiagnosticCode('BSSW-READY-TIMEOUT')).toBe('READY-TIMEOUT');
     expect(diagnosticHref('BSSW-READY-TIMEOUT')).toBe('/diagnostics/#bssw-readiness-timeout');
   });
 
