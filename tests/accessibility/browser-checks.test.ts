@@ -119,6 +119,7 @@ describe('forced colours check', () => {
     const lostControl = mediumPage({ extraCss: '@media (forced-colors:active){.door__link{display:none}}' });
     const server = await serveFixtures({
       '/text/': { body: lostText }, '/boundary/': { body: lostBoundary }, '/selected/': { body: colourOnly }, '/control/': { body: lostControl },
+      '/nav/': { body: mediumPage({ extraCss: 'nav a[aria-current=page]{color:#123456}' }).replace('<main>', '<nav aria-label="s"><ul><li><a href="/a" aria-current="page">A</a></li><li><a href="/b">B</a></li></ul></nav><main>') },
       '/fc-order/': { body: mediumPage({ extraCss: '@media (forced-colors:active){.timeline__step strong{display:none}}' }) },
     });
     try {
@@ -127,6 +128,7 @@ describe('forced colours check', () => {
       expect((await checkForcedColors(browser, server.origin, '/selected/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/colour only/);
       expect((await checkForcedColors(browser, server.origin, '/control/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/a control was lost/);
       expect((await checkForcedColors(browser, server.origin, '/fc-order/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/must read/);
+      expect((await checkForcedColors(browser, server.origin, '/nav/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/colour only/);
     } finally { await server.close(); }
   }, 120_000);
 });

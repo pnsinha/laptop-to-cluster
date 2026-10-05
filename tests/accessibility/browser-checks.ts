@@ -164,7 +164,7 @@ async function checkExpectation(page: Page, scope: string, code: string, expecta
   return issues;
 }
 
-const BOUNDARY_SELECTORS = '.notice, .door, .evidence-badge, .crosswalk__pane';
+const BOUNDARY_SELECTORS = '.notice, .door, .evidence-badge, .crosswalk__pane pre';
 
 /** §10 Forced colours: no lost text, controls, warning boundaries or selected state; keyboard focus stays visible. */
 export async function checkForcedColors(browser: Browser, origin: string, path: string, expectation: PageExpectation = {}): Promise<Issue[]> {
@@ -217,8 +217,9 @@ export async function checkForcedColors(browser: Browser, origin: string, path: 
     const colourOnlySelected: string[] = [];
     for (const element of document.querySelectorAll('[aria-pressed="true"], a[aria-current="page"], [aria-current="step"]')) {
       const pressed = element.hasAttribute('aria-pressed');
-      const other = [...(element.parentElement?.children ?? [])].find((sibling) => sibling !== element && sibling.tagName === element.tagName
-        && (pressed ? sibling.getAttribute('aria-pressed') === 'false' : !sibling.hasAttribute('aria-current')));
+      const group = element.closest('ul, ol, [role="group"], .theme-control') ?? element.parentElement;
+      const other = [...(group?.querySelectorAll(element.tagName) ?? [])].find((peer) => peer !== element
+        && (pressed ? peer.getAttribute('aria-pressed') === 'false' : !peer.hasAttribute('aria-current')));
       if (other && signature(other) === signature(element)) colourOnlySelected.push(label(element));
     }
     return { forced: matchMedia('(forced-colors: active)').matches, lostText, lostBoundaries, colourOnlySelected };
