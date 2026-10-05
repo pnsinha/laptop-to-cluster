@@ -57,7 +57,7 @@ describe('ACK-VERBATIM', () => {
     const root = dist({});
     const event = (text: string) => `<section class="event-acknowledgment" aria-labelledby="ack-title"><h2 id="ack-title">Acknowledgment for this work</h2><p>${text}</p></section>`;
     expect(validateAcknowledgments(root, [pageOf('/events/iguide-forum-2026/', event(ACKNOWLEDGMENT_TEXT))])).toEqual([]);
-    expect(validateAcknowledgments(root, [pageOf('/events/iguide-forum-2026/', event('This work was supported by the Better Scientific Software Fellowship Program.'))]).join('\n')).toMatch(/ACK-VERBATIM.*event/);
+    expect(validateAcknowledgments(root, [pageOf('/events/iguide-forum-2026/', event(ACKNOWLEDGMENT_TEXT.split('. ')[0] + '.'))]).join('\n')).toMatch(/ACK-VERBATIM.*event/);
   });
 
   it('fails the retired phrase in any built text file', () => {
