@@ -115,6 +115,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
         with:
+          fetch-depth: 0
           ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/download-artifact@v4.3.0
         with:
@@ -153,6 +154,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
         with:
+          fetch-depth: 0
           ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/download-artifact@v4.3.0
         with:
@@ -219,6 +221,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
         with:
+          fetch-depth: 0
           ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/download-artifact@v4.3.0
         with:

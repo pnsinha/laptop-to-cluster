@@ -63,6 +63,12 @@ describe('release workflow: planning', () => {
       for (const checkout of uses(job, 'actions/checkout@')) expect(checkout.with.ref, job).toBe('${{ needs.plan.outputs.sha }}');
     }
   });
+
+  it('checks out with full history in every job', () => {
+    const checkouts = Object.values(jobs).flatMap((job) => job.steps.filter((step) => String(step.uses ?? '').startsWith('actions/checkout@')));
+    expect(checkouts.length).toBe(5);
+    for (const step of checkouts) expect(step.with['fetch-depth']).toBe(0);
+  });
 });
 
 describe('release workflow: the one build', () => {
