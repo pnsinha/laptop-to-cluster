@@ -24,6 +24,14 @@ describe('publication.yml stays frozen for the first release', () => {
     expect(workflow.jobs['build-once'].steps[0].with['fetch-depth']).toBe(0);
   });
 
+  it('refuses any run whose recorded commit is not the checked-out frozen tag', () => {
+    const guard = workflow.jobs['build-once'].steps[1];
+    expect(guard.uses).toBeUndefined();
+    expect(guard.run).toContain('"$(git rev-parse HEAD)" != "$GITHUB_SHA"');
+    expect(guard.run).toContain('exit 1');
+    expect(guard.run).toContain('gh workflow run publication.yml --ref v0.1.0');
+  });
+
   it('still publishes v0.1.0 to production by Direct Upload and passes the deployment policy', () => {
     expect(validateDeploymentWorkflow(text)).toEqual([]);
     expect(text).toContain('--branch=main');
