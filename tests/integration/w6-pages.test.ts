@@ -92,3 +92,52 @@ describe('W6 built pages: Troubleshooting', () => {
     }
   });
 });
+
+describe('W6 built pages: Modules 1 and 2', () => {
+  const one = page('guide/scheduler-as-orchestrator');
+  const two = page('guide/baseline-single-node-pattern');
+  const at = (html: string, needle: string): number => {
+    const index = html.indexOf(needle);
+    expect(index, needle).toBeGreaterThanOrEqual(0);
+    return index;
+  };
+
+  it('shows the six-step timeline once per page: unlit on Module 1, step 3 lit on Module 2', () => {
+    expect(count(one, /<figure class="timeline"/g)).toBe(1);
+    expect(count(two, /<figure class="timeline"/g)).toBe(1);
+    expect(one).not.toContain('aria-current="step"');
+    expect(two).toMatch(/<li class="timeline__step" data-step="3" aria-current="step"/);
+  });
+
+  it('puts the timeline inside the section the body asks for', () => {
+    expect(at(one, 'id="map-each-responsibility"')).toBeLessThan(at(one, '<figure class="timeline"'));
+    expect(at(one, '<figure class="timeline"')).toBeLessThan(at(one, 'id="what-varies-by-center"'));
+    expect(at(two, 'id="how-the-baseline-works"')).toBeLessThan(at(two, '<figure class="timeline"'));
+    expect(at(two, '<figure class="timeline"')).toBeLessThan(at(two, 'id="files-the-workflow-reads-and-writes"'));
+  });
+
+  it('places the diagrams and the implementation reference by marker, and leaks no marker', () => {
+    expect(count(one, /<figure class="diagram"/g)).toBe(2);
+    expect(count(two, /<figure class="diagram"/g)).toBe(1);
+    expect(at(two, 'id="implementation-reference"')).toBeLessThan(at(two, 'id="files-the-workflow-reads-and-writes"'));
+    expect(one + two).not.toContain('l2c:');
+  });
+
+  it('keeps the procedure heading after the evidence badge and before the expected result', () => {
+    expect(at(two, 'evidence-badge')).toBeLessThan(at(two, '<h2 id="procedure">'));
+    expect(at(two, '<h2 id="procedure">')).toBeLessThan(at(two, 'id="expected-result"'));
+  });
+
+  it('ends each module with its key points and shows no hash or retired promise', () => {
+    expect(at(one, 'id="key-points"')).toBeGreaterThan(at(one, 'id="adapt-it"'));
+    expect(at(two, 'id="key-points"')).toBeGreaterThan(at(two, 'id="safety-and-scope-limitations"'));
+    expect(two).not.toMatch(/[0-9a-f]{64}/);
+    expect(two).not.toMatch(/worker-results\.json|rc\.1/);
+  });
+
+  it('renders the corrected diagram vocabulary on Module 2', () => {
+    expect(two).toContain('${RUNTIME_DIR}');
+    expect(two).toContain('srun step · apptainer exec');
+    expect(one).toContain('Designed, not run');
+  });
+});
