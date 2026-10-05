@@ -85,6 +85,16 @@ describe('Translate page (Module 3)', () => {
     expect(body.match(/^\| Compose construct/gm)).toHaveLength(1);
   });
 
+  it('runs the same commands as the package README in Step 4', () => {
+    const readme = readFileSync(resolve(root, 'workflows/baseline-slurm-apptainer/README.md'), 'utf8');
+    const readmeSection = readme.split('## Validate and submit')[1].split('\n## ')[0];
+    const moduleBlock = body.split('## Step 4')[1].match(/```[a-z]*\n([\s\S]*?)```/)![1];
+    const commandLines = moduleBlock.split('\n').filter((line) => line.trim() !== '');
+    expect(commandLines.length).toBeGreaterThan(0);
+    for (const line of commandLines) expect(readmeSection).toContain(line);
+    expect(moduleBlock).not.toContain('sha256sum -c workflows/');
+  });
+
   it('keeps the keep and replace list in agreement with the workflow package', () => {
     const readme = readFileSync(resolve(root, 'workflows/baseline-slurm-apptainer/README.md'), 'utf8');
     const adapterTable = readme.split('## Adapter variables and bounds')[1].split('\n## ')[0];

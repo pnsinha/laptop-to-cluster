@@ -120,11 +120,12 @@ Set `BSSW_SCRATCH_ROOT` explicitly, to a private job-scoped path your center nam
 
 ## Step 4: Run it
 
-[Run the example](/start/) walks through checking your center, fetching the image and submitting the job. In short, check the input against its checksum record, then submit with your scratch location set. Run these from the repository root and replace the placeholder with the path your center names.
+[Run the example](/start/) walks through checking your center, fetching the image and submitting the job. In short, check the input against its checksum record, then submit with absolute paths. Run both from the repository root. The checksum record names a bare `tasks.json`, so the check runs inside the `inputs` folder. Slurm runs a copy of the batch script from its own spool folder, so the script cannot find the workflow folder by itself; the `--export` list gives it absolute paths. If your center names a private scratch path, add `BSSW_SCRATCH_ROOT=<your-private-scratch-path>` to the `--export` list.
 
 ```bash
-sha256sum -c workflows/baseline-slurm-apptainer/inputs/tasks.json.sha256
-sbatch --export=ALL,BSSW_SCRATCH_ROOT=<your-private-scratch-path> workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
+(cd workflows/baseline-slurm-apptainer/inputs && sha256sum -c tasks.json.sha256)
+W="$PWD/workflows/baseline-slurm-apptainer"
+sbatch --export=ALL,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",IMAGE_PATH="$W/container/baseline.sif",INPUT_SHA256_FILE="$W/inputs/tasks.json.sha256" "$W/slurm/baseline.sbatch"
 ```
 
 When the job finishes, it prints that the workflow completed and where its result is.
