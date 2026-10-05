@@ -3,6 +3,7 @@
    Sections: 1 foundation, 2 type, 3 shell, 4 content flow, then home (Task 7) and components/media (Task 8). */
 @import "./tokens.css";
 @import "./fonts.css";
+@import './enhancements.css';
 
 /* ---------- 1. foundation ---------- */
 :root {
