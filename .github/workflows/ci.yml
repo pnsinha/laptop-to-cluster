@@ -19,6 +19,8 @@ jobs:
         with:
           node-version: '22.15.0'
           cache: npm
+      - name: Resolve the release version from the candidate record
+        run: echo "RELEASE_VERSION=$(node scripts/release-version.mjs)" >> "$GITHUB_ENV"
       - name: Clean pinned install
         run: npm ci --ignore-scripts
       - name: Install accessibility browser
@@ -31,17 +33,22 @@ jobs:
         run: bash -n workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
       - name: Build production site exactly once
         run: npm run build
-      - name: Built-site, canonical, link, repository, evidence, and release gates
+      - name: Note when the boundary pattern is unavailable (fork pull request)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
+        run: echo "::notice title=Boundary scan::This pull request comes from a fork, so the boundary pattern secret is not available to it. The maintainer runs the scan before merging."
+      - name: Built-site, canonical, link, repository, evidence, boundary, and release gates
         run: npm run publication:validate
+        env:
+          L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
       - name: Static integration and accessibility gates
         run: npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser
       - name: Generate checksum-bound publication artifact
         run: npm run publication:prepare
       - uses: actions/upload-artifact@v4.6.2
         with:
-          name: validated-site-v0.1.0-${{ github.sha }}
+          name: validated-site-${{ env.RELEASE_VERSION }}-${{ github.sha }}
           path: |
             site/dist/
-            publication/v0.1.0/
+            publication/${{ env.RELEASE_VERSION }}/
           if-no-files-found: error
           retention-days: 90

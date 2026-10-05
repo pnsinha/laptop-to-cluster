@@ -2,11 +2,13 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createArtifactManifest, sha256, validateBuiltOutput, verifyArtifactManifest } from './publication.mjs';
+import { assertReleaseVersion, readReleaseCandidate, resolveReleaseVersion } from './release-version.mjs';
 
 const root = resolve(process.argv[2] ?? '.');
-const version = process.env.RELEASE_VERSION ?? 'v0.1.0';
+const version = assertReleaseVersion(resolveReleaseVersion(root));
 const dist = join(root, 'site/dist');
 const output = join(root, 'publication', version);
+const candidate = readReleaseCandidate(root, version);
 const errors = validateBuiltOutput(dist);
 if (errors.length) {
   console.error(errors.map((error) => `ERROR: ${error}`).join('\n'));
@@ -19,7 +21,6 @@ writeFileSync(artifactPath, JSON.stringify(artifact, null, 2) + '\n');
 const verification = verifyArtifactManifest(dist, artifact);
 if (verification.length) throw new Error(verification.join('\n'));
 const sourceCommit = process.env.GITHUB_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-const candidate = JSON.parse(readFileSync(join(root, 'releases', version, 'release-candidate.json'), 'utf8'));
 const binding = {
   schemaVersion: 1,
   version,

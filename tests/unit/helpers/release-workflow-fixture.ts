@@ -18,6 +18,9 @@ jobs:
     outputs:
       version: @{{ steps.v.outputs.version }}
       preview: @{{ steps.v.outputs.preview }}
+      mode: @{{ steps.v.outputs.mode }}
+      artifact-name: @{{ steps.v.outputs.artifact-name }}
+      record-artifact-name: @{{ steps.v.outputs.record-artifact-name }}
     steps:
       - id: v
         run: echo "RELEASE_VERSION=v0.2.0 RELEASE_DATE=x PREVIEW=1"
@@ -31,16 +34,16 @@ jobs:
       - run: npm run validate
       - uses: actions/upload-artifact@v4.6.2
         with:
-          name: validated-site-@{{ needs.plan.outputs.version }}-@{{ github.sha }}
+          name: @{{ needs.plan.outputs.artifact-name }}
           path: site/dist/
   deploy-preview:
-    if: needs.plan.outputs.preview == '1'
+    if: needs.plan.outputs.mode == 'preview'
     needs: [plan, build-once]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4.3.0
         with:
-          name: validated-site-@{{ needs.plan.outputs.version }}-@{{ github.sha }}
+          name: @{{ needs.plan.outputs.artifact-name }}
       - run: node scripts/publication.mjs verify site/dist publication/artifact-manifest.json
       - uses: cloudflare/wrangler-action@v3.14.1
         env:
@@ -49,13 +52,13 @@ jobs:
         with:
           command: pages deploy site/dist --project-name=@{{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-dirty=false
   deploy:
-    if: needs.plan.outputs.preview != '1'
+    if: needs.plan.outputs.mode == 'production'
     needs: [plan, build-once]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4.3.0
         with:
-          name: validated-site-@{{ needs.plan.outputs.version }}-@{{ github.sha }}
+          name: @{{ needs.plan.outputs.artifact-name }}
       - run: node scripts/publication.mjs verify site/dist publication/artifact-manifest.json
       - uses: cloudflare/wrangler-action@v3.14.1
         env:
@@ -73,7 +76,7 @@ jobs:
         run: node scripts/update-recovery-index.mjs a b
       - uses: actions/upload-artifact@v4.6.2
         with:
-          name: release-record-@{{ needs.plan.outputs.version }}-@{{ github.sha }}
+          name: @{{ needs.plan.outputs.record-artifact-name }}
           path: releases/
   post-deploy-release-checks:
     needs: [deploy-preview, deploy]

@@ -1,1 +1,42 @@
-{ "version": "v0.2.0", "status": "candidate" }
+{
+  "schemaVersion": 1,
+  "version": "v0.2.0",
+  "status": "candidate",
+  "repositoryTag": "v0.2.0",
+  "canonicalOrigin": "https://laptop-to-cluster.org",
+  "evidenceIds": ["m1-baseline-anvil", "accessibility-review-v0.2.0"],
+  "publicSiteUrls": [
+    "https://laptop-to-cluster.org/",
+    "https://laptop-to-cluster.org/guide/tour/",
+    "https://laptop-to-cluster.org/guide/compose-to-hpc-translation/",
+    "https://laptop-to-cluster.org/adoption/evaluate/",
+    "https://laptop-to-cluster.org/guide/scheduler-as-orchestrator/",
+    "https://laptop-to-cluster.org/guide/baseline-single-node-pattern/",
+    "https://laptop-to-cluster.org/start/",
+    "https://laptop-to-cluster.org/resources/",
+    "https://laptop-to-cluster.org/diagnostics/",
+    "https://laptop-to-cluster.org/about/talks-and-papers/",
+    "https://laptop-to-cluster.org/about/attribution/",
+    "https://laptop-to-cluster.org/about/accessibility/",
+    "https://laptop-to-cluster.org/about/glossary/",
+    "https://laptop-to-cluster.org/milestones/2/",
+    "https://laptop-to-cluster.org/applicability/m1-baseline-anvil/"
+  ],
+  "changes": [
+    { "class": "added", "itemId": "home-newcomer-first" },
+    { "class": "added", "itemId": "module-0-orientation" },
+    { "class": "added", "itemId": "module-3-compose-to-hpc-translation" },
+    { "class": "added", "itemId": "adoption-evaluate" },
+    { "class": "added", "itemId": "talks-and-papers" },
+    { "class": "added", "itemId": "site-visual-system" },
+    { "class": "added", "itemId": "evidence-badge-and-panel" },
+    { "class": "changed", "itemId": "module-2-baseline" },
+    { "class": "changed", "itemId": "start-guide" },
+    { "class": "changed", "itemId": "glossary" },
+    { "class": "changed", "itemId": "applicability-record-plain-language" },
+    { "class": "corrected", "itemId": "workflow-validation-link" },
+    { "class": "corrected", "itemId": "diagnostic-identifiers" },
+    { "class": "corrected", "itemId": "applicability-record-failure-run" }
+  ],
+  "externalInputsRequired": ["cloudflareDeploymentId", "pagesDevFallbackUrl", "activeCloudflareReadinessRecord"]
+}
