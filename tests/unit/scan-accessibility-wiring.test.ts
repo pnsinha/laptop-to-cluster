@@ -22,3 +22,27 @@ describe('scanner wiring: tokens, sizes, fonts', () => {
     expect(scanner).toContain('getScreenCTM()');
   });
 });
+
+describe('scanner wiring: gates, routes, requests', () => {
+  it('runs every automatable release gate through the shared browser checks', () => {
+    expect(scanner).toContain("from '../tests/accessibility/browser-checks'");
+    for (const call of [
+      'checkThemePrecedence(', 'inspectThemeScript(', 'checkForcedColors(', 'checkPrint(', 'checkJsOff(',
+      'checkPrimaryAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkMotion(',
+    ]) expect(scanner, call).toContain(call);
+  });
+
+  it('drops the v0.1.0 workflow figure, Module 0 slug, and old primary action', () => {
+    for (const stale of ['workflow-figure', 'how-to-use-this-guide', 'Start with Module 0', 'One allocation, five ordered responsibilities', "!== '/start/'"]) {
+      expect(scanner, stale).not.toContain(stale);
+    }
+    expect(scanner).toContain('NAV_ITEMS[0].href');
+    expect(scanner).toContain("'Start with the big idea', 'big-idea'");
+  });
+
+  it('checks 768 and 1280 pixel widths, and only /fonts/*.woff2 as a same-origin font', () => {
+    expect(scanner).toContain('for (const width of [768, 1280])');
+    expect(scanner).toContain('A11Y-FONT-MIME');
+    expect(scanner).toContain('same-origin fonts must be /fonts/*.woff2 files');
+  });
+});

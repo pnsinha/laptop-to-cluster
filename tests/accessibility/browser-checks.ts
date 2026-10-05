@@ -6,6 +6,15 @@ export interface Issue { scope: string; code: string; message: string }
 export type ThemeTokens = { light: TokenMap; dark: TokenMap };
 export const issue = (scope: string, code: string, message: string): Issue => ({ scope, code, message });
 
+/* tsx compiles this file with esbuild keepNames, so named inner functions inside
+   evaluate callbacks are emitted wrapped in __name(fn, "name"). The page defines no
+   __name, so install an identity shim before any callback that declares one.
+   (Task 7 pitfall note; the wrapping only happens under tsx, not under vitest.) */
+const shim = (page: Page) => page.evaluate(() => {
+  const globals = window as typeof window & { __name?: <T>(fn: T) => T };
+  globals.__name ??= (fn) => fn;
+});
+
 /** Static look at the raw HTML: one blocking inline script in <head>, at most 300 bytes, that reads the stored choice. */
 export function inspectThemeScript(html: string, scope: string): Issue[] {
   const head = html.match(/<head[\s\S]*?<\/head>/i)?.[0] ?? '';
@@ -180,6 +189,7 @@ export async function checkForcedColors(browser: Browser, origin: string, path: 
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, forcedColors: 'active', reducedMotion: 'reduce' });
   const page = await context.newPage();
   await page.goto(url, { waitUntil: 'load' });
+  await shim(page);
   const audit = await page.evaluate((boundarySelector) => {
     const label = (element: Element) => `${element.tagName.toLowerCase()}${typeof element.className === 'string' && element.className.trim() ? `.${element.className.trim().split(/\s+/).join('.')}` : ''}`;
     const shown = (element: Element) => {
@@ -251,6 +261,7 @@ export async function checkPrint(browser: Browser, origin: string, path: string,
   const page = await context.newPage();
   await page.emulateMedia({ media: 'print' });
   await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+  await shim(page);
   const state = await page.evaluate(() => {
     const luminance = (colour: string) => {
       const channels = colour.match(/[\d.]+/g)?.map(Number) ?? [255, 255, 255];
@@ -298,6 +309,7 @@ export async function checkJsOff(browser: Browser, origin: string, path: string,
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
   await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+  await shim(page);
   const read = await page.evaluate(() => {
     const texts = (selector: string) => [...document.querySelectorAll(selector)].map((element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim());
     const panes = [...document.querySelectorAll<HTMLElement>('.crosswalk__pane')];

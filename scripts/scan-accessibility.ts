@@ -276,21 +276,28 @@ try {
   for (const path of paths) {
     if (!(await open(page, path))) continue;
     if (await hasPageOverflow(page)) fail(`${path}:320px`, 'A11Y-REFLOW', 'content does not reflow within a 320 CSS-pixel viewport');
-    if (path === '/') {
+    if (path === HOME_PATH) {
       const hero = await page.evaluate(() => {
-        const copy = document.querySelector<HTMLElement>('.hero__copy')!;
-        const figure = document.querySelector<HTMLElement>('.workflow-figure')!;
-        const items = [...figure.querySelectorAll('li')];
+        const heroElement = document.querySelector<HTMLElement>('.hero')!;
+        const copy = document.querySelector<HTMLElement>('.hero__copy');
+        const timeline = document.querySelector<HTMLElement>('#big-idea .timeline');
+        const order = ['.hero', '.applicability-projection', '#big-idea', '#doors', '#crosswalk'].map((selector) => document.querySelector(selector));
         return {
-          sourceOrder: Boolean(copy.compareDocumentPosition(figure) & Node.DOCUMENT_POSITION_FOLLOWING),
-          oneColumn: getComputedStyle(document.querySelector<HTMLElement>('.hero')!).gridTemplateColumns.split(' ').length === 1,
-          verticallyCollapsed: figure.getBoundingClientRect().top >= copy.getBoundingClientRect().bottom,
-          stepOrder: items.every((item) => item.querySelector('strong')!.getBoundingClientRect().top <= item.querySelector('span')!.getBoundingClientRect().top),
+          noFigureInHero: !copy?.querySelector('figure'),
+          oneColumn: getComputedStyle(heroElement).display !== 'grid' || getComputedStyle(heroElement).gridTemplateColumns.split(' ').length === 1,
+          timelineAfterHero: Boolean(timeline && heroElement.compareDocumentPosition(timeline) & Node.DOCUMENT_POSITION_FOLLOWING),
+          stepOrder: Boolean(timeline) && [...(timeline?.querySelectorAll('li.timeline__step') ?? [])].every((item) => {
+            const label = item.querySelector('strong');
+            const caption = item.querySelector('.timeline__caption');
+            return Boolean(label && caption && label.getBoundingClientRect().top <= caption.getBoundingClientRect().top);
+          }),
+          homeOrder: order.every((element, index) => element !== null && (index === 0 || Boolean(order[index - 1]!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING))),
         };
       });
-      if (!hero.sourceOrder || !hero.oneColumn || !hero.verticallyCollapsed || !hero.stepOrder) {
-        fail('/:320px', 'A11Y-READING-ORDER', 'hero copy and workflow figure must preserve source order and collapse vertically');
+      if (!hero.noFigureInHero || !hero.oneColumn || !hero.timelineAfterHero || !hero.stepOrder) {
+        fail('/:320px', 'A11Y-READING-ORDER', 'the hero must be one column with no figure, and the timeline must follow it with each step label above its caption');
       }
+      if (!hero.homeOrder) fail('/:320px', 'A11Y-READING-ORDER', 'home order must be hero, evidence projection, big idea, doors, crosswalk');
     }
   }
 
@@ -301,9 +308,11 @@ try {
     fail('/resources/:navigation', 'A11Y-FOCUS', 'disclosure focus must remain visible after opening');
   }
   await page.keyboard.press('Tab');
-  if (await page.locator(':focus').getAttribute('href') !== '/start/') {
-    fail('/resources/:navigation', 'A11Y-KEYBOARD', 'first disclosed navigation link must follow the summary in keyboard order');
+  if (await page.locator(':focus').getAttribute('href') !== NAV_ITEMS[0].href) {
+    fail('/resources/:navigation', 'A11Y-KEYBOARD', `first disclosed navigation link must be ${NAV_ITEMS[0].href}, following the summary in keyboard order`);
   }
+  const menuLabels = (await page.locator('.site-nav--compact a').allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
+  if (menuLabels.join('|') !== NAV_ITEMS.map(({ label }) => label).join('|')) fail('/resources/:navigation', 'A11Y-KEYBOARD', `navigation must read ${NAV_ITEMS.map(({ label }) => label).join(' | ')}, found ${menuLabels.join(' | ')}`);
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Enter');
   if (await page.locator('.site-nav--compact').evaluate((element) => (element as HTMLDetailsElement).open)) {
@@ -313,6 +322,14 @@ try {
   await page.setViewportSize({ width: 1024, height: 900 });
   await open(page, '/guide/scheduler-as-orchestrator/');
   await verifyNativeDisclosure(page, '.sources-scope details', 'Review source roles and citations', '/guide/scheduler-as-orchestrator/:sources');
+
+  for (const width of [768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of paths) {
+      if (!(await open(page, path))) continue;
+      if (await hasPageOverflow(page)) fail(`${path}:${width}px`, 'A11Y-REFLOW', `page overflows horizontally at ${width} CSS pixels`);
+    }
+  }
 
   // A 640 CSS-pixel viewport at 200% browser zoom exposes a 320 CSS-pixel layout viewport.
   await page.setViewportSize({ width: 320, height: 450 });
@@ -402,47 +419,40 @@ try {
     fail('/:reduced-motion', 'A11Y-MOTION', 'reduced-motion preference must minimize transitions and animations');
   }
 
-  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
-  await open(page, '/');
-  await page.keyboard.press('Tab');
-  const forcedColorFigure = await page.locator('.workflow-figure').evaluate((figure) => {
-    const style = getComputedStyle(figure);
-    return {
-      preference: matchMedia('(forced-colors: active)').matches,
-      caption: figure.querySelector('figcaption')?.textContent?.trim(),
-      steps: [...figure.querySelectorAll('li strong')].map((element) => element.textContent?.trim()),
-      visible: style.display !== 'none' && style.visibility !== 'hidden',
-      borderVisible: style.borderStyle !== 'none' && Number.parseFloat(style.borderWidth) >= 1,
-    };
-  });
-  if (!forcedColorFigure.preference || !forcedColorFigure.visible || !forcedColorFigure.borderVisible
-    || forcedColorFigure.caption !== 'One allocation, five ordered responsibilities'
-    || forcedColorFigure.steps.join('|') !== 'Allocation|Coordinator|Readiness gate|Workers|Verification') {
-    fail('/:forced-colors', 'A11Y-FORCED-COLORS', 'shell, focus, workflow labels, borders, and order must remain legible in forced colors');
+  await page.emulateMedia({ media: 'screen', forcedColors: 'none', reducedMotion: 'no-preference', colorScheme: 'light' });
+
+  // Gates that open their own contexts. Each returns issues; the scanner reports them in its usual format.
+  const gate = async (scope: string, run: () => Promise<Issue[]>) => {
+    try { for (const found of await run()) fail(found.scope, found.code, found.message); }
+    catch (error) { fail(scope, 'A11Y-GATE-ERROR', (error instanceof Error ? error.message : String(error)).split('\n')[0]); }
+  };
+  const timelineOrder = { selector: '.timeline__step strong', texts: TIMELINE_STEPS.map(({ label }) => label) };
+  const expectations: Record<string, PageExpectation> = {
+    [HOME_PATH]: { ordered: [timelineOrder, { selector: '.door__title', texts: DOORS.map(({ title }) => title) }], present: ['h1', '.evidence-badge', '.crosswalk__legend', '.crosswalk__pane'] },
+    [MODULE_2_PATH]: { ordered: [timelineOrder], present: ['h1', '.evidence-badge'] },
+  };
+  for (const record of recordPaths) expectations[record] = { present: ['h1', '.applicability-record'] };
+  for (const path of Object.keys(expectations)) {
+    await gate(`${path}:forced-colors`, () => checkForcedColors(browser, origin, path, expectations[path]));
+    await gate(`${path}:print`, () => checkPrint(browser, origin, path, expectations[path]));
   }
-  await page.emulateMedia({ media: 'print', forcedColors: 'none' });
-  await open(page, '/');
-  const printFigure = await page.locator('.workflow-figure').evaluate((figure) => ({
-    caption: figure.querySelector('figcaption')?.textContent?.trim(),
-    steps: [...figure.querySelectorAll('li strong')].map((element) => element.textContent?.trim()),
-    visible: getComputedStyle(figure).display !== 'none' && getComputedStyle(figure).visibility !== 'hidden',
-  }));
-  if (!printFigure.visible || printFigure.caption !== 'One allocation, five ordered responsibilities'
-    || printFigure.steps.join('|') !== 'Allocation|Coordinator|Readiness gate|Workers|Verification') {
-    fail('/:print', 'A11Y-PRINT', 'printed workflow caption and labels must remain visible in source order');
+  await gate('/:theme', () => checkThemePrecedence(browser, origin, HOME_PATH, { light: themeBlocks.light, dark: themeBlocks.dark }));
+  for (const path of [HOME_PATH, MODULE_2_PATH]) {
+    const html = await (await fetch(new URL(path, origin))).text();
+    await gate(`${path}:theme-script`, async () => inspectThemeScript(html, `${path}:theme-script`));
+    await gate(`${path}:font-failure`, () => checkFontBlocking(browser, origin, path));
   }
-  await page.emulateMedia({ media: 'screen', reducedMotion: 'no-preference' });
+  await gate('/guide/tour/:font-failure', () => checkFontBlocking(browser, origin, '/guide/tour/'));
+  await gate('/:crosswalk-layout', () => checkCrosswalkLayout(browser, origin, HOME_PATH));
+  for (const path of paths) await gate(`${path}:motion`, () => checkMotion(browser, origin, path));
+  await gate('/:no-script', () => checkJsOff(browser, origin, HOME_PATH, 'home', { panel: true }));
+  await gate(`${MODULE_2_PATH}:no-script`, () => checkJsOff(browser, origin, MODULE_2_PATH, 'module', { panel: true }));
+  await gate('/:primary-action', () => checkPrimaryAction(browser, origin, HOME_PATH, 'Start with the big idea', 'big-idea'));
 
   const noScript = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 320, height: 800 } });
   const noScriptRequests: Array<{ url: string; type: string }> = [];
   noScript.on('request', (request) => noScriptRequests.push({ url: request.url(), type: request.resourceType() }));
   const noScriptPage = await noScript.newPage();
-  if (await open(noScriptPage, '/')) {
-    const primaryAction = noScriptPage.getByRole('link', { name: 'Start with Module 0', exact: true });
-    if (await primaryAction.getAttribute('href') !== '/guide/how-to-use-this-guide/') fail('/:no-script', 'A11Y-NOJS', 'primary action must remain a normal link');
-    await primaryAction.click();
-    if (new URL(noScriptPage.url()).pathname !== '/guide/how-to-use-this-guide/') fail('/:no-script', 'A11Y-NOJS', 'primary action must navigate without JavaScript');
-  }
   if (await open(noScriptPage, '/resources/')) {
     await verifyNativeDisclosure(noScriptPage, '.site-nav--compact', 'Navigation', '/resources/:no-script');
     const moduleLink = noScriptPage.getByRole('link', { name: 'Baseline Pattern: Single-Node Service + Workers' }).first();
@@ -479,7 +489,11 @@ try {
 
   for (const request of [...requestedUrls, ...noScriptRequests]) {
     const remote = !request.url.startsWith(origin);
-    if (request.type === 'font' || remote) fail(request.url, 'A11Y-REMOTE-FONT', 'pages must make no remote or font requests');
+    if (remote) fail(request.url, 'A11Y-REMOTE-FONT', 'pages must make no remote requests');
+    else if (request.type === 'font' && !/^\/fonts\/[^?#]+\.woff2$/.test(new URL(request.url).pathname)) fail(request.url, 'A11Y-REMOTE-FONT', 'same-origin fonts must be /fonts/*.woff2 files');
+  }
+  for (const response of fontResponses) {
+    if (response.status !== 200 || response.type !== 'font/woff2') fail(response.url, 'A11Y-FONT-MIME', `font response must be 200 font/woff2, received ${response.status} ${response.type}`);
   }
   await noScript.close();
   await context.close();
@@ -492,4 +506,4 @@ if (failures.length) {
   console.error(failures.map((failure) => `ERROR: ${failure}`).join('\n'));
   process.exit(1);
 }
-console.log(`Frontend browser validation passed for ${paths.length} built pages: axe, no-JavaScript, keyboard/focus, 320px reflow, 200% zoom, overflow stress, tables, and reduced motion.`);
+console.log(`Frontend browser validation passed for ${paths.length} built pages: axe, token pairs and states, theme precedence, no-JavaScript, keyboard/focus, 320/768/1280px reflow, 200% zoom, forced colors, print, font failure, overflow stress, tables, and reduced motion.`);
