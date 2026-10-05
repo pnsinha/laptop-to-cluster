@@ -147,6 +147,9 @@ describe('crosswalk', () => {
     expect(body('.crosswalk__line:has(.crosswalk__n)')).toMatch(/--ind:/);
     expect(body('.crosswalk__line .crosswalk__mark')).toMatch(/user-select:\s*none/);
     expect(body('.crosswalk__n')).toMatch(/user-select:\s*none/);
+    expect(body('.crosswalk__mark')).toMatch(/-webkit-user-select:\s*none/);
+    expect(body('.crosswalk__n')).toMatch(/-webkit-user-select:\s*none/);
+    expect(body('.crosswalk__pane figcaption a')).toMatch(/font-size:\s*var\(--text-ui\)/);
   });
 
   it.each(CONCEPTS)('takes the rule colour for lines whose first concept is %s', (key) => {
