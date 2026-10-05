@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runBoundaryScan } from './boundary.mjs';
 
 export const CANONICAL_ORIGIN = 'https://laptop-to-cluster.org';
 export const REDIRECT_HOSTS = Object.freeze([
@@ -516,8 +517,21 @@ if (invoked) {
   } else if (command === 'cloudflare-readiness') {
     const input = JSON.parse(readFileSync(args[0], 'utf8'));
     if (printErrors(validateCloudflareReadiness(input))) console.log('Cloudflare identifiers, DNS, certificate, and rule readiness are valid.');
+  } else if (command === 'boundary') {
+    const historyAt = args.indexOf('--history');
+    const history = historyAt >= 0 ? args[historyAt + 1] : undefined;
+    if (historyAt >= 0 && (!history || history.startsWith('--'))) {
+      console.error('Usage: publication.mjs boundary <root> [--require] [--history <ref>]');
+      process.exitCode = 2;
+    } else {
+      const root = resolve(args[0] && !args[0].startsWith('--') ? args[0] : '.');
+      const result = runBoundaryScan({ root, require: args.includes('--require'), history });
+      for (const line of result.stdout) console.log(line);
+      for (const line of result.stderr) console.error(line);
+      process.exitCode = result.exitCode;
+    }
   } else {
-    console.error('Usage: publication.mjs manifest <dist> <output> | verify <dist> <manifest> | built-output <dist> | policy <root> | cloudflare-readiness <input>');
+    console.error('Usage: publication.mjs manifest <dist> <output> | verify <dist> <manifest> | built-output <dist> | policy <root> | cloudflare-readiness <input> | boundary <root> [--require] [--history <ref>]');
     process.exitCode = 2;
   }
 }
