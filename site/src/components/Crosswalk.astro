@@ -1,0 +1,38 @@
+---
+import { CONCEPTS, type ConceptKey } from '../content/contracts';
+import type { CrosswalkData } from '../content/crosswalk';
+
+interface Props {
+  data: CrosswalkData;
+}
+
+const { data } = Astro.props;
+const markFor = new Map<ConceptKey, string>(CONCEPTS.map(({ key, mark }) => [key, mark] as const));
+const labelFor = new Map<ConceptKey, string>(CONCEPTS.map(({ key, label }) => [key, label] as const));
+const marks = (keys: readonly ConceptKey[]) => keys.map((key) => markFor.get(key) ?? '').join('');
+/* Screen-reader text for a tagged line, such as "Readiness gate: ". W1 hides it visually. */
+const spoken = (keys: readonly ConceptKey[]) => (keys.length > 0 ? `${keys.map((key) => labelFor.get(key) ?? '').join(', ')}: ` : '');
+/* A literal "\n" written inline in the one-line <pre> expression below breaks the
+   TypeScript parse of the template (`astro check`: ts(1005), ts(17002)). Keep it in a constant. */
+const NEWLINE = '\n';
+/* Optional named slot "record": the canonical "Full test record" link, shown
+   beside the script pane's revision label. The label itself never claims a test. */
+const recordLink = Astro.slots.has('record') ? await Astro.slots.render('record') : '';
+---
+<section class="crosswalk" id="crosswalk" aria-labelledby="crosswalk-title">
+  <h2 id="crosswalk-title">{data.title}</h2>
+  <p class="crosswalk__subtitle">{data.subtitle}</p>
+  <dl class="crosswalk__legend">
+    {CONCEPTS.map(({ key, label, was, mark }) => (
+      <div class="crosswalk__term" data-concept={key}><dt><span class="crosswalk__mark" aria-hidden="true">{mark}</span> {label}</dt><dd>was {was}</dd></div>
+    ))}
+  </dl>
+  <div class="crosswalk__panes">
+    {data.panes.map((pane) => (
+      <figure class="crosswalk__pane" data-pane={pane.id}>
+        <figcaption>{pane.file} · {pane.note}{pane.id === 'sbatch' && recordLink && <Fragment set:html={` · ${recordLink}`} />}</figcaption>
+        <pre><code>{pane.lines.map((line) => (<span class="crosswalk__line" data-concepts={line.concepts.length > 0 ? line.concepts.join(' ') : undefined}><span class="crosswalk__mark" aria-hidden="true">{marks(line.concepts)}</span>{line.concepts.length > 0 && <span class="crosswalk__sr">{spoken(line.concepts)}</span>}{line.n !== undefined && <span class="crosswalk__n">{line.n}</span>}{line.text}{NEWLINE}</span>))}</code></pre>
+      </figure>
+    ))}
+  </div>
+</section>
