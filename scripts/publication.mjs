@@ -625,7 +625,7 @@ export function validateTokenStylesheet(cssPath, css) {
   return errors;
 }
 
-/** Every emitted stylesheet: fonts, gradients, motion and font files; exactly one stylesheet, and it defines the tokens. */
+/** Every emitted stylesheet: fonts, gradients, motion and font files; exactly one stylesheet, and it defines the tokens; no inline <style> blocks in built HTML. */
 export function validateStylesheets(dist) {
   const errors = [];
   const files = filesUnder(dist).filter((candidate) => candidate.endsWith('.css'));
@@ -643,6 +643,9 @@ export function validateStylesheets(dist) {
       tokenSheets.push(cssPath);
       errors.push(...validateTokenStylesheet(cssPath, css));
     }
+  }
+  for (const page of filesUnder(dist).filter((candidate) => candidate.endsWith('.html'))) {
+    if (/<style\b/i.test(readFileSync(page, 'utf8'))) errors.push(diagnostic(relative(dist, page), 'html', 'STYLESHEET-SPLIT', 'inline <style> blocks are forbidden; component styles go in global.css (C3)'));
   }
   if (files.length && (tokenSheets.length !== 1 || files.length !== 1)) {
     errors.push(diagnostic('site/dist', 'css', 'STYLESHEET-SPLIT', `exactly one stylesheet that defines the :root tokens is required; found ${files.length} stylesheet(s), ${tokenSheets.length} with tokens`));

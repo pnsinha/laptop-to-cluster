@@ -110,4 +110,10 @@ describe('validateStylesheets on a built tree', () => {
     expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS + 'a{transition:color .1s}', ...fontFiles })).join('\n')).toMatch(/MOTION-EXCLUSION/);
     expect(validateStylesheets(dist({ '_astro/site.css': TOKENS + '@font-face{font-family:Inter;src:url(/x.woff2)}' })).join('\n')).toMatch(/VISUAL-DEPENDENCY/);
   });
+
+  it('reports inline <style> blocks in built pages but not escaped code samples', () => {
+    const base = { '_astro/site.css': FONTS + TOKENS, ...fontFiles };
+    expect(validateStylesheets(dist({ ...base, 'guide/index.html': '<!doctype html><html><head><style>.x{color:red}</style></head><body></body></html>' })).join('\n')).toMatch(/guide\/index\.html.*STYLESHEET-SPLIT/);
+    expect(validateStylesheets(dist({ ...base, 'guide/index.html': '<!doctype html><html><head></head><body><pre>&lt;style&gt;</pre></body></html>' }))).toEqual([]);
+  });
 });
