@@ -114,7 +114,11 @@ describe('print script', () => {
 });
 
 describe('client JS budget', () => {
-  it('leaves at least 600 bytes of the 2 KB page budget for later enhancements', () => {
-    expect(bytes(bootScript) + bytes(printScript) + bytes(controlScript)).toBeLessThanOrEqual(2048 - 600);
+  it('control script stays within 700 bytes (R13/A9)', () => {
+    expect(bytes(controlScript)).toBeLessThanOrEqual(700);
+  });
+
+  it('leaves at least 840 bytes of the 2 KB page budget for the W9 crosswalk (R13)', () => {
+    expect(bytes(bootScript) + bytes(printScript) + bytes(controlScript)).toBeLessThanOrEqual(2048 - 840);
   });
 });
