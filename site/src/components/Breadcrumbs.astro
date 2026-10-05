@@ -5,10 +5,10 @@ const normalize = (path: string) => path === '/' ? path : `/${path.split('/').fi
 const path = normalize(currentPath);
 const namespace = path.split('/').filter(Boolean)[0] ?? '';
 const parents: Record<string, Parent> = {
-  guide: { label: 'Resources', href: '/resources/' },
+  guide: { label: 'Guide', href: '/resources/' },
   diagnostics: { label: 'Troubleshooting', href: '/diagnostics/' },
-  milestones: { label: 'Resources', href: '/resources/' },
-  releases: { label: 'Resources', href: '/resources/' },
+  milestones: { label: 'Guide', href: '/resources/' },
+  releases: { label: 'Guide', href: '/resources/' },
   about: { label: 'About', href: '/about/project/' },
 };
 const parent = parents[namespace];

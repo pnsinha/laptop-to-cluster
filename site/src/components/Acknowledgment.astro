@@ -1,0 +1,11 @@
+---
+import { ACKNOWLEDGMENT_TEXT } from '../content/acknowledgment';
+
+interface Props {
+  variant: 'footer' | 'event';
+}
+const { variant } = Astro.props;
+---
+{variant === 'footer'
+  ? <p class="acknowledgment">{ACKNOWLEDGMENT_TEXT}</p>
+  : <section class="event-acknowledgment" aria-labelledby="ack-title"><h2 id="ack-title">Acknowledgment for this work</h2><p>{ACKNOWLEDGMENT_TEXT}</p></section>}
