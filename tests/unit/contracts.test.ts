@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { parse } from 'yaml';
 import { ACKNOWLEDGMENT_TEXT, ACKNOWLEDGMENT_SHA256, ACKNOWLEDGMENT_STATEMENT, ACKNOWLEDGMENT_DISCLAIMER } from '../../site/src/content/acknowledgment';
 import { NAV_ITEMS, TIMELINE_STEPS, DOORS, EVIDENCE_ROW_LABELS, LEARNING_PATH, CONCEPTS, DESIGNED_NOT_RUN, TALKS_LABEL } from '../../site/src/content/contracts';
@@ -13,8 +14,20 @@ describe('C0 contracts', () => {
     expect(ACKNOWLEDGMENT_TEXT.length).toBe(605);
     expect(createHash('sha256').update(ACKNOWLEDGMENT_TEXT).digest('hex')).toBe(ACKNOWLEDGMENT_SHA256);
     const layout = readFileSync('site/src/layouts/BaseLayout.astro', 'utf8');
-    const footer = layout.match(/<p class="acknowledgment">([\s\S]*?)<\/p>/)?.[1]?.replace(/\s+/g, ' ').trim();
-    expect(footer).toBe(ACKNOWLEDGMENT_TEXT);
+    expect(layout).toMatch(/import Acknowledgment from/);
+    expect(layout).toContain('<Acknowledgment variant="footer"');
+    const component = readFileSync('site/src/components/Acknowledgment.astro', 'utf8');
+    expect(component).toMatch(/import \{ ACKNOWLEDGMENT_TEXT \} from '..\/content\/acknowledgment'/);
+    expect(component).toContain('<p class="acknowledgment">{ACKNOWLEDGMENT_TEXT}</p>');
+    expect(component).toContain('<section class="event-acknowledgment"');
+    const skip = /\.(woff2|png|jpe?g|gif|webp|svg|ico|pdf)$/i;
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const full = join(dir, e.name);
+        return e.isDirectory() ? walk(full) : skip.test(e.name) ? [] : [full];
+      });
+    const holders = walk('site/src').filter((f) => /DE-AC02-06CH11357|DE-AC52-07NA27344/.test(readFileSync(f, 'utf8')));
+    expect(holders).toEqual([join('site/src', 'content', 'acknowledgment.ts')]);
   });
 
   it('freezes the user-facing model', () => {
@@ -45,9 +58,15 @@ describe('C0 contracts', () => {
     expect(effectiveTheme(null, false)).toBe('light');
   });
 
-  it('accepts the existing record unchanged and validates talks.yml', () => {
+  it('accepts the record and validates talks.yml', () => {
     const record = parse(readFileSync('site/src/content/applicability/m1-baseline-anvil.yml', 'utf8'));
-    expect(applicabilityRecordSchema.parse(record).related_evidence).toEqual([]);
+    const related = applicabilityRecordSchema.parse(record).related_evidence;
+    expect(Array.isArray(related)).toBe(true);
+    expect(related.length).toBeGreaterThanOrEqual(1);
+    for (const entry of related) {
+      expect(entry.role).toBe('negative-test');
+      expect(entry.integrity).toMatch(/^sha256:[a-f0-9]{64}$/);
+    }
     const talks = parse(readFileSync('site/src/content/talks.yml', 'utf8')) as unknown[];
     expect(talks.map((t) => talkSchema.parse(t).id)).toEqual(['usrse26-talk', 'sc26-research-poster', 'iguide-forum-2026-poster']);
     expect(talks.filter((t: any) => t.featured)).toHaveLength(1);
