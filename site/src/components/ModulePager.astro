@@ -9,7 +9,7 @@ const { navigation } = Astro.props as { navigation: ModuleNavigation };
       {navigation.previous && (
         <li>
           <a rel="prev" href={navigation.previous.url}>
-            <span class="module-pager__direction">← Previous module</span>
+            <span class="module-pager__direction">Previous</span>
             <span>{navigation.previous.title}</span>
           </a>
         </li>
@@ -17,7 +17,7 @@ const { navigation } = Astro.props as { navigation: ModuleNavigation };
       {navigation.next && (
         <li>
           <a rel="next" href={navigation.next.url}>
-            <span class="module-pager__direction">Next module →</span>
+            <span class="module-pager__direction">Next</span>
             <span>{navigation.next.title}</span>
           </a>
         </li>
