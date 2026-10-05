@@ -53,3 +53,42 @@ describe('W6 built pages: Run the example', () => {
     }
   });
 });
+
+import { readdirSync } from 'node:fs';
+
+describe('W6 built pages: Troubleshooting', () => {
+  const html = page('diagnostics');
+  const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+  const printed = [
+    'BSSW-PREQ-SLURM', 'BSSW-PREQ-APPTAINER', 'BSSW-PREQ-COMMAND', 'BSSW-PREQ-VALUE', 'BSSW-PREQ-IMAGE', 'BSSW-PREQ-INPUT',
+    'BSSW-INTEGRITY-INPUT', 'BSSW-INTEGRITY-IMAGE', 'BSSW-PREQ-STORAGE', 'BSSW-COORDINATOR-EXIT', 'BSSW-READY-TIMEOUT',
+    'BSSW-WORKER-EXIT', 'BSSW-VERIFY-RESULT', 'BSSW-CLEANUP-SIGNAL', 'BSSW-CLEANUP-CHILD',
+  ];
+
+  it('shows every printed ID in a heading and answers to its lower-cased anchor', () => {
+    for (const code of printed) {
+      expect(html, code).toMatch(new RegExp(`<h2[^>]*>${code}: `));
+      expect(ids, code).toContain(code.toLowerCase());
+    }
+  });
+
+  it('keeps the four anchors that were published before this release', () => {
+    for (const anchor of ['bssw-prereq-slurm', 'bssw-prereq-apptainer', 'bssw-storage-unavailable', 'bssw-readiness-timeout']) {
+      expect(ids, anchor).toContain(anchor);
+    }
+  });
+
+  it('has no duplicate ids', () => {
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('resolves every /diagnostics/#fragment link anywhere on the site', () => {
+    const files = (readdirSync(dist, { recursive: true }) as string[]).filter((name) => name.endsWith('.html'));
+    for (const file of files) {
+      const text = readFileSync(resolve(dist, file), 'utf8');
+      for (const [, fragment] of text.matchAll(/href="\/diagnostics\/#([^"]+)"/g)) {
+        expect(ids, `${file} -> #${fragment}`).toContain(fragment);
+      }
+    }
+  });
+});
