@@ -1,5 +1,5 @@
 import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
+import { file, glob } from 'astro/loaders';
 import {
   applicabilityRecordSchema,
   attributionSchema,
@@ -9,6 +9,7 @@ import {
   milestoneRecordSchema,
   redirectRecordSchema,
   releaseRecordSchema,
+  talkSchema,
 } from './content/schema.js';
 
 const structured = (base: string) => glob({ pattern: '**/*.{json,yaml,yml}', base });
@@ -25,4 +26,5 @@ export const collections = {
   feedback: defineCollection({ loader: structured('./src/content/feedback'), schema: feedbackRecordSchema }),
   attribution: defineCollection({ loader: structured('./src/content/attribution'), schema: attributionSchema }),
   evidenceReferences: defineCollection({ loader: structured('./src/content/evidence-references'), schema: evidenceManifestReferenceSchema }),
+  talks: defineCollection({ loader: file('./src/content/talks.yml'), schema: talkSchema }),
 };

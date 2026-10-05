@@ -1,0 +1,24 @@
+- id: usrse26-talk
+  kind: talk
+  title: "From Laptop to Cluster: HPC Translation Patterns for AI Stacks"
+  venue: "US-RSE'26"
+  event_date: "2026-10-20"
+  location: "San Jose, CA"
+  featured: true
+  links:
+    - { label: "Conference program", href: "https://us-rse.org/usrse26/program/" }
+- id: sc26-research-poster
+  kind: poster
+  title: "SC26 Research Poster"
+  venue: "SC26"
+  event_date: "2026-11-17"
+  location: "Chicago, IL"
+  links:
+    - { label: "Poster artifact repository", href: "https://github.com/pnsinha/union-of-containers" }
+- id: iguide-forum-2026-poster
+  kind: poster
+  title: "I-GUIDE Forum 2026 poster"
+  venue: "I-GUIDE Forum 2026"
+  event_date: "2026-08-05"
+  links:
+    - { label: "Poster and companion page", href: "/events/iguide-forum-2026/" }

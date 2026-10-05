@@ -107,7 +107,12 @@ const genericArtifactType = z.enum([
   'feedback', 'release', 'diagnostic', 'report', 'news', 'support', 'contribution',
   'attribution', 'accessibility', 'maintenance',
 ]);
-export const genericContentItemSchema = z.object({ ...commonFields, artifact_type: genericArtifactType }).strict();
+export const genericContentItemSchema = z.object({
+  ...commonFields,
+  artifact_type: genericArtifactType,
+  /* Renders the full acknowledgment beside a hosted download (event pages; spec D9). */
+  acknowledgment_beside_download: z.boolean().optional(),
+}).strict();
 
 const completionCheckSchema = z.object({
   kind: z.enum(['result', 'review-question', 'mapping-checklist', 'decision-exercise']), text: nonEmpty,
@@ -155,6 +160,16 @@ export const contentItemSchema = z.discriminatedUnion('artifact_type', [learning
   });
 export type ContentItem = z.infer<typeof contentItemSchema>;
 
+const traceRef = z.string().regex(/^(?:assumptions|portability_boundaries|limitations|result\.checks|related_evidence)(?:\.\d+)?$/, 'must reference a record list (optionally .<index>)');
+export const plainLanguageItemSchema = z.object({ text: nonEmpty, from: z.array(traceRef).min(1) }).strict();
+export const plainLanguageSchema = z.object({
+  tested: plainLanguageItemSchema,
+  you_need: z.array(plainLanguageItemSchema).min(1),
+  depends_on_center: z.array(plainLanguageItemSchema).min(1),
+}).strict();
+export const relatedEvidenceSchema = z.object({ ...evidenceReferenceSchema.shape, role: z.literal('negative-test') }).strict();
+export const reviewExtensionSchema = z.object({ reviewed_by: nonEmpty, reviewed_on: isoDate, review_by: isoDate, scope_note: nonEmpty }).strict();
+
 export const applicabilityRecordSchema = z.object({
   id: stableRouteId,
   workflow_id: nonEmpty,
@@ -177,6 +192,10 @@ export const applicabilityRecordSchema = z.object({
   evidence: evidenceReferenceSchema,
   provenance: z.array(z.object({ label: nonEmpty, reference: repoRefSchema }).strict()).min(1),
   review_after: isoDate,
+  plain_language: plainLanguageSchema.optional(),
+  related_evidence: z.array(relatedEvidenceSchema).default([]),
+  superseded_by: stableRouteId.optional(),
+  review_extension: reviewExtensionSchema.optional(),
 }).strict().superRefine((record, context) => {
   const issue = (path: string, message: string) => context.addIssue({ code: 'custom', path: [path], message });
   if (record.environment.public_name === 'Purdue Anvil' && record.environment.fallback) issue('environment.fallback', 'Purdue Anvil is the primary environment');
@@ -333,3 +352,15 @@ export function parseContentItem(input: unknown, gate: ReleaseGate = 'm1'): Cont
   if (issues.length > 0) throw new Error(issues.join('\n'));
   return item;
 }
+
+export const talkSchema = z.object({
+  id: stableRouteId,
+  kind: z.enum(['talk', 'poster', 'paper']),
+  title: nonEmpty,
+  venue: nonEmpty,
+  event_date: isoDate,
+  location: nonEmpty.optional(),
+  featured: z.boolean().default(false),
+  links: z.array(z.object({ label: nonEmpty, href: z.union([z.url(), path]) }).strict()).min(1),
+}).strict();
+export type Talk = z.infer<typeof talkSchema>;
