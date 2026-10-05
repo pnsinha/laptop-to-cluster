@@ -185,3 +185,29 @@ describe('W6 built pages: Guide', () => {
     }
   });
 });
+
+import { createHash } from 'node:crypto';
+import { ACKNOWLEDGMENT_SHA256 } from '../../site/src/content/acknowledgment';
+
+describe('W6 built pages: Milestone 2 and the I-GUIDE page', () => {
+  const m2 = page('milestones/2');
+  const event = page('events/iguide-forum-2026');
+
+  it('shows the due date, not the publication date, and quotes the review verbatim', () => {
+    expect(m2).toContain('<time datetime="2026-12-15">');
+    expect(m2).toContain('\u201cmodule 0\u201d');
+    expect(m2).toContain('\u201cworkflow source\u201d');
+    expect(m2).not.toMatch(/Elsa|Gonsiorowski|\brequested\b/);
+  });
+
+  it('keeps the PDF link and renders the verbatim acknowledgment once, after it', () => {
+    const pdf = event.indexOf('href="/iguide-forum-2026-poster.pdf"');
+    const section = /<section class="event-acknowledgment"[\s\S]*?<\/section>/.exec(event)?.[0] ?? '';
+    expect(pdf).toBeGreaterThan(0);
+    expect(event.indexOf('class="event-acknowledgment"')).toBeGreaterThan(pdf);
+    expect(count(event, /class="event-acknowledgment"/g)).toBe(1);
+    const text = section.replace(/<h2[\s\S]*?<\/h2>/, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    expect(createHash('sha256').update(text).digest('hex')).toBe(ACKNOWLEDGMENT_SHA256);
+    expect(event).not.toContain('l2c:');
+  });
+});

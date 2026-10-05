@@ -14,6 +14,7 @@ publication_date: "2026-08-05"
 last_updated: "2026-08-05"
 related: [module-1-scheduler-orchestrator, module-2-baseline, start-guide]
 learning_stage: portability
+acknowledgment_beside_download: true
 ---
 
 If you scanned this from the poster board: the board argues that moving geospatial AI from a
@@ -21,6 +22,8 @@ laptop to a shared cluster is a contract design problem. This site is that argum
 mechanics filled in.
 
 [Download the poster (PDF, 36 x 42 in)](/iguide-forum-2026-poster.pdf)
+
+<!-- l2c:acknowledgment -->
 
 ## The argument
 
@@ -55,7 +58,7 @@ optional logs.
   contract comes from. The scheduler, not a container daemon, owns the orchestration boundary.
 - [Module 2: Baseline Single-Node Pattern](/guide/baseline-single-node-pattern/) is the pattern
   the poster's local-worker path generalizes.
-- [Get started](/start/) runs the baseline single-node workflow end to end.
+- [Run the example](/start/) runs the baseline single-node workflow end to end.
 - [Troubleshooting](/diagnostics/) covers the failures that show up first: readiness timeouts,
   Apptainer, Slurm, and storage.
 
