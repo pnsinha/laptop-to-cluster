@@ -85,3 +85,33 @@
   .crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
   .crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] { background: none; outline: 2px solid #000; }
 }
+
+
+/* ---------- Cheat sheet: one printed page ---------- */
+@page cheat { margin: 0.35in; }
+@media print {
+  html:has(.cheat-sheet) { page: cheat; }
+  body:has(.cheat-sheet) :is(.skip, .site-header, .breadcrumbs, .section-nav, .sources-scope, .table-overflow__instruction, .site-footer nav, .site-footer .release, .content-header .lede) { display: none; }
+  body:has(.cheat-sheet) { font-size: 8.5pt; line-height: 1.15; }
+  body:has(.cheat-sheet) main { inline-size: auto; max-inline-size: none; margin: 0; padding: 0; }
+  body:has(.cheat-sheet) .content-header { margin: 0 0 3pt; padding: 0; }
+  body:has(.cheat-sheet) .content-header h1 { margin: 0; font-size: 13pt; line-height: 1.1; }
+  body:has(.cheat-sheet) article { margin: 0; padding: 0; }
+  .cheat-sheet { display: block; }
+  .cheat-sheet > * { margin-block: 0 3pt; }
+  .cheat-sheet h2 { margin: 3pt 0 1pt; font-size: 10pt; line-height: 1.15; break-after: avoid; }
+  .cheat-sheet p, .cheat-sheet li { margin: 0 0 2pt; font-size: 8.5pt; }
+  .cheat-sheet ul { margin: 0 0 2pt; padding-inline-start: 1.1em; columns: 2; column-gap: 0.25in; }
+  .cheat-sheet li { margin: 0; break-inside: avoid; }
+  .cheat-sheet .table-overflow { margin: 0 0 3pt; border: 0; overflow: visible; }
+  .cheat-sheet table { inline-size: 100%; min-inline-size: 0; border-collapse: collapse; }
+  .cheat-sheet tr { break-inside: avoid; }
+  .cheat-sheet th, .cheat-sheet td { padding: 0.5pt 2pt; font-size: 8pt; line-height: 1.15; vertical-align: top; border-block-end: 0.5pt solid #000; }
+  .cheat-sheet th:first-child, .cheat-sheet td:first-child { white-space: nowrap; }
+  .cheat-sheet th:last-child, .cheat-sheet td:last-child { inline-size: 1%; white-space: nowrap; }
+  .cheat-sheet code, .cheat-sheet pre { font-size: 8pt; }
+  .cheat-sheet :not(pre) > code { padding: 0; border: 0; background: none; }
+  .cheat-sheet pre { margin: 0 0 2pt; padding: 0 3pt; white-space: pre-wrap; break-inside: avoid; }
+  body:has(.cheat-sheet) .site-footer { margin: 4pt 0 0; padding: 3pt 0 0; border-block-start: 0.5pt solid #000; }
+  body:has(.cheat-sheet) .site-footer .acknowledgment { margin: 0; font-size: 7pt; line-height: 1.2; }
+}
