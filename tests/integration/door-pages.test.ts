@@ -164,3 +164,27 @@ describe('The five-minute tour', () => {
     expect(at(html, 'class="sources-scope"')).toBeGreaterThan(html.lastIndexOf('</article>'));
   });
 });
+
+describe('links from the four new pages', () => {
+  const pages = ['guide/tour', 'guide/compose-to-hpc-translation', 'adoption/evaluate', 'about/talks-and-papers'];
+  const hrefs = (html: string) => [...html.matchAll(/href="(\/[^"#]*)(#[^"]*)?"/g)].map((match) => ({ path: match[1], fragment: match[2]?.slice(1) }));
+
+  it('point only at routes that exist in the built site', () => {
+    for (const route of pages) {
+      for (const { path } of hrefs(page(route))) {
+        if (/\.[a-z0-9]+$/i.test(path)) continue; // files such as the poster PDF are checked by the release gates
+        expect(existsSync(resolve(dist, path.slice(1), 'index.html')) || path === '/', `${route} -> ${path}`).toBe(true);
+      }
+    }
+  });
+
+  it('resolve every fragment that targets a page this workstream owns', () => {
+    const owned = ['/adoption/evaluate/', '/guide/tour/', '/guide/compose-to-hpc-translation/', '/about/talks-and-papers/'];
+    for (const route of pages) {
+      for (const { path, fragment } of hrefs(page(route))) {
+        if (!fragment || !owned.includes(path)) continue;
+        expect(page(path.slice(1, -1)), `${route} -> ${path}#${fragment}`).toContain(`id="${fragment}"`);
+      }
+    }
+  });
+});
