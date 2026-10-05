@@ -7,7 +7,7 @@ import {
   type ReleaseRecord,
 } from './schema.js';
 import { RegistryValidationError, canonicalPath, generateCanonicalRoutes, hasNoStandalonePage, releaseNotesHref } from './registry.js';
-import { EVIDENCE_ROW_LABELS, UNTESTED_HREF, type EvidenceRowLabel } from './contracts.js';
+import { EVIDENCE_ROW_LABELS, LEARNING_PATH, UNTESTED_HREF, type EvidenceRowLabel } from './contracts.js';
 import { evidenceStatusText } from './wording.js';
 
 interface MilestoneDeliverableProjection {
@@ -121,6 +121,21 @@ export function projectModuleNavigation(content: ContentItem[]): Record<string, 
     previous: index > 0 ? { id: ordered[index - 1].id, title: ordered[index - 1].title, url: canonicalPath(ordered[index - 1]) } : undefined,
     next: index < ordered.length - 1 ? { id: ordered[index + 1].id, title: ordered[index + 1].title, url: canonicalPath(ordered[index + 1]) } : undefined,
   }]));
+}
+
+/** The published items of LEARNING_PATH, in learning order; unpublished entries are skipped. */
+export function projectLearningPath(content: ContentItem[]): ModuleNavigationNode[] {
+  const published = new Map(content.filter(isPublic).map((item) => [item.id, item]));
+  return LEARNING_PATH.flatMap((id) => {
+    const item = published.get(id);
+    return item ? [{ id: item.id, title: item.title, url: canonicalPath(item) }] : [];
+  });
+}
+
+/** Previous and next links along LEARNING_PATH, keyed by item id (the ModulePager input shape). */
+export function projectLearningPathNavigation(content: ContentItem[]): Record<string, ModuleNavigation> {
+  const path = projectLearningPath(content);
+  return Object.fromEntries(path.map((node, index) => [node.id, { previous: path[index - 1], next: path[index + 1] }]));
 }
 
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
