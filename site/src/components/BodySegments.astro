@@ -1,0 +1,14 @@
+---
+import { splitAtSlots } from '../content/page-chrome';
+
+interface Props {
+  html: string;
+}
+
+const { html } = Astro.props;
+const parts = await Promise.all(splitAtSlots(html).map(async (segment) => {
+  if (segment.kind === 'html') return segment.html;
+  return Astro.slots.has(segment.name) ? await Astro.slots.render(segment.name) : '';
+}));
+---
+<Fragment set:html={parts.join('')} />
