@@ -1011,7 +1011,7 @@ export function validateFrozenPublicationWorkflow(text, file = '.github/workflow
   const errors = [];
   if (workflowTagPatterns(text).join('|') !== 'v0.1.0') errors.push(diagnostic(file, 'on.push.tags', 'FROZEN-RELEASE', 'the tag trigger must be exactly v0.1.0'));
   const checkouts = text.split(/\n      - /).filter((step) => step.startsWith('uses: actions/checkout@'));
-  if (!checkouts.length || checkouts.some((step) => !/\bref:\s*v0\.1\.0\b/.test(step))) errors.push(diagnostic(file, 'jobs', 'FROZEN-RELEASE', 'every checkout must be pinned with ref: v0.1.0 so a manual dispatch cannot deploy another revision'));
+  if (!checkouts.length || checkouts.some((step) => !/\bref:\s*(?:refs\/tags\/)?v0\.1\.0(?=\s*(?:[,}]|$))/m.test(step))) errors.push(diagnostic(file, 'jobs', 'FROZEN-RELEASE', 'every checkout must be pinned with ref: v0.1.0 so a manual dispatch cannot deploy another revision'));
   return errors;
 }
 function printErrors(errors) {
