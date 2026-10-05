@@ -3,7 +3,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const css = readFileSync(`${root}/site/src/styles/global.css`, 'utf8');
+const read = (name: string) => readFileSync(`${root}/site/src/styles/${name}`, 'utf8');
+// global.css begins with `@import "./tokens.css"; @import "./fonts.css";`. Inline tokens.css only: the
+// token assertions then see the custom properties, and the no-@font-face assertion keeps testing the component sheet.
+const css = read('global.css').replace(/@import\s+["']\.\/tokens\.css["'];/, () => read('tokens.css'));
 
 describe('frontend foundation styles', () => {
   it('defines shared measures, focus, and bounded technical content', () => {
@@ -18,6 +21,14 @@ describe('frontend foundation styles', () => {
     expect(css).not.toMatch(/table\s*\{[^}]*display\s*:\s*block/s);
     expect(css).toMatch(/\.table-overflow\s*\{[^}]*overflow-x:\s*auto/s);
     expect(css).toMatch(/table\s*\{[^}]*border-collapse:\s*collapse/s);
+  });
+
+  it('imports tokens.css and fonts.css from global.css and keeps @font-face out of the component sheet', () => {
+    const global = read('global.css');
+    expect(global).toMatch(/@import\s+["']\.\/tokens\.css["'];/);
+    expect(global).toMatch(/@import\s+["']\.\/fonts\.css["'];/);
+    expect(css).not.toMatch(/@import\s+["']\.\/tokens\.css["']/);
+    expect(read('fonts.css')).toMatch(/@font-face/);
   });
 });
 
@@ -49,31 +60,31 @@ describe('finalized presentation CSS regression gates', () => {
 
 
 describe('Cluster Terminal semantic foundation', () => {
-  it('defines complete semantic dark/shell roles and system-only sans and mono typography', () => {
+  it('defines complete semantic dark/shell roles and the self-hosted type stacks with system fallbacks', () => {
     const root = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
     for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'shell-text', 'border', 'warning']) {
       expect(root, `--${token}`).toMatch(new RegExp(`--${token}:`));
     }
     expect(css).toMatch(/color-scheme:\s*light dark/);
-    expect(css).toMatch(/--font-display:\s*system-ui,[^;]*sans-serif;/);
-    expect(css).toMatch(/--font-body:\s*system-ui,[^;]*sans-serif;/);
-    expect(css).toMatch(/--font-technical:\s*ui-monospace,[^;]*monospace;/);
+    expect(css).toMatch(/--font-display:\s*"Source Serif 4", "Source Serif 4 Fallback", ui-serif/);
+    expect(css).toMatch(/--font-body:\s*"IBM Plex Sans", "IBM Plex Sans Fallback", system-ui/);
+    expect(css).toMatch(/--font-technical:\s*"IBM Plex Mono", ui-monospace/);
     expect(css).toMatch(/\.site-header, \.site-footer\s*\{[^}]*background:\s*var\(--shell\)/s);
-    expect(css).toMatch(/pre, \.terminal, \.technical-figure\s*\{[^}]*background:\s*var\(--shell\)/s);
+    expect(css).toMatch(/pre, \.terminal, \.technical-figure\s*\{[^}]*background:\s*var\(--surface\)/s);
     expect(css).not.toMatch(/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit|linear-gradient|radial-gradient|backdrop-filter/);
   });
 
   it('keeps minimum text sizes and forced-color, print, and reduced-motion safeguards', () => {
     expect(css).toMatch(/--text-base:\s*1rem/);
     expect(css).toMatch(/--text-supporting:\s*0\.875rem/);
-    expect(css).toMatch(/--leading-base:\s*1\.[5-9]/);
+    expect(css).toMatch(/--leading-base:\s*1\.(?:4[5-9]|[5-9])/);
     expect(css).toMatch(/:root\s*\{[\s\S]*font-size:\s*var\(--text-base\);[\s\S]*line-height:\s*var\(--leading-base\)/);
     expect(css).toMatch(/button, input, select, textarea, summary\s*\{[^}]*font-size:\s*var\(--text-base\)[^}]*line-height:\s*1\.5/s);
     expect(css).toMatch(/small, \.supporting, \.technical-label\s*\{[^}]*font-size:\s*var\(--text-supporting\)/s);
     expect(css).toMatch(/h1, h2, h3\s*\{[^}]*line-height:\s*1\.[0-9]/s);
-    expect(css).toMatch(/pre, \.terminal, \.technical-figure\s*\{[^}]*background:\s*var\(--shell\)/s);
+    expect(css).toMatch(/pre, \.terminal, \.technical-figure\s*\{[^}]*background:\s*var\(--surface\)/s);
     expect(css).toMatch(/@media \(forced-colors:\s*active\)[\s\S]*--canvas:\s*Canvas/);
-    expect(css).toMatch(/@media print[\s\S]*--shell:\s*#fff/);
+    expect(css).toMatch(/@media print[\s\S]*body\s*\{[^}]*background:\s*#fff/);
     expect(css).toMatch(/@media \(prefers-reduced-motion:\s*reduce\)/);
     expect(css).not.toMatch(/@keyframes|animation-name\s*:|animation\s*:|transition\s*:/);
   });
