@@ -141,3 +141,47 @@ describe('W6 built pages: Modules 1 and 2', () => {
     expect(one).toContain('Designed, not run');
   });
 });
+
+import { LEARNING_PATH } from '../../site/src/content/contracts';
+
+describe('W6 built pages: Guide', () => {
+  const html = page('resources');
+  const tiles = [...html.matchAll(/<a class="resource-tile" href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({ href: m[1], inner: m[2] }));
+  const groupOf = (title: string): string[] => {
+    const start = html.indexOf(`>${title}</h2>`);
+    const next = html.indexOf('</section>', start);
+    return [...html.slice(start, next).matchAll(/<a class="resource-tile" href="([^"]+)"/g)].map((m) => m[1]);
+  };
+
+  it('is titled Guide, with the three groups in order', () => {
+    expect(html).toMatch(/<h1[^>]*>Guide<\/h1>/);
+    const headings = [...html.matchAll(/<h2 id="resource-[a-z]+">([^<]+)<\/h2>/g)].map((m) => m[1]);
+    expect(headings).toEqual(['Understand', 'Translate', 'Evaluate and adopt']);
+  });
+
+  it('puts the right pages in each group, in the spec order', () => {
+    expect(groupOf('Understand')).toEqual(['/guide/tour/', '/guide/scheduler-as-orchestrator/', '/about/glossary/']);
+    expect(groupOf('Translate')).toEqual(['/guide/compose-to-hpc-translation/', '/start/', '/guide/baseline-single-node-pattern/', '/diagnostics/']);
+    const evaluate = groupOf('Evaluate and adopt');
+    expect(evaluate[0]).toBe('/adoption/evaluate/');
+    expect(evaluate[1]).toMatch(/^\/applicability\/[a-z0-9-]+\/$/);
+    expect(evaluate.slice(2)).toEqual(['/milestones/1/', '/milestones/2/', '/about/talks-and-papers/']);
+  });
+
+  it('links every page on the learning path exactly once', () => {
+    const hrefs = tiles.map((tile) => tile.href);
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(tiles).toHaveLength(12);
+    const pathRoutes = { 'module-0-orientation': '/guide/tour/', 'module-1-scheduler-orchestrator': '/guide/scheduler-as-orchestrator/', 'start-guide': '/start/', 'module-2-baseline': '/guide/baseline-single-node-pattern/', 'module-3-compose-to-hpc-translation': '/guide/compose-to-hpc-translation/', 'adoption-evaluate': '/adoption/evaluate/' } as const;
+    for (const id of LEARNING_PATH) expect(hrefs).toContain(pathRoutes[id]);
+  });
+
+  it('keeps tiles plain: no metadata, at most one tag, no style block', () => {
+    expect(html).not.toMatch(/Applicability records|Keywords|published ·/i);
+    expect(html).not.toMatch(/<style[\s>]/);
+    for (const tile of tiles) {
+      expect(tile.inner).not.toMatch(/<strong>(?:Keywords|Status|Milestone|Environment|Version):/i);
+      expect(tile.inner.match(/class="resource-tile__tag"/g)?.length ?? 0).toBeLessThanOrEqual(1);
+    }
+  });
+});

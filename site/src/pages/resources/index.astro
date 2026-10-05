@@ -2,22 +2,48 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { canonicalPath } from '../../content/registry';
-const entries = (await getCollection('contentItems', ({ data }) => ['published', 'superseded', 'archived'].includes(data.status))).map(({ data }) => data);
+import { TALKS_LABEL } from '../../content/contracts';
+import { currentRecord } from '../../content/projections';
+interface Tile { href: string; title: string; summary: string; tag: string }
+const published = (await getCollection('contentItems', ({ data }) => data.status === 'published')).map(({ data }) => data);
+const byId = new Map(published.map((item) => [item.id, item]));
+const record = currentRecord((await getCollection('applicability')).map(({ data }) => data));
+const fromItem = (id: string, tag: string): Tile[] => {
+  const item = byId.get(id);
+  return item ? [{ href: canonicalPath(item), title: item.title, summary: item.summary, tag }] : [];
+};
 const groups = [
-  { id: 'learn', title: 'Learn the model', question: 'How does a laptop workflow change on HPC?', items: entries.filter((item) => item.artifact_type === 'learning-module') },
-  { id: 'run', title: 'Run and recover', question: 'Can I run the baseline, and what should I do when a check fails?', items: entries.filter((item) => item.route_namespace === 'start' || item.artifact_type === 'diagnostic') },
-  { id: 'project', title: 'Review the project', question: 'Where are release, milestone, policy, and public-information records?', items: entries.filter((item) => item.artifact_type !== 'learning-module' && item.route_namespace !== 'start' && item.artifact_type !== 'diagnostic') },
-].filter(({ items }) => items.length);
-const qualifier = (item: typeof entries[number]) => item.artifact_type === 'learning-module'
-  ? `${item.module_type} module` : item.artifact_type === 'diagnostic' ? 'Recovery guide'
-  : item.artifact_type === 'release' ? 'Release'
-  : item.artifact_type === 'milestone' ? 'Milestone'
-  : item.route_namespace === 'about' ? 'Project record'
-  : item.route_namespace === 'events' ? 'Event'
-  : item.artifact_type;
+  {
+    id: 'understand', title: 'Understand', question: 'What changes when a Compose stack moves to a shared cluster?',
+    tiles: [
+      ...fromItem('module-0-orientation', 'Tour'),
+      ...fromItem('module-1-scheduler-orchestrator', 'Concept module'),
+      ...fromItem('glossary', 'Reference'),
+    ],
+  },
+  {
+    id: 'translate', title: 'Translate', question: 'How do I turn my own Compose file into a cluster job?',
+    tiles: [
+      ...fromItem('module-3-compose-to-hpc-translation', 'Translate guide'),
+      ...fromItem('start-guide', 'Hands-on'),
+      ...fromItem('module-2-baseline', 'Hands-on module'),
+      { href: '/diagnostics/', title: 'Troubleshooting', summary: 'Find a failure by the ID it prints, with recovery steps.', tag: 'Recovery guide' },
+    ],
+  },
+  {
+    id: 'evaluate', title: 'Evaluate and adopt', question: 'What was tested, what was not, and is this the right fit for my center?',
+    tiles: [
+      ...fromItem('adoption-evaluate', 'Evaluation guide'),
+      ...(record ? [{ href: `/applicability/${record.id}/`, title: 'Full test record', summary: 'What ran, where it ran, and what it checked.', tag: 'Test record' }] : []),
+      ...fromItem('milestone-1', 'Milestone'),
+      ...fromItem('milestone-2', 'Milestone'),
+      ...fromItem('talks-and-papers', TALKS_LABEL),
+    ],
+  },
+].filter(({ tiles }) => tiles.length);
 ---
-<BaseLayout title="Resources" description="Complete index of published Laptop-to-Cluster resources." profile="resources">
-  <header class="content-header"><h1>Resources</h1><p class="lede">Every published page, grouped by what you are trying to do. Start with a question, then follow a link.</p></header>
+<BaseLayout title="Guide" description="A guided path through the Laptop-to-Cluster guide: understand the model, translate your own Compose file, then check what was tested." profile="resources">
+  <header class="content-header"><h1>Guide</h1><p class="lede">Start with the idea, translate your own Compose file, then check what was tested and whether it fits your center.</p></header>
   {groups.map((group) => (
     <section class="resource-section" aria-labelledby={`resource-${group.id}`}>
       <div class="resource-section__header">
@@ -25,57 +51,14 @@ const qualifier = (item: typeof entries[number]) => item.artifact_type === 'lear
         <p class="resource-section__question">{group.question}</p>
       </div>
       <ul class="resource-grid">
-        {group.items.map((item) => (
-          <li><a class="resource-tile" href={canonicalPath(item)}>
-            <h3>{item.title}</h3>
-            <p>{item.summary}</p>
-            {qualifier(item) && <span class="resource-tile__tag">{qualifier(item)}</span>}
+        {group.tiles.map((tile) => (
+          <li><a class="resource-tile" href={tile.href}>
+            <h3>{tile.title}</h3>
+            <p>{tile.summary}</p>
+            <span class="resource-tile__tag">{tile.tag}</span>
           </a></li>
         ))}
       </ul>
     </section>
   ))}
 </BaseLayout>
-<style>
-  .resource-section { margin-block-start: var(--space-12); }
-  .resource-section:first-of-type { margin-block-start: var(--space-8); }
-  .resource-section__header { margin-block-end: var(--space-6); }
-  .resource-section__question { color: var(--muted); font-size: var(--text-body); margin-block-start: var(--space-1); }
-  .resource-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
-    gap: var(--space-4);
-    align-items: start;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .resource-tile {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-4);
-    border: var(--border-thin) solid var(--border);
-    border-radius: var(--radius-small);
-    background: var(--raised);
-    text-decoration: none;
-    color: inherit;
-  }
-  .resource-tile:hover { border-color: var(--primary); background: var(--surface); }
-  .resource-tile:active { border-color: var(--primary); background: var(--surface); }
-  .resource-tile:focus-visible { outline-offset: 2px; }
-  .resource-tile h3 { font-size: var(--text-subheading); font-weight: 700; flex: none; }
-  .resource-tile p { color: var(--muted); font-size: var(--text-fine); line-height: 1.5; flex-grow: 1; }
-  .resource-tile__tag {
-    align-self: flex-start;
-    font-family: var(--font-technical);
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  @media (max-width: 30rem) {
-    .resource-grid { grid-template-columns: 1fr; }
-  }
-</style>
