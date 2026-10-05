@@ -25,3 +25,31 @@ describe('W6 built pages: About', () => {
     }
   });
 });
+
+describe('W6 built pages: Run the example', () => {
+  const html = page('start');
+
+  it('is titled "Run the example" and carries no evidence badge', () => {
+    expect(html).toMatch(/<h1[^>]*>Run the example<\/h1>/);
+    expect(html).not.toContain('evidence-badge');
+    expect(html).not.toContain('applicability-projection');
+  });
+
+  it('links the current test record, and that record page exists', () => {
+    const href = /How we know this works[\s\S]*?href="(\/applicability\/[a-z0-9-]+\/)"/.exec(html)?.[1];
+    expect(href).toBeDefined();
+    expect(existsSync(resolve(dist, href!.slice(1), 'index.html'))).toBe(true);
+  });
+
+  it('renders the pager between Module 1 and Module 2', () => {
+    const nav = /<nav class="module-pager"[\s\S]*?<\/nav>/.exec(html)?.[0] ?? '';
+    expect(nav).toContain('href="/guide/scheduler-as-orchestrator/"');
+    expect(nav).toContain('href="/guide/baseline-single-node-pattern/"');
+  });
+
+  it('keeps the heading ids that Module 2 links to', () => {
+    for (const id of ['record-your-local-values', 'get-the-container-image', 'check-the-input', 'submit-the-job', 'check-that-it-worked']) {
+      expect(html).toContain(`id="${id}"`);
+    }
+  });
+});
