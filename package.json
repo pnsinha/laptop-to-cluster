@@ -24,7 +24,7 @@
     "validate:release": "tsx scripts/validate-release.ts",
     "validate:built": "node scripts/publication.mjs built-output site/dist",
     "validate:policy": "node scripts/publication.mjs policy .",
-    "validate:accessibility-review": "tsx scripts/validate-accessibility-review.ts releases/v0.1.0/accessibility-review.yml",
+    "validate:accessibility-review": "tsx scripts/validate-accessibility-review.ts releases/$(node scripts/publication.mjs release-version)/accessibility-review.yml",
     "publication:prepare": "node scripts/prepare-publication.mjs .",
     "validate:boundary": "node scripts/publication.mjs boundary . --require --history HEAD",
     "publication:validate": "npm run validate:boundary && npm run validate:built && npm run validate:policy && npm run validate:accessibility-review && npm run validate:evidence && npm run validate:repository && npm run validate:release",
