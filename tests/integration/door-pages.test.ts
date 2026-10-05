@@ -50,3 +50,27 @@ describe('Talks and papers page', () => {
     expect(html).not.toMatch(/href="[^"]*\.pdf"|<iframe|<embed|<object/i);
   });
 });
+describe('Translate page', () => {
+  const html = page('guide/compose-to-hpc-translation');
+
+  it('is built as a conceptual module with the shared shell and no badge or timeline', () => {
+    expect(html).toContain('data-composition-profile="learning-conceptual"');
+    expect(html).toContain('<p class="content-header__line">Module 3 · Reading · about 25 min</p>');
+    expect(html).toContain('>In this module</h2>');
+    expect(html).not.toContain('class="applicability-projection');
+    expect(html).not.toContain('<figure class="timeline"');
+    expect(html).not.toContain('Workflow package');
+    expect(html).not.toContain('Example pending');
+  });
+
+  it('renders the worksheet, the construct map and the file list as tables', () => {
+    expect(html.match(/<table/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(html).toContain('href="/adoption/evaluate/#not-tested"');
+    expect(html).toContain('Designed, not run');
+  });
+
+  it('sits after Module 2 on the learning path and closes with Sources after the article', () => {
+    expect(html).toContain('<a rel="prev" href="/guide/baseline-single-node-pattern/">');
+    expect(at(html, 'class="sources-scope"')).toBeGreaterThan(html.lastIndexOf('</article>'));
+  });
+});
