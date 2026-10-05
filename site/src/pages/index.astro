@@ -11,7 +11,6 @@ import {
   TIMELINE_CAPTIONS, eventBandLead, homeDoors, projectRecordLinks,
 } from '../content/home';
 import { projectLandingPage } from '../content/projections';
-import { currentReleaseVersion } from '../content/release';
 
 const content = (await getCollection('contentItems')).map(({ data }) => data);
 const applicability = (await getCollection('applicability')).map(({ data }) => data);
@@ -20,7 +19,7 @@ const landing = projectLandingPage(content, applicability);
 const recordHref = landing.applicability_projection?.canonicalPath;
 const doors = homeDoors(content);
 const featuredTalk = (await getCollection('talks')).map(({ data }) => data).find(({ featured }) => featured);
-const records = projectRecordLinks(currentReleaseVersion(), landing.release.href);
+const records = projectRecordLinks(landing.release);
 ---
 <BaseLayout title={HOME_TITLE} description={HOME_DESCRIPTION} canonicalPath="/" profile="landing">
   <section class="hero" aria-labelledby="hero-title">

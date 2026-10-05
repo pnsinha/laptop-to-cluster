@@ -183,7 +183,7 @@ describe('event band and project records', () => {
   });
 
   it('links the project records strip, taking the release notes link from the landing projection', () => {
-    expect(projectRecordLinks('v0.2.0', '/milestones/2/#release-v0-2-0')).toEqual([
+    expect(projectRecordLinks({ id: 'release-v0-2-0', href: '/milestones/2/#release-v0-2-0' })).toEqual([
       { label: 'Bridging the Laptop-to-Cluster Gap: a 2026 Better Scientific Software Fellowship project', href: '/about/attribution/' },
       { label: 'Talks, posters & papers', href: '/about/talks-and-papers/' },
       { label: 'v0.2.0 release notes', href: '/milestones/2/#release-v0-2-0' },
@@ -195,7 +195,7 @@ describe('event band and project records', () => {
       visitLinkText: 'Talk and poster links',
       visitHref: '/about/talks-and-papers/',
     });
-    expect(JSON.stringify([projectRecordLinks('v0.2.0', '/milestones/2/#release-v0-2-0'), PROJECT_RECORDS])).not.toMatch(/ParaTools|Department of Energy|National Science Foundation/);
+    expect(JSON.stringify([projectRecordLinks({ id: 'release-v0-2-0', href: '/milestones/2/#release-v0-2-0' }), PROJECT_RECORDS])).not.toMatch(/ParaTools|Department of Energy|National Science Foundation/);
   });
 });
 
@@ -215,5 +215,13 @@ describe('home copy rules', () => {
       ...Object.values(TIMELINE_CAPTIONS), ...Object.values(DOOR_SUMMARIES),
     ];
     expect(prose.reduce((total, value) => total + words(value), 0)).toBeLessThanOrEqual(600);
+  });
+
+  it('derives the release notes label from the same release item as the link', () => {
+    const notes = (id: string, href: string) => projectRecordLinks({ id, href }).find(({ label }) => label.endsWith('release notes'));
+    expect(notes('release-v0-1-0', '/milestones/1/#release-v0-1-0')).toEqual({ label: 'v0.1.0 release notes', href: '/milestones/1/#release-v0-1-0' });
+    expect(notes('release-v0-2-0', '/milestones/2/#release-v0-2-0')).toEqual({ label: 'v0.2.0 release notes', href: '/milestones/2/#release-v0-2-0' });
+    expect(() => projectRecordLinks({ id: 'release-latest', href: '/x/' })).toThrow(/release-latest/);
+    expect(() => projectRecordLinks({ id: 'release-v0-2', href: '/x/' })).toThrow();
   });
 });
