@@ -112,7 +112,7 @@ body[data-composition-profile="landing"] main { padding-block-start: var(--space
 body[data-composition-profile="landing"] main > :where(section, aside, figure) + :where(section, aside, figure) { margin-block-start: var(--space-16); }
 
 /* ---------- 5. concept utilities (colour + shape + word; the four shapes come from one marks face) ---------- */
-.c-step, .c-gate, .c-scratch, .c-net { color: var(--c); background: var(--c-bg); padding: 0 0.3em 0.05em; border-radius: 0.1875rem; white-space: nowrap; }
+.c-step, .c-gate, .c-scratch, .c-net { color: var(--c); background: var(--c-bg); padding: 0 0.3em 0.05em; border-radius: 0.1875rem; overflow-wrap: anywhere; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .c-step { --c: var(--c-step); --c-bg: var(--c-step-bg); }
 .c-gate { --c: var(--c-gate); --c-bg: var(--c-gate-bg); }
 .c-scratch { --c: var(--c-scratch); --c-bg: var(--c-scratch-bg); }
