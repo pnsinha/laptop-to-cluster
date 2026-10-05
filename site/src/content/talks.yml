@@ -9,7 +9,7 @@
     - { label: "Conference program", href: "https://us-rse.org/usrse26/program/" }
 - id: sc26-research-poster
   kind: poster
-  title: "SC26 Research Poster"
+  title: "Union of Containers: Layered Software Stacks with Cross-Container Dependency Reuse for HPC"
   venue: "SC26"
   event_date: "2026-11-17"
   location: "Chicago, IL"

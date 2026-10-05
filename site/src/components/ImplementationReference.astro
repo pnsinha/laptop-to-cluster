@@ -4,7 +4,7 @@ import type { ImplementationReference as ImplementationReferenceData } from '../
 const { reference } = Astro.props as { reference: ImplementationReferenceData };
 const lineRange = (start: number, end: number) => `Lines ${start}–${end}`;
 ---
-<section class="implementation-reference" aria-labelledby="implementation-reference-heading">
+<section class="implementation-reference" id="implementation-reference" aria-labelledby="implementation-reference-heading">
   <header class="implementation-reference__intro">
     <h2 id="implementation-reference-heading">Implementation reference</h2>
     <p>The excerpts below show the commands and control flow that matter for understanding the pattern, with the defensive checks and integrity plumbing elided for readability. Each excerpt links to its release-pinned line range in the real <code>{reference.release}</code> source on GitHub. Use the complete package when adapting and submitting the workflow.</p>
@@ -18,12 +18,4 @@ const lineRange = (start: number, end: number) => `Lines ${start}–${end}`;
     <p class="source-excerpt__annotation">{excerpt.annotation}</p>
     <pre tabindex="0" aria-label={`${excerpt.title} source code`}><code>{excerpt.code}</code></pre>
   </figure>)}
-  <figure class="technical-figure source-excerpt source-excerpt--expected">
-    <figcaption>
-      <span class="source-excerpt__title">Expected success result</span>
-      <span class="source-excerpt__meta"><code>result.json</code> · sanitized example</span>
-    </figcaption>
-    <p class="source-excerpt__annotation">A successful run has a machine-readable success marker. Intermediate results are not a success claim until this verifier output exists.</p>
-    <pre tabindex="0" aria-label="Expected success result JSON"><code>{reference.expectedOutput}</code></pre>
-  </figure>
 </section>

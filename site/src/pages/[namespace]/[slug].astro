@@ -1,15 +1,21 @@
 ---
 import { getCollection, render } from 'astro:content';
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import LearningModuleLayout from '../../layouts/LearningModuleLayout.astro';
-import ContentHeader from '../../components/ContentHeader.astro';
+import Acknowledgment from '../../components/Acknowledgment.astro';
 import ApplicabilityProjectionView from '../../components/ApplicabilityProjection.astro';
 import Attribution from '../../components/Attribution.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BodySegments from '../../components/BodySegments.astro';
+import ContentHeader from '../../components/ContentHeader.astro';
+import LearningModuleLayout from '../../layouts/LearningModuleLayout.astro';
+import ModulePager from '../../components/ModulePager.astro';
+import RecordSummary from '../../components/RecordSummary.astro';
 import SectionNav from '../../components/SectionNav.astro';
 import SourcesAndScope from '../../components/SourcesAndScope.astro';
 import SupportState from '../../components/SupportState.astro';
+import TalksList from '../../components/TalksList.astro';
 import { canonicalPath, hasNoStandalonePage } from '../../content/registry';
-import { assertCompositionProfile, compositionProfileFor, projectApplicabilityForItem } from '../../content/projections';
+import { assertCompositionProfile, compositionProfileFor, currentRecord, projectApplicabilityForItem } from '../../content/projections';
+import { ABOUT_NAV_ITEMS, learningPathNavigation, recordDateLine, slotNames, sortTalks } from '../../content/page-chrome';
 import { formatDate } from '../../content/format';
 export async function getStaticPaths() {
   const entries = await getCollection('contentItems', ({ data }) =>
@@ -18,24 +24,38 @@ export async function getStaticPaths() {
 }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
+const bodyHtml = entry.rendered?.html;
 const item = entry.data;
 const profile = compositionProfileFor(item);
 assertCompositionProfile(item, profile);
 const applicability = (await getCollection('applicability')).map(({ data }) => data);
 const projection = item.artifact_type === 'milestone' ? projectApplicabilityForItem(item, applicability, 'milestone')
   : item.artifact_type === 'release' ? projectApplicabilityForItem(item, applicability, 'release') : undefined;
-const recordDateLabel = item.artifact_type === 'milestone' ? 'Due' : 'Released';
+const dueDates = new Map((await getCollection('milestones')).map(({ data }) => [data.number, data.due_date] as const));
+const dateLine = recordDateLine(item, dueDates);
 const recordStatus = item.status[0].toUpperCase() + item.status.slice(1);
 const currentPath = Astro.url.pathname;
 
-/* Section navigation for About subsections */
-const aboutNavItems = [
-  { label: 'Project', href: '/about/project/' },
-  { label: 'Attribution and licenses', href: '/about/attribution/' },
-  { label: 'Accessibility', href: '/about/accessibility/' },
-  { label: 'Support', href: '/about/support/' },
-  { label: 'Glossary', href: '/about/glossary/' },
-];
+/* Adoption pages show a summary of the current test record (D3); no other profile may. */
+const isAdoption = item.artifact_type === 'checklist' && item.route_namespace === 'adoption';
+const record = isAdoption ? currentRecord(applicability) : undefined;
+if (isAdoption && !record) throw new Error(`${item.id}: the adoption page needs a current applicability record`);
+const contentItems = (await getCollection('contentItems')).map(({ data }) => data);
+const navigation = isAdoption ? learningPathNavigation(contentItems, item.id) : undefined;
+
+/* Talks and papers reads the talks collection (§5.4); event pages may ask for the acknowledgment beside the PDF (D9). */
+const talks = item.id === 'talks-and-papers' ? sortTalks((await getCollection('talks')).map(({ data }) => data)) : [];
+const showAcknowledgment = item.artifact_type === 'event-assets'
+  && 'acknowledgment_beside_download' in item && item.acknowledgment_beside_download === true;
+const markers = new Set(bodyHtml ? slotNames(bodyHtml) : []);
+
+/* D10: a release item that owns no page renders as a section of its milestone page. v0.1.0's notes are inline in milestone-1.md, so that item is excluded. */
+const consolidatedReleases = item.artifact_type === 'milestone'
+  ? await Promise.all((await getCollection('contentItems', ({ data }) =>
+      data.artifact_type === 'release' && hasNoStandalonePage(data) && data.milestone === item.milestone
+      && data.id !== 'release-v0-1-0' && data.status === 'published'))
+    .map(async (releaseEntry) => ({ id: releaseEntry.data.id, title: releaseEntry.data.title, Content: (await render(releaseEntry)).Content })))
+  : [];
 
 /* Section navigation for Milestone pages (only when multiple milestones exist) */
 const allEntries = await getCollection('contentItems', ({ data }) =>
@@ -49,15 +69,28 @@ const milestoneNavItems = allEntries
 const showMilestoneNav = item.artifact_type === 'milestone' && milestoneNavItems.length > 1;
 const showAboutNav = item.route_namespace === 'about';
 ---
-{item.artifact_type === 'learning-module' ? <LearningModuleLayout {item}><Content /></LearningModuleLayout> :
+{item.artifact_type === 'learning-module' ? <LearningModuleLayout {item} {bodyHtml}><Content /></LearningModuleLayout> :
 <BaseLayout title={item.title} description={item.summary} {profile}>
   <ContentHeader {item} />
-  {showAboutNav && <SectionNav items={aboutNavItems} currentPath={currentPath} label="About sections" />}
+  {showAboutNav && <SectionNav items={[...ABOUT_NAV_ITEMS]} currentPath={currentPath} label="About sections" />}
   {showMilestoneNav && <SectionNav items={milestoneNavItems} currentPath={currentPath} label="Milestones" />}
-  {['milestone', 'release'].includes(item.artifact_type) && <p class="record-context"><strong>Status:</strong> {recordStatus} · <strong>{recordDateLabel}:</strong> <time datetime={item.publication_date}>{formatDate(item.publication_date)}</time></p>}
+  {dateLine && <p class="record-context"><strong>Status:</strong> {recordStatus} · <strong>{dateLine.label}:</strong> <time datetime={dateLine.iso}>{formatDate(dateLine.iso)}</time></p>}
   {projection && <ApplicabilityProjectionView {projection} />}
   {item.artifact_type === 'attribution' && <Attribution />}
-  <article><Content /></article>
+  {record && !markers.has('record-summary') && <RecordSummary {record} />}
+  {showAcknowledgment && !markers.has('acknowledgment') && <Acknowledgment variant="event" />}
+  <article>
+    {bodyHtml ? (
+      <BodySegments html={bodyHtml}>
+        <Fragment slot="record-summary">{record && <RecordSummary {record} />}</Fragment>
+        <Fragment slot="talks">{talks.length > 0 && <TalksList {talks} />}</Fragment>
+        <Fragment slot="acknowledgment">{showAcknowledgment && <Acknowledgment variant="event" />}</Fragment>
+      </BodySegments>
+    ) : <Content />}
+  </article>
+  {consolidatedReleases.map((release) => <section class="release-notes" id={release.id} aria-labelledby={`${release.id}-heading`}><h2 id={`${release.id}-heading`}>{release.title}</h2><release.Content /></section>)}
+  {talks.length > 0 && !markers.has('talks') && <TalksList {talks} />}
   {item.artifact_type === 'support' && <SupportState />}
+  {navigation && <ModulePager {navigation} />}
   <SourcesAndScope references={item.authority} />
 </BaseLayout>}
