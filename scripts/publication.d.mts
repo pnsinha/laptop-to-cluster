@@ -18,3 +18,8 @@ export function validateCloudflareReadiness(input: any): string[];
 export function validateDeploymentRecord(record: any, manifest: ArtifactManifest): string[];
 export function validateReleaseManifest(record: any, manifest: ArtifactManifest): string[];
 export function validateDeploymentWorkflow(workflowText: string): string[];
+export const recordSummaryBlocks: (html: string) => string[];
+export function collectApplicabilityFacts(builtPages: { source: string; html: string }[]): { byId: Map<string, any>; errors: string[] };
+export function recordSummaryIssues(block: string, facts: any, others?: any[]): string[];
+export function validateRecordSummaries(builtPages: { source: string; html: string }[], byId: Map<string, any>): string[];
+export function validateSourceDuplication(builtPages: { source: string; html: string }[], byId: Map<string, any>): string[];

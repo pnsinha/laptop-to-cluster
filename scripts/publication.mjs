@@ -385,6 +385,111 @@ export function validateCanonicalConfig(configText) {
   return errors;
 }
 
+export const recordSummaryBlocks = (html) => html.match(/<section class="record-summary"[\s\S]*?<\/section>/g) ?? [];
+
+/** Facts read from every built canonical applicability page: { byId: Map, errors }. */
+export function collectApplicabilityFacts(builtPages) {
+  const errors = [];
+  const byId = new Map();
+  for (const page of builtPages.filter(({ html }) => html.includes('data-composition-profile="applicability"'))) {
+    const sourceId = page.html.match(/class="applicability-record" data-source-id="([^"]+)"/)?.[1];
+    if (!sourceId || page.source !== `/applicability/${sourceId}/`) {
+      errors.push(diagnostic(page.source, 'sourceId', 'SOURCE-AGREEMENT', 'canonical applicability route and source ID must agree'));
+      continue;
+    }
+    const scheduler = definitionValue(page.html, 'Scheduler');
+    const runtime = definitionValue(page.html, 'Runtime');
+    byId.set(sourceId, {
+      sourceId,
+      canonicalSource: page.source,
+      canonicalHtml: page.html,
+      environment: definitionValue(page.html, 'Environment'),
+      status: definitionValue(page.html, 'Status'),
+      schedulerFamily: scheduler.split(' ')[0],
+      schedulerVersion: scheduler.slice(scheduler.indexOf(' ') + 1),
+      runtimeName: runtime.split(' ')[0],
+      runtimeVersion: runtime.slice(runtime.indexOf(' ') + 1),
+      executionDate: definitionValue(page.html, 'Execution date'),
+      validationDate: definitionValue(page.html, 'Validation date'),
+      submissionId: definitionValue(page.html, 'Submission ID'),
+      boundary: sectionList(page.html, 'Portability boundaries')[0],
+      checks: sectionList(page.html, 'Result checks'),
+      evidenceId: stripTags(page.html.match(/<h2[^>]*>Evidence and integrity<\/h2><p><a[^>]*>([^<]+)<\/a>/i)?.[1]),
+      integrity: page.html.match(/sha256:[a-f0-9]{64}/i)?.[0],
+    });
+  }
+  return { byId, errors };
+}
+
+/** Messages for one RecordSummary block that disagrees with its canonical record page. */
+export function recordSummaryIssues(block, facts, others = []) {
+  const issues = [];
+  const links = [...block.matchAll(/href="\/applicability\/([^"]+)\/"/g)];
+  if (links.length !== 1 || links[0][1] !== facts.sourceId) issues.push('exactly one canonical record link that matches the source ID is required');
+  const tested = stripTags(block.match(/<p class="record-summary__tested">([\s\S]*?)<\/p>/)?.[1]);
+  if (!tested) issues.push('the tested sentence (record-summary__tested) is required');
+  if (/\b\d{4}\b/.test(tested) && !tested.includes(formatMonthYear(facts.validationDate) ?? '\0')) issues.push('the tested sentence states a date that is not the record validation month');
+  if (/Tested on|Review due/.test(tested) && !tested.includes(facts.environment)) issues.push('the tested sentence names a different environment from the record');
+  const lists = canonicalLists(facts.canonicalHtml);
+  const known = new Set(Object.values(lists).flat());
+  const scope = block.match(/<ul class="record-summary__scope">([\s\S]*?)<\/ul>/)?.[1] ?? '';
+  for (const item of scope.matchAll(/<li(\s[^>]*)?>([\s\S]*?)<\/li>/g)) {
+    const refs = item[1]?.match(/data-from="([^"]*)"/)?.[1]?.split(/\s+/).filter(Boolean) ?? [];
+    if (!refs.length) {
+      if (!known.has(stripTags(item[2]))) issues.push('a scope item is neither traced nor an item of the canonical record page');
+      continue;
+    }
+    for (const ref of refs) {
+      const problem = traceProblem(ref, lists);
+      if (problem) issues.push(`a scope item ${problem}`);
+    }
+  }
+  const own = new Set([facts.environment, facts.schedulerVersion, facts.runtimeVersion, facts.executionDate, facts.validationDate, facts.submissionId]);
+  for (const other of others) {
+    const foreign = [other.environment, other.schedulerVersion, other.runtimeVersion, other.executionDate, other.validationDate, other.submissionId]
+      .filter((value) => typeof value === 'string' && value.length > 3 && !own.has(value));
+    if (foreign.some((value) => block.includes(value))) issues.push('the summary repeats a value that belongs to a different record');
+  }
+  return issues;
+}
+
+/** RECORD-SUMMARY: adoption pages only, and every block agrees with its canonical record. */
+export function validateRecordSummaries(builtPages, byId) {
+  const errors = [];
+  for (const page of builtPages) {
+    const profile = page.html.match(/data-composition-profile="([^"]+)"/)?.[1];
+    for (const block of recordSummaryBlocks(page.html)) {
+      if (profile !== 'adoption') errors.push(diagnostic(page.source, 'recordSummary', 'RECORD-SUMMARY', `profile ${profile ?? '<missing>'} forbids a record summary; only the adoption profile may render one`));
+      const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
+      const facts = byId.get(sourceId);
+      if (!facts) {
+        errors.push(diagnostic(page.source, 'recordSummary', 'RECORD-SUMMARY', `record summary references missing canonical source ${sourceId ?? '<missing>'}`));
+        continue;
+      }
+      for (const issue of recordSummaryIssues(block, facts, [...byId.values()].filter((other) => other !== facts))) errors.push(diagnostic(page.source, 'recordSummary', 'RECORD-SUMMARY', issue));
+    }
+  }
+  return errors;
+}
+
+/** SOURCE-DUPLICATION: canonical-only values may appear only in generated projections, record summaries, and the canonical pages. */
+export function validateSourceDuplication(builtPages, byId) {
+  const errors = [];
+  for (const facts of byId.values()) {
+    for (const page of builtPages.filter(({ source }) => !source.startsWith('/applicability/'))) {
+      const generatedRemoved = [...standardProjectionBlocks(page.html), ...diagnosticProjectionBlocks(page.html), ...recordSummaryBlocks(page.html)]
+        .reduce((text, block) => text.replace(block, ''), page.html);
+      const forbiddenValues = [facts.environment, facts.schedulerVersion, facts.runtimeVersion, facts.executionDate,
+        facts.validationDate, facts.submissionId, facts.evidenceId, facts.integrity, facts.boundary, ...facts.checks]
+        .filter((value) => typeof value === 'string' && value.length > 3);
+      if (forbiddenValues.some((value) => generatedRemoved.includes(value))) {
+        errors.push(diagnostic(page.source, 'applicability', 'SOURCE-DUPLICATION', 'handwritten or canonical-only applicability value appears outside its generated projection'));
+      }
+    }
+  }
+  return errors;
+}
+
 function publicPathForFile(dist, file) {
   const path = relative(dist, file).replaceAll('\\', '/');
   if (path === 'index.html') return '/';
@@ -421,34 +526,9 @@ export function validateBuiltOutput(dist) {
     }
   }
 
-  const applicabilityById = new Map();
-  for (const page of builtPages.filter(({ html }) => html.includes('data-composition-profile="applicability"'))) {
-    const sourceId = page.html.match(/class="applicability-record" data-source-id="([^"]+)"/)?.[1];
-    if (!sourceId || page.source !== `/applicability/${sourceId}/`) {
-      errors.push(diagnostic(page.source, 'sourceId', 'SOURCE-AGREEMENT', 'canonical applicability route and source ID must agree'));
-      continue;
-    }
-    const scheduler = definitionValue(page.html, 'Scheduler');
-    const runtime = definitionValue(page.html, 'Runtime');
-    applicabilityById.set(sourceId, {
-      sourceId,
-      canonicalSource: page.source,
-      canonicalHtml: page.html,
-      environment: definitionValue(page.html, 'Environment'),
-      status: definitionValue(page.html, 'Status'),
-      schedulerFamily: scheduler.split(' ')[0],
-      schedulerVersion: scheduler.slice(scheduler.indexOf(' ') + 1),
-      runtimeName: runtime.split(' ')[0],
-      runtimeVersion: runtime.slice(runtime.indexOf(' ') + 1),
-      executionDate: definitionValue(page.html, 'Execution date'),
-      validationDate: definitionValue(page.html, 'Validation date'),
-      submissionId: definitionValue(page.html, 'Submission ID'),
-      boundary: sectionList(page.html, 'Portability boundaries')[0],
-      checks: sectionList(page.html, 'Result checks'),
-      evidenceId: stripTags(page.html.match(/<h2[^>]*>Evidence and integrity<\/h2><p><a[^>]*>([^<]+)<\/a>/i)?.[1]),
-      integrity: page.html.match(/sha256:[a-f0-9]{64}/i)?.[0],
-    });
-  }
+  const applicability = collectApplicabilityFacts(builtPages);
+  errors.push(...applicability.errors);
+  const applicabilityById = applicability.byId;
   for (const page of builtPages) {
     for (const block of standardProjectionBlocks(page.html)) {
       const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
@@ -466,18 +546,7 @@ export function validateBuiltOutput(dist) {
       if (!permitted) errors.push(diagnostic(page.source, 'diagnostic', 'SOURCE-AGREEMENT', 'diagnostic discriminator is stale or does not match its canonical source'));
     }
   }
-  for (const facts of applicabilityById.values()) {
-    for (const page of builtPages.filter(({ source }) => source !== `/applicability/${facts.sourceId}/`)) {
-      const conciseRemoved = standardProjectionBlocks(page.html).concat(diagnosticProjectionBlocks(page.html))
-        .reduce((text, block) => text.replace(block, ''), page.html);
-      const forbiddenValues = [facts.environment, facts.schedulerVersion, facts.runtimeVersion, facts.executionDate,
-        facts.validationDate, facts.submissionId, facts.evidenceId, facts.integrity, facts.boundary, ...facts.checks]
-        .filter((value) => typeof value === 'string' && value.length > 3);
-      if (forbiddenValues.some((value) => conciseRemoved.includes(value))) {
-        errors.push(diagnostic(page.source, 'applicability', 'SOURCE-DUPLICATION', 'handwritten or canonical-only applicability value appears outside its generated projection'));
-      }
-    }
-  }
+  errors.push(...validateRecordSummaries(builtPages, applicabilityById), ...validateSourceDuplication(builtPages, applicabilityById));
 
   for (const name of ['sitemap-index.xml', 'sitemap-0.xml', 'feed.xml', 'url-manifest.json']) {
     const file = join(dist, name);
