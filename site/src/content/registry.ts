@@ -112,15 +112,13 @@ function parseRecords<T>(values: unknown[], label: string, parser: { parse(value
   return records;
 }
 
-// v0.1.0-only: exactly one release maps to exactly one milestone, so this release's
-// notes render as a section of that milestone's page instead of a standalone
-// /releases/{version}/ page. See design.md's "Pre-deployment route consolidation"
-// amendment. From Milestone 2 onward, releases resume owning their own page.
-const CONSOLIDATED_RELEASE_IDS = new Set(['release-v0-1-0']);
+// Releases listed here render their notes as an anchored section of their milestone's
+// page (id = the release item's id) instead of a standalone /releases/{version}/ page.
+const CONSOLIDATED_RELEASE_IDS = new Set(['release-v0-1-0', 'release-v0-2-0']);
 
 /** True for a content item that has no page of its own and instead renders as an
- * anchored or headed section of another item's page (a diagnostic, or the v0.1.0
- * release consolidated onto its milestone). Callers building static routes or a
+ * anchored or headed section of another item's page (a diagnostic, or a release
+ * consolidated onto its milestone). Callers building static routes or a
  * URL manifest should skip these items; canonicalPath still resolves them to the
  * page that actually renders their content. */
 export function hasNoStandalonePage(item: ContentItem): boolean {
@@ -140,6 +138,13 @@ export function canonicalPath(item: ContentItem): string {
   if (item.artifact_type === 'diagnostic') return `/diagnostics/#${item.stable_slug}`;
   if (item.artifact_type === 'release' && CONSOLIDATED_RELEASE_IDS.has(item.id)) return `/milestones/${item.milestone}/`;
   return `/${namespace}/${item.stable_slug}/`;
+}
+
+/** Where a release's notes live: the anchored section on its milestone page for a
+ * consolidated release, otherwise the item's own canonical page. */
+export function releaseNotesHref(item: ContentItem): string {
+  const path = canonicalPath(item);
+  return item.artifact_type === 'release' && CONSOLIDATED_RELEASE_IDS.has(item.id) ? `${path}#${item.id}` : path;
 }
 
 function sharesConsolidatedRoute(a: ContentItem, b: ContentItem): boolean {

@@ -6,7 +6,7 @@ import {
   type EvidenceReference,
   type ReleaseRecord,
 } from './schema.js';
-import { RegistryValidationError, canonicalPath, generateCanonicalRoutes, hasNoStandalonePage } from './registry.js';
+import { RegistryValidationError, canonicalPath, generateCanonicalRoutes, hasNoStandalonePage, releaseNotesHref } from './registry.js';
 import { EVIDENCE_ROW_LABELS, UNTESTED_HREF, type EvidenceRowLabel } from './contracts.js';
 import { evidenceStatusText } from './wording.js';
 
@@ -196,7 +196,7 @@ export function projectDiscovery(content: ContentItem[], fixedPublicPaths: strin
 export const COMPOSITION_PROFILES = [
   'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start',
   'diagnostic', 'milestone', 'release', 'about', 'support', 'accessibility', 'applicability',
-  'event', 'not-found',
+  'event', 'adoption', 'not-found',
 ] as const;
 export type CompositionProfile = typeof COMPOSITION_PROFILES[number];
 export type ApplicabilityConsumer = 'landing' | 'runnable-module' | 'milestone' | 'release';
@@ -336,6 +336,13 @@ export function compositionProfileFor(item: ContentItem): CompositionProfile {
   if (item.artifact_type === 'accessibility') {
     assertProfileNamespace(item, 'about');
     return 'accessibility';
+  }
+
+  /* Evaluation and adoption checklists. Not an applicability consumer: tested claims
+     on this profile come only from RecordSummary. */
+  if (item.artifact_type === 'checklist') {
+    assertProfileNamespace(item, 'adoption');
+    return 'adoption';
   }
 
   /* Conference and event material. canonicalPath() routes event-assets to
@@ -496,7 +503,7 @@ export interface LandingPageProjection {
   learning_path: Array<{ label: string; title: string; summary: string; url: string }>;
   orientation?: { title: string; url: string };
   estimated_minutes: number;
-  release: { title: string; status: ContentItem['status']; url: string };
+  release: { id: string; title: string; status: ContentItem['status']; url: string; href: string };
   milestone: { title: string; url: string };
 }
 
@@ -521,15 +528,12 @@ export function projectLandingPage(
     throw new RegistryValidationError(missingDurations.map((item) => `${item.id}.estimated_minutes is required by the landing learning path`));
   }
 
-  const records = baseline!.applicability_records.flatMap((id) => {
-    const record = applicability.find((candidate) => candidate.id === id && candidate.workflow_id === baseline!.id);
-    return record ? [record] : [];
-  });
-  const latestDate = records.map(({ validation_date }) => validation_date).sort().at(-1);
-  const currentRecords = latestDate ? records.filter(({ validation_date }) => validation_date === latestDate) : [];
-  const current = currentRecords.length === 1 ? currentRecords[0] : undefined;
-  const release = published.find((item) => item.artifact_type === 'release'
-    && (!current || item.applicability_records.includes(current.id)));
+  const records = applicability.filter((candidate) => baseline!.applicability_records.includes(candidate.id)
+    && candidate.workflow_id === baseline!.id);
+  const current = currentRecord(records);
+  const [release] = published
+    .filter((item) => item.artifact_type === 'release' && item.status === 'published')
+    .sort((a, b) => (b.publication_date ?? '').localeCompare(a.publication_date ?? '') || b.id.localeCompare(a.id));
   if (!release) throw new RegistryValidationError(['landing projection is missing the current release record']);
 
   const step = (label: string, item: ContentItem) => ({
@@ -537,16 +541,17 @@ export function projectLandingPage(
   });
   return {
     applicability_projection: current ? projectApplicability(current, 'landing') : undefined,
-    validation_unavailable_reason: current ? undefined : records.length
-      ? 'Multiple applicability records share the latest validation date.'
-      : 'No current applicability record is published.',
+    validation_unavailable_reason: current ? undefined
+      : records.length === 0 ? 'No current applicability record is published.'
+        : records.every(({ superseded_by }) => superseded_by) ? 'Every listed applicability record is superseded.'
+          : 'Multiple applicability records share the latest validation date.',
     learning_path: [
       ...(orientation ? [step('Orient yourself', orientation)] : []),
       step('Understand the model', model!), step('Check your center', start!), step('Run the baseline', baseline!),
     ],
     orientation: orientation ? { title: orientation.title, url: canonicalPath(orientation) } : undefined,
     estimated_minutes: pathModules.reduce((total, item) => total + (item.artifact_type === 'learning-module' ? item.estimated_minutes ?? 0 : 0), 0),
-    release: { title: release.title, status: release.status, url: canonicalPath(release) },
+    release: { id: release.id, title: release.title, status: release.status, url: canonicalPath(release), href: releaseNotesHref(release) },
     milestone: { title: milestone!.title, url: canonicalPath(milestone!) },
   };
 }
