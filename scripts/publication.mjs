@@ -602,6 +602,7 @@ export function validateBuiltOutput(dist) {
     }
   }
   errors.push(...validateRecordSummaries(builtPages, applicabilityById), ...validateSourceDuplication(builtPages, applicabilityById));
+  errors.push(...validateAcknowledgments(dist, builtPages), ...validateBudgets(dist, builtPages), ...validateFragmentLinks(builtPages), ...validateRequiredFragments(builtPages));
 
   for (const name of ['sitemap-index.xml', 'sitemap-0.xml', 'feed.xml', 'url-manifest.json']) {
     const file = join(dist, name);
@@ -673,6 +674,142 @@ export function validateStylesheets(dist) {
   }
   if (files.length && (tokenSheets.length !== 1 || files.length !== 1)) {
     errors.push(diagnostic('site/dist', 'css', 'STYLESHEET-SPLIT', `exactly one stylesheet that defines the :root tokens is required; found ${files.length} stylesheet(s), ${tokenSheets.length} with tokens`));
+  }
+  return errors;
+}
+
+/* ACK-VERBATIM. The text lives only in site/src/content/acknowledgment.ts; this is the SHA-256 of its 605-character statement + " " + disclaimer. A unit test keeps the two in step. */
+export const ACKNOWLEDGMENT_SHA256 = '408cbbb41af6fe9b3ddfa9f90aedc6a91e2a24d967362aa75f51e357203f8ea9';
+const normalizeSpace = (value) => value.replace(/\s+/g, ' ').trim();
+const acknowledgmentHash = (inner) => sha256(normalizeSpace(stripTags(inner)));
+
+export function validateAcknowledgments(dist, builtPages) {
+  const errors = [];
+  for (const { source, html } of builtPages) {
+    const footer = html.match(/<footer class="site-footer"[\s\S]*?<\/footer>/)?.[0] ?? '';
+    const paragraphs = [...footer.matchAll(/<p class="acknowledgment">([\s\S]*?)<\/p>/g)];
+    if (paragraphs.length !== 1 || acknowledgmentHash(paragraphs[0][1]) !== ACKNOWLEDGMENT_SHA256) {
+      errors.push(diagnostic(source, 'footer', 'ACK-VERBATIM', 'the footer needs exactly one acknowledgment paragraph that matches the approved text'));
+    }
+    const events = [...html.matchAll(/<section class="event-acknowledgment"[^>]*>([\s\S]*?)<\/section>/g)];
+    const wrongEvent = events.some((event) => {
+      const inner = [...event[1].matchAll(/<p>([\s\S]*?)<\/p>/g)];
+      return inner.length !== 1 || acknowledgmentHash(inner[0][1]) !== ACKNOWLEDGMENT_SHA256;
+    });
+    if (events.length > 1 || wrongEvent) errors.push(diagnostic(source, 'event', 'ACK-VERBATIM', 'the event acknowledgment must be one paragraph that matches the approved text'));
+  }
+  for (const file of filesUnder(dist).filter((candidate) => /\.(?:html|xml|json|txt)$/i.test(candidate))) {
+    if (/Scientific Computing Research/.test(readFileSync(file, 'utf8'))) {
+      errors.push(diagnostic(relative(dist, file).replaceAll('\\', '/'), 'text', 'ACK-VERBATIM', 'the phrase "Scientific Computing Research" is not part of the approved acknowledgment'));
+    }
+  }
+  return errors;
+}
+
+/* BUDGET (spec S6): fonts <= 140 KiB per page, <= 2 font preloads, inline + external JS <= 2 KiB, no third-party requests. */
+export const BUDGETS = Object.freeze({ fontBytes: 140000, fontPreloads: 2, scriptBytes: 2048 });
+const unicodeRanges = (value) => value.split(',').map((range) => range.trim()).filter(Boolean).map((range) => {
+  const match = /^U\+([0-9A-F?]+)(?:-([0-9A-F]+))?$/i.exec(range);
+  if (!match) return undefined;
+  if (match[1].includes('?')) return [parseInt(match[1].replaceAll('?', '0'), 16), parseInt(match[1].replaceAll('?', 'F'), 16)];
+  return [parseInt(match[1], 16), parseInt(match[2] ?? match[1], 16)];
+}).filter(Boolean);
+/** Font files a browser would download for a page: faces without a unicode-range, plus faces whose range covers a character on the page. */
+export function fontFilesForPage(css, pageText) {
+  const codepoints = [...new Set([...pageText].map((character) => character.codePointAt(0)))];
+  const files = new Set();
+  for (const block of css.match(/@font-face\s*\{[^}]*\}/gi) ?? []) {
+    const urls = [...block.matchAll(/url\(\s*["']?(\/fonts\/[^"')\s]+)["']?\s*\)/g)].map((match) => match[1]);
+    if (!urls.length) continue;
+    const range = block.match(/unicode-range\s*:\s*([^;}]+)/i)?.[1];
+    const ranges = range ? unicodeRanges(range) : undefined;
+    if (!ranges || codepoints.some((point) => ranges.some(([from, to]) => point >= from && point <= to))) urls.forEach((url) => files.add(url));
+  }
+  return [...files];
+}
+const isThirdParty = (url) => /^(?:https?:)?\/\//i.test(url) && !url.startsWith(CANONICAL_ORIGIN);
+const localSize = (dist, url) => {
+  const file = join(dist, decodeURI(url.split(/[?#]/, 1)[0]).replace(/^\//, ''));
+  return existsSync(file) ? readFileSync(file).byteLength : 0;
+};
+export function validateBudgets(dist, builtPages) {
+  const errors = [];
+  for (const { source, html } of builtPages) {
+    const text = stripTags(html.replace(/<(script|style)\b[\s\S]*?<\/\1>/g, ' '));
+    const sheets = (html.match(/<link\b[^>]*\brel="stylesheet"[^>]*>/g) ?? []).map((tag) => tag.match(/\bhref="([^"]+)"/)?.[1]).filter(Boolean);
+    const fonts = new Set();
+    for (const sheet of sheets) {
+      if (isThirdParty(sheet)) continue;
+      const file = join(dist, decodeURI(sheet.split(/[?#]/, 1)[0]).replace(/^\//, ''));
+      if (!existsSync(file)) continue;
+      const css = readFileSync(file, 'utf8');
+      fontFilesForPage(css, text).forEach((url) => fonts.add(url));
+      if (/url\(\s*["']?(?:https?:)?\/\/(?!laptop-to-cluster\.org)/i.test(css) || /@import\s+["']?(?:https?:)?\/\//i.test(css)) {
+        errors.push(diagnostic(source, sheet, 'BUDGET', 'third-party request: the stylesheet loads a remote resource'));
+      }
+    }
+    const fontBytes = [...fonts].reduce((total, url) => total + localSize(dist, url), 0);
+    if (fontBytes > BUDGETS.fontBytes) errors.push(diagnostic(source, 'fonts', 'BUDGET', `fonts total ${fontBytes} bytes; the limit is ${BUDGETS.fontBytes}`));
+    const preloads = occurrences(html, /<link\b[^>]*\brel="preload"[^>]*\bas="font"|<link\b[^>]*\bas="font"[^>]*\brel="preload"/g);
+    if (preloads > BUDGETS.fontPreloads) errors.push(diagnostic(source, 'preload', 'BUDGET', `${preloads} font preloads; the limit is ${BUDGETS.fontPreloads}`));
+    let scriptBytes = 0;
+    for (const [, attributes, body] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+      const src = attributes.match(/\bsrc="([^"]+)"/)?.[1];
+      const type = attributes.match(/\btype="([^"]*)"/)?.[1];
+      if (src) scriptBytes += isThirdParty(src) ? 0 : localSize(dist, src);
+      else if (!type || /^(?:module|text\/javascript)$/i.test(type)) scriptBytes += Buffer.byteLength(body);
+    }
+    if (scriptBytes > BUDGETS.scriptBytes) errors.push(diagnostic(source, 'scripts', 'BUDGET', `client JavaScript totals ${scriptBytes} bytes; the limit is ${BUDGETS.scriptBytes}`));
+    const requests = [
+      ...(html.match(/<(?:script|img|iframe|source|video|audio|embed|track)\b[^>]*>/g) ?? []).flatMap((tag) => [tag.match(/\bsrc="([^"]+)"/)?.[1], ...(tag.match(/\bsrcset="([^"]+)"/)?.[1] ?? '').split(',').map((candidate) => candidate.trim().split(/\s+/)[0])]),
+      ...(html.match(/<link\b[^>]*>/g) ?? []).filter((tag) => /\brel="[^"]*\b(?:stylesheet|preload|modulepreload|prefetch|preconnect|dns-prefetch|icon|manifest|apple-touch-icon)\b/.test(tag)).map((tag) => tag.match(/\bhref="([^"]+)"/)?.[1]),
+    ].filter((url) => url && isThirdParty(url));
+    if (requests.length) errors.push(diagnostic(source, 'requests', 'BUDGET', `third-party request: ${requests.length} resource(s) load from another origin`));
+  }
+  return errors;
+}
+
+/* FRAGMENT-LINK (D11). Duplicated from contracts.ts REQUIRED_FRAGMENTS, keyed by route; a unit test keeps them in step. */
+export const REQUIRED_FRAGMENTS = Object.freeze({
+  '/': ['big-idea', 'doors', 'crosswalk'],
+  '/milestones/2/': ['release-v0-2-0'],
+  '/adoption/evaluate/': ['not-tested', 'when-not'],
+  '/about/attribution/': ['licenses'],
+  '/about/glossary/': ['allocation', 'job-step', 'readiness-gate', 'verification', 'job-scoped-scratch', 'loopback', 'ssh-tunnel', 'coordinator', 'worker', 'batch-scheduler'],
+});
+const pageIds = (html) => new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
+export function validateFragmentLinks(builtPages) {
+  const errors = [];
+  const ids = new Map(builtPages.map(({ source, html }) => [source, pageIds(html)]));
+  for (const { source, html } of builtPages) {
+    for (const [, href] of html.matchAll(/<a\b[^>]*\shref="([^"]*#[^"]*)"/g)) {
+      const [pathPart, rawFragment] = [href.slice(0, href.indexOf('#')), href.slice(href.indexOf('#') + 1)];
+      if (!rawFragment || rawFragment.startsWith(':~:')) continue;
+      if (/^(?:mailto:|tel:)/i.test(pathPart) || (/^https?:\/\//i.test(pathPart) && !pathPart.startsWith(CANONICAL_ORIGIN))) continue;
+      let target = source;
+      if (pathPart) {
+        const path = decodeURI(new URL(pathPart.replace(CANONICAL_ORIGIN, ''), `${CANONICAL_ORIGIN}${source}`).pathname);
+        target = path.endsWith('/') || path.endsWith('.html') ? path : `${path}/`;
+      }
+      const targetIds = ids.get(target);
+      if (!targetIds) continue;
+      let fragment = rawFragment;
+      try { fragment = decodeURIComponent(rawFragment); } catch { /* keep the raw fragment */ }
+      if (!targetIds.has(fragment)) errors.push(diagnostic(source, href, 'FRAGMENT-LINK', `the fragment does not exist on ${target}`));
+    }
+  }
+  return errors;
+}
+export function validateRequiredFragments(builtPages) {
+  const errors = [];
+  for (const [route, required] of Object.entries(REQUIRED_FRAGMENTS)) {
+    const page = builtPages.find(({ source }) => source === route);
+    if (!page) {
+      errors.push(diagnostic(route, 'page', 'FRAGMENT-LINK', 'a page that must carry contract fragments is missing'));
+      continue;
+    }
+    const present = pageIds(page.html);
+    for (const id of required) if (!present.has(id)) errors.push(diagnostic(route, `#${id}`, 'FRAGMENT-LINK', 'required fragment id is missing'));
   }
   return errors;
 }
