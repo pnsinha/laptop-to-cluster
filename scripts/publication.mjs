@@ -12,9 +12,16 @@ export const REDIRECT_HOSTS = Object.freeze([
 ]);
 const FORBIDDEN_ORIGIN = /https:\/\/(?:www\.laptop-to-cluster\.org|laptoptocluster\.org|laptop-to-cluster\.pnsinha\.com|[^/\s"'<>]+\.pages\.dev)/i;
 const SHA256 = /^[a-f0-9]{64}$/;
+// One matcher for the projection section, with or without modifier classes
+// (for example applicability-projection--escalated). Used by composition checks and by tests.
+export const PROJECTION_SECTION = /<section class="applicability-projection(?: [^"]*)?"/;
+export const isProjectionSection = (html) => PROJECTION_SECTION.test(html);
+export const EVIDENCE_ROW_LABELS = Object.freeze(['Tested', 'You need', 'Depends on your center']);
+export const UNTESTED_HREF = '/adoption/evaluate/#not-tested';
 const COMPOSITION_PROFILES = new Set([
   'landing', 'resources', 'learning-conceptual', 'learning-runnable', 'start', 'diagnostic',
   'milestone', 'release', 'about', 'support', 'accessibility', 'applicability', 'event', 'not-found',
+  'adoption',
 ]);
 const STANDARD_PROJECTION_CONSUMER = Object.freeze({
   landing: 'landing',
@@ -26,10 +33,67 @@ const CANONICAL_ONLY_PATTERN = /<dt>Submission ID<\/dt>|<dt>Container (?:image )
 
 const occurrences = (text, pattern) => text.match(pattern)?.length ?? 0;
 const stripTags = (value = '') => value.replace(/<[^>]+>/g, '').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').trim();
-const standardProjectionBlocks = (html) => html.match(/<section class="applicability-projection"[\s\S]*?<\/section>/g) ?? [];
+const standardProjectionBlocks = (html) => html.match(new RegExp(`${PROJECTION_SECTION.source}[\\s\\S]*?<\\/section>`, 'g')) ?? [];
 const diagnosticProjectionBlocks = (html) => html.match(/<aside class="diagnostic-applicability"[\s\S]*?<\/aside>/g) ?? [];
 const definitionValue = (html, label) => stripTags(html.match(new RegExp(`<dt>${label}<\\/dt><dd>([\\s\\S]*?)<\\/dd>`, 'i'))?.[1]);
 const sectionList = (html, heading) => [...(html.match(new RegExp(`<h2[^>]*>${heading}<\\/h2><ul>([\\s\\S]*?)<\\/ul>`, 'i'))?.[1] ?? '').matchAll(/<li>([\s\S]*?)<\/li>/g)].map((match) => stripTags(match[1]));
+const paragraphs = (html) => [...html.matchAll(/<p(\s[^>]*)?>([\s\S]*?)<\/p>/g)].map((match) => ({ classes: match[1]?.match(/class="([^"]*)"/)?.[1] ?? '', inner: match[2] }));
+/** Parses `<dl class="evidence-rows">` into [{ label, items: [{ text, from }] }]; undefined when the list is absent. `from` comes from an optional data-from attribute on each <li>. */
+export function evidenceRows(html) {
+  const list = html.match(/<dl class="evidence-rows">([\s\S]*?)<\/dl>/)?.[1];
+  if (list === undefined) return undefined;
+  const rows = [...list.matchAll(/<div class="evidence-row">\s*<dt>([\s\S]*?)<\/dt>\s*<dd>\s*<ul>([\s\S]*?)<\/ul>\s*<\/dd>\s*<\/div>/g)].map((match) => ({
+    label: stripTags(match[1]),
+    items: [...match[2].matchAll(/<li(\s[^>]*)?>([\s\S]*?)<\/li>/g)].map((item) => ({
+      text: stripTags(item[2]),
+      from: item[1]?.match(/data-from="([^"]*)"/)?.[1]?.split(/\s+/).filter(Boolean) ?? [],
+    })),
+  }));
+  return occurrences(list, /class="evidence-row"/g) === rows.length ? rows : undefined;
+}
+export function projectionShapeIssues(block) {
+  const issues = [];
+  const opening = block.slice(0, block.indexOf('>') + 1);
+  const escalated = opening.includes('applicability-projection--escalated');
+  const rest = block.slice(opening.length);
+  if (/applicability-projection/.test(rest)) issues.push('inner classes must not contain applicability-projection');
+  const details = rest.match(/<details[\s\S]*?<\/details>/g) ?? [];
+  const outside = details.reduce((text, part) => text.replace(part, ''), rest);
+  const outsideParagraphs = paragraphs(outside);
+  const linkParagraph = outsideParagraphs[1];
+  if (!linkParagraph || linkParagraph.classes !== 'evidence-link' || occurrences(linkParagraph.inner, /<a\s[^>]*href="\/applicability\/[^"]+\/"/g) !== 1) {
+    issues.push('the second paragraph must be the single canonical-link paragraph (class evidence-link)');
+  }
+  const rows = evidenceRows(rest);
+  if (!rows || rows.map((row) => row.label).join('|') !== EVIDENCE_ROW_LABELS.join('|') || rows.some((row) => row.items.length === 0)) {
+    issues.push(`evidence rows must be exactly ${EVIDENCE_ROW_LABELS.join(' / ')} in order, each with at least one item`);
+  }
+  if (escalated) {
+    if (details.length) issues.push('stale, failed and unvalidated projections must not use a disclosure');
+    const badge = outsideParagraphs[0];
+    if (!badge || badge.classes !== 'evidence-badge evidence-badge--warning' || !badge.inner.startsWith('<strong>Warning:</strong>')) {
+      issues.push('an escalated projection starts with a warning badge (class evidence-badge evidence-badge--warning, label Warning:)');
+    }
+    const extra = outsideParagraphs[2];
+    if (outsideParagraphs.length > 3 || outsideParagraphs.length < 2 || (extra && extra.classes !== 'evidence-untested')) {
+      issues.push('an escalated projection permits only the badge, the canonical link, and an optional evidence-untested paragraph');
+    }
+  } else {
+    const badge = outsideParagraphs[0];
+    if (!badge || badge.classes !== 'evidence-badge') issues.push('a validated projection starts with the badge paragraph (class evidence-badge)');
+    if (outsideParagraphs.length !== 2) issues.push('a validated projection has exactly two top-level paragraphs (badge and canonical link)');
+    if (details.length !== 1 || !details[0].startsWith('<details class="evidence-panel">') || !/<summary>[^<]+<\/summary>/.test(details[0])) {
+      issues.push('a validated projection has exactly one <details class="evidence-panel"> with a summary');
+    } else {
+      const untested = paragraphs(details[0].replace(/<dl class="evidence-rows">[\s\S]*?<\/dl>/, ''));
+      if (untested.length !== 1 || untested[0].classes !== 'evidence-untested' || !untested[0].inner.includes(`href="${UNTESTED_HREF}"`)) {
+        issues.push(`the panel ends with one evidence-untested paragraph linking to ${UNTESTED_HREF}`);
+      }
+      if (!details[0].includes('<dl class="evidence-rows">')) issues.push('the evidence rows belong inside the panel');
+    }
+  }
+  return issues;
+}
 
 export function validatePageComposition(source, html) {
   const errors = [];
@@ -60,8 +124,10 @@ export function validatePageComposition(source, html) {
     const links = [...block.matchAll(/href="(\/applicability\/([^"]+)\/)"/g)];
     if (!sourceId || projectionId !== `${expectedConsumer}:${sourceId}`) errors.push(diagnostic(source, 'projectionId', 'SOURCE-AGREEMENT', 'projection discriminator must match its profile consumer and source ID'));
     if (links.length !== 1 || links[0]?.[2] !== sourceId) errors.push(diagnostic(source, 'canonicalLink', 'SOURCE-AGREEMENT', 'exactly one canonical applicability link must match the source ID'));
-    if (occurrences(block, /<p(?:\s|>)/g) !== 3 || occurrences(block, /class="applicability-supplement/g) !== 1) {
-      errors.push(diagnostic(source, 'projection', 'PROJECTION-SHAPE', 'projection requires one tested-scope sentence, one supplement, and one canonical-link paragraph'));
+    for (const issue of projectionShapeIssues(block)) errors.push(diagnostic(source, 'projection', 'PROJECTION-SHAPE', issue));
+    const headerEnd = html.indexOf('</header>', html.indexOf('<header class="content-header">'));
+    if (html.includes('<header class="content-header">') && html.indexOf(block) < headerEnd) {
+      errors.push(diagnostic(source, 'projection', 'PROJECTION-SHAPE', 'the projection is placed after the content header'));
     }
     if (CANONICAL_ONLY_PATTERN.test(block)) errors.push(diagnostic(source, 'projection', 'CANONICAL-ONLY', 'concise projection leaked exhaustive applicability detail'));
   }
@@ -82,7 +148,7 @@ export function validatePageComposition(source, html) {
     for (const heading of ['Result checks', 'Assumptions', 'Limitations', 'Portability boundaries', 'Evidence and integrity', 'Provenance']) {
       if (!new RegExp(`<h2[^>]*>${heading}<\\/h2>`, 'i').test(html)) errors.push(diagnostic(source, heading, 'EXHAUSTIVE-APPLICABILITY', 'canonical applicability section is required'));
     }
-  } else if (CANONICAL_ONLY_PATTERN.test(html.replace(standard.join(''), '').replace(diagnostics.join(''), '')) || /class="applicability-record"/.test(html)) {
+  } else if (CANONICAL_ONLY_PATTERN.test(standard.concat(diagnostics).reduce((text, block) => text.replace(block, ''), html)) || /class="applicability-record"/.test(html)) {
     errors.push(diagnostic(source, 'applicability', 'CANONICAL-ONLY', 'exhaustive applicability detail leaked outside its canonical route'));
   }
 
@@ -94,16 +160,17 @@ export function validatePageComposition(source, html) {
   if (/class="support-state(?![^>]*(?:degraded|unavailable))/.test(html)) errors.push(diagnostic(source, 'support', 'SUPPORT-STATE', 'only an active degraded or unavailable state may render'));
 
   const details = html.match(/<details[\s\S]*?<\/details>/g) ?? [];
-  if (details.some((block) => /Prerequisites|<strong>Warning:<\/strong>|applicability-projection|Unvalidated content/i.test(block))) {
+  if (details.some((block) => /Prerequisites|<strong>Warning:<\/strong>|applicability-projection|evidence-badge|Unvalidated content/i.test(block))) {
     errors.push(diagnostic(source, 'visibility', 'CRITICAL-VISIBILITY', 'prerequisites, warnings, validation state, and applicability scope cannot be hidden in a disclosure'));
   }
-  if (/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>[\s\S]*?(?:Prerequisites|<strong>Warning:<\/strong>|applicability-projection)/i.test(html)) {
+  const hiddenBlocks = [...html.matchAll(/<(section|aside|article)\b[^>]*(?:\shidden(?=[\s>=])|aria-hidden="true")[^>]*>([\s\S]*?)<\/\1>/gi)].map((match) => match[2]);
+  if (hiddenBlocks.some((block) => /Prerequisites|<strong>Warning:<\/strong>|evidence-badge|applicability-projection/i.test(block))) {
     errors.push(diagnostic(source, 'visibility', 'CRITICAL-VISIBILITY', 'critical content cannot be hidden'));
   }
 
   if (profile === 'learning-runnable') {
     const procedure = html.indexOf('<h2 id="procedure">');
-    const projection = html.indexOf('class="applicability-projection"');
+    const projection = html.search(PROJECTION_SECTION);
     if (procedure < 0 || projection < 0 || projection > procedure) {
       errors.push(diagnostic(source, 'procedure', 'SAFE-ORDERING', 'applicability and prerequisites must precede execution'));
     }
