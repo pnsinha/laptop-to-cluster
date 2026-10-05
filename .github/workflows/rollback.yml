@@ -3,6 +3,9 @@ name: checksum-verified-recovery
 on:
   workflow_dispatch:
     inputs:
+      release:
+        description: Release being recovered, for example v1.2.3; must match the retained artifact
+        required: true
       mode:
         type: choice
         options: [content, hostname-policy]
@@ -27,22 +30,33 @@ jobs:
     runs-on: ubuntu-24.04
     environment: production-recovery
     steps:
+      - name: Check the requested release and commit
+        env:
+          RELEASE: ${{ inputs.release }}
+          SOURCE_COMMIT: ${{ inputs.source-commit }}
+        run: |
+          [[ "$RELEASE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::release must look like v1.2.3"; exit 1; }
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::source-commit must be a full commit SHA"; exit 1; }
       - uses: actions/checkout@v4.2.2
         with: { ref: '${{ inputs.source-commit }}' }
       - uses: actions/download-artifact@v4.3.0
         with:
-          name: validated-site-v0.1.0-${{ inputs.source-commit }}
+          name: validated-site-${{ inputs.release }}-${{ inputs.source-commit }}
           run-id: ${{ inputs.source-run-id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: .
       - uses: actions/download-artifact@v4.3.0
         with:
-          name: release-record-v0.1.0-${{ inputs.source-commit }}
+          name: release-record-${{ inputs.release }}-${{ inputs.source-commit }}
           run-id: ${{ inputs.source-run-id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: publication/v0.1.0
+          path: publication/${{ inputs.release }}
       - name: Select prior artifact only after checksum verification
-        run: node scripts/rollback.mjs site/dist publication/v0.1.0/artifact-manifest.json publication/v0.1.0/deployment-record.json
+        env:
+          RELEASE: ${{ inputs.release }}
+        run: |
+          jq -e --arg release "$RELEASE" '.release == $release' "publication/${RELEASE}/deployment-record.json" > /dev/null || { echo "::error::the retained record is for a different release"; exit 1; }
+          node scripts/rollback.mjs site/dist "publication/${RELEASE}/artifact-manifest.json" "publication/${RELEASE}/deployment-record.json" "$RELEASE"
       - uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -54,10 +68,19 @@ jobs:
     runs-on: ubuntu-24.04
     environment: production-recovery
     steps:
+      - name: Check the requested release and commit
+        env:
+          RELEASE: ${{ inputs.release }}
+          SOURCE_COMMIT: ${{ inputs.source-commit }}
+        run: |
+          [[ "$RELEASE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::release must look like v1.2.3"; exit 1; }
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::source-commit must be a full commit SHA"; exit 1; }
       - uses: actions/checkout@v4.2.2
         with: { ref: '${{ inputs.source-commit }}' }
       - name: Validate versioned policy independently of content artifacts
         run: node scripts/publication.mjs policy .
+        env:
+          L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
       - name: Restore exact Cloudflare Bulk Redirect list
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
