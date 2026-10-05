@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { validateDeploymentWorkflow } from '../../scripts/publication.mjs';
+import { validateDeploymentWorkflow, validateReleaseWorkflow } from '../../scripts/publication.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const text = readFileSync(`${root}/.github/workflows/release.yml`, 'utf8');
@@ -133,6 +133,10 @@ describe('release workflow: deployment', () => {
 
   it('satisfies the existing build-once deployment policy for the production job', () => {
     expect(validateDeploymentWorkflow(text)).toEqual([]);
+  });
+
+  it('passes the A11/A18 release-workflow policy', () => {
+    expect(validateReleaseWorkflow(text)).toEqual([]);
   });
 
   it('never installs or builds in a deploy job', () => {

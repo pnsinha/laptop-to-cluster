@@ -954,9 +954,9 @@ function jobNeeds(block) {
 }
 function jobGate(block) {
   const condition = (block.match(/\n    if:[ \t]*([^\n]+)/)?.[1] ?? '').replace(/\$\{\{|\}\}/g, '').replace(/\s+/g, '');
-  return /^needs\.plan\.outputs\.preview==['"]?1['"]?$/.test(condition) ? 'preview' : /^needs\.plan\.outputs\.preview!=['"]?1['"]?$/.test(condition) ? 'production' : 'other';
+  return /^needs\.plan\.outputs\.mode==['"]?preview['"]?$/.test(condition) ? 'preview' : /^needs\.plan\.outputs\.mode==['"]?production['"]?$/.test(condition) ? 'production' : 'other';
 }
-const artifactName = (prefix) => new RegExp(`^${prefix}-\\$\\{\\{\\s*needs\\.plan\\.outputs\\.version\\s*\\}\\}-\\$\\{\\{\\s*github\\.sha\\s*\\}\\}$`);
+const artifactName = (output) => new RegExp(`^\\$\\{\\{\\s*needs\\.plan\\.outputs\\.${output}\\s*\\}\\}$`);
 
 /** The v0.2.0 release workflow (written by W8): the properties of contract A11 that the policy gate requires. */
 export function validateReleaseWorkflow(text, file = '.github/workflows/release.yml') {
@@ -981,7 +981,7 @@ export function validateReleaseWorkflow(text, file = '.github/workflows/release.
     if (!jobNeeds(build).includes('plan')) fail('jobs.build-once', 'BUILD-ONCE', 'build-once must need plan');
     if (!/npm run validate(?![:\w-])/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'the full npm run validate chain is required');
     const artifact = build.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
-    if (!artifactName('validated-site').test(artifact.trim())) fail('jobs.build-once', 'BUILD-ONCE', 'the retained artifact name must contain the release version (validated-site-${{ needs.plan.outputs.version }}-${{ github.sha }})');
+    if (!artifactName('artifact-name').test(artifact.trim())) fail('jobs.build-once', 'BUILD-ONCE', 'the retained artifact name must be ${{ needs.plan.outputs.artifact-name }} (validated-site-<version>-<sha> from the plan job)');
   }
   for (const [index, step] of [...text.matchAll(/actions\/checkout@[^\n]*\n([\s\S]*?)(?=\n      - |\n  [a-zA-Z]|$)/g)].entries()) if (!/fetch-depth:\s*0/.test(step[1])) fail('jobs', 'RELEASE-WORKFLOW', `checkout step ${index + 1} needs fetch-depth: 0`);
   for (const name of ['CLOUDFLARE_PAGES_PROJECT', 'CLOUDFLARE_CUSTOM_DOMAIN_ID', 'CLOUDFLARE_REDIRECT_LIST_ID', 'CLOUDFLARE_REDIRECT_RULE_ID']) if (!new RegExp(`vars\\.${name}\\b`).test(text)) fail('vars', 'RELEASE-WORKFLOW', `vars.${name} must be used as in publication.yml`);
@@ -989,7 +989,7 @@ export function validateReleaseWorkflow(text, file = '.github/workflows/release.
   const production = jobBlock(text, 'deploy');
   errors.push(...validateDeploymentWorkflow(text, file, 'deploy-preview'), ...validateDeploymentWorkflow(text, file, 'deploy'));
   for (const [name, block] of [['deploy-preview', preview], ['deploy', production]]) {
-    if (block && jobGate(block) !== (name === 'deploy' ? 'production' : 'preview')) fail(`jobs.${name}`, 'RELEASE-WORKFLOW', `${name} must be gated on the plan preview output (${name === 'deploy' ? "!= '1'" : "== '1'"})`);
+    if (block && jobGate(block) !== (name === 'deploy' ? 'production' : 'preview')) fail(`jobs.${name}`, 'RELEASE-WORKFLOW', `${name} must be gated on the plan mode output (${name === 'deploy' ? "== 'production'" : "== 'preview'"})`);
     if (block && !jobNeeds(block).includes('build-once')) fail(`jobs.${name}`, 'BUILD-ONCE', `${name} must need build-once`);
   }
   const count = (block, needle) => block.split(needle).length - 1;
@@ -1001,7 +1001,7 @@ export function validateReleaseWorkflow(text, file = '.github/workflows/release.
   }
   const post = jobBlock(text, 'post-deploy-release-checks');
   const releaseRecord = production.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
-  if (!artifactName('release-record').test(releaseRecord.trim())) fail('jobs.deploy', 'RELEASE-WORKFLOW', 'the release record artifact name must be release-record-${{ needs.plan.outputs.version }}-${{ github.sha }}');
+  if (!artifactName('record-artifact-name').test(releaseRecord.trim())) fail('jobs.deploy', 'RELEASE-WORKFLOW', 'the release record artifact name must be ${{ needs.plan.outputs.record-artifact-name }} (release-record-<version>-<sha> from the plan job)');
   if (!jobNeeds(post).includes('deploy') || !/check-public-release\.mjs/.test(post)) fail('jobs.post-deploy-release-checks', 'RELEASE-WORKFLOW', 'a post-deploy job that needs deploy and runs check-public-release.mjs is required');
   return errors;
 }
