@@ -1,7 +1,10 @@
 ---
 import '../styles/global.css';
+import Acknowledgment from '../components/Acknowledgment.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import SiteHeader from '../components/SiteHeader.astro';
+import { TALKS_LABEL } from '../content/contracts';
+import { currentReleaseVersion } from '../content/release';
 import { CANONICAL_ORIGIN } from '../content/schema';
 import { assertKnownCompositionProfile, type CompositionProfile } from '../content/projections';
 import { PROJECT } from '../content/wording';
@@ -14,18 +17,34 @@ const { title, description, profile, canonicalPath = Astro.url.pathname } = Astr
 const selectedProfile = assertKnownCompositionProfile(profile, Astro.url.pathname);
 const currentPath = Astro.url.pathname;
 const canonical = new URL(canonicalPath, CANONICAL_ORIGIN).href;
+const release = currentReleaseVersion();
+/* The only two preloads: the serif roman (headings and prose) and Plex Sans Regular (UI). Keep these paths in step with fonts.css. */
+const PRELOADED_FONTS = [
+  '/fonts/source-serif-4-5.3.0/source-serif-4-latin-wght-normal.woff2',
+  '/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-Regular-Latin1.woff2',
+] as const;
+const footerLinks = [
+  { label: 'Attribution', href: '/about/attribution/' },
+  { label: TALKS_LABEL, href: '/about/talks-and-papers/' },
+  { label: 'Accessibility', href: '/about/accessibility/' },
+  { label: 'Support', href: '/about/support/' },
+  { label: 'Licenses', href: '/about/attribution/#licenses' },
+] as const;
 ---
 <!doctype html><html lang="en"><head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width" />
   <meta name="description" content={description} /><meta property="og:type" content="website" />
   <meta property="og:title" content={title} /><meta property="og:description" content={description} />
   <meta property="og:url" content={canonical} /><link rel="canonical" href={canonical} />
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1117" />
+  {PRELOADED_FONTS.map((href) => <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />)}
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbf9f4" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131a29" />
+  <script is:inline>(()=>{try{const t=localStorage.getItem('l2c-theme');if(t!=='light'&&t!=='dark')return;document.documentElement.dataset.theme=t;for(const m of document.querySelectorAll('meta[name="theme-color"]'))m.content=t==='dark'?'#131a29':'#fbf9f4'}catch{}})()</script>
+  <script is:inline>{let o=[];addEventListener('beforeprint',()=>{o=[...document.querySelectorAll('main details:not([open])')];o.map((d)=>d.open=true)});addEventListener('afterprint',()=>o.map((d)=>d.open=false))}</script>
   <link rel="alternate" type="application/rss+xml" title="Laptop-to-Cluster updates" href={`${CANONICAL_ORIGIN}/feed.xml`} />
   <link rel="sitemap" href={`${CANONICAL_ORIGIN}/sitemap-index.xml`} /><title>{title} | {PROJECT.name}</title>
 </head><body data-composition-profile={selectedProfile}><a class="skip" href="#main">Skip to content</a>
 <SiteHeader {currentPath} />
 <main id="main" tabindex="-1">{currentPath !== '/' && <Breadcrumbs currentPath={currentPath} currentTitle={title} />}<slot /></main>
-<footer class="site-footer"><p class="release" aria-label="Release status">Release status: {PROJECT.release}</p><p class="acknowledgment">This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.</p></footer>
+<footer class="site-footer"><nav aria-label="Site records"><ul class="footer-links">{footerLinks.map((link) => <li><a href={link.href}>{link.label}</a></li>)}<li><a href={PROJECT.repository} rel="external">GitHub (external)</a></li></ul></nav><p class="release" aria-label="Release status">Release status: {release}</p><Acknowledgment variant="footer" /></footer>
 </body></html>
