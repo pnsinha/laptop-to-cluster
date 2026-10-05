@@ -118,6 +118,36 @@ export function projectionShapeIssues(block) {
   return issues;
 }
 
+/** Required labels (frozen model, spec §15.3), in order. Captions are never pinned. */
+export const TIMELINE_LABELS = Object.freeze(['Get an allocation', 'Start coordinator', 'Readiness gate', 'Run workers', 'Verify results', 'Clean up']);
+/** TIMELINE: at most one six-step figure per page, labelled, with the six strong labels in order (C2 `Timeline.astro`). */
+export function timelineIssues(html) {
+  const issues = [];
+  const figures = html.match(/<figure class="timeline"[^>]*>[\s\S]*?<\/figure>/g) ?? [];
+  if (figures.length > 1) issues.push('at most one six-step timeline is allowed per page');
+  for (const figure of figures) {
+    if (!/aria-labelledby="timeline-title"/.test(figure.slice(0, figure.indexOf('>'))) || !/<figcaption id="timeline-title" class="timeline__title">[^<]+<\/figcaption>/.test(figure)) {
+      issues.push('the timeline needs a figcaption (id timeline-title) that labels the figure');
+    }
+    const lists = figure.match(/<ol class="timeline__steps">[\s\S]*?<\/ol>/g) ?? [];
+    if (lists.length !== 1) {
+      issues.push('the timeline holds exactly one ordered list (class timeline__steps)');
+      continue;
+    }
+    const steps = [...lists[0].matchAll(/<li class="timeline__step"([^>]*)>([\s\S]*?)<\/li>/g)];
+    const labels = steps.map((step) => stripTags(step[2].match(/<strong>([\s\S]*?)<\/strong>/)?.[1]));
+    if (labels.join('|') !== TIMELINE_LABELS.join('|')) issues.push(`the step labels must read ${TIMELINE_LABELS.join(', ')} in that order`);
+    if (steps.some((step, index) => step[1].match(/data-step="(\d+)"/)?.[1] !== String(index + 1))) issues.push('each step carries data-step 1 to 6 in order');
+    if (steps.filter((step) => /aria-current="step"/.test(step[1])).length > 1) issues.push('at most one step is aria-current');
+    if (steps.some((step) => !/class="timeline__bars" aria-hidden="true"/.test(step[2]))) issues.push('the decorative bars of every step are aria-hidden');
+  }
+  const outside = figures.reduce((text, figure) => text.replace(figure, ''), html);
+  for (const list of outside.match(/<ol\b[\s\S]*?<\/ol>/g) ?? []) {
+    if ([...list.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]).join('|') === TIMELINE_LABELS.join('|')) issues.push('the six-step sequence appears outside the timeline figure');
+  }
+  return issues;
+}
+
 export function validatePageComposition(source, html) {
   const errors = [];
   const profile = html.match(/data-composition-profile="([^"]+)"/)?.[1];
@@ -208,15 +238,9 @@ export function validatePageComposition(source, html) {
     }
   }
 
-  if (profile === 'landing') {
-    const figure = html.match(/<figure class="workflow-figure">([\s\S]*?)<\/figure>/)?.[1] ?? '';
-    const labels = [...figure.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
-    if (!/<figcaption>[^<]+<\/figcaption>/.test(figure) || !/<ol>/.test(figure)
-      || labels.join('|') !== 'Allocation|Coordinator|Readiness gate|Workers|Verification'
-      || occurrences(figure, /<i aria-hidden="true">/g) !== 4
-      || !/Verification<\/strong>\s?<span>[^<]*before success is recorded/.test(figure)) {
-      errors.push(diagnostic(source, 'workflowFigure', 'WORKFLOW-SEMANTICS', 'captioned allocation-to-verification ordered semantics and hidden decorative connectors are required'));
-    }
+  for (const issue of timelineIssues(html)) errors.push(diagnostic(source, 'timeline', 'TIMELINE', issue));
+  if (profile === 'landing' && occurrences(html, /<figure class="timeline"/g) !== 1) {
+    errors.push(diagnostic(source, 'timeline', 'TIMELINE', 'the landing page requires exactly one six-step timeline'));
   }
 
   // Progressive-enhancement policy (2026-08-16): bounded inline scripts and small
