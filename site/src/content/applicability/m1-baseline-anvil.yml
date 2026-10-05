@@ -18,3 +18,19 @@ provenance:
   - label: "Released workflow package (source)"
     reference: { repository: "https://github.com/pnsinha/laptop-to-cluster", release: v0.1.0, path: workflows/baseline-slurm-apptainer/README.md, integrity: "sha256:f7586054384c3d0f6d1632da0da33d987fadb73652d9cd11890ae5b0ccec0b7c" }
 review_after: "2026-10-31"
+related_evidence:
+  - { id: anvil-v0-1-0-readiness-timeout-20260725, path: evidence/anvil-v0-1-0-readiness-timeout-20260725/manifest.json, integrity: "sha256:2c6ce19719a85c26fb6c66848eb56f921747c87d49478a01f77362271c5c128a", role: negative-test }
+plain_language:
+  tested:
+    text: "The example workflow ran start to finish and every result was correct. A second run was made to fail on purpose; it stopped at the check that the coordinator can serve (the readiness gate), before any worker started."
+    from: [result.checks, related_evidence.0]
+  you_need:
+    - { text: "Access to one compute node through Slurm. A shared partition is enough.", from: [assumptions.0] }
+    - { text: "Apptainer on the compute nodes.", from: [assumptions.1] }
+    - { text: "A private folder for the job that you can write to (job-scoped scratch).", from: [portability_boundaries.2] }
+  depends_on_center:
+    - { text: "Your account and partition names. You supply them when you submit the job.", from: [portability_boundaries.0] }
+    - { text: "How Apptainer is made available, usually through a module your center provides.", from: [assumptions.1, portability_boundaries.1] }
+    - { text: "Which scratch location the job uses. Centers provide it in different ways.", from: [portability_boundaries.2] }
+    - { text: "The coordinator listens only on loopback (127.0.0.1); reaching it from beyond the node needs access your center approves.", from: [assumptions.2, portability_boundaries.3] }
+    - { text: "Whether each worker can run as its own job step (a program the scheduler launches and tracks inside your allocation) on a shared node.", from: [portability_boundaries.3] }
