@@ -123,3 +123,161 @@ export async function checkThemePrecedence(browser: Browser, origin: string, pat
   await noScript.close();
   return issues;
 }
+
+/* ---------------------------------------------------------------------------------------------
+   Part 2: forced colours and print (spec §10, §4.1, D15)
+--------------------------------------------------------------------------------------------- */
+
+/** What a route must still show under an emulated medium. Selectors come from the C2 markup contracts. */
+export interface PageExpectation {
+  ordered?: ReadonlyArray<{ selector: string; texts: readonly string[] }>;
+  present?: readonly string[];
+}
+
+export const FOCUSABLE = 'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
+
+export const countTabStops = (page: Page) => page.evaluate((selector) => [...document.querySelectorAll<HTMLElement>(selector)].filter((element) => {
+  const style = getComputedStyle(element);
+  if (style.display === 'none' || style.visibility === 'hidden' || !element.getClientRects().length) return false;
+  if ((element as HTMLButtonElement).disabled) return false;
+  const closed = element.closest('details:not([open])');
+  return !closed || element === closed.querySelector(':scope > summary');
+}).length, FOCUSABLE);
+
+async function checkExpectation(page: Page, scope: string, code: string, expectation: PageExpectation): Promise<Issue[]> {
+  const issues: Issue[] = [];
+  for (const { selector, texts } of expectation.ordered ?? []) {
+    const found = await page.$$eval(selector, (elements) => elements.map((element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim()));
+    if (found.join('|') !== texts.join('|')) issues.push(issue(scope, code, `${selector} must read "${texts.join('|')}" in this order, found "${found.join('|')}"`));
+  }
+  for (const selector of expectation.present ?? []) {
+    const state = await page.$$eval(selector, (elements) => elements.slice(0, 1).map((element) => ({
+      text: (element.textContent ?? '').trim().length > 0,
+      shown: element.checkVisibility({ visibilityProperty: true, opacityProperty: true }),
+    })));
+    if (!state.length || !state[0].text || !state[0].shown) issues.push(issue(scope, code, `${selector} must stay present, visible and non-empty`));
+  }
+  return issues;
+}
+
+const BOUNDARY_SELECTORS = '.notice, .door, .evidence-badge, .crosswalk__pane';
+
+/** §10 Forced colours: no lost text, controls, warning boundaries or selected state; keyboard focus stays visible. */
+export async function checkForcedColors(browser: Browser, origin: string, path: string, expectation: PageExpectation = {}): Promise<Issue[]> {
+  const scope = `${path}:forced-colors`;
+  const url = new URL(path, origin).href;
+  const issues: Issue[] = [];
+  const baseline = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const baselinePage = await baseline.newPage();
+  await baselinePage.goto(url, { waitUntil: 'load' });
+  const baselineStops = await countTabStops(baselinePage);
+  await baseline.close();
+
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, forcedColors: 'active', reducedMotion: 'reduce' });
+  const page = await context.newPage();
+  await page.goto(url, { waitUntil: 'load' });
+  const audit = await page.evaluate((boundarySelector) => {
+    const label = (element: Element) => `${element.tagName.toLowerCase()}${typeof element.className === 'string' && element.className.trim() ? `.${element.className.trim().split(/\s+/).join('.')}` : ''}`;
+    const shown = (element: Element) => {
+      const style = getComputedStyle(element);
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0 && element.getClientRects().length > 0;
+    };
+    const probe = document.createElement('i');
+    probe.style.backgroundColor = 'Canvas';
+    document.body.append(probe);
+    const canvas = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    const lostText: string[] = [];
+    for (const element of document.querySelectorAll<HTMLElement>('body *')) {
+      if (!shown(element) || ![...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim())) continue;
+      let background = canvas;
+      for (let node: Element | null = element; node; node = node.parentElement) {
+        const value = getComputedStyle(node).backgroundColor;
+        if (value !== 'rgba(0, 0, 0, 0)' && value !== 'transparent') { background = value; break; }
+      }
+      if (getComputedStyle(element).color === background || Number.parseFloat(getComputedStyle(element).fontSize) === 0) lostText.push(label(element));
+    }
+    const lostBoundaries = [...document.querySelectorAll(boundarySelector)].filter(shown).filter((element) => {
+      const style = getComputedStyle(element);
+      const border = ['Top', 'Right', 'Bottom', 'Left'].some((side) => (style as unknown as Record<string, string>)[`border${side}Style`] !== 'none' && Number.parseFloat((style as unknown as Record<string, string>)[`border${side}Width`]) >= 1);
+      return !border && style.outlineStyle === 'none';
+    }).map(label);
+    const signature = (element: Element) => {
+      const read = (target: Element) => {
+        const style = getComputedStyle(target);
+        return [style.outlineStyle, style.outlineWidth, style.borderTopStyle, style.borderTopWidth, style.borderBottomWidth, style.textDecorationLine, style.fontWeight, getComputedStyle(target, '::before').content].join('|');
+      };
+      const strong = element.querySelector('strong');
+      return read(element) + (strong ? `/${read(strong)}` : '');
+    };
+    const colourOnlySelected: string[] = [];
+    for (const element of document.querySelectorAll('[aria-pressed="true"], a[aria-current="page"], [aria-current="step"]')) {
+      const pressed = element.hasAttribute('aria-pressed');
+      const other = [...(element.parentElement?.children ?? [])].find((sibling) => sibling !== element && sibling.tagName === element.tagName
+        && (pressed ? sibling.getAttribute('aria-pressed') === 'false' : !sibling.hasAttribute('aria-current')));
+      if (other && signature(other) === signature(element)) colourOnlySelected.push(label(element));
+    }
+    return { forced: matchMedia('(forced-colors: active)').matches, lostText, lostBoundaries, colourOnlySelected };
+  }, BOUNDARY_SELECTORS);
+  if (!audit.forced) issues.push(issue(scope, 'A11Y-FORCED-COLORS', 'forced-colors emulation did not activate'));
+  if (audit.lostText.length) issues.push(issue(scope, 'A11Y-FORCED-COLORS', `text is lost against its background: ${audit.lostText.slice(0, 5).join(', ')}`));
+  if (audit.lostBoundaries.length) issues.push(issue(scope, 'A11Y-FORCED-COLORS', `boundary lost (no border or outline): ${audit.lostBoundaries.slice(0, 5).join(', ')}`));
+  if (audit.colourOnlySelected.length) issues.push(issue(scope, 'A11Y-FORCED-COLORS', `selected state differs from its siblings by colour only: ${audit.colourOnlySelected.slice(0, 5).join(', ')}`));
+  const stops = await countTabStops(page);
+  if (stops !== baselineStops) issues.push(issue(scope, 'A11Y-FORCED-COLORS', `${baselineStops} tab stops in normal mode but ${stops} under forced colours: a control was lost`));
+  for (let index = 0; index < Math.min(stops, 15); index += 1) {
+    await page.keyboard.press('Tab');
+    const ring = await page.locator(':focus').evaluate((element) => {
+      const style = getComputedStyle(element);
+      return style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
+    });
+    if (!ring) { issues.push(issue(scope, 'A11Y-FORCED-COLORS', `tab stop ${index + 1} has no focus outline of at least 2px`)); break; }
+  }
+  issues.push(...await checkExpectation(page, scope, 'A11Y-FORCED-COLORS', expectation));
+  await context.close();
+  return issues;
+}
+
+/** §10 Print and D15: light palette, evidence panel content visible without JS, opened and restored by beforeprint/afterprint, step order kept. */
+export async function checkPrint(browser: Browser, origin: string, path: string, expectation: PageExpectation = {}): Promise<Issue[]> {
+  const scope = `${path}:print`;
+  const issues: Issue[] = [];
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  await page.emulateMedia({ media: 'print' });
+  await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+  const state = await page.evaluate(() => {
+    const luminance = (colour: string) => {
+      const channels = colour.match(/[\d.]+/g)?.map(Number) ?? [255, 255, 255];
+      if (colour.startsWith('rgba') && channels[3] === 0) return 1;
+      return channels.slice(0, 3).map((channel) => { const value = channel / 255; return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4; })
+        .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+    };
+    const panels = [...document.querySelectorAll<HTMLDetailsElement>('details.evidence-panel')];
+    const closedAtPrint = panels.filter((panel) => !panel.open);
+    const hiddenRows = closedAtPrint.filter((panel) => { const rows = panel.querySelector('.evidence-rows'); return !rows || !rows.checkVisibility(); }).length;
+    const before = panels.map((panel) => panel.open);
+    window.dispatchEvent(new Event('beforeprint'));
+    const during = panels.map((panel) => panel.open);
+    window.dispatchEvent(new Event('afterprint'));
+    const after = panels.map((panel) => panel.open);
+    return {
+      panels: panels.length, hiddenRows, before, during, after,
+      pageLuminance: luminance(getComputedStyle(document.body).backgroundColor),
+      textLuminance: luminance(getComputedStyle(document.querySelector('main') ?? document.body).color),
+      print: matchMedia('print').matches,
+      bareLinks: [...document.querySelectorAll<HTMLAnchorElement>('a[href^="http"]')]
+        .filter((link) => !link.closest('nav') && link.getClientRects().length > 0 && !getComputedStyle(link, '::after').content.includes(link.getAttribute('href') ?? '\0'))
+        .map((link) => link.getAttribute('href') ?? ''),
+    };
+  });
+  if (!state.print) issues.push(issue(scope, 'A11Y-PRINT', 'print media emulation did not activate'));
+  if (state.pageLuminance < 0.9 || state.textLuminance > 0.1) issues.push(issue(scope, 'A11Y-PRINT-PALETTE', 'print must be dark text on a light page'));
+  if (state.hiddenRows > 0) issues.push(issue(scope, 'A11Y-PRINT-PANEL', `${state.hiddenRows} evidence panel(s) hide their rows in print; style ::details-content to stay visible`));
+  if (state.panels > 0 && !state.during.every(Boolean)) issues.push(issue(scope, 'A11Y-PRINT-PANEL', 'beforeprint must open every evidence panel'));
+  if (state.panels > 0 && state.after.join() !== state.before.join()) issues.push(issue(scope, 'A11Y-PRINT-RESTORE', 'afterprint must restore each panel to its previous state'));
+  if (state.bareLinks.length) issues.push(issue(scope, 'A11Y-PRINT-LINKS', `external link destinations are not printed after the link text: ${state.bareLinks.slice(0, 5).join(', ')}`));
+  issues.push(...await checkExpectation(page, scope, 'A11Y-PRINT', expectation));
+  await context.close();
+  return issues;
+}
