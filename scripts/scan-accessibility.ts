@@ -1,16 +1,22 @@
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { chromium, type Page } from 'playwright';
-import { accessibilityPages } from '../tests/accessibility/browser-fixtures';
+import { DOORS, NAV_ITEMS, TIMELINE_STEPS } from '../site/src/content/contracts';
+import { HOME_PATH, MODULE_2_PATH, accessibilityPages, recordPaths } from '../tests/accessibility/browser-fixtures';
+import {
+  checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence,
+  inspectThemeScript, type Issue, type PageExpectation,
+} from '../tests/accessibility/browser-checks';
+import { auditTokenMap, auditTokens, declaredColorSchemes, pairTokenNames, parseThemeBlocks } from '../tests/accessibility/token-pairs';
 
 const root = resolve(process.argv[2] ?? '.');
 const dist = join(root, 'site/dist');
 const representative = accessibilityPages.map(({ path }) => path);
 const changed = (process.env.CHANGED_PUBLIC_PATHS ?? '').split(',').map((value) => value.trim()).filter(Boolean);
 const paths = [...new Set([...representative, ...changed])];
-const mime = new Map([['.html', 'text/html'], ['.css', 'text/css'], ['.js', 'text/javascript'], ['.json', 'application/json'], ['.xml', 'application/xml']]);
+const mime = new Map([['.html', 'text/html'], ['.css', 'text/css'], ['.js', 'text/javascript'], ['.json', 'application/json'], ['.xml', 'application/xml'], ['.txt', 'text/plain'], ['.woff2', 'font/woff2']]);
 const failures: string[] = [];
 const fail = (scope: string, code: string, message: string) => failures.push(`${scope} [${code}] ${message}`);
 
@@ -31,6 +37,14 @@ const address = server.address();
 if (!address || typeof address === 'string') throw new Error('Accessibility server did not start');
 const origin = `http://127.0.0.1:${address.port}`;
 const browser = await chromium.launch({ headless: true });
+
+// The shipped stylesheet is audited as text first: pairs, dark parity, aliases, and the declared (not computed) colour schemes.
+const distCss = readdirSync(join(dist, '_astro')).filter((file) => file.endsWith('.css')).map((file) => readFileSync(join(dist, '_astro', file), 'utf8')).join('\n');
+const themeBlocks = parseThemeBlocks(distCss);
+for (const message of auditTokens(distCss)) fail('dist:css', 'A11Y-CONTRAST', message);
+const declaredSchemes = declaredColorSchemes(distCss);
+if (!declaredSchemes.base.includes('light') || !declaredSchemes.base.includes('dark')) fail('dist:css', 'A11Y-COLOR-SCHEME', `the base :root must declare "color-scheme: light dark", found "${declaredSchemes.base}"`);
+if (declaredSchemes.light !== 'light' || declaredSchemes.dark !== 'dark' || declaredSchemes.darkMedia !== 'dark') fail('dist:css', 'A11Y-COLOR-SCHEME', 'the theme blocks must narrow color-scheme to light or dark');
 
 const open = async (page: Page, path: string) => {
   const response = await page.goto(new URL(path, origin).href, { waitUntil: 'networkidle' });
@@ -138,24 +152,31 @@ const contrast = (a: string, b: string) => {
   return (values[0] + 0.05) / (values[1] + 0.05);
 };
 
+const tokenNames = pairTokenNames({ 'link-visited': '' });
+const readTokens = (page: Page) => page.evaluate((names) => {
+  const style = getComputedStyle(document.documentElement);
+  return Object.fromEntries(names.map((name) => [name, style.getPropertyValue(`--${name}`).trim().toLowerCase()]).filter(([, value]) => value));
+}, tokenNames) as Promise<Record<string, string>>;
+
+// Every pair, for the scheme the page currently renders (states: rest, hover, focus-visible, selected, visited).
 const assertSemanticContrast = async (page: Page, path: string, scheme: string) => {
-  const tokens = await page.evaluate(() => {
-    const style = getComputedStyle(document.documentElement);
-    return Object.fromEntries(['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'on-primary', 'shell', 'shell-text', 'border', 'warning', 'warning-surface']
-      .map((token) => [token, style.getPropertyValue(`--${token}`).trim()]));
-  });
-  const pairs: Array<[string, string, number, string]> = [
-    ['text', 'canvas', 4.5, 'body text'], ['text', 'surface', 4.5, 'content text'],
-    ['muted', 'surface', 4.5, 'supporting text'], ['primary', 'surface', 4.5, 'links'],
-    ['primary', 'canvas', 3, 'focus indicators'], ['on-primary', 'primary', 4.5, 'primary actions'],
-    ['shell-text', 'shell', 4.5, 'signature shell'], ['warning', 'warning-surface', 4.5, 'warnings/status'],
-    ['border', 'shell', 3, 'workflow figure borders'], ['border', 'surface', 1.5, 'restrained borders'],
-  ];
-  for (const [foreground, background, minimum, label] of pairs) {
-    const ratio = contrast(tokens[foreground], tokens[background]);
-    if (ratio < minimum) fail(`${path}:${scheme}:${label}`, 'A11Y-CONTRAST', `${foreground}/${background} contrast ${ratio.toFixed(2)} is below ${minimum}:1`);
-    if (label === 'restrained borders' && ratio >= 4.5) fail(`${path}:${scheme}:${label}`, 'A11Y-BORDER-RESTRAINT', 'decorative borders must remain subordinate to text and actions');
+  const label = `${path}:${scheme}`;
+  for (const message of auditTokenMap(await readTokens(page), label)) fail(label, message.includes('restraint band') ? 'A11Y-BORDER-RESTRAINT' : 'A11Y-CONTRAST', message);
+};
+
+// The cascade, once: OS light/dark with no choice, and a stored choice that disagrees with the OS, in both directions.
+const assertThemeMatrix = async (page: Page, path: string) => {
+  for (const [os, attribute] of [['light', null], ['dark', null], ['light', 'dark'], ['dark', 'light']] as const) {
+    await page.emulateMedia({ colorScheme: os });
+    await page.evaluate((value) => { if (value) document.documentElement.setAttribute('data-theme', value); else document.documentElement.removeAttribute('data-theme'); }, attribute);
+    const label = `${path}:os-${os}${attribute ? `+choice-${attribute}` : ''}`;
+    const tokens = await readTokens(page);
+    for (const message of auditTokenMap(tokens, label)) fail(label, message.includes('restraint band') ? 'A11Y-BORDER-RESTRAINT' : 'A11Y-CONTRAST', message);
+    const effective = attribute ?? os;
+    const expected = (effective === 'dark' ? themeBlocks.dark.canvas : themeBlocks.light.canvas)?.toLowerCase();
+    if (tokens.canvas !== expected) fail(label, 'A11Y-THEME-PRECEDENCE', `--canvas is ${tokens.canvas}, expected the ${effective} value ${expected}`);
   }
+  await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
 };
 
 const verifyNativeDisclosure = async (page: Page, detailsSelector: string, name: string, scope: string) => {
@@ -187,6 +208,8 @@ try {
   const page = await context.newPage();
   const requestedUrls: Array<{ url: string; type: string }> = [];
   context.on('request', (request) => requestedUrls.push({ url: request.url(), type: request.resourceType() }));
+  const fontResponses: Array<{ url: string; status: number; type: string }> = [];
+  context.on('response', (response) => { if (response.request().resourceType() === 'font') fontResponses.push({ url: response.url(), status: response.status(), type: response.headers()['content-type'] ?? '' }); });
 
   for (const path of paths) {
     if (!(await open(page, path))) continue;
@@ -220,13 +243,16 @@ try {
           return style.display !== 'none' && style.visibility !== 'hidden' && Boolean(element.textContent?.trim());
         });
         const controls = visible.filter((element) => element.matches('a, button, summary, input, select, textarea'));
-        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source'));
+        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source, .door__who, .evidence-badge, .timeline__caption, .crosswalk__legend, .crosswalk__legend dt, .crosswalk__legend dd, .crosswalk figcaption, .theme-control__label, .kicker, .talk__kind, .talk__meta'));
+        // Diagram text is scaled by its viewBox: measure what the reader sees, not the CSS value.
+        const svgText = [...document.querySelectorAll<SVGTextContentElement>('svg text, svg tspan')].filter((element) => element.getClientRects().length > 0)
+          .map((element) => Number.parseFloat(getComputedStyle(element).fontSize) * ((element as unknown as SVGGraphicsElement).getScreenCTM()?.a ?? 1));
         const mainLinks = visible.filter((element) => element.matches('main a'));
         return {
           body: Number.parseFloat(getComputedStyle(document.body).fontSize),
           controls: Math.min(...controls.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 16),
           technical: Math.min(...technical.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 14),
-          colorScheme: getComputedStyle(document.documentElement).colorScheme,
+          svgText: Math.min(...svgText, 14),
           linksHaveNonColorCue: mainLinks.every((element) => {
             const style = getComputedStyle(element);
             return style.textDecorationLine.includes('underline')
@@ -238,31 +264,40 @@ try {
       });
       if (sizing.body < 16 || sizing.controls < 16) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'body and control text must remain at least 16 CSS pixels');
       if (sizing.technical < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'supporting and technical text must remain at least 14 CSS pixels');
-      if (!sizing.colorScheme.includes('light') || !sizing.colorScheme.includes('dark')) fail(`${path}:${colorScheme}`, 'A11Y-COLOR-SCHEME', 'native controls must advertise both supported schemes');
+      if (sizing.svgText < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', `diagram text renders at ${sizing.svgText.toFixed(1)} CSS pixels; the floor is 14`);
       if (!sizing.linksHaveNonColorCue || !sizing.statusNamed) fail(`${path}:${colorScheme}`, 'A11Y-COLOR-MEANING', 'links and status must include non-color cues');
     }
   }
+  if (await open(page, HOME_PATH)) await assertThemeMatrix(page, HOME_PATH);
+
   await page.emulateMedia({ colorScheme: 'light' });
 
   await page.setViewportSize({ width: 320, height: 800 });
   for (const path of paths) {
     if (!(await open(page, path))) continue;
     if (await hasPageOverflow(page)) fail(`${path}:320px`, 'A11Y-REFLOW', 'content does not reflow within a 320 CSS-pixel viewport');
-    if (path === '/') {
+    if (path === HOME_PATH) {
       const hero = await page.evaluate(() => {
-        const copy = document.querySelector<HTMLElement>('.hero__copy')!;
-        const figure = document.querySelector<HTMLElement>('.workflow-figure')!;
-        const items = [...figure.querySelectorAll('li')];
+        const heroElement = document.querySelector<HTMLElement>('.hero')!;
+        const copy = document.querySelector<HTMLElement>('.hero__copy');
+        const timeline = document.querySelector<HTMLElement>('#big-idea .timeline');
+        const order = ['.hero', '.applicability-projection', '#big-idea', '#doors', '#crosswalk'].map((selector) => document.querySelector(selector));
         return {
-          sourceOrder: Boolean(copy.compareDocumentPosition(figure) & Node.DOCUMENT_POSITION_FOLLOWING),
-          oneColumn: getComputedStyle(document.querySelector<HTMLElement>('.hero')!).gridTemplateColumns.split(' ').length === 1,
-          verticallyCollapsed: figure.getBoundingClientRect().top >= copy.getBoundingClientRect().bottom,
-          stepOrder: items.every((item) => item.querySelector('strong')!.getBoundingClientRect().top <= item.querySelector('span')!.getBoundingClientRect().top),
+          noFigureInHero: !copy?.querySelector('figure'),
+          oneColumn: getComputedStyle(heroElement).display !== 'grid' || getComputedStyle(heroElement).gridTemplateColumns.split(' ').length === 1,
+          timelineAfterHero: Boolean(timeline && heroElement.compareDocumentPosition(timeline) & Node.DOCUMENT_POSITION_FOLLOWING),
+          stepOrder: Boolean(timeline) && [...(timeline?.querySelectorAll('li.timeline__step') ?? [])].every((item) => {
+            const label = item.querySelector('strong');
+            const caption = item.querySelector('.timeline__caption');
+            return Boolean(label && caption && label.getBoundingClientRect().top <= caption.getBoundingClientRect().top);
+          }),
+          homeOrder: order.every((element, index) => element !== null && (index === 0 || Boolean(order[index - 1]!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING))),
         };
       });
-      if (!hero.sourceOrder || !hero.oneColumn || !hero.verticallyCollapsed || !hero.stepOrder) {
-        fail('/:320px', 'A11Y-READING-ORDER', 'hero copy and workflow figure must preserve source order and collapse vertically');
+      if (!hero.noFigureInHero || !hero.oneColumn || !hero.timelineAfterHero || !hero.stepOrder) {
+        fail('/:320px', 'A11Y-READING-ORDER', 'the hero must be one column with no figure, and the timeline must follow it with each step label above its caption');
       }
+      if (!hero.homeOrder) fail('/:320px', 'A11Y-READING-ORDER', 'home order must be hero, evidence projection, big idea, doors, crosswalk');
     }
   }
 
@@ -273,9 +308,11 @@ try {
     fail('/resources/:navigation', 'A11Y-FOCUS', 'disclosure focus must remain visible after opening');
   }
   await page.keyboard.press('Tab');
-  if (await page.locator(':focus').getAttribute('href') !== '/start/') {
-    fail('/resources/:navigation', 'A11Y-KEYBOARD', 'first disclosed navigation link must follow the summary in keyboard order');
+  if (await page.locator(':focus').getAttribute('href') !== NAV_ITEMS[0].href) {
+    fail('/resources/:navigation', 'A11Y-KEYBOARD', `first disclosed navigation link must be ${NAV_ITEMS[0].href}, following the summary in keyboard order`);
   }
+  const menuLabels = (await page.locator('.site-nav--compact a').allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
+  if (menuLabels.join('|') !== NAV_ITEMS.map(({ label }) => label).join('|')) fail('/resources/:navigation', 'A11Y-KEYBOARD', `navigation must read ${NAV_ITEMS.map(({ label }) => label).join(' | ')}, found ${menuLabels.join(' | ')}`);
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Enter');
   if (await page.locator('.site-nav--compact').evaluate((element) => (element as HTMLDetailsElement).open)) {
@@ -285,6 +322,14 @@ try {
   await page.setViewportSize({ width: 1024, height: 900 });
   await open(page, '/guide/scheduler-as-orchestrator/');
   await verifyNativeDisclosure(page, '.sources-scope details', 'Review source roles and citations', '/guide/scheduler-as-orchestrator/:sources');
+
+  for (const width of [768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of paths) {
+      if (!(await open(page, path))) continue;
+      if (await hasPageOverflow(page)) fail(`${path}:${width}px`, 'A11Y-REFLOW', `page overflows horizontally at ${width} CSS pixels`);
+    }
+  }
 
   // A 640 CSS-pixel viewport at 200% browser zoom exposes a 320 CSS-pixel layout viewport.
   await page.setViewportSize({ width: 320, height: 450 });
@@ -374,47 +419,40 @@ try {
     fail('/:reduced-motion', 'A11Y-MOTION', 'reduced-motion preference must minimize transitions and animations');
   }
 
-  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
-  await open(page, '/');
-  await page.keyboard.press('Tab');
-  const forcedColorFigure = await page.locator('.workflow-figure').evaluate((figure) => {
-    const style = getComputedStyle(figure);
-    return {
-      preference: matchMedia('(forced-colors: active)').matches,
-      caption: figure.querySelector('figcaption')?.textContent?.trim(),
-      steps: [...figure.querySelectorAll('li strong')].map((element) => element.textContent?.trim()),
-      visible: style.display !== 'none' && style.visibility !== 'hidden',
-      borderVisible: style.borderStyle !== 'none' && Number.parseFloat(style.borderWidth) >= 1,
-    };
-  });
-  if (!forcedColorFigure.preference || !forcedColorFigure.visible || !forcedColorFigure.borderVisible
-    || forcedColorFigure.caption !== 'One allocation, five ordered responsibilities'
-    || forcedColorFigure.steps.join('|') !== 'Allocation|Coordinator|Readiness gate|Workers|Verification') {
-    fail('/:forced-colors', 'A11Y-FORCED-COLORS', 'shell, focus, workflow labels, borders, and order must remain legible in forced colors');
+  await page.emulateMedia({ media: 'screen', forcedColors: 'none', reducedMotion: 'no-preference', colorScheme: 'light' });
+
+  // Gates that open their own contexts. Each returns issues; the scanner reports them in its usual format.
+  const gate = async (scope: string, run: () => Promise<Issue[]>) => {
+    try { for (const found of await run()) fail(found.scope, found.code, found.message); }
+    catch (error) { fail(scope, 'A11Y-GATE-ERROR', (error instanceof Error ? error.message : String(error)).split('\n')[0]); }
+  };
+  const timelineOrder = { selector: '.timeline__step strong', texts: TIMELINE_STEPS.map(({ label }) => label) };
+  const expectations: Record<string, PageExpectation> = {
+    [HOME_PATH]: { ordered: [timelineOrder, { selector: '.door__title', texts: DOORS.map(({ title }) => title) }], present: ['h1', '.evidence-badge', '.crosswalk__legend', '.crosswalk__pane'] },
+    [MODULE_2_PATH]: { ordered: [timelineOrder], present: ['h1', '.evidence-badge'] },
+  };
+  for (const record of recordPaths) expectations[record] = { present: ['h1', '.applicability-record'] };
+  for (const path of Object.keys(expectations)) {
+    await gate(`${path}:forced-colors`, () => checkForcedColors(browser, origin, path, expectations[path]));
+    await gate(`${path}:print`, () => checkPrint(browser, origin, path, expectations[path]));
   }
-  await page.emulateMedia({ media: 'print', forcedColors: 'none' });
-  await open(page, '/');
-  const printFigure = await page.locator('.workflow-figure').evaluate((figure) => ({
-    caption: figure.querySelector('figcaption')?.textContent?.trim(),
-    steps: [...figure.querySelectorAll('li strong')].map((element) => element.textContent?.trim()),
-    visible: getComputedStyle(figure).display !== 'none' && getComputedStyle(figure).visibility !== 'hidden',
-  }));
-  if (!printFigure.visible || printFigure.caption !== 'One allocation, five ordered responsibilities'
-    || printFigure.steps.join('|') !== 'Allocation|Coordinator|Readiness gate|Workers|Verification') {
-    fail('/:print', 'A11Y-PRINT', 'printed workflow caption and labels must remain visible in source order');
+  await gate('/:theme', () => checkThemePrecedence(browser, origin, HOME_PATH, { light: themeBlocks.light, dark: themeBlocks.dark }));
+  for (const path of [HOME_PATH, MODULE_2_PATH]) {
+    const html = await (await fetch(new URL(path, origin))).text();
+    await gate(`${path}:theme-script`, async () => inspectThemeScript(html, `${path}:theme-script`));
+    await gate(`${path}:font-failure`, () => checkFontBlocking(browser, origin, path));
   }
-  await page.emulateMedia({ media: 'screen', reducedMotion: 'no-preference' });
+  await gate('/guide/tour/:font-failure', () => checkFontBlocking(browser, origin, '/guide/tour/'));
+  await gate('/:crosswalk-layout', () => checkCrosswalkLayout(browser, origin, HOME_PATH));
+  for (const path of paths) await gate(`${path}:motion`, () => checkMotion(browser, origin, path));
+  await gate('/:no-script', () => checkJsOff(browser, origin, HOME_PATH, 'home', { panel: true }));
+  await gate(`${MODULE_2_PATH}:no-script`, () => checkJsOff(browser, origin, MODULE_2_PATH, 'module', { panel: true }));
+  await gate('/:primary-action', () => checkPrimaryAction(browser, origin, HOME_PATH, 'Start with the big idea', 'big-idea'));
 
   const noScript = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 320, height: 800 } });
   const noScriptRequests: Array<{ url: string; type: string }> = [];
   noScript.on('request', (request) => noScriptRequests.push({ url: request.url(), type: request.resourceType() }));
   const noScriptPage = await noScript.newPage();
-  if (await open(noScriptPage, '/')) {
-    const primaryAction = noScriptPage.getByRole('link', { name: 'Start with Module 0', exact: true });
-    if (await primaryAction.getAttribute('href') !== '/guide/how-to-use-this-guide/') fail('/:no-script', 'A11Y-NOJS', 'primary action must remain a normal link');
-    await primaryAction.click();
-    if (new URL(noScriptPage.url()).pathname !== '/guide/how-to-use-this-guide/') fail('/:no-script', 'A11Y-NOJS', 'primary action must navigate without JavaScript');
-  }
   if (await open(noScriptPage, '/resources/')) {
     await verifyNativeDisclosure(noScriptPage, '.site-nav--compact', 'Navigation', '/resources/:no-script');
     const moduleLink = noScriptPage.getByRole('link', { name: 'Baseline Pattern: Single-Node Service + Workers' }).first();
@@ -451,7 +489,11 @@ try {
 
   for (const request of [...requestedUrls, ...noScriptRequests]) {
     const remote = !request.url.startsWith(origin);
-    if (request.type === 'font' || remote) fail(request.url, 'A11Y-REMOTE-FONT', 'pages must make no remote or font requests');
+    if (remote) fail(request.url, 'A11Y-REMOTE-FONT', 'pages must make no remote requests');
+    else if (request.type === 'font' && !/^\/fonts\/[^?#]+\.woff2$/.test(new URL(request.url).pathname)) fail(request.url, 'A11Y-REMOTE-FONT', 'same-origin fonts must be /fonts/*.woff2 files');
+  }
+  for (const response of fontResponses) {
+    if (response.status !== 200 || response.type !== 'font/woff2') fail(response.url, 'A11Y-FONT-MIME', `font response must be 200 font/woff2, received ${response.status} ${response.type}`);
   }
   await noScript.close();
   await context.close();
@@ -464,4 +506,4 @@ if (failures.length) {
   console.error(failures.map((failure) => `ERROR: ${failure}`).join('\n'));
   process.exit(1);
 }
-console.log(`Frontend browser validation passed for ${paths.length} built pages: axe, no-JavaScript, keyboard/focus, 320px reflow, 200% zoom, overflow stress, tables, and reduced motion.`);
+console.log(`Frontend browser validation passed for ${paths.length} built pages: axe, token pairs and states, theme precedence, no-JavaScript, keyboard/focus, 320/768/1280px reflow, 200% zoom, forced colors, print, font failure, overflow stress, tables, and reduced motion.`);
