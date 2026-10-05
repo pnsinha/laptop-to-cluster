@@ -33,8 +33,10 @@
     { "class": "changed", "itemId": "module-2-baseline" },
     { "class": "changed", "itemId": "start-guide" },
     { "class": "changed", "itemId": "glossary" },
+    { "class": "changed", "itemId": "applicability-record-plain-language" },
     { "class": "corrected", "itemId": "workflow-validation-link" },
-    { "class": "corrected", "itemId": "diagnostic-identifiers" }
+    { "class": "corrected", "itemId": "diagnostic-identifiers" },
+    { "class": "corrected", "itemId": "applicability-record-failure-run" }
   ],
   "externalInputsRequired": ["cloudflareDeploymentId", "pagesDevFallbackUrl", "activeCloudflareReadinessRecord"]
 }

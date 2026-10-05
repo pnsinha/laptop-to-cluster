@@ -10,10 +10,12 @@
 ## Changed
 - Module 2 explains which parts of the workflow package to keep, which to replace, and how its result files are meant to be read.
 - The getting-started path, the glossary and the navigation follow the same plain-language-first order as the home page.
+- Each test record opens with a plain-language summary of what was tested.
 
 ## Corrected
 - The workflow README now points to the dated validation record instead of describing the workflow as not run.
 - Diagnostic identifiers are consistent between the diagnostics page and the workflow.
+- The test record now lists the deliberate failure run next to the successful run.
 
 ## Validation boundary
 Every tested claim on the site is rendered from a dated applicability record and links to that record. This release states no test result anywhere else. Statements that are designed but not yet run on a cluster say so.
