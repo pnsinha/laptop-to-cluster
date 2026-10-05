@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { ACKNOWLEDGMENT_SHA256 } from '../../site/src/content/acknowledgment';
+import { ACKNOWLEDGMENT_SHA256, ACKNOWLEDGMENT_STATEMENT, ACKNOWLEDGMENT_DISCLAIMER } from '../../site/src/content/acknowledgment';
 import { TALKS_LABEL } from '../../site/src/content/contracts';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -67,6 +67,8 @@ describe('event acknowledgment beside the download link', () => {
   });
 
   it('does not put the acknowledgment text in the Markdown body', () => {
-    expect(source).not.toContain('This work was supported by the Better Scientific Software Fellowship Program');
+    const body = normalized(source);
+    expect(body).not.toContain(ACKNOWLEDGMENT_STATEMENT.split(',')[0]);
+    expect(body).not.toContain(normalized(ACKNOWLEDGMENT_DISCLAIMER));
   });
 });
