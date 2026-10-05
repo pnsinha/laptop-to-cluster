@@ -1,16 +1,22 @@
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { chromium, type Page } from 'playwright';
-import { accessibilityPages } from '../tests/accessibility/browser-fixtures';
+import { DOORS, NAV_ITEMS, TIMELINE_STEPS } from '../site/src/content/contracts';
+import { HOME_PATH, MODULE_2_PATH, accessibilityPages, recordPaths } from '../tests/accessibility/browser-fixtures';
+import {
+  checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence,
+  inspectThemeScript, type Issue, type PageExpectation,
+} from '../tests/accessibility/browser-checks';
+import { auditTokenMap, auditTokens, declaredColorSchemes, pairTokenNames, parseThemeBlocks } from '../tests/accessibility/token-pairs';
 
 const root = resolve(process.argv[2] ?? '.');
 const dist = join(root, 'site/dist');
 const representative = accessibilityPages.map(({ path }) => path);
 const changed = (process.env.CHANGED_PUBLIC_PATHS ?? '').split(',').map((value) => value.trim()).filter(Boolean);
 const paths = [...new Set([...representative, ...changed])];
-const mime = new Map([['.html', 'text/html'], ['.css', 'text/css'], ['.js', 'text/javascript'], ['.json', 'application/json'], ['.xml', 'application/xml']]);
+const mime = new Map([['.html', 'text/html'], ['.css', 'text/css'], ['.js', 'text/javascript'], ['.json', 'application/json'], ['.xml', 'application/xml'], ['.txt', 'text/plain'], ['.woff2', 'font/woff2']]);
 const failures: string[] = [];
 const fail = (scope: string, code: string, message: string) => failures.push(`${scope} [${code}] ${message}`);
 
@@ -31,6 +37,14 @@ const address = server.address();
 if (!address || typeof address === 'string') throw new Error('Accessibility server did not start');
 const origin = `http://127.0.0.1:${address.port}`;
 const browser = await chromium.launch({ headless: true });
+
+// The shipped stylesheet is audited as text first: pairs, dark parity, aliases, and the declared (not computed) colour schemes.
+const distCss = readdirSync(join(dist, '_astro')).filter((file) => file.endsWith('.css')).map((file) => readFileSync(join(dist, '_astro', file), 'utf8')).join('\n');
+const themeBlocks = parseThemeBlocks(distCss);
+for (const message of auditTokens(distCss)) fail('dist:css', 'A11Y-CONTRAST', message);
+const declaredSchemes = declaredColorSchemes(distCss);
+if (!declaredSchemes.base.includes('light') || !declaredSchemes.base.includes('dark')) fail('dist:css', 'A11Y-COLOR-SCHEME', `the base :root must declare "color-scheme: light dark", found "${declaredSchemes.base}"`);
+if (declaredSchemes.light !== 'light' || declaredSchemes.dark !== 'dark' || declaredSchemes.darkMedia !== 'dark') fail('dist:css', 'A11Y-COLOR-SCHEME', 'the theme blocks must narrow color-scheme to light or dark');
 
 const open = async (page: Page, path: string) => {
   const response = await page.goto(new URL(path, origin).href, { waitUntil: 'networkidle' });
@@ -138,24 +152,31 @@ const contrast = (a: string, b: string) => {
   return (values[0] + 0.05) / (values[1] + 0.05);
 };
 
+const tokenNames = pairTokenNames({ 'link-visited': '' });
+const readTokens = (page: Page) => page.evaluate((names) => {
+  const style = getComputedStyle(document.documentElement);
+  return Object.fromEntries(names.map((name) => [name, style.getPropertyValue(`--${name}`).trim().toLowerCase()]).filter(([, value]) => value));
+}, tokenNames) as Promise<Record<string, string>>;
+
+// Every pair, for the scheme the page currently renders (states: rest, hover, focus-visible, selected, visited).
 const assertSemanticContrast = async (page: Page, path: string, scheme: string) => {
-  const tokens = await page.evaluate(() => {
-    const style = getComputedStyle(document.documentElement);
-    return Object.fromEntries(['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'on-primary', 'shell', 'shell-text', 'border', 'warning', 'warning-surface']
-      .map((token) => [token, style.getPropertyValue(`--${token}`).trim()]));
-  });
-  const pairs: Array<[string, string, number, string]> = [
-    ['text', 'canvas', 4.5, 'body text'], ['text', 'surface', 4.5, 'content text'],
-    ['muted', 'surface', 4.5, 'supporting text'], ['primary', 'surface', 4.5, 'links'],
-    ['primary', 'canvas', 3, 'focus indicators'], ['on-primary', 'primary', 4.5, 'primary actions'],
-    ['shell-text', 'shell', 4.5, 'signature shell'], ['warning', 'warning-surface', 4.5, 'warnings/status'],
-    ['border', 'shell', 3, 'workflow figure borders'], ['border', 'surface', 1.5, 'restrained borders'],
-  ];
-  for (const [foreground, background, minimum, label] of pairs) {
-    const ratio = contrast(tokens[foreground], tokens[background]);
-    if (ratio < minimum) fail(`${path}:${scheme}:${label}`, 'A11Y-CONTRAST', `${foreground}/${background} contrast ${ratio.toFixed(2)} is below ${minimum}:1`);
-    if (label === 'restrained borders' && ratio >= 4.5) fail(`${path}:${scheme}:${label}`, 'A11Y-BORDER-RESTRAINT', 'decorative borders must remain subordinate to text and actions');
+  const label = `${path}:${scheme}`;
+  for (const message of auditTokenMap(await readTokens(page), label)) fail(label, message.includes('restraint band') ? 'A11Y-BORDER-RESTRAINT' : 'A11Y-CONTRAST', message);
+};
+
+// The cascade, once: OS light/dark with no choice, and a stored choice that disagrees with the OS, in both directions.
+const assertThemeMatrix = async (page: Page, path: string) => {
+  for (const [os, attribute] of [['light', null], ['dark', null], ['light', 'dark'], ['dark', 'light']] as const) {
+    await page.emulateMedia({ colorScheme: os });
+    await page.evaluate((value) => { if (value) document.documentElement.setAttribute('data-theme', value); else document.documentElement.removeAttribute('data-theme'); }, attribute);
+    const label = `${path}:os-${os}${attribute ? `+choice-${attribute}` : ''}`;
+    const tokens = await readTokens(page);
+    for (const message of auditTokenMap(tokens, label)) fail(label, message.includes('restraint band') ? 'A11Y-BORDER-RESTRAINT' : 'A11Y-CONTRAST', message);
+    const effective = attribute ?? os;
+    const expected = (effective === 'dark' ? themeBlocks.dark.canvas : themeBlocks.light.canvas)?.toLowerCase();
+    if (tokens.canvas !== expected) fail(label, 'A11Y-THEME-PRECEDENCE', `--canvas is ${tokens.canvas}, expected the ${effective} value ${expected}`);
   }
+  await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
 };
 
 const verifyNativeDisclosure = async (page: Page, detailsSelector: string, name: string, scope: string) => {
@@ -187,6 +208,8 @@ try {
   const page = await context.newPage();
   const requestedUrls: Array<{ url: string; type: string }> = [];
   context.on('request', (request) => requestedUrls.push({ url: request.url(), type: request.resourceType() }));
+  const fontResponses: Array<{ url: string; status: number; type: string }> = [];
+  context.on('response', (response) => { if (response.request().resourceType() === 'font') fontResponses.push({ url: response.url(), status: response.status(), type: response.headers()['content-type'] ?? '' }); });
 
   for (const path of paths) {
     if (!(await open(page, path))) continue;
@@ -220,13 +243,16 @@ try {
           return style.display !== 'none' && style.visibility !== 'hidden' && Boolean(element.textContent?.trim());
         });
         const controls = visible.filter((element) => element.matches('a, button, summary, input, select, textarea'));
-        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source'));
+        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source, .door__who, .evidence-badge, .timeline__caption, .crosswalk__legend, .crosswalk__legend dt, .crosswalk__legend dd, .crosswalk figcaption, .theme-control__label, .kicker, .talk__kind, .talk__meta'));
+        // Diagram text is scaled by its viewBox: measure what the reader sees, not the CSS value.
+        const svgText = [...document.querySelectorAll<SVGTextContentElement>('svg text, svg tspan')].filter((element) => element.getClientRects().length > 0)
+          .map((element) => Number.parseFloat(getComputedStyle(element).fontSize) * ((element as unknown as SVGGraphicsElement).getScreenCTM()?.a ?? 1));
         const mainLinks = visible.filter((element) => element.matches('main a'));
         return {
           body: Number.parseFloat(getComputedStyle(document.body).fontSize),
           controls: Math.min(...controls.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 16),
           technical: Math.min(...technical.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 14),
-          colorScheme: getComputedStyle(document.documentElement).colorScheme,
+          svgText: Math.min(...svgText, 14),
           linksHaveNonColorCue: mainLinks.every((element) => {
             const style = getComputedStyle(element);
             return style.textDecorationLine.includes('underline')
@@ -238,10 +264,12 @@ try {
       });
       if (sizing.body < 16 || sizing.controls < 16) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'body and control text must remain at least 16 CSS pixels');
       if (sizing.technical < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'supporting and technical text must remain at least 14 CSS pixels');
-      if (!sizing.colorScheme.includes('light') || !sizing.colorScheme.includes('dark')) fail(`${path}:${colorScheme}`, 'A11Y-COLOR-SCHEME', 'native controls must advertise both supported schemes');
+      if (sizing.svgText < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', `diagram text renders at ${sizing.svgText.toFixed(1)} CSS pixels; the floor is 14`);
       if (!sizing.linksHaveNonColorCue || !sizing.statusNamed) fail(`${path}:${colorScheme}`, 'A11Y-COLOR-MEANING', 'links and status must include non-color cues');
     }
   }
+  if (await open(page, HOME_PATH)) await assertThemeMatrix(page, HOME_PATH);
+
   await page.emulateMedia({ colorScheme: 'light' });
 
   await page.setViewportSize({ width: 320, height: 800 });
