@@ -1,18 +1,30 @@
 ---
 import type { ApplicabilityProjection } from '../content/projections';
 const { projection } = Astro.props as { projection: ApplicabilityProjection };
-const isEscalated = projection.supplement.kind === 'status';
+const { panel } = projection;
 ---
-{isEscalated ? (
-  <section class="applicability-projection applicability-projection--escalated" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
-    <p><strong>Status:</strong> {projection.supplement.text}</p>
-    <p class="applicability-supplement">{projection.testedScope}</p>
-    <p><a href={projection.canonicalPath}>Review the complete applicability record.</a></p>
+{panel.collapsible ? (
+  <section class="applicability-projection" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
+    <p class="evidence-badge">{panel.badgeText}</p>
+    <p class="evidence-link"><a href={panel.canonicalPath}>Full test record</a></p>
+    <details class="evidence-panel">
+      <summary>What this means for you</summary>
+      <dl class="evidence-rows">
+        {panel.rows.map((row) => (
+          <div class="evidence-row"><dt>{row.label}</dt><dd><ul>{row.items.map((item) => <li data-from={item.from.join(' ')}>{item.text}</li>)}</ul></dd></div>
+        ))}
+      </dl>
+      <p class="evidence-untested"><a href={panel.untestedHref}>What hasn't been tested yet</a></p>
+    </details>
   </section>
 ) : (
-  <section class="applicability-projection" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
-    <p><strong>Tested scope:</strong> {projection.testedScope}</p>
-    <p class="applicability-supplement"><strong>Boundary:</strong> {projection.supplement.text}</p>
-    <p><a href={projection.canonicalPath}>View applicability record.</a></p>
+  <section class="applicability-projection applicability-projection--escalated" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
+    <p class="evidence-badge evidence-badge--warning"><strong>Warning:</strong> {panel.badgeText}</p>
+    <p class="evidence-link"><a href={panel.canonicalPath}>Full test record</a></p>
+    <dl class="evidence-rows">
+      {panel.rows.map((row) => (
+        <div class="evidence-row"><dt>{row.label}</dt><dd><ul>{row.items.map((item) => <li data-from={item.from.join(' ')}>{item.text}</li>)}</ul></dd></div>
+      ))}
+    </dl>
   </section>
 )}

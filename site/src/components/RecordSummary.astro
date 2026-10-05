@@ -1,0 +1,11 @@
+---
+import type { ApplicabilityRecord } from '../content/schema';
+import { summarizeRecord } from '../content/projections';
+const { record } = Astro.props as { record: ApplicabilityRecord };
+const summary = summarizeRecord(record);
+---
+<section class="record-summary" data-source-id={record.id} aria-label="What was tested">
+  <p class="record-summary__tested">{summary.tested}</p>
+  <ul class="record-summary__scope">{summary.scope.map((value) => <li>{value}</li>)}</ul>
+  <p><a href={`/applicability/${record.id}/`}>Full test record</a></p>
+</section>
