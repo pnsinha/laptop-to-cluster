@@ -23,6 +23,27 @@ const COMPOSITION_PROFILES = new Set([
   'milestone', 'release', 'about', 'support', 'accessibility', 'applicability', 'event', 'not-found',
   'adoption',
 ]);
+export const FONT_FAMILIES = Object.freeze(['Source Serif 4', 'IBM Plex Sans', 'IBM Plex Mono', 'L2C Marks']);
+const REMOTE_FONT = /@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net|fonts\.bunny\.net|cdn\.jsdelivr\.net\/fontsource/i;
+const SRC_ENTRY = /^(?:local\(\s*(?:["'][^"']+["']|[A-Za-z][A-Za-z0-9 -]*)\s*\)|url\(\s*["']?\/fonts\/[a-z0-9.-]+\/[A-Za-z0-9._-]+\.woff2["']?\s*\)\s*format\(\s*["']woff2["']\s*\))$/;
+const FONT_LEAD = String.raw`(?:"?(?:Source Serif 4|IBM Plex Sans|IBM Plex Mono|L2C Marks)(?: Fallback)?"?\s*,\s*)*`;
+// Motion that is actually motion: `transition: none` and `animation: none` are the reduced-motion resets and stay legal.
+const MOTION = /@keyframes|animation-name\s*:|animation\s*:\s*(?!none\b)|transition\s*:\s*(?!none\b)|scroll-timeline|parallax/i;
+/** REMOTE-FONT: third-party hosts and @import url are forbidden; every @font-face is an allowlisted family served from /fonts/*.woff2 (or local()), with font-display: swap for downloads. */
+export function fontFaceIssues(text) {
+  const issues = REMOTE_FONT.test(text) ? ['third-party font hosts and @import url are forbidden'] : [];
+  for (const block of text.match(/@font-face\s*\{[^}]*\}/gi) ?? []) {
+    const family = block.match(/font-family\s*:\s*["']?([^;"'}]+)/i)?.[1]?.trim() ?? '';
+    const entries = (block.match(/\bsrc\s*:\s*([^;}]+)/i)?.[1] ?? '').split(/,(?![^()]*\))/).map((entry) => entry.trim()).filter(Boolean);
+    const known = FONT_FAMILIES.some((name) => family === name || family === `${name} Fallback`);
+    if (!known || !entries.length || !entries.every((entry) => SRC_ENTRY.test(entry))) {
+      issues.push(`@font-face "${family || '<unnamed>'}" must be an allowlisted family served from /fonts/*.woff2 or local()`);
+    } else if (entries.some((entry) => entry.startsWith('url(')) && !/font-display\s*:\s*swap/i.test(block)) {
+      issues.push(`@font-face "${family}" must use font-display: swap`);
+    }
+  }
+  return issues;
+}
 const STANDARD_PROJECTION_CONSUMER = Object.freeze({
   landing: 'landing',
   'learning-runnable': 'runnable-module',
@@ -201,7 +222,13 @@ export function validatePageComposition(source, html) {
   // Progressive-enhancement policy (2026-08-16): bounded inline scripts and small
   // client islands are permitted; canvas, autoplay, and marquee remain forbidden.
   if (/<canvas\b|autoplay|<marquee\b/i.test(html)) errors.push(diagnostic(source, 'html', 'TECHNOLOGY-EXCLUSION', 'canvas, autoplay, and marquee output are forbidden'));
-  if (/(?:fonts\.(?:googleapis|gstatic)|use\.typekit\.net|<link[^>]+rel="preconnect"[^>]+font)/i.test(html)) errors.push(diagnostic(source, 'html', 'REMOTE-FONT', 'remote font references are forbidden'));
+  if (/(?:fonts\.(?:googleapis|gstatic)|use\.typekit\.net|fonts\.bunny\.net|cdn\.jsdelivr\.net\/fontsource|<link[^>]+rel="preconnect"[^>]+font)/i.test(html)) errors.push(diagnostic(source, 'html', 'REMOTE-FONT', 'remote font references are forbidden'));
+  for (const preload of html.match(/<link\b[^>]*\brel="preload"[^>]*>/g) ?? []) {
+    if (!/\bas="font"/.test(preload)) continue;
+    if (!/\bhref="\/fonts\/[^"]+\.woff2"/.test(preload) || !/\btype="font\/woff2"/.test(preload) || !/\bcrossorigin\b/.test(preload)) {
+      errors.push(diagnostic(source, 'html', 'FONT-PRELOAD', 'a font preload must point at /fonts/*.woff2 with type="font/woff2" and crossorigin'));
+    }
+  }
   return errors;
 }
 
@@ -304,8 +331,8 @@ export function validateFrontendPolicy(manifest, astroConfig, sourceEntries = []
   if (!/^sitemap\(\),canonicalPolicy\(\)(?:,accessibleTables\(\))?$/.test(integrations ?? '')) errors.push(diagnostic('site/astro.config.mjs', 'integrations', 'INTEGRATION-EXCLUSION', 'only sitemap and the repository-owned canonical policy and accessible tables integrations are allowed'));
   if (/ViewTransitions|adapter|server\s*:|session|auth/i.test(astroConfig)) errors.push(diagnostic('site/astro.config.mjs', 'configuration', 'TECHNOLOGY-EXCLUSION', 'view transitions, adapters, server state, sessions, and authentication are forbidden'));
   for (const { path, text } of sourceEntries) {
-    if (/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net/i.test(text)) errors.push(diagnostic(path, 'font', 'REMOTE-FONT', 'system font stacks only; remote and bundled font declarations are forbidden'));
-    if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax|autoplay|from\s+['"](?:react|vue|svelte|@astrojs\/(?:react|vue|svelte))['"]/i.test(text)) {
+    for (const issue of fontFaceIssues(text)) errors.push(diagnostic(path, 'font', 'REMOTE-FONT', issue));
+    if (MOTION.test(text) || /autoplay|from\s+['"](?:react|vue|svelte|@astrojs\/(?:react|vue|svelte))['"]/i.test(text)) {
       // Progressive-enhancement policy (2026-08-16): client directives are permitted
       // for bounded Astro islands; decorative motion and UI-framework imports remain forbidden.
       errors.push(diagnostic(path, 'source', 'TECHNOLOGY-EXCLUSION', 'decorative motion and UI frameworks are forbidden'));
@@ -578,22 +605,51 @@ export function validateBuiltOutput(dist) {
   for (const url of new Set([...canonicalUrls, ...sitemapUrls, ...manifestUrls])) {
     if (!canonicalUrls.has(url) || !sitemapUrls.has(url) || !manifestUrls.has(url)) errors.push(diagnostic(url, 'url', 'DISCOVERY-AGREEMENT', 'canonical, sitemap, and URL manifest disagree'));
   }
-  for (const file of filesUnder(dist).filter((candidate) => candidate.endsWith('.css'))) {
-    const css = readFileSync(file, 'utf8');
-    const cssPath = relative(dist, file);
-    if (/@font-face|@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.net|linear-gradient|radial-gradient|backdrop-filter/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'VISUAL-DEPENDENCY', 'remote or bundled fonts, gradients, textures, and glass effects are forbidden'));
-    if (/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'MOTION-EXCLUSION', 'decorative animation, transitions, and parallax are forbidden'));
-    if (!/color-scheme:light dark/.test(css)) errors.push(diagnostic(cssPath, 'css', 'COLOR-SCHEME', 'color-scheme must advertise light and dark support'));
-    for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'border', 'warning']) {
-      if (!new RegExp(`--${token}:`, '').test(css)) errors.push(diagnostic(cssPath, `--${token}`, 'SEMANTIC-TOKENS', 'semantic role must be defined'));
-    }
-    if (!/--font-display:\s*(?:ui-serif|system-ui|Georgia)/.test(css) || !/--font-body:\s*system-ui/.test(css) || !/--font-technical:\s*ui-monospace/.test(css)
-      || !/--text-base:\s*1rem/.test(css) || !/--text-supporting:\s*0?\.875rem/.test(css)) {
-      errors.push(diagnostic(cssPath, 'typography', 'SYSTEM-TYPOGRAPHY', 'system-only serif or sans display, sans body, mono technical with 16px/14px minimum sizes are required'));
-    }
+  errors.push(...validateStylesheets(dist));
+  return errors;
+}
+/** SEMANTIC-TOKENS, size tokens, colour scheme and font stacks for the stylesheet that defines the :root tokens. */
+export function validateTokenStylesheet(cssPath, css) {
+  const errors = [];
+  if (!/color-scheme\s*:\s*light dark/.test(css)) errors.push(diagnostic(cssPath, 'css', 'COLOR-SCHEME', 'color-scheme must advertise light and dark support'));
+  // Literal aliases (--shell, --shell-text, --text-base, --text-supporting) are defined in every theme block (D5).
+  for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'shell-text', 'border', 'warning']) {
+    if (!new RegExp(`--${token}\\s*:`).test(css)) errors.push(diagnostic(cssPath, `--${token}`, 'SEMANTIC-TOKENS', 'semantic role must be defined'));
+  }
+  const stack = (name, tail) => new RegExp(`--${name}:\\s*${FONT_LEAD}${tail}`).test(css);
+  if (!stack('font-display', '(?:ui-serif|system-ui|Georgia)') || !stack('font-reading', '(?:ui-serif|Georgia)') || !stack('font-body', 'system-ui')
+    || !stack('font-technical', 'ui-monospace') || !/--font-marks:\s*"?L2C Marks"?\s*,/.test(css)
+    || !/--text-base:\s*1rem/.test(css) || !/--text-supporting:\s*0?\.875rem/.test(css)) {
+    errors.push(diagnostic(cssPath, 'typography', 'SYSTEM-TYPOGRAPHY', 'allowlisted self-hosted families that fall back to system serif, sans and mono stacks, the L2C Marks stack, and literal 16px/14px size tokens are required'));
   }
   return errors;
 }
+
+/** Every emitted stylesheet: fonts, gradients, motion and font files; exactly one stylesheet, and it defines the tokens. */
+export function validateStylesheets(dist) {
+  const errors = [];
+  const files = filesUnder(dist).filter((candidate) => candidate.endsWith('.css'));
+  const tokenSheets = [];
+  for (const file of files) {
+    const css = readFileSync(file, 'utf8');
+    const cssPath = relative(dist, file);
+    for (const issue of fontFaceIssues(css)) errors.push(diagnostic(cssPath, 'css', 'VISUAL-DEPENDENCY', issue));
+    for (const [, fontPath] of css.matchAll(/url\(\s*["']?(\/fonts\/[^"')\s]+)["']?\s*\)/g)) {
+      if (!existsSync(join(dist, fontPath))) errors.push(diagnostic(cssPath, 'font', 'INTERNAL-LINK', `font file missing: ${fontPath}`));
+    }
+    if (/linear-gradient|radial-gradient|backdrop-filter/i.test(css)) errors.push(diagnostic(cssPath, 'css', 'VISUAL-DEPENDENCY', 'gradients, textures, and glass effects are forbidden'));
+    if (MOTION.test(css)) errors.push(diagnostic(cssPath, 'css', 'MOTION-EXCLUSION', 'decorative animation, transitions, and parallax are forbidden'));
+    if (/--canvas\s*:/.test(css)) {
+      tokenSheets.push(cssPath);
+      errors.push(...validateTokenStylesheet(cssPath, css));
+    }
+  }
+  if (files.length && (tokenSheets.length !== 1 || files.length !== 1)) {
+    errors.push(diagnostic('site/dist', 'css', 'STYLESHEET-SPLIT', `exactly one stylesheet that defines the :root tokens is required; found ${files.length} stylesheet(s), ${tokenSheets.length} with tokens`));
+  }
+  return errors;
+}
+
 export function validateHostnamePolicy(policy) {
   const errors = [];
   if (policy.schemaVersion !== 1) errors.push(diagnostic('hostname-redirects.v1.json', 'schemaVersion', 'REDIRECT-POLICY', 'must be 1'));
