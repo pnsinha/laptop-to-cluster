@@ -883,16 +883,114 @@ export function validateReleaseManifest(record, artifactManifest) {
   return errors;
 }
 
-export function validateDeploymentWorkflow(workflowText) {
+export function validateDeploymentWorkflow(workflowText, file = '.github/workflows/publication.yml', jobName = 'deploy') {
   const errors = [];
-  const deploy = workflowText.match(/\n  deploy:[\s\S]*?(?=\n  [a-zA-Z][\w-]*:|$)/)?.[0] ?? '';
-  if (!deploy) return [diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'BUILD-ONCE', 'deployment job is missing')];
+  const where = `jobs.${jobName}`;
+  const deploy = jobBlock(workflowText, jobName);
+  if (!deploy) return [diagnostic(file, where, 'BUILD-ONCE', 'deployment job is missing')];
   for (const pattern of [/npm\s+(?:ci|install)/i, /astro\s+(?:build|sync|check)/i, /npm\s+run\s+build/i, />\s*site\/dist|cp\s+.*site\/dist|mv\s+.*site\/dist/i]) {
-    if (pattern.test(deploy)) errors.push(diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'BUILD-ONCE', `forbidden deployment operation: ${pattern}`));
+    if (pattern.test(deploy)) errors.push(diagnostic(file, where, 'BUILD-ONCE', `forbidden deployment operation: ${pattern}`));
   }
-  if (!/actions\/download-artifact@/.test(deploy)) errors.push(diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'BUILD-ONCE', 'must download the retained artifact'));
-  if (!/cloudflare\/wrangler-action@/.test(deploy) || !/pages deploy site\/dist/.test(deploy)) errors.push(diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'DIRECT-UPLOAD', 'must invoke wrangler Pages Direct Upload'));
-  if (!/publication\.mjs verify/.test(deploy)) errors.push(diagnostic('.github/workflows/publication.yml', 'jobs.deploy', 'ARTIFACT-IDENTITY', 'must verify checksums immediately before upload'));
+  if (!/actions\/download-artifact@/.test(deploy)) errors.push(diagnostic(file, where, 'BUILD-ONCE', 'must download the retained artifact'));
+  if (!/cloudflare\/wrangler-action@/.test(deploy) || !/pages deploy site\/dist/.test(deploy)) errors.push(diagnostic(file, where, 'DIRECT-UPLOAD', 'must invoke wrangler Pages Direct Upload'));
+  if (!/publication\.mjs verify/.test(deploy)) errors.push(diagnostic(file, where, 'ARTIFACT-IDENTITY', 'must verify checksums immediately before upload'));
+  return errors;
+}
+
+/** The one release-version rule (A12): RELEASE_VERSION, else the newest releases/<v>/release-candidate.json. Never defaults to v0.1.0. Kept in step with site/src/content/release.ts by a unit test. */
+export function resolveReleaseVersion(root = '.', env = process.env) {
+  const fromEnv = env.RELEASE_VERSION?.trim();
+  if (fromEnv) return fromEnv;
+  const directory = join(root, 'releases');
+  const versions = existsSync(directory) ? readdirSync(directory).filter((name) => /^v\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?$/.test(name) && existsSync(join(directory, name, 'release-candidate.json'))) : [];
+  const parts = (version) => version.slice(1).split(/[.-]/).map((part) => Number(part) || 0);
+  const newest = versions.sort((a, b) => { const pa = parts(a); const pb = parts(b); for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pb[i] - pa[i]; return 0; })[0];
+  if (!newest) throw new Error('resolveReleaseVersion: set RELEASE_VERSION or add releases/<version>/release-candidate.json');
+  return JSON.parse(readFileSync(join(directory, newest, 'release-candidate.json'), 'utf8')).version ?? newest;
+}
+
+/** GitHub Actions tag filter semantics for the characters we use: * (no slash), ** (anything), ? and + (as in a regular expression), [] classes. */
+export function tagPatternMatches(pattern, tag) {
+  let source = '';
+  for (let index = 0; index < pattern.length; index++) {
+    const character = pattern[index];
+    if (character === '*') {
+      if (pattern[index + 1] === '*') { source += '.*'; index++; } else source += '[^/]*';
+    } else if (character === '?' || character === '+') source += character;
+    else if (character === '[') {
+      const end = pattern.indexOf(']', index);
+      if (end < 0) return false;
+      source += pattern.slice(index, end + 1);
+      index = end;
+    } else source += character.replace(/[.\\^$(){}|]/g, '\\$&');
+  }
+  return new RegExp(`^${source}$`).test(tag);
+}
+/** Ordered include/!-exclude evaluation: the last matching pattern decides. */
+export function tagTriggers(patterns, tag) {
+  let triggers = false;
+  for (const pattern of patterns) {
+    if (pattern.startsWith('!')) { if (tagPatternMatches(pattern.slice(1), tag)) triggers = false; }
+    else if (tagPatternMatches(pattern, tag)) triggers = true;
+  }
+  return triggers;
+}
+function jobBlock(text, name) {
+  return text.match(new RegExp(`\\n  ${name}:[\\s\\S]*?(?=\\n  [a-zA-Z][\\w-]*:|$)`))?.[0] ?? '';
+}
+export function workflowTagPatterns(text) {
+  const raw = text.match(/\n\s+tags:\s*(\[[^\]]*\]|(?:\n\s+- [^\n]+)+)/)?.[1] ?? '';
+  return raw.replace(/^\[|\]$/g, '').split(/,|\n/).map((item) => item.replace(/^\s*-\s*/, '').trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+}
+
+/** The v0.2.0 release workflow (written by W8): the properties of contract A11 that the policy gate requires. */
+export function validateReleaseWorkflow(text, file = '.github/workflows/release.yml') {
+  const errors = [];
+  const fail = (field, check, message) => errors.push(diagnostic(file, field, check, message));
+  const patterns = workflowTagPatterns(text);
+  if (!patterns.length) fail('on.push.tags', 'RELEASE-WORKFLOW', 'tag triggers are required');
+  for (const tag of ['v0.2.0', 'v0.2.0-rc.1']) if (!tagTriggers(patterns, tag)) fail('on.push.tags', 'RELEASE-WORKFLOW', `no tag pattern triggers ${tag}`);
+  if (tagTriggers(patterns, 'v0.1.0')) fail('on.push.tags', 'RELEASE-WORKFLOW', 'the tag patterns match the frozen v0.1.0 tag; add a !v0.1.0 filter');
+  if (/v0\.1\.0/.test(text.replace(/!v0\.1\.0/g, ''))) fail('release', 'RELEASE-WORKFLOW', 'v0.1.0 may appear only inside the !v0.1.0 filter');
+  if (!/branches:\s*\[[^\]]*\bv0\.2\.0-showcase\b/.test(text)) fail('on.push.branches', 'RELEASE-WORKFLOW', 'the preview trigger on branch v0.2.0-showcase is required');
+  if (!/^permissions:\s*\n\s+contents:\s*read\s*$/m.test(text)) fail('permissions', 'RELEASE-WORKFLOW', 'top-level permissions must be contents: read');
+  if (!/L2C_BOUNDARY_PATTERN:\s*\$\{\{\s*secrets\.L2C_BOUNDARY_PATTERN\s*\}\}/.test(text)) fail('env', 'RELEASE-WORKFLOW', 'L2C_BOUNDARY_PATTERN must be mapped from the secret of the same name');
+  for (const secret of ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_ZONE_ID']) if (!new RegExp(`secrets\\.${secret}\\b`).test(text)) fail('secrets', 'RELEASE-WORKFLOW', `secrets.${secret} must be used`);
+  if (!/RELEASE_VERSION/.test(text) && !/outputs\.version/.test(text)) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job must output the release version');
+  if (!jobBlock(text, 'plan')) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job is missing');
+  const build = jobBlock(text, 'build-once');
+  if (!build) fail('jobs.build-once', 'BUILD-ONCE', 'the build-once job is missing');
+  else {
+    if (!/fetch-depth:\s*0/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'checkout needs fetch-depth: 0 for the history scan');
+    if (!/npm run validate(?![:\w-])/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'the full npm run validate chain is required');
+    const artifact = build.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
+    if (!/validated-site-/.test(artifact) || !/RELEASE_VERSION|outputs\.version/.test(artifact)) fail('jobs.build-once', 'BUILD-ONCE', 'the retained artifact name must contain the release version (validated-site-<version>-<sha>)');
+  }
+  const preview = jobBlock(text, 'deploy-preview');
+  const production = jobBlock(text, 'deploy');
+  errors.push(...validateDeploymentWorkflow(text, file, 'deploy-preview'), ...validateDeploymentWorkflow(text, file, 'deploy'));
+  for (const [name, block] of [['deploy-preview', preview], ['deploy', production]]) {
+    if (block && !/\n    if:[^\n]*preview/i.test(block)) fail(`jobs.${name}`, 'RELEASE-WORKFLOW', `${name} must be gated on the plan preview output`);
+    if (block && !/needs:[^\n]*build-once/.test(block)) fail(`jobs.${name}`, 'BUILD-ONCE', `${name} must need build-once`);
+  }
+  const count = (block, needle) => block.split(needle).length - 1;
+  if (count(text, '--branch=preview') !== count(preview, '--branch=preview') || !count(preview, '--branch=preview')) fail('jobs.deploy-preview', 'DIRECT-UPLOAD', '--branch=preview must appear only in deploy-preview, and there it is required');
+  if (count(text, '--branch=main') !== count(production, '--branch=main') || !count(production, '--branch=main')) fail('jobs.deploy', 'DIRECT-UPLOAD', '--branch=main must appear only in deploy, and there it is required');
+  for (const script of ['generate-release-record.mjs', 'update-recovery-index.mjs']) {
+    if (count(text, script) !== count(production, script)) fail('jobs.deploy-preview', 'RELEASE-WORKFLOW', `${script} belongs to the production job only`);
+    if (!production.includes(script)) fail('jobs.deploy', 'RELEASE-WORKFLOW', `${script} must run in the deploy job`);
+  }
+  const post = jobBlock(text, 'post-deploy-release-checks');
+  if (!/needs:[^\n]*\bdeploy\b/.test(post) || !/check-public-release\.mjs/.test(post)) fail('jobs.post-deploy-release-checks', 'RELEASE-WORKFLOW', 'a post-deploy job that needs deploy and runs check-public-release.mjs is required');
+  return errors;
+}
+
+/** publication.yml stays frozen for v0.1.0: its tag trigger and every checkout are pinned to that tag. */
+export function validateFrozenPublicationWorkflow(text, file = '.github/workflows/publication.yml') {
+  const errors = [];
+  if (workflowTagPatterns(text).join('|') !== 'v0.1.0') errors.push(diagnostic(file, 'on.push.tags', 'FROZEN-RELEASE', 'the tag trigger must be exactly v0.1.0'));
+  const checkouts = text.split(/\n      - /).filter((step) => step.startsWith('uses: actions/checkout@'));
+  if (!checkouts.length || checkouts.some((step) => !/\bref:\s*v0\.1\.0\b/.test(step))) errors.push(diagnostic(file, 'jobs', 'FROZEN-RELEASE', 'every checkout must be pinned with ref: v0.1.0 so a manual dispatch cannot deploy another revision'));
   return errors;
 }
 function printErrors(errors) {
@@ -938,10 +1036,25 @@ if (invoked) {
       const text = readFileSync(file, 'utf8');
       if (REDIRECT_HOSTS.some((host) => text.includes(host))) errors.push(diagnostic(relative(root, file), 'hostname', 'REDIRECT-POLICY', 'hostname rules must remain outside content redirects'));
     }
+    const requireRelease = args.includes('--require-release-workflow') || process.env.CI === 'true';
+    const releasePath = join(root, '.github/workflows/release.yml');
+    const releaseErrors = existsSync(releasePath)
+      ? validateReleaseWorkflow(readFileSync(releasePath, 'utf8'))
+      : [diagnostic('.github/workflows/release.yml', 'file', 'RELEASE-WORKFLOW', 'the release workflow is missing')];
+    const frozenErrors = validateFrozenPublicationWorkflow(readFileSync(join(root, '.github/workflows/publication.yml'), 'utf8'));
+    if (requireRelease) errors.push(...releaseErrors, ...frozenErrors);
+    else for (const message of [...releaseErrors, ...frozenErrors]) console.error(`WARNING: ${message}`);
     if (printErrors(errors)) console.log('Canonical, Cloudflare redirect, and build-once deployment policies are valid.');
   } else if (command === 'cloudflare-readiness') {
     const input = JSON.parse(readFileSync(args[0], 'utf8'));
     if (printErrors(validateCloudflareReadiness(input))) console.log('Cloudflare identifiers, DNS, certificate, and rule readiness are valid.');
+  } else if (command === 'release-version') {
+    try {
+      console.log(resolveReleaseVersion(resolve(args[0] ?? '.')));
+    } catch (error) {
+      console.error(`ERROR: ${error.message}`);
+      process.exitCode = 1;
+    }
   } else if (command === 'boundary') {
     const historyAt = args.indexOf('--history');
     const history = historyAt >= 0 ? args[historyAt + 1] : undefined;
@@ -956,7 +1069,7 @@ if (invoked) {
       process.exitCode = result.exitCode;
     }
   } else {
-    console.error('Usage: publication.mjs manifest <dist> <output> | verify <dist> <manifest> | built-output <dist> | policy <root> | cloudflare-readiness <input> | boundary <root> [--require] [--history <ref>]');
+    console.error('Usage: publication.mjs manifest <dist> <output> | verify <dist> <manifest> | built-output <dist> | policy <root> | cloudflare-readiness <input> | boundary <root> [--require] [--history <ref>] | release-version [<root>]');
     process.exitCode = 2;
   }
 }
