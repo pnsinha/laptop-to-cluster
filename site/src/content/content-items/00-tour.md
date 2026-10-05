@@ -33,7 +33,7 @@ authority:
 ---
 ## Why Compose stops working
 
-On your laptop, `docker compose up` starts every service of your project whenever you ask. A shared research cluster works differently. It runs no Docker daemon, it gives you no root access (administrator rights), and a scheduler decides what runs, where and for how long. So the same stack has to start another way: from a script that runs inside a block of computer time the scheduler grants you.
+On your laptop, `docker compose up` starts every service of your project. A shared research cluster works differently. It runs no Docker daemon, it gives you no root access (administrator rights), and a scheduler decides what runs, where and for how long. So the same stack has to start another way: from a script that runs inside a block of computer time the scheduler grants you.
 
 ## The big idea
 
@@ -45,7 +45,7 @@ The figure shows the script's six steps, in order.
 
 ## The six steps in detail
 
-The steps below describe the example script in this project's repository, in plain terms with the technical term in parentheses.
+The steps below describe the example script, in plain terms with the technical term in parentheses.
 
 ### 1. Get an allocation
 
@@ -85,8 +85,6 @@ Four Compose ideas change meaning on a cluster. Each keeps the same color and sh
 Reaching a service from beyond its node needs access your center approves, such as an [SSH tunnel](/about/glossary/#ssh-tunnel) where it allows one.
 
 ## The gate is not the verifier
-
-Two checks guard the run.
 
 - **The readiness gate asks: can the coordinator serve?** It proves the service is up and answering correctly, so workers do not start too early. It belongs to the pattern. Keep it, and change only what "ready" means for your service.
 - **Verification asks: are the results right?** Only your science can say. It belongs to your application. Replace the example check with your own, and remove it only if a clean exit truly means success for you, which is rarely true.
