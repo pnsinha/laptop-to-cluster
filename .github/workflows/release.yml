@@ -1,0 +1,208 @@
+name: release
+
+on:
+  push:
+    branches: [v0.2.0-showcase]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
+      - '!v0.1.0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/heads/') }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      version: ${{ steps.plan.outputs.version }}
+      date: ${{ steps.plan.outputs.date }}
+      artifact-name: ${{ steps.plan.outputs.artifact-name }}
+      record-name: ${{ steps.plan.outputs.record-name }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with: { fetch-depth: 0 }
+      - id: plan
+        name: Decide mode, version and artifact names
+        run: |
+          if [[ "$GITHUB_REF" =~ ^refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            MODE=production
+            VERSION="${BASH_REMATCH[1]}"
+          elif [[ "$GITHUB_REF" =~ ^refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)-rc\.[0-9]+$ ]]; then
+            MODE=preview
+            VERSION="${BASH_REMATCH[1]}"
+          elif [[ "$GITHUB_REF" =~ ^refs/heads/ ]]; then
+            MODE=preview
+            NEWEST=$(ls releases/*/release-candidate.json | sed -E 's#releases/(v[0-9.]+)/.*#\1#' | sort -V | tail -n 1)
+            VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('releases/${NEWEST}/release-candidate.json','utf8')).version")
+          else
+            echo "::error::unsupported ref ${GITHUB_REF}"; exit 1
+          fi
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::no valid release version"; exit 1; }
+          {
+            echo "mode=${MODE}"
+            echo "version=${VERSION}"
+            echo "date=$(git log -1 --format=%cs HEAD)"
+            echo "artifact-name=validated-site-${VERSION}-${GITHUB_SHA}"
+            echo "record-name=release-record-${VERSION}-${GITHUB_SHA}"
+          } >> "$GITHUB_OUTPUT"
+
+  build-once:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+      RELEASE_DATE: ${{ needs.plan.outputs.date }}
+      PREVIEW: ${{ needs.plan.outputs.mode == 'preview' && '1' || '' }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22.15.0'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Full validation chain (builds the site exactly once)
+        run: npm run validate
+        env:
+          L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
+      - name: Require a complete accessibility review for production
+        if: needs.plan.outputs.mode == 'production'
+        run: npx --no-install tsx scripts/validate-accessibility-review.ts "releases/${RELEASE_VERSION}/accessibility-review.yml" --require-complete
+      - uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ${{ needs.plan.outputs.artifact-name }}
+          path: |
+            site/dist/
+            publication/${{ needs.plan.outputs.version }}/
+          if-no-files-found: error
+          retention-days: ${{ needs.plan.outputs.mode == 'production' && 90 || 30 }}
+
+  deploy-preview:
+    if: needs.plan.outputs.mode == 'preview'
+    needs: [plan, build-once]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: ${{ needs.plan.outputs.artifact-name }}
+          path: .
+      - name: Verify retained upload identity
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: node scripts/publication.mjs verify site/dist "publication/${VERSION}/artifact-manifest.json"
+      - id: direct-upload
+        uses: cloudflare/wrangler-action@v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-hash=${{ github.sha }} --commit-dirty=false
+      - name: Smoke-check the preview deployment
+        env:
+          DEPLOYMENT_URL: ${{ steps.direct-upload.outputs.deployment-url }}
+          ALIAS_URL: https://preview.${{ vars.CLOUDFLARE_PAGES_PROJECT }}.pages.dev/
+        run: |
+          curl --fail --silent --show-error --retry 6 --retry-delay 5 --retry-all-errors "${DEPLOYMENT_URL}/" | grep -q 'rel="canonical" href="https://laptop-to-cluster.org/"'
+          curl --fail --silent --show-error --retry 6 --retry-delay 5 --retry-all-errors "${DEPLOYMENT_URL}/url-manifest.json" > /dev/null
+          { echo "### Preview deployment"; echo "- Deployment: ${DEPLOYMENT_URL}"; echo "- Branch alias: ${ALIAS_URL}"; } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    if: needs.plan.outputs.mode == 'production'
+    needs: [plan, build-once]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    outputs:
+      pages-url: ${{ steps.cloudflare.outputs.pages-url }}
+      deployment-id: ${{ steps.cloudflare.outputs.deployment-id }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: ${{ needs.plan.outputs.artifact-name }}
+          path: .
+      - name: Verify retained upload identity
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: node scripts/publication.mjs verify site/dist "publication/${VERSION}/artifact-manifest.json"
+      - name: Validate externally supplied Cloudflare readiness
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          CF_CUSTOM_DOMAIN_ID: ${{ vars.CLOUDFLARE_CUSTOM_DOMAIN_ID }}
+          CF_REDIRECT_LIST_ID: ${{ vars.CLOUDFLARE_REDIRECT_LIST_ID }}
+          CF_REDIRECT_RULE_ID: ${{ vars.CLOUDFLARE_REDIRECT_RULE_ID }}
+        run: |
+          jq -n --arg accountId "$CF_ACCOUNT_ID" --arg zoneId "$CF_ZONE_ID" --arg project "$CF_PROJECT" --arg domainId "$CF_CUSTOM_DOMAIN_ID" --arg listId "$CF_REDIRECT_LIST_ID" --arg ruleId "$CF_REDIRECT_RULE_ID" '{schemaVersion:1,accountId:$accountId,zoneId:$zoneId,pagesProjectName:$project,customDomainId:$domainId,customDomainHostname:"laptop-to-cluster.org",customDomainStatus:"active",redirectListId:$listId,redirectRuleId:$ruleId,redirectRuleStatus:"active",dns:[{hostname:"www.laptop-to-cluster.org",proxied:true,status:"active"},{hostname:"laptoptocluster.org",proxied:true,status:"active"},{hostname:"laptop-to-cluster.pnsinha.com",proxied:true,status:"active"}]}' > "publication/${VERSION}/cloudflare-readiness.json"
+          node scripts/publication.mjs cloudflare-readiness "publication/${VERSION}/cloudflare-readiness.json"
+      - id: direct-upload
+        uses: cloudflare/wrangler-action@v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ github.sha }} --commit-dirty=false
+      - name: Capture Cloudflare deployment identity
+        id: cloudflare
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          PAGES_URL: ${{ steps.direct-upload.outputs.deployment-url }}
+        run: |
+          DEPLOYMENT_ID=$(curl --fail --silent --show-error --header "Authorization: Bearer ${CF_API_TOKEN}" "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${CF_PROJECT}/deployments" | jq -r --arg url "$PAGES_URL" '.result[] | select(.url == $url) | .id' | head -n 1)
+          test -n "$DEPLOYMENT_ID"
+          echo "deployment-id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+          echo "pages-url=$PAGES_URL" >> "$GITHUB_OUTPUT"
+      - name: Generate immutable deployment and release records
+        env:
+          RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+          RELEASE_DATE: ${{ needs.plan.outputs.date }}
+          CLOUDFLARE_DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.deployment-id }}
+          PAGES_DEV_FALLBACK_URL: ${{ steps.cloudflare.outputs.pages-url }}
+        run: node scripts/generate-release-record.mjs .
+      - name: Retain current and previous known-good recovery identities
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          cp releases/recovery-index.json "publication/${VERSION}/recovery-index.json"
+          node scripts/update-recovery-index.mjs "publication/${VERSION}/recovery-index.json" "publication/${VERSION}/deployment-record.json"
+      - uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ${{ needs.plan.outputs.record-name }}
+          path: publication/${{ needs.plan.outputs.version }}/
+          if-no-files-found: error
+          retention-days: 365
+
+  post-deploy-release-checks:
+    if: needs.plan.outputs.mode == 'production'
+    needs: [plan, deploy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: ${{ needs.plan.outputs.record-name }}
+          path: publication/${{ needs.plan.outputs.version }}
+      - name: Apex, redirect, fallback, repository, and anonymous-access checks
+        env:
+          PAGES_DEV_FALLBACK_URL: ${{ needs.deploy.outputs.pages-url }}
+          RELEASE_RECORD_PATH: publication/${{ needs.plan.outputs.version }}/release-manifest.json
+          REPOSITORY_URL: https://github.com/pnsinha/laptop-to-cluster
+        run: node scripts/check-public-release.mjs
