@@ -3,11 +3,13 @@ import { evidenceBadgeText, formatMonthYear, rowAgreementIssues, validateProject
 
 type Status = 'validated' | 'stale' | 'failed' | 'unvalidated';
 const list = (heading: string, items: string[]) => `<h2>${heading}</h2><ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
-function canonical(status: Status = 'validated', extra = '') {
+// The validation date mirrors site/src/pages/applicability/[id].astro:23: <time datetime=ISO>Long date</time>.
+const DEFAULT_DATE_DD = '<time datetime="2026-07-25">July 25, 2026</time>';
+function canonical(status: Status = 'validated', extra = '', dateDd = DEFAULT_DATE_DD) {
   return `<body data-composition-profile="applicability"><section class="applicability-record" data-source-id="m1"><dl>`
     + `<div><dt>Status</dt><dd>${status}</dd></div><div><dt>Environment</dt><dd>Purdue Anvil</dd></div>`
     + `<div><dt>Scheduler</dt><dd>Slurm 25.11</dd></div><div><dt>Runtime</dt><dd>Apptainer 1.4</dd></div>`
-    + `<div><dt>Validation date</dt><dd>2026-07-25</dd></div></dl>`
+    + `<div><dt>Validation date</dt><dd>${dateDd}</dd></div></dl>`
     + list('Result checks', ['The check passed.', 'The log matched.']) + list('Assumptions', ['A Slurm allocation.', 'Apptainer is installed.'])
     + list('Limitations', ['One node only.']) + list('Portability boundaries', ['Partition names differ.', 'Module names differ.']) + extra + `</section></body>`;
 }
@@ -69,6 +71,20 @@ describe('SOURCE-AGREEMENT between a projection and its canonical record', () =>
       check(escalated('Review due: last tested on Purdue Anvil · Jul 2026'), canonical('failed')),
     ];
     for (const errors of drift) expect(errors.join('\n')).toMatch(/SOURCE-AGREEMENT/);
+  });
+
+  it('takes the month from the datetime attribute, not the displayed text', () => {
+    const page = canonical('validated', '', '<time datetime="2026-08-03">August 3, 2026</time>');
+    expect(check(validated(literalRows, 'Tested on Purdue Anvil · Jul 2026'), page).join('\n')).toMatch(/SOURCE-AGREEMENT/);
+    expect(check(validated(literalRows, 'Tested on Purdue Anvil · Aug 2026'), page)).toEqual([]);
+  });
+
+  it('rejects a long-form date with no time element', () => {
+    expect(check(validated(), canonical('validated', '', 'July 25, 2026')).join('\n')).toMatch(/SOURCE-AGREEMENT/);
+  });
+
+  it('falls back to a bare ISO date in the definition', () => {
+    expect(check(validated(), canonical('validated', '', '2026-07-25'))).toEqual([]);
   });
 
   it('rejects a stale source ID or canonical link, and a missing canonical record', () => {

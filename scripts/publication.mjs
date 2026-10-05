@@ -36,6 +36,8 @@ const stripTags = (value = '') => value.replace(/<[^>]+>/g, '').replaceAll('&amp
 const standardProjectionBlocks = (html) => html.match(new RegExp(`${PROJECTION_SECTION.source}[\\s\\S]*?<\\/section>`, 'g')) ?? [];
 const diagnosticProjectionBlocks = (html) => html.match(/<aside class="diagnostic-applicability"[\s\S]*?<\/aside>/g) ?? [];
 const definitionValue = (html, label) => stripTags(html.match(new RegExp(`<dt>${label}<\\/dt><dd>([\\s\\S]*?)<\\/dd>`, 'i'))?.[1]);
+/** ISO date from `<dd><time datetime="ISO">Long date</time></dd>` (the canonical page markup); falls back to the dd text, which must then be bare ISO. */
+const definitionDate = (html, label) => html.match(new RegExp(`<dt>${label}<\\/dt><dd>\\s*<time[^>]*\\bdatetime="([^"]+)"`, 'i'))?.[1] ?? definitionValue(html, label);
 const sectionList = (html, heading) => [...(html.match(new RegExp(`<h2[^>]*>${heading}<\\/h2><ul>([\\s\\S]*?)<\\/ul>`, 'i'))?.[1] ?? '').matchAll(/<li>([\s\S]*?)<\/li>/g)].map((match) => stripTags(match[1]));
 const paragraphs = (html) => [...html.matchAll(/<p(\s[^>]*)?>([\s\S]*?)<\/p>/g)].map((match) => ({ classes: match[1]?.match(/class="([^"]*)"/)?.[1] ?? '', inner: match[2] }));
 /** Parses `<dl class="evidence-rows">` into [{ label, items: [{ text, from }] }]; undefined when the list is absent. `from` comes from an optional data-from attribute on each <li>. */
@@ -277,7 +279,7 @@ export function validateProjectionSourceAgreement(source, projectionHtml, canoni
   }
   const status = definitionValue(canonicalHtml, 'Status');
   const environment = definitionValue(canonicalHtml, 'Environment');
-  const validationDate = definitionValue(canonicalHtml, 'Validation date');
+  const validationDate = definitionDate(canonicalHtml, 'Validation date');
   const linkId = projectionHtml.match(/href="\/applicability\/([^"]+)\/"/)?.[1];
   if (linkId !== sourceId) errors.push(diagnostic(source, 'canonicalLink', 'SOURCE-AGREEMENT', 'projection canonical link must match the source ID'));
   const escalated = projectionHtml.slice(0, projectionHtml.indexOf('>')).includes('applicability-projection--escalated');
