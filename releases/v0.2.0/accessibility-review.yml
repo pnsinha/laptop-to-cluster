@@ -166,10 +166,10 @@ checks:
     notes: "Automated: no animation or transition on any page under no-preference or reduce, and scroll-behavior is auto under reduce. Manual: section E, reduce-motion setting."
   - id: canonical-ownership
     result: pending
-    notes: "Automated: tests/integration/static-site.test.ts asserts exhaustive fields appear only on the canonical record pages and authority fields only on /about/attribution/; confirm it passes on the release candidate."
+    notes: "Automated: tests/integration/static-site.test.ts asserts exhaustive fields appear only on the canonical record pages and the funding-administration text only on /about/attribution/ (sampled pages). Manual: confirm author, fellowship role, affiliation and non-endorsement wording appear only on /about/attribution/; confirm it passes on the release candidate."
   - id: projection-count
     result: pending
-    notes: "Automated: tests/integration/static-site.test.ts asserts one projection on /, the runnable module and each milestone page, none on resources, conceptual, start, adoption, attribution, accessibility and support pages, and a RecordSummary only on the adoption page."
+    notes: "Automated: tests/integration/static-site.test.ts asserts one projection on /, the runnable module and each milestone page, none on resources, conceptual, start, attribution, accessibility and support pages. Manual: confirm /adoption/evaluate/ has no projection and is the only page with a RecordSummary (Full test record link)."
   - id: pre-execution-warnings
     result: pending
     notes: Confirm the safety notice and prerequisites sit in the runnable module's main flow before the procedure, and the start page prerequisites are plain visible text.
@@ -187,7 +187,7 @@ checks:
     notes: "Automated: with /fonts/* blocked, text stays visible, nothing overflows at 320 and 1280px, and page height stays within 25% of the normal render. Manual: section E, blocked fonts."
   - id: evidence-badge-panel
     result: pending
-    notes: "Automated: the badge on the home page, Module 2 and the milestone page expands into Tested, You need and Depends on your center; the rows are visible without JavaScript and in print; the Full test record link names its destination. Manual: expand and collapse with keyboard and VoiceOver; confirm no critical content sits only inside the panel."
+    notes: "Automated: the badge on the home page and Module 2 expands into Tested, You need and Depends on your center; the rows are visible without JavaScript and in print; the Full test record link names its destination. Manual: if /milestones/2/ renders a badge on the release candidate, expand and collapse it there too; expand and collapse with keyboard and VoiceOver; confirm no critical content sits only inside the panel."
   - id: voiceover
     result: pending
     notes: "Manual: section B of the manual checklist (doors, badge collapsed and expanded, timeline order, theme control, crosswalk, and the selected concept if the highlight enhancement ships)."
