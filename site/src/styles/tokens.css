@@ -1,0 +1,312 @@
+/*
+ * laptop-to-cluster.org design tokens: the v0.2.0 visual system.
+ * Light is the base palette. Without a stored choice the page follows
+ * prefers-color-scheme; a text-labelled System / Light / Dark control sets
+ * data-theme on <html>. Dark tokens are screen-only, so print always starts
+ * from the light base and then applies the print overrides.
+ * Every text/background pair used by the specimen is checked by
+ * contrast_check.py (WCAG 2.2 AA in both modes).
+ * Do not use light-dark(): the accessibility scanner reads raw token strings.
+ */
+
+:root {
+  color-scheme: light dark;
+  /* Type families: self-hosted face first (fonts.css), then the phase-1 system stacks */
+  --font-display: "Source Serif 4", "Source Serif 4 Fallback", ui-serif, Charter, "Bitstream Charter", "Sitka Text", Cambria, "Noto Serif", Georgia, "DejaVu Serif", serif;
+  --font-reading: "Source Serif 4", "Source Serif 4 Fallback", ui-serif, Charter, "Bitstream Charter", "Sitka Text", Cambria, "Noto Serif", Georgia, "DejaVu Serif", serif;
+  --font-body: "IBM Plex Sans", "IBM Plex Sans Fallback", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-technical: "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Mono", Consolas, "Noto Sans Mono", "DejaVu Sans Mono", "Liberation Mono", "Droid Sans Mono", monospace;
+  --font-marks: "L2C Marks", "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", sans-serif; /* four glyphs only (U+25A0 U+25B2 U+25C6 U+25CF), one face so they match in size */
+  /* Type sizes (cqi falls back to the viewport when no container is set) */
+  --text-fine: 0.875rem; /* 14px: captions, eyebrows, footer; the floor for essential text */
+  --text-ui: 1rem; /* 16px: UI sans, nav, buttons, controls, tables */
+  --text-code: 0.9375rem; /* 15px: code blocks */
+  --text-code-inline: max(0.875em, 0.875rem); /* inline code: 0.875em, never below 14px */
+  --text-reading: clamp(1.0625rem, 1rem + 0.5cqi, 1.125rem); /* 17-18px reading serif */
+  --text-lede: clamp(1.1875rem, 1.05rem + 0.9cqi, 1.3125rem); /* 19-21px */
+  --text-h3: 1.375rem; /* 22px */
+  --text-h2: clamp(1.5rem, 1.3rem + 1.1cqi, 1.75rem); /* 24-28px */
+  --text-display: clamp(2.25rem, 1.6rem + 2.8cqi, 3rem); /* 36-48px */
+  /* Leading and weight */
+  --leading-display: 1.1;
+  --leading-heading: 1.2;
+  --leading-lede: 1.45;
+  --leading-reading: 1.5;
+  --leading-ui: 1.45;
+  --leading-fine: 1.5;
+  --leading-code: 1.6;
+  --weight-regular: 400;
+  --weight-semibold: 600; /* Plex Sans SemiBold; serif h2/h3 */
+  --weight-display: 600; /* variable serif; no opsz axis is shipped */
+  /* Measure */
+  --measure-prose: 66ch;
+  --measure-lede: 58ch;
+  --measure-wide: 72rem;
+  --measure-data: 84rem;
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem; /* between home sections */
+  --space-24: 6rem;
+  /* Lines, radii, focus */
+  --border-thin: 1px;
+  --border-strong: 2px;
+  --rule-concept: 3px; /* inline-start rule on tagged code lines */
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --radius-small: 0.375rem; /* the only general radius */
+  --radius-door: 0.5rem; /* exception: the three doors */
+  --radius-pill: 999px; /* exception: the evidence badge */
+  /* Timeline geometry (bars are borders, positioned by --from / --to on each lane) */
+  --lane-h: 1.5rem;
+  --bar-scratch: 0.1875rem; /* lightest: solid inside the allocation, dotted after it */
+  --bar-coordinator: 0.3125rem; /* heaviest single line: the service everything waits on */
+  --bar-workers: 0.5rem; /* border-style: double draws the two workers as two 3px lines */
+  /* Concept shape markers (aria-hidden; survive print, grayscale and forced colors) */
+  --mark-step: "■";
+  --mark-gate: "◆";
+  --mark-scratch: "▲";
+  --mark-net: "●";
+  /* Legacy names that existing pages still use. Same scale, new names. */
+  --text-body: var(--text-ui);
+  --text-lead: var(--text-lede);
+  --text-heading: var(--text-h2);
+  --text-subheading: var(--text-h3);
+  --text-technical: var(--text-code);
+  --flow-tight: var(--space-2);
+  --flow-body: var(--space-4);
+  --flow-section: var(--space-8);
+  --shell-accent: var(--accent);
+
+  /* Surfaces */
+  --canvas: #fbf9f4;
+  --surface: #f3efe5;
+  --raised: #fffefb;
+  /* Text */
+  --text: #23211c;
+  /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+  --shell: #fbf9f4;
+  --shell-text: #23211c;
+  --text-base: 1rem;
+  --text-supporting: 0.875rem;
+  --leading-base: 1.45;
+  --muted: #5a554b;
+  --primary: #1d2a44;
+  --accent: #45506a;
+  /* Primary action */
+  --primary-hover: #2d3e63;
+  --on-primary: #fbf9f4;
+  /* Lines and focus */
+  --border: #857e70;
+  --rule: #c9bfaa;
+  --focus: #1d2a44;
+  /* Status (always text-labelled, never a concept) */
+  --warning: #735600;
+  --warning-surface: #fbf3d0;
+  --danger: #a3211a;
+  --danger-surface: #fbe9e7;
+  --success: #0f6a5f;
+  --success-surface: #e2f3ef;
+  /* Concepts (text on tint; each also has a shape) */
+  --c-step: #0b5cad;
+  --c-step-bg: #e3f0fc;
+  --c-gate: #9a4a00;
+  --c-gate-bg: #fdf0dc;
+  --c-scratch: #5b21b6;
+  --c-scratch-bg: #efe8fd;
+  --c-net: #166534;
+  --c-net-bg: #e3f4e8;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    /* Surfaces */
+    --canvas: #131a29;
+    --surface: #192234;
+    --raised: #1f293d;
+    /* Text */
+    --text: #ebe5d9;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #131a29;
+    --shell-text: #ebe5d9;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #b3ab9c;
+    --primary: #f4eee2;
+    --accent: #b8c1d6;
+    /* Primary action */
+    --primary-hover: #ddd4c1;
+    --on-primary: #131a29;
+    /* Lines and focus */
+    --border: #737c90;
+    --rule: #3a4560;
+    --focus: #f4eee2;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #e8c35f;
+    --warning-surface: #2b2511;
+    --danger: #ff9a8f;
+    --danger-surface: #3a1a1e;
+    --success: #6fd6c4;
+    --success-surface: #10302c;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #79b8ff;
+    --c-step-bg: #0f2a44;
+    --c-gate: #f0a35e;
+    --c-gate-bg: #3a2410;
+    --c-scratch: #c4a5ff;
+    --c-scratch-bg: #2a1d47;
+    --c-net: #6fdd8b;
+    --c-net-bg: #12321d;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    /* Surfaces */
+    --canvas: #131a29;
+    --surface: #192234;
+    --raised: #1f293d;
+    /* Text */
+    --text: #ebe5d9;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #131a29;
+    --shell-text: #ebe5d9;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #b3ab9c;
+    --primary: #f4eee2;
+    --accent: #b8c1d6;
+    /* Primary action */
+    --primary-hover: #ddd4c1;
+    --on-primary: #131a29;
+    /* Lines and focus */
+    --border: #737c90;
+    --rule: #3a4560;
+    --focus: #f4eee2;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #e8c35f;
+    --warning-surface: #2b2511;
+    --danger: #ff9a8f;
+    --danger-surface: #3a1a1e;
+    --success: #6fd6c4;
+    --success-surface: #10302c;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #79b8ff;
+    --c-step-bg: #0f2a44;
+    --c-gate: #f0a35e;
+    --c-gate-bg: #3a2410;
+    --c-scratch: #c4a5ff;
+    --c-scratch-bg: #2a1d47;
+    --c-net: #6fdd8b;
+    --c-net-bg: #12321d;
+  }
+}
+
+/* Print: black on white, concept hues kept for colour printers; the shape
+   markers carry the meaning in grayscale. Both selectors are (0,2,0) so a
+   stored theme can never beat them. */
+@media print {
+  :root:not([data-theme]),
+  :root[data-theme] {
+    color-scheme: light;
+    /* Surfaces */
+    --canvas: #ffffff;
+    --surface: #ffffff;
+    --raised: #ffffff;
+    /* Text */
+    --text: #000000;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #ffffff;
+    --shell-text: #000000;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #333333;
+    --primary: #000000;
+    --accent: #333333;
+    /* Primary action */
+    --primary-hover: #000000;
+    --on-primary: #ffffff;
+    /* Lines and focus */
+    --border: #555555;
+    --rule: #999999;
+    --focus: #000000;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #5c4400;
+    --warning-surface: #ffffff;
+    --danger: #8a1c15;
+    --danger-surface: #ffffff;
+    --success: #0b5249;
+    --success-surface: #ffffff;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #0b5cad;
+    --c-step-bg: #ffffff;
+    --c-gate: #9a4a00;
+    --c-gate-bg: #ffffff;
+    --c-scratch: #5b21b6;
+    --c-scratch-bg: #ffffff;
+    --c-net: #166534;
+    --c-net-bg: #ffffff;
+  }
+}
+
+/* Forced colors: map every token to a system colour; shapes, borders and
+   text labels keep the meaning. */
+@media (forced-colors: active) {
+  :root:not([data-theme]),
+  :root[data-theme] {
+    /* Surfaces */
+    --canvas: Canvas;
+    --surface: Canvas;
+    --raised: Canvas;
+    /* Text */
+    --text: CanvasText;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: Canvas;
+    --shell-text: CanvasText;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: CanvasText;
+    --primary: LinkText;
+    --accent: CanvasText;
+    /* Primary action */
+    --primary-hover: LinkText;
+    --on-primary: ButtonText;
+    /* Lines and focus */
+    --border: CanvasText;
+    --rule: GrayText;
+    --focus: Highlight;
+    /* Status (always text-labelled, never a concept) */
+    --warning: CanvasText;
+    --warning-surface: Canvas;
+    --danger: CanvasText;
+    --danger-surface: Canvas;
+    --success: CanvasText;
+    --success-surface: Canvas;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: CanvasText;
+    --c-step-bg: Canvas;
+    --c-gate: CanvasText;
+    --c-gate-bg: Canvas;
+    --c-scratch: CanvasText;
+    --c-scratch-bg: Canvas;
+    --c-net: CanvasText;
+    --c-net-bg: Canvas;
+  }
+}
