@@ -614,6 +614,52 @@ export function validateEvidenceBundle(bundleDirectory: string): EvidenceValidat
   return { valid: errors.length === 0, evidenceId: manifest?.evidenceId, kind: manifest?.evidenceKind, checks, errors };
 }
 
+/** The date after which a validated record is stale: the review extension's review_by when present, otherwise review_after. */
+export function reviewDeadline(record: ApplicabilityRecord): string {
+  return record.review_extension?.review_by ?? record.review_after;
+}
+
+/** Related (negative-test) bundles: integrity and semantics of the bundle, its kind, and agreement with the record's
+ * workflow, revision, image digest, and environment. Run-level facts (submission, terminal state, dates, review date)
+ * belong to the related run and are deliberately not compared. */
+export function validateRelatedEvidence(record: ApplicabilityRecord, root: string): string[] {
+  const errors: string[] = [];
+  for (const [index, reference] of record.related_evidence.entries()) {
+    const label = `${record.id}.related_evidence.${index}`;
+    const manifestPath = resolve(root, reference.path);
+    if (!existsSync(manifestPath)) { errors.push(`${label}: evidence path is missing: ${reference.path}`); continue; }
+    if (basename(manifestPath) !== 'manifest.json') { errors.push(`${label}: must reference an immutable manifest.json`); continue; }
+    if (sha256File(manifestPath) !== reference.integrity) errors.push(`${label}.integrity does not match manifest`);
+    const report = validateEvidenceBundle(dirname(manifestPath));
+    if (!report.valid) { errors.push(...report.errors.map((error) => `${label}: ${error}`)); continue; }
+    const manifest = evidenceManifestSchema.parse(JSON.parse(readFileSync(manifestPath, 'utf8')));
+    if (manifest.evidenceId !== reference.id) errors.push(`${label}: evidence ID does not match manifest`);
+    if (manifest.evidenceKind !== 'readiness-timeout') errors.push(`${label}: a negative-test reference requires readiness-timeout evidence`);
+    if (manifest.workflowId !== record.workflow_id) errors.push(`${label}: workflow ID does not match the record`);
+    if (manifest.workflowRevision !== record.workflow_revision) errors.push(`${label}: workflow revision does not match the record`);
+    if (manifest.run.containerDigest !== record.container_digest) errors.push(`${label}: container digest does not match the record`);
+    if (manifest.representativeEnvironment.publicName !== record.environment.public_name
+      || manifest.representativeEnvironment.fallback !== record.environment.fallback) {
+      errors.push(`${label}: representative environment does not match the record`);
+    }
+  }
+  return errors;
+}
+
+/** superseded_by must name another record for the same workflow that was validated no earlier. */
+export function supersessionErrors(records: ApplicabilityRecord[]): string[] {
+  const byId = new Map(records.map((record) => [record.id, record]));
+  return records.flatMap((record) => {
+    if (!record.superseded_by) return [];
+    const successor = byId.get(record.superseded_by);
+    if (!successor) return [`${record.id}.superseded_by: missing applicability record ${record.superseded_by}`];
+    if (successor.superseded_by === record.id) return [`${record.id}.superseded_by: ${successor.id} and ${record.id} supersede each other`];
+    if (successor.workflow_id !== record.workflow_id) return [`${record.id}.superseded_by: ${successor.id} belongs to ${successor.workflow_id}`];
+    if (successor.validation_date < record.validation_date) return [`${record.id}.superseded_by: ${successor.id} was validated before ${record.id}`];
+    return [];
+  });
+}
+
 export function validateApplicabilityAgainstManifest(record: ApplicabilityRecord, manifest: EvidenceManifest, root: string, now: string): string[] {
   const errors: string[] = [];
   const evidencePath = resolve(root, record.evidence.path);
@@ -637,7 +683,9 @@ export function validateApplicabilityAgainstManifest(record: ApplicabilityRecord
   if (manifest.run.terminalState !== record.result.terminal_state || manifest.run.exitCode !== record.result.exit_code) errors.push(`${record.id}: terminal result does not match manifest`);
   if (record.status === 'validated' && manifest.evidenceKind !== 'success') errors.push(`${record.id}: validated status requires success evidence`);
   if (record.status === 'failed' && manifest.evidenceKind === 'success') errors.push(`${record.id}: failed status cannot reference success evidence`);
-  if (record.status === 'validated' && record.review_after < now) errors.push(`${record.id}: validated evidence is stale after ${record.review_after}`);
+  if (record.status === 'validated' && !record.superseded_by && reviewDeadline(record) < now) {
+    errors.push(`${record.id}: validated evidence is stale after ${reviewDeadline(record)}`);
+  }
   if (record.review_after !== manifest.reviewAfter) errors.push(`${record.id}: review-after date does not match manifest`);
   return errors;
 }
@@ -674,6 +722,8 @@ export function validateEvidenceRepository(root: string, now = new Date().toISOS
     const applicabilityErrors = validateApplicabilityAgainstManifest(record, manifest, root, now);
     if (applicabilityErrors.length) errors.push(...applicabilityErrors); else validRecordIds.add(record.id);
   }
+  for (const record of records) errors.push(...validateRelatedEvidence(record, root));
+  errors.push(...supersessionErrors(records));
   const contentDirectory = join(root, 'site/src/content/content-items');
   for (const name of readdirSync(contentDirectory).filter((name) => /\.mdx?$/.test(name)).sort()) {
     const data = parseFrontmatter(join(contentDirectory, name));
@@ -687,7 +737,7 @@ export function validateEvidenceRepository(root: string, now = new Date().toISOS
     if (status === 'unvalidated' && linked.some((record) => record.status === 'validated')) {
       errors.push(`${name}: workflow status is unvalidated but links validated applicability`);
     }
-    if (status === 'stale' && linked.every((record) => record.review_after >= now)) {
+    if (status === 'stale' && linked.every((record) => reviewDeadline(record) >= now)) {
       errors.push(`${name}: stale workflow status has no stale applicability evidence`);
     }
   }
