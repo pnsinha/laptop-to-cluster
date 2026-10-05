@@ -17,7 +17,7 @@ Milestone 2 extends the Milestone 1 baseline toward portability across scheduler
 
 | Deliverable | Status | Public URL | Revision |
 |---|---|---|---|
-| Module 0: How to use this guide | Published | [Module 0](/guide/how-to-use-this-guide/) | Initial publication |
+| The five-minute tour (Module 0) | Published | [The tour](/guide/tour/) | Initial publication |
 | Module 3: Compose-to-HPC Translation | Draft | `/guide/compose-to-hpc-translation/` (no page while draft) | In progress |
 | Module 4: Slurm and PBS-family launch templates | Planned | — | SOW topic 2 |
 | Module 5: Layered install trees | Planned | — | SOW topic 3; draft due 2026-11-13 |

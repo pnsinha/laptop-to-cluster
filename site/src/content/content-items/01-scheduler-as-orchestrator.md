@@ -17,7 +17,7 @@ applicable_release: v0.1.0
 module_type: conceptual
 learning_outcomes: ["Map Compose responsibilities to scheduler-managed HPC concepts", "Identify where readiness, storage, networking, and privilege assumptions require adaptation"]
 prerequisites:
-  - { id: module-0-orientation, check: "Read Module 0: How to use this guide" }
+  - { id: module-0-orientation, check: "Take the five-minute tour" }
 estimated_minutes: 20
 section_kinds: [concept, limitations, next-steps]
 completion_check: { kind: decision-exercise, text: "Choose one local Compose stack and record who should own allocation, startup order, runtime state, access, and accelerators on your center." }

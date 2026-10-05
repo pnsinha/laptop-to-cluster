@@ -19,7 +19,7 @@ authority: [{ kind: project-decision, citation: "Milestone 1 bounded workflow", 
 ---
 ## Can I run this?
 
-New to this guide? Read [Module 0: How to use this guide](/guide/how-to-use-this-guide/) first for audience, assumed skills, and a readiness checklist; this page stays focused on running the baseline.
+New to this guide? Take the [five-minute tour](/guide/tour/) first for audience, assumed skills, and a readiness checklist; this page stays focused on running the baseline.
 
 Confirm these assumptions before execution:
 
