@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { validateDeploymentRecord, verifyArtifactManifest } from './publication.mjs';
 
-const [artifactDirectory, artifactManifestPath, deploymentRecordPath] = process.argv.slice(2);
+const [artifactDirectory, artifactManifestPath, deploymentRecordPath, expectedRelease] = process.argv.slice(2);
 if (!artifactDirectory || !artifactManifestPath || !deploymentRecordPath) {
-  console.error('Usage: rollback.mjs <retained-dist> <artifact-manifest.json> <deployment-record.json>');
+  console.error('Usage: rollback.mjs <retained-dist> <artifact-manifest.json> <deployment-record.json> [expected-release]');
   process.exit(2);
 }
 const artifact = JSON.parse(readFileSync(resolve(artifactManifestPath), 'utf8'));
@@ -12,6 +12,7 @@ const deployment = JSON.parse(readFileSync(resolve(deploymentRecordPath), 'utf8'
 const errors = [
   ...verifyArtifactManifest(resolve(artifactDirectory), artifact),
   ...validateDeploymentRecord(deployment, artifact),
+  ...(expectedRelease && deployment.release !== expectedRelease ? [`deployment-record.json:release [ROLLBACK-RELEASE] records ${deployment.release}, not the requested ${expectedRelease}`] : []),
 ];
 if (errors.length) {
   console.error(errors.map((error) => `ERROR: ${error}`).join('\n'));
