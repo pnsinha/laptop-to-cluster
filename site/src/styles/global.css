@@ -356,6 +356,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
 .diagram-svg .arr { stroke: var(--primary); stroke-width: 2; fill: none; }
 .diagram-svg .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
 .diagram-svg .gate-arrow { stroke: var(--c-gate); stroke-width: 2; fill: none; }
+.diagram-svg #ah-green polygon, .diagram-svg #seq-ah polygon { fill: var(--c-gate); }
 .diagram-svg .box-l, .diagram-svg .box-r, .diagram-svg .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
 .diagram-svg .box-r { stroke: var(--primary); }
 .diagram-svg .bar { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
@@ -418,7 +419,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
 .resource-section__header { margin-block-end: var(--space-6); }
 .resource-section__question { margin-block-start: var(--space-1); color: var(--muted); font-size: var(--text-base); }
 .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr)); gap: var(--space-4); align-items: start; margin: 0; padding: 0; list-style: none; }
-.resource-tile { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); color: inherit; background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-small); text-decoration: none; cursor: pointer; }
+.resource-tile { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); color: inherit; background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-small); text-decoration: none; }
 .resource-tile:hover, .resource-tile:active { background: var(--surface); border-color: var(--primary); }
 .resource-tile:focus-visible { outline-offset: 2px; }
 .resource-tile h3 { flex: none; font-size: var(--text-h3); }

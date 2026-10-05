@@ -37,6 +37,7 @@ describe('evidence badge, panel and record summary', () => {
     expect(body('.applicability-projection--escalated')).toMatch(/border-inline-start:\s*0\.375rem double var\(--text\)/);
     expect(body('.applicability-projection--escalated')).toMatch(/display:\s*block/);
     expect(body('.evidence-badge--warning')).toMatch(/border:\s*0\.25rem double var\(--text\)/);
+    expect(body('.diagram-svg #ah-green polygon')).toMatch(/fill:\s*var\(--c-gate\)/);
   });
 
   it('sets the three evidence rows in two columns from 40rem, and the panel full width', () => {
@@ -121,6 +122,7 @@ describe('media rules', () => {
     expect(print).toMatch(/\.evidence-panel::details-content\s*\{[^}]*content-visibility:\s*visible/);
     expect(print).toMatch(/\.action--primary\s*\{[^}]*color:\s*#000/);
     expect(print).toMatch(/break-inside:\s*avoid/);
+    expect(print).toMatch(/a\[href\^="http"\]:not\(nav a\)::after\s*\{[^}]*content:\s*" \("\s*attr\(href\)\s*"\)"/);
   });
 
   it('maps components to system colours when forced colours are active', () => {
