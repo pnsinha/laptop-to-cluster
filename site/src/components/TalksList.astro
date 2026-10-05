@@ -1,0 +1,20 @@
+---
+import { TALK_KIND_LABELS, isExternalHref, talkMeta } from '../content/page-chrome';
+import type { Talk } from '../content/schema';
+
+const { talks } = Astro.props as { talks: Talk[] };
+---
+<ul class="talks" role="list">
+  {talks.map((talk) => (
+    <li class="talk" id={talk.id}>
+      <p class="talk__kind">{TALK_KIND_LABELS[talk.kind]}</p>
+      <h3>{talk.title}</h3>
+      <p class="talk__meta">{talkMeta(talk)}{talk.location && <> · {talk.location}</>}</p>
+      <ul class="talk__links">
+        {talk.links.map((link) => (
+          <li><a href={link.href} rel={isExternalHref(link.href) ? 'external' : undefined}>{link.label}{isExternalHref(link.href) && <span class="external-label"> (external)</span>}</a></li>
+        ))}
+      </ul>
+    </li>
+  ))}
+</ul>

@@ -1,9 +1,12 @@
 ---
 import type { ContentItem } from '../content/schema';
+import { pageHeaderLine } from '../content/page-chrome';
 const { item } = Astro.props as { item: ContentItem };
 const human = (value: string | number) => String(value).replaceAll('-', ' ');
+const line = pageHeaderLine(item);
 ---
 <header class="content-header">
+  {line && <p class="content-header__line">{line}</p>}
   <h1>{item.title}</h1>
   <p class="lede">{item.summary}</p>
   {item.status === 'draft' && <aside class="notice" role="note"><strong>Draft:</strong> This page is not yet published guidance.</aside>}
