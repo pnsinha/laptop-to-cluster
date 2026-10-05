@@ -26,6 +26,8 @@ const anvil = {
   environment: { public_name: 'Purdue Anvil', fallback: false }, workflow_revision: 'v0.1.0',
   scheduler: { family: 'Slurm', version: '25.11.1' }, runtime: { name: 'Apptainer', version: '1.4.3' },
   portability_boundaries: ['Scheduler account and partition are supplied locally.'],
+  result: { terminal_state: 'COMPLETED', exit_code: 0, checks: ['scheduler completion'] },
+  assumptions: ['One Slurm node'],
 } as ApplicabilityRecord;
 
 describe('module navigation projection', () => {
@@ -60,6 +62,7 @@ describe('landing page projection', () => {
       canonicalPath: '/applicability/anvil/',
       testedScope: 'The baseline workflow was validated on Purdue Anvil with Slurm and Apptainer.',
       supplement: { kind: 'boundary', text: 'Scheduler account and partition are supplied locally.' },
+      panel: expect.objectContaining({ recordId: 'anvil', status: 'validated', badgeText: 'Tested on Purdue Anvil · Jul 2026', collapsible: true }),
     });
     expect(projection.estimated_minutes).toBe(40);
     expect(projection.learning_path.map(({ url }) => url)).toEqual(['/guide/model/', '/start/', '/guide/baseline/']);
@@ -101,6 +104,7 @@ describe('artifact-aware composition and applicability projections', () => {
       [{ ...content[1], id: 'accessibility', route_namespace: 'about', artifact_type: 'accessibility' }, 'accessibility'],
       [{ ...content[1], id: 'about', route_namespace: 'about', artifact_type: 'report' }, 'about'],
       [{ ...content[1], id: 'event', route_namespace: 'events', artifact_type: 'event-assets' }, 'event'],
+      [{ ...content[1], id: 'adoption-checklist', route_namespace: 'adoption', artifact_type: 'checklist' }, 'adoption'],
     ] as Array<[ContentItem, ReturnType<typeof compositionProfileFor>]>;
     for (const [item, expected] of fixtures) expect(compositionProfileFor(item)).toBe(expected);
     const represented = new Set(['landing', 'resources', 'applicability', 'not-found', ...fixtures.map(([, profile]) => profile)]);
@@ -126,7 +130,7 @@ describe('artifact-aware composition and applicability projections', () => {
     }
     for (const consumer of ['landing', 'runnable-module', 'milestone', 'release'] as const) {
       const projection = projectApplicability(anvil, consumer);
-      expect(Object.keys(projection).sort()).toEqual(['canonicalPath', 'consumer', 'projectionId', 'recordId', 'supplement', 'testedScope']);
+      expect(Object.keys(projection).sort()).toEqual(['canonicalPath', 'consumer', 'panel', 'projectionId', 'recordId', 'supplement', 'testedScope']);
       expect(projection.recordId).toBe('anvil');
       expect(projection.projectionId).toBe(`${consumer}:anvil`);
       expect(projection.canonicalPath).toBe('/applicability/anvil/');
@@ -167,13 +171,15 @@ describe('artifact-aware composition and applicability projections', () => {
     for (const canonicalOnlyMutation of [
       { ...anvil, scheduler: { ...anvil.scheduler, version: '26.1' } },
       { ...anvil, runtime: { ...anvil.runtime, version: '2.0' } },
-      { ...anvil, validation_date: '2026-08-01' },
     ] as ApplicabilityRecord[]) {
       expect(all(canonicalOnlyMutation)).toEqual(all(anvil));
       expect(JSON.stringify(all(canonicalOnlyMutation))).not.toContain('26.1');
       expect(JSON.stringify(all(canonicalOnlyMutation))).not.toContain('2.0');
-      expect(JSON.stringify(all(canonicalOnlyMutation))).not.toContain('2026-08-01');
     }
+    // The badge shows the validation month, so a date in another month is semantic drift now, and the full date stays canonical-only.
+    const august = all({ ...anvil, validation_date: '2026-08-01' } as ApplicabilityRecord);
+    expect(august.map(({ panel }) => panel.badgeText)).toEqual(Array(4).fill('Tested on Purdue Anvil · Aug 2026'));
+    expect(JSON.stringify(august)).not.toContain('2026-08-01');
 
     const runnable = { ...content[2], module_type: 'runnable' } as ContentItem;
     expect(() => projectApplicabilityForItem(runnable, [renamed], 'runnable-module')).toThrow(/missing applicability source anvil/);
