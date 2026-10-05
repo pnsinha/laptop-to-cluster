@@ -2,17 +2,24 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { formatDate } from '../../content/format';
+import { projectEvidencePanel } from '../../content/projections';
+import type { ApplicabilityRecord } from '../../content/schema';
 export async function getStaticPaths() {
   return (await getCollection('applicability')).map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
 }
-const { entry } = Astro.props;
+const { entry } = Astro.props as { entry: { data: ApplicabilityRecord } };
 const record = entry.data;
 const repositoryHref = (reference: typeof record.provenance[number]['reference']) => `${reference.repository}/blob/${encodeURIComponent(reference.release)}/${reference.path.split('/').map(encodeURIComponent).join('/')}${reference.line_anchor ?? ''}`;
-const evidencePath = record.evidence.path.split('/').map(encodeURIComponent).join('/');
-const evidenceHref = `https://github.com/pnsinha/laptop-to-cluster/blob/${encodeURIComponent(record.workflow_revision)}/${evidencePath}`;
+/* Evidence is linked at the release that ships it: a provenance entry for the same path names that release;
+   otherwise the workflow revision (true for bundles committed before that revision was tagged). */
+const evidenceRelease = (path: string) => record.provenance.find(({ reference }) => reference.path === path)?.reference.release ?? record.workflow_revision;
+const evidenceHref = (path: string) => `https://github.com/pnsinha/laptop-to-cluster/blob/${encodeURIComponent(evidenceRelease(path))}/${path.split('/').map(encodeURIComponent).join('/')}`;
+const plainRows = record.plain_language ? projectEvidencePanel(record).rows : [];
+const extension = record.review_extension;
 ---
 <BaseLayout title={`Applicability: ${record.id}`} description={`Exact validation record for ${record.workflow_id}.`} profile="applicability">
   <header class="content-header"><h1>Applicability: {record.id}</h1></header>
+  {record.superseded_by && <p class="notice" role="note"><strong>Superseded:</strong> a newer test record replaces this one. See <a href={`/applicability/${record.superseded_by}/`}>{record.superseded_by}</a>.</p>}
   <section class="applicability-record" data-source-id={record.id} aria-labelledby="tested-configuration">
     <h2 id="tested-configuration">Tested configuration</h2>
     <dl class="record-grid">
@@ -24,11 +31,27 @@ const evidenceHref = `https://github.com/pnsinha/laptop-to-cluster/blob/${encode
       <div><dt>Submission ID</dt><dd><code>{record.submission_id}</code></dd></div><div><dt>Terminal result</dt><dd>{record.result.terminal_state}; exit {record.result.exit_code}</dd></div>
       <div><dt>Review after</dt><dd><time datetime={record.review_after}>{formatDate(record.review_after)}</time></dd></div>
     </dl>
+    {extension && <>
+      <h2 id="review-extension">Review extension</h2>
+      <dl class="record-grid">
+        <div><dt>Reviewed by</dt><dd>{extension.reviewed_by}</dd></div><div><dt>Reviewed on</dt><dd><time datetime={extension.reviewed_on}>{formatDate(extension.reviewed_on)}</time></dd></div>
+        <div><dt>Review again by</dt><dd><time datetime={extension.review_by}>{formatDate(extension.review_by)}</time></dd></div>
+      </dl>
+      <p>{extension.scope_note}</p>
+    </>}
+    {plainRows.length > 0 && <>
+      <h2 id="plain-language">What this means for you</h2>
+      <dl class="evidence-rows">{plainRows.map((row) => <div class="evidence-row"><dt>{row.label}</dt><dd><ul>{row.items.map((item) => <li data-from={item.from.join(' ')}>{item.text}</li>)}</ul></dd></div>)}</dl>
+    </>}
     <h2>Result checks</h2><ul>{record.result.checks.map((value) => <li>{value}</li>)}</ul>
     <h2>Assumptions</h2><ul>{record.assumptions.map((value) => <li>{value}</li>)}</ul>
     <h2>Limitations</h2><ul>{record.limitations.map((value) => <li>{value}</li>)}</ul>
     <h2>Portability boundaries</h2><ul>{record.portability_boundaries.map((value) => <li>{value}</li>)}</ul>
-    <h2>Evidence and integrity</h2><p><a href={evidenceHref}>{record.evidence.id}</a></p><p><code class="integrity">{record.evidence.integrity}</code></p>
+    <h2>Evidence and integrity</h2><p><a href={evidenceHref(record.evidence.path)}>{record.evidence.id}</a></p><p><code class="integrity">{record.evidence.integrity}</code></p>
+    {record.related_evidence.length > 0 && <>
+      <h3 id="related-evidence">Related evidence</h3>
+      <ul class="related-evidence">{record.related_evidence.map((reference) => <li><a href={evidenceHref(reference.path)}>{reference.id}</a> (negative test): <code class="integrity">{reference.integrity}</code></li>)}</ul>
+    </>}
     <h2>Provenance</h2><ul>{record.provenance.map(({ label, reference }) => <li>{label}: <a href={repositoryHref(reference)}>{reference.path} at {reference.release}</a> (<code class="integrity">{reference.integrity}</code>)</li>)}</ul>
   </section>
 </BaseLayout>
