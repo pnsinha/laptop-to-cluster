@@ -382,6 +382,8 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
 .implementation-callout h2 { font-size: var(--text-h3); }
 .implementation-callout p + p { margin-block-start: var(--flow-tight); }
 .implementation-callout .action { margin-inline-end: var(--space-3); }
+:where(.implementation-callout, aside, nav) :where(ul, ol) > li > a:where(:not(.action)) { display: inline-block; min-block-size: 1.5rem; }
+:where(.implementation-callout, aside) :where(ul, ol) > li + li { margin-block-start: var(--space-2); }
 .implementation-reference { max-inline-size: var(--measure-data); margin-block: var(--flow-section); scroll-margin-block-start: var(--space-6); }
 .implementation-reference__intro { max-inline-size: var(--measure-prose); }
 .implementation-reference__intro h2 { max-inline-size: 24ch; }
