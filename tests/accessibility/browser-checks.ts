@@ -286,3 +286,182 @@ export async function checkPrint(browser: Browser, origin: string, path: string,
   await context.close();
   return issues;
 }
+
+/* ---------------------------------------------------------------------------------------------
+   Part 3: JS off, primary action, font failure, crosswalk layout, motion (spec §10, §8.3, D13-D15)
+--------------------------------------------------------------------------------------------- */
+
+/** JS off: the home doors, timeline, crosswalk legend and panes, and the evidence panel rows are all in the HTML, in contract order. */
+export async function checkJsOff(browser: Browser, origin: string, path: string, kind: 'home' | 'module', options: { panel: boolean }): Promise<Issue[]> {
+  const scope = `${path}:no-script`;
+  const issues: Issue[] = [];
+  const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+  const read = await page.evaluate(() => {
+    const texts = (selector: string) => [...document.querySelectorAll(selector)].map((element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim());
+    const panes = [...document.querySelectorAll<HTMLElement>('.crosswalk__pane')];
+    return {
+      doors: { hrefs: [...document.querySelectorAll('#doors .door__link')].map((link) => link.getAttribute('href')), titles: texts('#doors .door__title'), who: texts('#doors .door__who') },
+      timeline: { figures: document.querySelectorAll('figure.timeline').length, labels: texts('.timeline__step strong'), captions: texts('.timeline__caption') },
+      crosswalk: {
+        terms: [...document.querySelectorAll<HTMLElement>('.crosswalk__term')].map((term) => term.dataset.concept),
+        was: texts('.crosswalk__term dd'),
+        panes: panes.map((pane) => pane.dataset.pane),
+        tagged: Object.fromEntries(panes.map((pane) => [pane.dataset.pane, [...new Set([...pane.querySelectorAll<HTMLElement>('[data-concepts]')].flatMap((line) => (line.dataset.concepts ?? '').split(/\s+/)))]])),
+      },
+      themeControlHidden: document.querySelector('[data-theme-control]')?.hasAttribute('hidden') ?? true,
+      panelCount: document.querySelectorAll('details.evidence-panel').length,
+    };
+  });
+  const same = (a: readonly unknown[], b: readonly unknown[]) => JSON.stringify(a) === JSON.stringify(b);
+  if (read.timeline.figures > 1) issues.push(issue(scope, 'A11Y-NOJS', 'at most one timeline figure per page'));
+  if (!same(read.timeline.labels, TIMELINE_STEPS.map(({ label }) => label)) || read.timeline.captions.length !== 6 || read.timeline.captions.some((caption) => !caption)) {
+    issues.push(issue(scope, 'A11Y-NOJS', 'the timeline must carry the six step labels in order, each with a caption, without JavaScript'));
+  }
+  if (!read.themeControlHidden) issues.push(issue(scope, 'A11Y-NOJS', 'the theme control must stay hidden without JavaScript'));
+  if (kind === 'home') {
+    if (!same(read.doors.hrefs, DOORS.map(({ href }) => href)) || !same(read.doors.titles, DOORS.map(({ title }) => title)) || !same(read.doors.who, DOORS.map(({ eyebrow }) => eyebrow))) {
+      issues.push(issue(scope, 'A11Y-NOJS', 'the three doors must appear with their frozen eyebrow, title and destination'));
+    }
+    if (!same(read.crosswalk.terms, CONCEPTS.map(({ key }) => key)) || !same(read.crosswalk.was, CONCEPTS.map(({ was }) => `was ${was}`))) {
+      issues.push(issue(scope, 'A11Y-NOJS', 'the crosswalk legend must list the four concepts with their Compose names'));
+    }
+    if (!same(read.crosswalk.panes, ['compose', 'sbatch', 'coordinator'])) issues.push(issue(scope, 'A11Y-NOJS', 'the crosswalk must carry the compose, sbatch and coordinator panes'));
+    for (const pane of ['compose', 'sbatch']) {
+      const missing = CONCEPTS.map(({ key }) => key).filter((key) => !(read.crosswalk.tagged[pane] ?? []).includes(key));
+      if (missing.length) issues.push(issue(scope, 'A11Y-CROSSWALK', `the ${pane} pane does not tag: ${missing.join(', ')}`));
+    }
+  }
+  if (options.panel) {
+    if (read.panelCount !== 1) issues.push(issue(scope, 'A11Y-NOJS', `expected one evidence panel, found ${read.panelCount}`));
+    else {
+      await page.locator('details.evidence-panel > summary').click();
+      const rows = await page.evaluate(() => ({
+        open: (document.querySelector('details.evidence-panel') as HTMLDetailsElement).open,
+        labels: [...document.querySelectorAll('.evidence-row dt')].map((element) => (element.textContent ?? '').trim()),
+        items: [...document.querySelectorAll('.evidence-row')].map((row) => row.querySelectorAll('li').length),
+      }));
+      if (!rows.open || !same(rows.labels, EVIDENCE_ROW_LABELS) || rows.items.length !== 3 || rows.items.some((count) => count < 1)) {
+        issues.push(issue(scope, 'A11Y-NOJS', 'the native summary must open the Tested, You need and Depends on your center rows, each with at least one item'));
+      }
+    }
+  }
+  await context.close();
+  return issues;
+}
+
+/** The primary action is an in-page link: it must work without JS, land on the target, and move the keyboard position there. */
+export async function checkPrimaryAction(browser: Browser, origin: string, path: string, linkName: string, fragment: string): Promise<Issue[]> {
+  const scope = `${path}:primary-action`;
+  const issues: Issue[] = [];
+  const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+  const link = page.getByRole('link', { name: linkName, exact: true });
+  if (await link.getAttribute('href') !== `#${fragment}`) { issues.push(issue(scope, 'A11Y-NOJS', `"${linkName}" must be a normal in-page link to #${fragment}`)); await context.close(); return issues; }
+  await link.click();
+  const after = await page.evaluate((id) => {
+    const target = document.getElementById(id);
+    const rect = target?.getBoundingClientRect();
+    return { exists: Boolean(target), hash: location.hash, matches: document.querySelector(':target')?.id === id, inView: Boolean(rect && rect.top >= -1 && rect.top < innerHeight) };
+  }, fragment);
+  if (!after.exists || after.hash !== `#${fragment}` || !after.matches || !after.inView) issues.push(issue(scope, 'A11Y-NOJS', `following "${linkName}" must scroll #${fragment} into view and make it :target`));
+  await page.keyboard.press('Tab');
+  const next = await page.evaluate((id) => {
+    const target = document.getElementById(id)!;
+    const active = document.activeElement;
+    return Boolean(active && active !== document.body && (target.contains(active) || (target.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING)));
+  }, fragment);
+  if (!next) issues.push(issue(scope, 'A11Y-NOJS', `after following "${linkName}", the next Tab stop must be at or after #${fragment}`));
+  await context.close();
+  return issues;
+}
+
+/** §10 Font failure: with /fonts/* blocked, text stays visible, nothing overflows, and the page height stays within 25% of the normal render. */
+export async function checkFontBlocking(browser: Browser, origin: string, path: string): Promise<Issue[]> {
+  const scope = `${path}:font-failure`;
+  const issues: Issue[] = [];
+  const url = new URL(path, origin).href;
+  for (const width of [1280, 320]) {
+    const normal = await browser.newContext({ viewport: { width, height: 900 } });
+    const normalPage = await normal.newPage();
+    await normalPage.goto(url, { waitUntil: 'networkidle' });
+    const normalHeight = await normalPage.evaluate(() => document.documentElement.scrollHeight);
+    await normal.close();
+
+    const blocked = await browser.newContext({ viewport: { width, height: 900 } });
+    let attempts = 0;
+    await blocked.route('**/fonts/**', (route) => { attempts += 1; return route.abort(); });
+    const page = await blocked.newPage();
+    await page.goto(url, { waitUntil: 'networkidle' });
+    const state = await page.evaluate(() => {
+      const root = document.documentElement;
+      const hidden = ['h1', '.lede', '.site-nav a', 'main p', '.timeline__step strong', '.door__title'].filter((selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        return !(element.checkVisibility({ visibilityProperty: true, opacityProperty: true }) && (element.textContent ?? '').trim().length > 0 && style.color !== 'rgba(0, 0, 0, 0)');
+      });
+      return {
+        height: root.scrollHeight,
+        overflow: Math.max(root.scrollWidth, document.body.scrollWidth) > root.clientWidth + 1,
+        hidden,
+        loaded: [...document.fonts].filter((face) => face.status === 'loaded').length,
+      };
+    });
+    if (width === 1280 && path === '/' && attempts === 0) issues.push(issue(scope, 'A11Y-FONT-FAILURE', 'the home page requested no /fonts/ file, so this check proved nothing'));
+    if (state.loaded > 0) issues.push(issue(scope, 'A11Y-FONT-FAILURE', `${state.loaded} font face(s) loaded although /fonts/ was blocked`));
+    if (state.hidden.length) issues.push(issue(`${scope}:${width}px`, 'A11Y-FONT-FAILURE', `text is hidden while fonts are unavailable: ${state.hidden.join(', ')}`));
+    if (state.overflow) issues.push(issue(`${scope}:${width}px`, 'A11Y-FONT-FAILURE', 'the fallback fonts make the page overflow horizontally'));
+    if (Math.abs(state.height - normalHeight) / normalHeight > 0.25) issues.push(issue(`${scope}:${width}px`, 'A11Y-FONT-FAILURE', `page height changes from ${normalHeight}px to ${state.height}px on the fallback fonts`));
+    await blocked.close();
+  }
+  return issues;
+}
+
+/** Crosswalk panes stack without overlap at 320 px; at 1280 px the compose pane sits left of the stacked sbatch and coordinator panes. */
+export async function checkCrosswalkLayout(browser: Browser, origin: string, path: string): Promise<Issue[]> {
+  const scope = `${path}:crosswalk-layout`;
+  const issues: Issue[] = [];
+  for (const width of [320, 1280]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+    const boxes = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll<HTMLElement>('.crosswalk__pane')].map((pane) => {
+      const rect = pane.getBoundingClientRect();
+      return [pane.dataset.pane, { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }];
+    })));
+    const { compose, sbatch, coordinator } = boxes as Record<string, { left: number; top: number; right: number; bottom: number } | undefined>;
+    if (!compose || !sbatch || !coordinator) issues.push(issue(`${scope}:${width}px`, 'A11Y-CROSSWALK', 'the compose, sbatch and coordinator panes must all be present'));
+    else if (width === 320) {
+      if (!(compose.bottom <= sbatch.top + 1 && sbatch.bottom <= coordinator.top + 1)) issues.push(issue(`${scope}:320px`, 'A11Y-CROSSWALK', 'the panes must stack one above the other without overlapping at 320 px'));
+    } else if (!(compose.right <= sbatch.left + 1 && Math.abs(sbatch.left - coordinator.left) < 2 && sbatch.bottom <= coordinator.top + 1)) {
+      issues.push(issue(`${scope}:1280px`, 'A11Y-CROSSWALK', 'the compose pane must sit left of the stacked sbatch and coordinator panes at 1280 px'));
+    }
+    await context.close();
+  }
+  return issues;
+}
+
+/** No required motion: nothing animates or transitions, and scrolling is not smoothed under reduced motion. */
+export async function checkMotion(browser: Browser, origin: string, path: string): Promise<Issue[]> {
+  const scope = `${path}:motion`;
+  const issues: Issue[] = [];
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+    const context = await browser.newContext({ reducedMotion });
+    const page = await context.newPage();
+    await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+    const state = await page.evaluate(() => ({
+      moving: [...document.querySelectorAll<HTMLElement>('body *')].some((element) => {
+        const style = getComputedStyle(element);
+        return style.animationName !== 'none' || style.transitionDuration.split(',').some((duration) => Number.parseFloat(duration) > 0);
+      }),
+      scroll: getComputedStyle(document.documentElement).scrollBehavior,
+    }));
+    if (state.moving) issues.push(issue(`${scope}:${reducedMotion}`, 'A11Y-MOTION', 'no element may animate or transition'));
+    if (reducedMotion === 'reduce' && state.scroll !== 'auto') issues.push(issue(`${scope}:reduce`, 'A11Y-MOTION', `scroll-behavior is ${state.scroll}; it must be auto under reduced motion`));
+    await context.close();
+  }
+  return issues;
+}

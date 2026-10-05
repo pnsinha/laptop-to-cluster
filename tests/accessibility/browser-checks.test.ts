@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, type Browser } from 'playwright';
-import { checkForcedColors, checkPrint, checkThemePrecedence, inspectThemeScript } from './browser-checks';
+import { checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence, inspectThemeScript } from './browser-checks';
 import { serveFixtures } from './fixture-server';
 
 let browser: Browser;
@@ -169,6 +169,98 @@ describe('print link destinations (G6)', () => {
     try {
       expect(await checkPrint(browser, server.origin, '/shown/', EXPECT)).toEqual([]);
       expect((await checkPrint(browser, server.origin, '/bare/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT-LINKS');
+    } finally { await server.close(); }
+  }, 60_000);
+});
+
+const CONCEPT_KEYS = ['step', 'gate', 'scratch', 'net'];
+const WAS = ['a Compose service', 'healthcheck + depends_on', 'a named volume', 'a published ports entry'];
+const DOOR_ROWS = [
+  ['New to clusters? Start here', 'Understand the model', '/guide/tour/'],
+  ['Already have a Compose file?', 'Translate it', '/guide/compose-to-hpc-translation/'],
+  ['Research software engineers & center staff', 'Evaluate and adopt', '/adoption/evaluate/'],
+];
+function homeFixture(options: { badHref?: boolean; untaggedSbatch?: boolean; noRows?: boolean; stackOverlap?: boolean; foit?: boolean } = {}) {
+  const steps = LABELS.map((label, index) => `<li class="timeline__step" data-step="${index + 1}"><strong>${label}</strong> <span class="timeline__caption">Caption ${index + 1}</span></li>`).join('');
+  const doors = DOOR_ROWS.map(([who, title, href], index) => `<li class="door" id="door-${index}"><p class="door__who">${who}</p><h3 class="door__title">${title}</h3><p class="door__summary">s</p><p class="door__go"><a class="door__link" href="${options.badHref && index === 1 ? '/wrong/' : href}">Go ${index}</a></p></li>`).join('');
+  const terms = CONCEPT_KEYS.map((key, index) => `<div class="crosswalk__term" data-concept="${key}"><dt><span class="crosswalk__mark" aria-hidden="true">m</span> ${key}</dt><dd>was ${WAS[index]}</dd></div>`).join('');
+  const line = (concepts: string[]) => `<span class="crosswalk__line" data-concepts="${concepts.join(' ')}">line\n</span>`;
+  const pane = (id: string, concepts: string[][]) => `<figure class="crosswalk__pane" data-pane="${id}"><figcaption>${id}</figcaption><pre><code>${concepts.map(line).join('')}</code></pre></figure>`;
+  const all = CONCEPT_KEYS.map((key) => [key]);
+  const panes = pane('compose', all) + pane('sbatch', options.untaggedSbatch ? all.slice(0, 3) : all) + pane('coordinator', [['gate']]);
+  const rows = options.noRows ? '' : ['Tested', 'You need', 'Depends on your center'].map((label) => `<div class="evidence-row"><dt>${label}</dt><dd><ul><li>item</li></ul></dd></div>`).join('');
+  const css = `body{margin:0;font-family:${options.foit ? 'Missing' : 'serif'}}.gap{height:1500px}
+.crosswalk__panes{display:grid;gap:8px}.crosswalk__pane{margin:0}
+@media (min-width:48rem){.crosswalk__panes{grid-template-columns:1fr 1fr}.crosswalk__pane[data-pane=compose]{grid-row:1/3}}
+${options.stackOverlap ? '.crosswalk__pane{position:absolute;top:0;left:0;width:90%}' : ''}
+${options.foit ? '@font-face{font-family:Missing;src:url(/fonts/missing.woff2) format("woff2");font-display:block}h1{visibility:hidden}' : '@font-face{font-family:Missing;src:url(/fonts/missing.woff2) format("woff2");font-display:swap}h1{font-family:Missing,serif}'}`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title><style>${css}</style></head><body>
+<header><nav class="site-nav"><a href="/a">Get started</a></nav></header><main><h1>Title</h1><p class="lede">Lede text</p><p>Intro</p>
+<a class="action action--primary" href="#big-idea">Start with the big idea</a><div class="gap"></div>
+<section id="big-idea"><h2>Big idea</h2><figure class="timeline" aria-labelledby="tt"><figcaption id="tt">One allocation</figcaption><ol class="timeline__steps">${steps}</ol></figure><a href="/after">after</a></section>
+<section><ul class="doors" id="doors">${doors}</ul></section>
+<section class="crosswalk" id="crosswalk"><dl class="crosswalk__legend">${terms}</dl><div class="crosswalk__panes">${panes}</div></section>
+<details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows">${rows}</dl></details>
+<div data-theme-control hidden><button type="button">System</button></div></main></body></html>`;
+}
+
+describe('JS-off completeness check', () => {
+  it('passes a home page whose doors, timeline, crosswalk and evidence rows are all in the HTML', async () => {
+    const server = await serveFixtures({ '/': { body: homeFixture() } });
+    try { expect(await checkJsOff(browser, server.origin, '/', 'home', { panel: true })).toEqual([]); } finally { await server.close(); }
+  }, 60_000);
+
+  it('reports a wrong door destination, an untagged concept, and empty evidence rows', async () => {
+    const server = await serveFixtures({
+      '/door/': { body: homeFixture({ badHref: true }) }, '/tag/': { body: homeFixture({ untaggedSbatch: true }) }, '/rows/': { body: homeFixture({ noRows: true }) },
+    });
+    try {
+      expect((await checkJsOff(browser, server.origin, '/door/', 'home', { panel: true })).map((entry) => entry.message).join('\n')).toMatch(/three doors/);
+      expect((await checkJsOff(browser, server.origin, '/tag/', 'home', { panel: true })).map((entry) => entry.message).join('\n')).toMatch(/sbatch pane does not tag: net/);
+      expect((await checkJsOff(browser, server.origin, '/rows/', 'home', { panel: true })).map((entry) => entry.message).join('\n')).toMatch(/Tested, You need and Depends on your center rows/);
+    } finally { await server.close(); }
+  }, 90_000);
+});
+
+describe('primary action check', () => {
+  it('follows an in-page link to its target and moves the keyboard position there', async () => {
+    const server = await serveFixtures({ '/': { body: homeFixture() } });
+    try {
+      expect(await checkPrimaryAction(browser, server.origin, '/', 'Start with the big idea', 'big-idea')).toEqual([]);
+      expect((await checkPrimaryAction(browser, server.origin, '/', 'Start with the big idea', 'missing'))[0].message).toMatch(/normal in-page link to #missing/);
+    } finally { await server.close(); }
+  }, 60_000);
+});
+
+describe('font failure check', () => {
+  it('passes a page that stays readable on its fallback fonts', async () => {
+    const server = await serveFixtures({ '/': { body: homeFixture() } });
+    try { expect(await checkFontBlocking(browser, server.origin, '/')).toEqual([]); } finally { await server.close(); }
+  }, 90_000);
+
+  it('reports text that stays hidden until the web font arrives', async () => {
+    const server = await serveFixtures({ '/': { body: homeFixture({ foit: true }) } });
+    try { expect((await checkFontBlocking(browser, server.origin, '/')).map((entry) => entry.message).join('\n')).toMatch(/text is hidden while fonts are unavailable: h1/); } finally { await server.close(); }
+  }, 90_000);
+});
+
+describe('crosswalk layout and motion checks', () => {
+  it('accepts stacked panes at 320 px and a two-column layout at 1280 px, and flags overlap', async () => {
+    const server = await serveFixtures({ '/good/': { body: homeFixture() }, '/overlap/': { body: homeFixture({ stackOverlap: true }) } });
+    try {
+      expect(await checkCrosswalkLayout(browser, server.origin, '/good/')).toEqual([]);
+      expect((await checkCrosswalkLayout(browser, server.origin, '/overlap/')).length).toBeGreaterThan(0);
+    } finally { await server.close(); }
+  }, 60_000);
+
+  it('accepts a static page and flags an animated one and smooth scrolling under reduced motion', async () => {
+    const animated = homeFixture().replace('</style>', '@keyframes s{to{opacity:1}}h1{animation:s 1s infinite}html{scroll-behavior:smooth}</style>');
+    const server = await serveFixtures({ '/good/': { body: homeFixture() }, '/animated/': { body: animated } });
+    try {
+      expect(await checkMotion(browser, server.origin, '/good/')).toEqual([]);
+      const codes = (await checkMotion(browser, server.origin, '/animated/')).map((entry) => `${entry.scope}:${entry.code}`);
+      expect(codes).toContain('/animated/:motion:no-preference:A11Y-MOTION');
+      expect(codes).toContain('/animated/:motion:reduce:A11Y-MOTION');
     } finally { await server.close(); }
   }, 60_000);
 });
