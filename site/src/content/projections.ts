@@ -7,6 +7,8 @@ import {
   type ReleaseRecord,
 } from './schema.js';
 import { RegistryValidationError, canonicalPath, generateCanonicalRoutes, hasNoStandalonePage } from './registry.js';
+import { EVIDENCE_ROW_LABELS, UNTESTED_HREF, type EvidenceRowLabel } from './contracts.js';
+import { evidenceStatusText } from './wording.js';
 
 interface MilestoneDeliverableProjection {
   sow_id: string;
@@ -206,6 +208,78 @@ export interface ApplicabilityProjection {
   canonicalPath: `/applicability/${string}/`;
   testedScope: string;
   supplement: ApplicabilitySupplement;
+  panel: EvidencePanelProjection;
+}
+
+export type EvidenceStatus = ApplicabilityRecord['status'];
+export interface EvidenceItem { text: string; from: string[] }
+export interface EvidencePanelProjection {
+  recordId: string;
+  canonicalPath: `/applicability/${string}/`;
+  status: EvidenceStatus;
+  badgeText: string;
+  collapsible: boolean;
+  rows: { label: EvidenceRowLabel; items: EvidenceItem[] }[];
+  untestedHref: '/adoption/evaluate/#not-tested';
+}
+
+const monthYearFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+/** '2026-07-25' -> 'Jul 2026' (en-US, UTC). Month precision only, so the exact date stays on the canonical record page. */
+export function formatMonthYear(isoDate: string): string {
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(isoDate) ? `${isoDate}T00:00:00Z` : Number.NaN);
+  if (Number.isNaN(date.getTime())) throw new RangeError(`formatMonthYear: not an ISO date: ${isoDate}`);
+  return monthYearFormatter.format(date);
+}
+
+const literalItems = (list: 'result.checks' | 'assumptions' | 'portability_boundaries', values: string[]): EvidenceItem[] =>
+  values.map((text, index) => ({ text, from: [`${list}.${index}`] }));
+const tracedItem = ({ text, from }: { text: string; from: string[] }): EvidenceItem => ({ text, from: [...from] });
+
+/** The badge and its three rows, generated only from the record (plain_language when present, else the literal lists). */
+export function projectEvidencePanel(record: ApplicabilityRecord): EvidencePanelProjection {
+  const plain = record.plain_language;
+  const items: Record<EvidenceRowLabel, EvidenceItem[]> = plain ? {
+    Tested: [tracedItem(plain.tested)],
+    'You need': plain.you_need.map(tracedItem),
+    'Depends on your center': plain.depends_on_center.map(tracedItem),
+  } : {
+    Tested: literalItems('result.checks', record.result.checks),
+    'You need': literalItems('assumptions', record.assumptions),
+    'Depends on your center': literalItems('portability_boundaries', record.portability_boundaries),
+  };
+  return {
+    recordId: record.id,
+    canonicalPath: `/applicability/${record.id}/`,
+    status: record.status,
+    badgeText: evidenceStatusText(record.status, record.environment.public_name, formatMonthYear(record.validation_date)),
+    collapsible: record.status === 'validated',
+    rows: EVIDENCE_ROW_LABELS.map((label) => ({ label, items: items[label] })),
+    untestedHref: UNTESTED_HREF,
+  };
+}
+
+/** The newest record by validation_date among records that are not superseded; undefined when none is left or the newest date is shared. */
+export function currentRecord(records: ApplicabilityRecord[]): ApplicabilityRecord | undefined {
+  const live = records.filter(({ superseded_by }) => !superseded_by);
+  const latest = live.map(({ validation_date }) => validation_date).sort().at(-1);
+  const newest = live.filter(({ validation_date }) => validation_date === latest);
+  return newest.length === 1 ? newest[0] : undefined;
+}
+
+/** What RecordSummary renders: the badge sentence plus scope values copied verbatim from the record. */
+export function summarizeRecord(record: ApplicabilityRecord): { tested: string; scope: string[] } {
+  const panel = projectEvidencePanel(record);
+  return {
+    tested: panel.badgeText,
+    scope: [
+      `Scheduler: ${record.scheduler.family} ${record.scheduler.version}`,
+      `Runtime: ${record.runtime.name} ${record.runtime.version}`,
+      `Workflow revision: ${record.workflow_revision}`,
+      ...panel.rows[0].items.map(({ text }) => text),
+      ...record.limitations,
+    ],
+  };
 }
 export interface DiagnosticApplicabilityContext {
   projectionId: `diagnostic:${string}:${string}`;
@@ -314,6 +388,7 @@ export function projectApplicability(record: ApplicabilityRecord, consumer: Appl
     canonicalPath: `/applicability/${record.id}/`,
     testedScope: `The baseline workflow was ${record.status === 'validated' ? 'validated' : 'recorded'} on ${record.environment.public_name} with ${record.scheduler.family} and ${record.runtime.name}.`,
     supplement,
+    panel: projectEvidencePanel(record),
   };
 }
 
