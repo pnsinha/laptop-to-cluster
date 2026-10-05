@@ -8,7 +8,7 @@ function canonicalPage(id: string, over: { env?: string; scheduler?: string; run
     source: `/applicability/${id}/`,
     html: `<body data-composition-profile="applicability"><section class="applicability-record" data-source-id="${id}"><dl>`
       + `<div><dt>Status</dt><dd>validated</dd></div><div><dt>Environment</dt><dd>${env}</dd></div><div><dt>Scheduler</dt><dd>${scheduler}</dd></div>`
-      + `<div><dt>Runtime</dt><dd>${runtime}</dd></div><div><dt>Execution date</dt><dd>${date}</dd></div><div><dt>Validation date</dt><dd>${date}</dd></div>`
+      + `<div><dt>Runtime</dt><dd>${runtime}</dd></div><div><dt>Execution date</dt><dd><time datetime="${date}">Long date</time></dd></div><div><dt>Validation date</dt><dd><time datetime="${date}">Long date</time></dd></div>`
       + `<div><dt>Submission ID</dt><dd>${submission}</dd></div></dl>`
       + list('Result checks', checks) + list('Assumptions', ['A Slurm allocation.']) + list('Limitations', ['One node.']) + list('Portability boundaries', boundaries) + `</section></body>`,
   };
@@ -24,7 +24,7 @@ describe('applicability facts', () => {
   it('reads every canonical record page, keyed by source ID', () => {
     expect([...facts.byId.keys()]).toEqual(['m1-baseline-anvil', 'm2-baseline-anvil-2026-10']);
     expect(facts.errors).toEqual([]);
-    expect(facts.byId.get('m2-baseline-anvil-2026-10')).toMatchObject({ environment: 'Purdue Anvil', schedulerVersion: '26.05.4', validationDate: '2026-10-09', boundary: 'Partition names differ.' });
+    expect(facts.byId.get('m2-baseline-anvil-2026-10')).toMatchObject({ environment: 'Purdue Anvil', schedulerVersion: '26.05.4', validationDateIso: '2026-10-09', boundary: 'Partition names differ.' });
     expect(collectApplicabilityFacts([{ source: '/applicability/wrong/', html: old.html }]).errors.join()).toMatch(/SOURCE-AGREEMENT/);
   });
 });
@@ -36,6 +36,12 @@ describe('RECORD-SUMMARY', () => {
     expect(ok(summary())).toEqual([]);
     expect(ok(summary(undefined, 'The example ran and its output was checked.', '<li data-from="result.checks assumptions.0">Anything you like.</li>'))).toEqual([]);
     expect(recordSummaryBlocks(`<p>x</p>${summary()}<p>y</p>`)).toHaveLength(1);
+  });
+
+  it('accepts the scheduler and runtime scope items that summarizeRecord writes, and rejects a stale one', () => {
+    const scope = (sched: string) => `<li>${sched}</li><li>Runtime: Apptainer 1.5.3</li><li>One node.</li>`;
+    expect(ok(summary(undefined, undefined, scope('Scheduler: Slurm 26.05.4')))).toEqual([]);
+    expect(ok(summary(undefined, undefined, scope('Scheduler: Slurm 25.11.1'))).join('\n')).toMatch(/RECORD-SUMMARY/);
   });
 
   it('allows the summary only on the adoption profile', () => {

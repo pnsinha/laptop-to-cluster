@@ -411,6 +411,7 @@ export function collectApplicabilityFacts(builtPages) {
       runtimeVersion: runtime.slice(runtime.indexOf(' ') + 1),
       executionDate: definitionValue(page.html, 'Execution date'),
       validationDate: definitionValue(page.html, 'Validation date'),
+      validationDateIso: definitionDate(page.html, 'Validation date'),
       submissionId: definitionValue(page.html, 'Submission ID'),
       boundary: sectionList(page.html, 'Portability boundaries')[0],
       checks: sectionList(page.html, 'Result checks'),
@@ -428,7 +429,7 @@ export function recordSummaryIssues(block, facts, others = []) {
   if (links.length !== 1 || links[0][1] !== facts.sourceId) issues.push('exactly one canonical record link that matches the source ID is required');
   const tested = stripTags(block.match(/<p class="record-summary__tested">([\s\S]*?)<\/p>/)?.[1]);
   if (!tested) issues.push('the tested sentence (record-summary__tested) is required');
-  if (/\b\d{4}\b/.test(tested) && !tested.includes(formatMonthYear(facts.validationDate) ?? '\0')) issues.push('the tested sentence states a date that is not the record validation month');
+  if (/\b\d{4}\b/.test(tested) && !tested.includes(formatMonthYear(facts.validationDateIso ?? facts.validationDate) ?? '\0')) issues.push('the tested sentence states a date that is not the record validation month');
   if (/Tested on|Review due/.test(tested) && !tested.includes(facts.environment)) issues.push('the tested sentence names a different environment from the record');
   const lists = canonicalLists(facts.canonicalHtml);
   const known = new Set(Object.values(lists).flat());
@@ -436,7 +437,10 @@ export function recordSummaryIssues(block, facts, others = []) {
   for (const item of scope.matchAll(/<li(\s[^>]*)?>([\s\S]*?)<\/li>/g)) {
     const refs = item[1]?.match(/data-from="([^"]*)"/)?.[1]?.split(/\s+/).filter(Boolean) ?? [];
     if (!refs.length) {
-      if (!known.has(stripTags(item[2]))) issues.push('a scope item is neither traced nor an item of the canonical record page');
+      const text = stripTags(item[2]);
+      const labelled = text.match(/^(Scheduler|Runtime|Workflow revision): (.+)$/);
+      const onRecord = labelled !== null && definitionValue(facts.canonicalHtml, labelled[1]) === labelled[2];
+      if (!known.has(text) && !onRecord) issues.push('a scope item is neither traced nor an item of the canonical record page');
       continue;
     }
     for (const ref of refs) {
