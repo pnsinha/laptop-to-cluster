@@ -22,7 +22,6 @@ export interface ImplementationReference {
   packageUrl: string;
   primarySourceUrl: string;
   excerpts: SourceExcerpt[];
-  expectedOutput: string;
 }
 
 const WORKFLOW_ID = 'module-2-baseline';
@@ -215,18 +214,6 @@ function validateLineRanges(): void {
 
 validateLineRanges();
 
-const expectedResultsPath = resolve(WORKFLOW_ROOT, 'expected/results.json');
-const expectedResults = JSON.parse(readFileSync(expectedResultsPath, 'utf8')) as {
-  schemaVersion: number;
-  results: Array<Record<string, string>>;
-};
-const expectedOutput = JSON.stringify({
-  schemaVersion: expectedResults.schemaVersion,
-  status: 'success',
-  taskCount: expectedResults.results.length,
-  results: expectedResults.results,
-}, null, 2);
-
 export const IMPLEMENTATION_REFERENCE: ImplementationReference = {
   workflowId: WORKFLOW_ID,
   release: RELEASE,
@@ -244,5 +231,4 @@ export const IMPLEMENTATION_REFERENCE: ImplementationReference = {
     code: excerpt.code,
     annotation: excerpt.annotation,
   })),
-  expectedOutput,
 };
