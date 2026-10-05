@@ -147,7 +147,11 @@ export const countTabStops = (page: Page) => page.evaluate((selector) => [...doc
 async function checkExpectation(page: Page, scope: string, code: string, expectation: PageExpectation): Promise<Issue[]> {
   const issues: Issue[] = [];
   for (const { selector, texts } of expectation.ordered ?? []) {
-    const found = await page.$$eval(selector, (elements) => elements.map((element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim()));
+    const found = await page.$$eval(selector, (elements) => elements
+      .filter((element) => element.checkVisibility({ visibilityProperty: true, opacityProperty: true }))
+      .map((element) => ({ rect: element.getBoundingClientRect(), text: (element.textContent ?? '').replace(/\s+/g, ' ').trim() }))
+      .sort((a, b) => (Math.abs(a.rect.top - b.rect.top) > Math.min(a.rect.height, b.rect.height) / 2 ? a.rect.top - b.rect.top : a.rect.left - b.rect.left))
+      .map((entry) => entry.text));
     if (found.join('|') !== texts.join('|')) issues.push(issue(scope, code, `${selector} must read "${texts.join('|')}" in this order, found "${found.join('|')}"`));
   }
   for (const selector of expectation.present ?? []) {

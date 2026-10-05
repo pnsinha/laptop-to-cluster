@@ -119,14 +119,16 @@ describe('forced colours check', () => {
     const lostControl = mediumPage({ extraCss: '@media (forced-colors:active){.door__link{display:none}}' });
     const server = await serveFixtures({
       '/text/': { body: lostText }, '/boundary/': { body: lostBoundary }, '/selected/': { body: colourOnly }, '/control/': { body: lostControl },
+      '/fc-order/': { body: mediumPage({ extraCss: '@media (forced-colors:active){.timeline__step strong{display:none}}' }) },
     });
     try {
       expect((await checkForcedColors(browser, server.origin, '/text/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/text is lost/);
       expect((await checkForcedColors(browser, server.origin, '/boundary/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/boundary lost/);
       expect((await checkForcedColors(browser, server.origin, '/selected/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/colour only/);
       expect((await checkForcedColors(browser, server.origin, '/control/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/a control was lost/);
+      expect((await checkForcedColors(browser, server.origin, '/fc-order/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/must read/);
     } finally { await server.close(); }
-  }, 90_000);
+  }, 120_000);
 });
 
 describe('print check', () => {
@@ -140,14 +142,19 @@ describe('print check', () => {
     const noRestore = mediumPage({ script: printScript(false) });
     const dark = mediumPage({ print: 'body{background:#111;color:#eee}' });
     const reordered = mediumPage().replace('<strong>Verify results</strong>', '<strong>Clean up</strong>').replace(/<strong>Clean up<\/strong> <span class="timeline__caption">c<\/span><\/li><\/ol>/, '<strong>Verify results</strong> <span class="timeline__caption">c</span></li></ol>');
-    const server = await serveFixtures({ '/hidden/': { body: noDetailsContent }, '/restore/': { body: noRestore }, '/dark/': { body: dark }, '/order/': { body: reordered } });
+    const server = await serveFixtures({ '/hidden/': { body: noDetailsContent }, '/restore/': { body: noRestore }, '/dark/': { body: dark }, '/order/': { body: reordered },
+      '/print-hidden/': { body: mediumPage({ print: '.timeline__steps{display:none}' }) },
+      '/print-order/': { body: mediumPage({ print: '.timeline__steps{display:flex;flex-direction:column}.timeline__step[data-step="5"]{order:9}' }) },
+    });
     try {
       expect((await checkPrint(browser, server.origin, '/hidden/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT-PANEL');
       expect((await checkPrint(browser, server.origin, '/restore/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT-RESTORE');
       expect((await checkPrint(browser, server.origin, '/dark/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT-PALETTE');
       expect((await checkPrint(browser, server.origin, '/order/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT');
+      expect((await checkPrint(browser, server.origin, '/print-hidden/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT');
+      expect((await checkPrint(browser, server.origin, '/print-order/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT');
     } finally { await server.close(); }
-  }, 90_000);
+  }, 120_000);
 });
 
 describe('print link destinations (G6)', () => {
