@@ -2,71 +2,78 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
-import WorkflowFigure from '../components/WorkflowFigure.astro';
+import Crosswalk from '../components/Crosswalk.astro';
+import Doors from '../components/Doors.astro';
+import Timeline from '../components/Timeline.astro';
+import { CROSSWALK } from '../content/crosswalk';
+import {
+  ANALOGY, BIG_IDEA, DOORS_SECTION, EVENT_BAND, HERO, HOME_DESCRIPTION, HOME_TITLE, PROJECT_RECORDS,
+  TIMELINE_CAPTIONS, eventBandLead, homeDoors, projectRecordLinks,
+} from '../content/home';
 import { projectLandingPage } from '../content/projections';
-import { canonicalPath } from '../content/registry';
-const content = await getCollection('contentItems');
-const applicability = await getCollection('applicability');
-const landing = projectLandingPage(content.map(({ data }) => data), applicability.map(({ data }) => data));
-// Event promotion band: rendered only while a published event-assets item exists.
-// The editorial copy below belongs to the I-GUIDE Forum 2026 event specifically;
-// a future event replaces both the gate and the copy.
-const publishedEvents = content
-  .map(({ data }) => data)
-  .filter((item) => item.artifact_type === 'event-assets' && item.status === 'published')
-  .sort((a, b) => (b.publication_date ?? '').localeCompare(a.publication_date ?? ''));
-const promotedEvent = publishedEvents.find((item) => canonicalPath(item) === '/events/iguide-forum-2026/');
+import { currentReleaseVersion } from '../content/release';
+
+const content = (await getCollection('contentItems')).map(({ data }) => data);
+const applicability = (await getCollection('applicability')).map(({ data }) => data);
+// Evidence reaches the home page only through the landing projection.
+const landing = projectLandingPage(content, applicability);
+const recordHref = landing.applicability_projection?.canonicalPath;
+const doors = homeDoors(content);
+const featuredTalk = (await getCollection('talks')).map(({ data }) => data).find(({ featured }) => featured);
+const records = projectRecordLinks(currentReleaseVersion(), landing.release.href);
 ---
-<BaseLayout title="Bridging the Laptop-to-Cluster Gap" description="Translate a multi-service Docker Compose stack to a scheduler-managed HPC allocation with Slurm and Apptainer." canonicalPath="/" profile="landing">
+<BaseLayout title={HOME_TITLE} description={HOME_DESCRIPTION} canonicalPath="/" profile="landing">
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero__copy">
-      <h1 id="hero-title">Bridging the Laptop‑to‑Cluster Gap</h1>
-      <p class="lede">A multi-service stack is trivial to run with Docker Compose on a laptop. On a shared cluster there is no Docker daemon, and the scheduler owns every resource. This guide is the translation.</p>
-      <div class="hero__actions" aria-label="Start learning">
-        <a class="action action--primary" href={landing.orientation?.url ?? '/start/'}>{landing.orientation ? 'Start with Module 0' : 'Get started'}</a>
-        <a class="hero__secondary-link" href="/start/">Check you can run this</a>
+      <p class="kicker">{HERO.kicker}</p>
+      <h1 id="hero-title">{HERO.title}</h1>
+      <p class="lede" set:html={HERO.ledeHtml} />
+      <div class="hero__actions">
+        <a class="action action--primary" href={HERO.primary.href}>{HERO.primary.label}</a>
+        <a class="hero__secondary-link" href={HERO.secondary.href}>{HERO.secondary.label}</a>
       </div>
+      <p class="hero__quiet">{HERO.quiet.lead} <a href={HERO.quiet.href}>{HERO.quiet.label}</a></p>
     </div>
-    <WorkflowFigure />
   </section>
 
   {landing.applicability_projection ? <ApplicabilityProjectionView projection={landing.applicability_projection} /> : <p class="notice notice--info">{landing.validation_unavailable_reason}</p>}
 
-  <section aria-labelledby="mapping-title">
-    <h2 id="mapping-title">Compose-to-HPC mapping</h2>
-    <dl class="compose-mapping">
-      <div><dt>service</dt><dd>scheduler job or step</dd></div>
-      <div><dt>depends_on</dt><dd>explicit readiness check</dd></div>
-      <div><dt>volumes</dt><dd>job-scoped scratch</dd></div>
-      <div><dt>ports</dt><dd>loopback, reached by tunnel</dd></div>
-    </dl>
+  <section class="big-idea" id="big-idea" aria-labelledby="big-idea-title">
+    <h2 id="big-idea-title">{BIG_IDEA.title}</h2>
+    <p set:html={BIG_IDEA.proseHtml} />
+    <Timeline captions={TIMELINE_CAPTIONS} />
+    <div class="analogy">
+      <h3>{ANALOGY.title}</h3>
+      <p set:html={ANALOGY.bodyHtml} />
+      <h4>{ANALOGY.breaksTitle}</h4>
+      <ul class="analogy__breaks">
+        {ANALOGY.breaks.map(({ lead, text }) => <li><strong>{lead}</strong> {text}</li>)}
+      </ul>
+    </div>
   </section>
 
-  <section aria-labelledby="path-title">
-    <h2 id="path-title">Start here</h2>
-    <ol class="path-list">
-      {landing.learning_path.map(({ label, summary, url }) => (
-        <li><a href={url}><strong>{label}:</strong> {summary}</a></li>
-      ))}
-    </ol>
+  <section aria-labelledby="doors-title">
+    <h2 id="doors-title">{DOORS_SECTION.title}</h2>
+    <Doors doors={doors} />
   </section>
 
-  {promotedEvent && (
-    <aside class="event-band" aria-labelledby="event-band-title">
-      <p class="event-band__eyebrow" id="event-band-title">Also at I-GUIDE 2026</p>
-      <p class="event-band__copy">
-        The same laptop-to-cluster argument, one level up for geospatial AI.{' '}
-        <a href="/events/iguide-forum-2026/">Poster and companion material</a>
-      </p>
+  {recordHref ? (
+    <Crosswalk data={CROSSWALK}><a slot="record" href={recordHref}>Full test record</a></Crosswalk>
+  ) : (
+    <Crosswalk data={CROSSWALK} />
+  )}
+
+  {featuredTalk && (
+    <aside class="event-band" aria-label={EVENT_BAND.label}>
+      <p>{eventBandLead(featuredTalk)}: <a href={EVENT_BAND.href}>{EVENT_BAND.linkText}</a></p>
     </aside>
   )}
 
   <section class="project-links" aria-labelledby="project-links-title">
-    <h2 id="project-links-title">Project records</h2>
+    <h2 id="project-links-title">{PROJECT_RECORDS.title}</h2>
     <ul>
-      <li><a href={landing.release.url}>{landing.release.title}</a></li>
-      <li><a href="/about/attribution/">Attribution and licenses</a></li>
-      <li><a href="/about/accessibility/">Accessibility</a></li>
+      {records.map(({ label, href }) => <li><a href={href}>{label}</a></li>)}
     </ul>
+    <p>{PROJECT_RECORDS.visitLead} <a href={PROJECT_RECORDS.visitHref}>{PROJECT_RECORDS.visitLinkText}</a></p>
   </section>
 </BaseLayout>

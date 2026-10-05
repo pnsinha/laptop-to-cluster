@@ -1,0 +1,24 @@
+---
+import type { Door } from '../content/contracts';
+
+interface Props {
+  doors: (Door & { summary: string; path?: { label: string; href: string }[] })[];
+}
+
+const { doors } = Astro.props;
+---
+<ul class="doors" role="list" id="doors">
+  {doors.map(({ id, eyebrow, title, summary, path, href, linkText }) => (
+    <li class="door" id={`door-${id}`}>
+      <p class="door__who">{eyebrow}</p>
+      <h3 class="door__title">{title}</h3>
+      <p class="door__summary">{summary}</p>
+      {path && path.length > 0 && (
+        <ol class="door__path">
+          {path.map((step) => <li><a href={step.href}>{step.label}</a></li>)}
+        </ol>
+      )}
+      <p class="door__go"><a class="door__link" href={href}>{linkText}</a></p>
+    </li>
+  ))}
+</ul>

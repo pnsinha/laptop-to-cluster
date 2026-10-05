@@ -1,0 +1,41 @@
+---
+import { TIMELINE_STEPS, type StepNumber } from '../content/contracts';
+
+interface Props {
+  highlight?: StepNumber;
+  captions: Record<StepNumber, string>;
+  title?: string;
+}
+
+type Lane = 'scratch' | 'coord' | 'workers' | 'checks';
+type Span = 'begin' | 'full' | 'within' | 'fade' | 'stop';
+
+const { highlight, captions, title } = Astro.props;
+const LANE_ORDER: readonly Lane[] = ['scratch', 'coord', 'workers', 'checks'];
+/* Bars follow slurm/baseline.sbatch at v0.1.0. Job scratch is made in step 1 and
+   cleanup never deletes it (fade). The coordinator starts in step 2 and the EXIT
+   trap stops it in step 6 (stop). Workers run in step 4 only. The gate is a
+   barrier across every lane in step 3. */
+const LANES: Record<StepNumber, Partial<Record<Lane, Span>>> = {
+  1: { scratch: 'begin' },
+  2: { scratch: 'full', coord: 'begin' },
+  3: { scratch: 'full', coord: 'full' },
+  4: { scratch: 'full', coord: 'full', workers: 'within' },
+  5: { scratch: 'full', coord: 'full' },
+  6: { scratch: 'fade', coord: 'stop' },
+};
+const MARKS: Partial<Record<StepNumber, 'gate' | 'verify'>> = { 3: 'gate', 5: 'verify' };
+---
+<figure class="timeline" aria-labelledby="timeline-title">
+  <figcaption id="timeline-title" class="timeline__title">{title ?? 'One allocation, start to finish'}</figcaption>
+  <ol class="timeline__steps">
+    {TIMELINE_STEPS.map(({ n, label }) => (
+      <li class="timeline__step" data-step={n} aria-current={n === highlight ? 'step' : undefined}><span class="timeline__num">Step {n}</span> <strong>{label}</strong> <span class="timeline__caption">{captions[n]}</span><span class="timeline__bars" aria-hidden="true">{LANE_ORDER.map((lane) => (<span class="timeline__lane" data-lane={lane} data-span={LANES[n][lane] ?? 'none'}>{lane === 'checks' && MARKS[n] === 'gate' && <span class="timeline__mark timeline__mark--gate">◆</span>}{lane === 'checks' && MARKS[n] === 'verify' && <span class="timeline__mark timeline__mark--verify"></span>}</span>))}</span></li>
+    ))}
+  </ol>
+  <p class="timeline__after"><span class="c-scratch">Temporary job storage (job-scoped scratch)</span> may remain until your center clears it. Copy out what you need before the job ends.</p>
+  <dl class="timeline__key">
+    <div><dt>Gate</dt><dd>Is the coordinator answering yet? This belongs to the pattern: keep it, and change only what “ready” means for your service.</dd></div>
+    <div><dt>Verify</dt><dd>Are the results right? Only your science can say: replace this check with your own.</dd></div>
+  </dl>
+</figure>
