@@ -30,13 +30,14 @@ const THEME_CASES = [
 
 const readTheme = (page: Page) => page.evaluate((key) => {
   const root = document.documentElement;
-  const meta = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].find((element) => !element.media);
+  const meta = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].find((element) => !element.media || window.matchMedia(element.media).matches);
   return {
     attr: root.getAttribute('data-theme'),
     stored: (() => { try { return localStorage.getItem(key); } catch { return null; } })(),
     canvas: getComputedStyle(root).getPropertyValue('--canvas').trim().toLowerCase(),
     scheme: getComputedStyle(root).colorScheme,
-    themeColor: meta?.content ?? null,
+    themeColor: meta?.content.trim().toLowerCase() ?? null,
+    canvasValue: getComputedStyle(root).getPropertyValue('--canvas').trim().toLowerCase(),
     pressed: [...document.querySelectorAll<HTMLElement>('[data-theme-choice][aria-pressed="true"]')].map((element) => element.dataset.themeChoice),
     controlShown: (() => { const control = document.querySelector<HTMLElement>('[data-theme-control]'); return Boolean(control && !control.hidden && control.getClientRects().length); })(),
     log: (window as unknown as { __themeLog?: { attr: number; body: number } }).__themeLog ?? null,
@@ -73,11 +74,16 @@ export async function checkThemePrecedence(browser: Browser, origin: string, pat
     if (testCase.attr !== null && !(state.log && state.log.attr > 0 && state.log.attr < state.log.body)) {
       issues.push(issue(scope, 'A11Y-THEME-FLASH', 'data-theme must be set before the <body> element is parsed, or the first paint can show the wrong theme'));
     }
-    if (testCase.stored === 'dark' || testCase.stored === 'light') themeColors[testCase.stored] = state.themeColor;
+    if (testCase.stored === 'dark' || testCase.stored === 'light') {
+      themeColors[testCase.stored] = state.themeColor;
+      if (state.themeColor !== state.canvasValue) {
+        issues.push(issue(scope, 'A11Y-THEME-COLOR', `the theme-color in effect (${JSON.stringify(state.themeColor)}) must equal the page canvas (${JSON.stringify(state.canvasValue)}) for the stored ${testCase.stored} choice`));
+      }
+    }
     await context.close();
   }
   if (!themeColors.dark || !themeColors.light || themeColors.dark === themeColors.light) {
-    issues.push(issue(`${path}:theme`, 'A11Y-THEME-COLOR', 'the head script must write a theme-color meta (no media attribute) whose value differs between a stored light and a stored dark choice'));
+    issues.push(issue(`${path}:theme`, 'A11Y-THEME-COLOR', 'the head script must update theme-color so the theme-color meta in effect (first with no media or a matching media) matches the stored light or dark canvas and differs between them'));
   }
 
   const context = await browser.newContext({ colorScheme: 'light' });
