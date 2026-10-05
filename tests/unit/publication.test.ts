@@ -81,7 +81,8 @@ describe('typed deployment records', () => {
 
 
 describe('composition and source-agreement publication gates', () => {
-  const projection = '<section class="applicability-projection" data-projection-id="milestone:m1" data-source-id="m1" aria-label="Tested workflow scope"><p>The baseline workflow was validated on Purdue Anvil with Slurm and Apptainer.</p><p class="applicability-supplement applicability-supplement--boundary"><strong>Boundary:</strong> Adapt the partition.</p><p><a href="/applicability/m1/">Review the complete applicability record</a></p></section>';
+  const row = (label: string, item: string) => `<div class="evidence-row"><dt>${label}</dt><dd><ul><li>${item}</li></ul></dd></div>`;
+  const projection = `<section class="applicability-projection" data-projection-id="milestone:m1" data-source-id="m1" aria-label="Tested workflow scope"><p class="evidence-badge">Tested on Purdue Anvil · Jul 2026</p><p class="evidence-link"><a href="/applicability/m1/">Full test record</a></p><details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows">${row('Tested', 'The check passed.')}${row('You need', 'A Slurm allocation.')}${row('Depends on your center', 'Adapt the partition.')}</dl><p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn't been tested yet</a></p></details></section>`;
   const valid = `<body data-composition-profile="milestone"><header class="content-header"><h1>Milestone</h1><p class="lede">Summary.</p></header>${projection}<article><h2>Deliverables</h2><p>Published work.</p></article><section class="sources-scope">Sources and scope</section></body>`;
 
   it('accepts the exact concise shape and rejects duplicate, stale-ID, stale-link, and canonical-only output', () => {
@@ -98,7 +99,7 @@ describe('composition and source-agreement publication gates', () => {
   });
 
   it('detects semantic source drift across every consumer while keeping version and date canonical-only', () => {
-    const canonical = '<body data-composition-profile="applicability"><section class="applicability-record" data-source-id="m1"><dl><div><dt>Status</dt><dd>validated</dd></div><div><dt>Environment</dt><dd>Purdue Anvil</dd></div><div><dt>Scheduler</dt><dd>Slurm 25.11</dd></div><div><dt>Runtime</dt><dd>Apptainer 1.4</dd></div><div><dt>Validation date</dt><dd>2026-07-25</dd></div></dl><h2>Portability boundaries</h2><ul><li>Adapt the partition.</li></ul></section></body>';
+    const canonical = '<body data-composition-profile="applicability"><section class="applicability-record" data-source-id="m1"><dl><div><dt>Status</dt><dd>validated</dd></div><div><dt>Environment</dt><dd>Purdue Anvil</dd></div><div><dt>Scheduler</dt><dd>Slurm 25.11</dd></div><div><dt>Runtime</dt><dd>Apptainer 1.4</dd></div><div><dt>Validation date</dt><dd>2026-07-25</dd></div></dl><h2>Result checks</h2><ul><li>The check passed.</li></ul><h2>Assumptions</h2><ul><li>A Slurm allocation.</li></ul><h2>Portability boundaries</h2><ul><li>Adapt the partition.</li></ul></section></body>';
     const consumers = ['landing', 'runnable-module', 'milestone', 'release'];
     const blocks = consumers.map((consumer) => projection.replaceAll('milestone:m1', `${consumer}:m1`));
     for (const block of blocks) expect(validateProjectionSourceAgreement('/consumer/', block, '/applicability/m1/', canonical)).toEqual([]);
@@ -112,10 +113,12 @@ describe('composition and source-agreement publication gates', () => {
     for (const changed of drift) {
       for (const block of blocks) expect(validateProjectionSourceAgreement('/consumer/', block, '/applicability/m1/', changed).join('\n')).toMatch(/SOURCE-AGREEMENT/);
     }
-    for (const canonicalOnly of [canonical.replace('25.11', '26.1'), canonical.replace('1.4', '2.0'), canonical.replace('2026-07-25', '2026-08-01')]) {
+    for (const canonicalOnly of [canonical.replace('25.11', '26.1'), canonical.replace('1.4', '2.0'), canonical.replace('2026-07-25', '2026-07-28')]) {
       for (const block of blocks) expect(validateProjectionSourceAgreement('/consumer/', block, '/applicability/m1/', canonicalOnly)).toEqual([]);
       expect(blocks.join('')).not.toMatch(/25\.11|1\.4|2026-07-25/);
     }
+    // The validation month is part of the badge, so a different month is now drift, not a canonical-only change.
+    for (const block of blocks) expect(validateProjectionSourceAgreement('/consumer/', block, '/applicability/m1/', canonical.replace('2026-07-25', '2026-08-01')).join('\n')).toMatch(/SOURCE-AGREEMENT/);
     expect(validateProjectionSourceAgreement('/consumer/', projection.replace('/applicability/m1/', '/applicability/stale/'), '/applicability/m1/', canonical).join('\n')).toMatch(/SOURCE-AGREEMENT/);
   });
 
