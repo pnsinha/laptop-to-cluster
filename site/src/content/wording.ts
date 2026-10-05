@@ -15,3 +15,34 @@ export const ATTRIBUTION = {
   nonEndorsement: 'Funding and affiliation acknowledgments do not imply endorsement by the University of Chicago, the U.S. Department of Energy, the National Science Foundation, or BSSw.',
   licenses: 'Executable artifacts are Apache-2.0; original documentation, training materials, and publishable evidence are CC BY 4.0.',
 } as const;
+
+export type EvidenceRecordStatus = 'validated' | 'stale' | 'failed' | 'unvalidated';
+
+/** Badge and warning text for each record status. Projections generate it from the record; pages never type it. */
+export function evidenceStatusText(status: EvidenceRecordStatus, environment: string, monthYear: string): string {
+  switch (status) {
+    case 'validated': return `Tested on ${environment} · ${monthYear}`;
+    case 'stale': return `Review due: last tested on ${environment} · ${monthYear}`;
+    case 'failed': return 'Last run failed: see the test record';
+    case 'unvalidated': return 'Not yet tested on a cluster';
+  }
+}
+
+/** Reader-facing names for learning-module types. */
+export const MODULE_TYPE_LABELS = {
+  conceptual: 'Reading',
+  runnable: 'Hands-on',
+  hybrid: 'Reading and hands-on',
+} as const;
+export type ModuleTypeLabelKey = keyof typeof MODULE_TYPE_LABELS;
+
+/** Type and time, for example 'Hands-on · about 30 min'. The time part is left out when no estimate exists. */
+export function moduleKindLine(moduleType: ModuleTypeLabelKey, estimatedMinutes?: number): string {
+  const time = estimatedMinutes ? `about ${estimatedMinutes} min` : undefined;
+  return [MODULE_TYPE_LABELS[moduleType], time].filter(Boolean).join(' · ');
+}
+
+/** The learning-module header line, for example 'Module 2 · Hands-on · about 30 min'. */
+export function moduleHeaderLine(module: { module_number: number; module_type: ModuleTypeLabelKey; estimated_minutes?: number }): string {
+  return `Module ${module.module_number} · ${moduleKindLine(module.module_type, module.estimated_minutes)}`;
+}
