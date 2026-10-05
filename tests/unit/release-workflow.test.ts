@@ -2,107 +2,177 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import { validateDeploymentWorkflow } from '../../scripts/publication.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const text = readFileSync(`${root}/.github/workflows/release.yml`, 'utf8');
 const workflow = parse(text) as any;
-const steps = (job: string): any[] => workflow.jobs[job].steps;
+const jobs = workflow.jobs as Record<string, any>;
+const steps = (job: string): any[] => jobs[job].steps;
 const find = (job: string, predicate: (step: any) => boolean) => steps(job).find(predicate);
+const uses = (job: string, prefix: string) => steps(job).filter((step) => String(step.uses ?? '').startsWith(prefix));
+const count = (pattern: RegExp) => text.match(pattern)?.length ?? 0;
 
-describe('release workflow: job graph and triggers', () => {
-  it('has the contract job chain', () => {
-    expect(Object.keys(workflow.jobs)).toEqual(['plan', 'build-once', 'deploy-preview', 'deploy', 'post-deploy-release-checks']);
-    expect(workflow.jobs['build-once'].needs).toBe('plan');
-    expect(workflow.jobs['deploy-preview'].needs).toEqual(['plan', 'build-once']);
-    expect(workflow.jobs.deploy.needs).toEqual(['plan', 'build-once']);
-    expect(workflow.jobs['post-deploy-release-checks'].needs).toEqual(['plan', 'deploy']);
-  });
-
-  it('previews on a push to the showcase branch and on version tags, never the frozen tag', () => {
-    expect(workflow.on.push.branches).toContain('v0.2.0-showcase');
+describe('release workflow: triggers', () => {
+  it('previews on the showcase branch and on release-candidate tags, publishes exact tags, and excludes the frozen release', () => {
+    expect(workflow.on.push.branches).toEqual(['v0.2.0-showcase']);
     expect(workflow.on.push.tags).toEqual(['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+', '!v0.1.0']);
-    expect(text.match(/v0\.1\.0/g)).toHaveLength(1);
   });
 
-  it('plans mode, version, date and artifact names once', () => {
-    const outputs = workflow.jobs.plan.outputs;
-    for (const key of ['mode', 'version', 'date', 'artifact-name', 'record-name']) expect(outputs).toHaveProperty(key);
-    expect(workflow.jobs.plan.steps.find((s: any) => s.id === 'plan').run).toContain('validated-site-${VERSION}-${GITHUB_SHA}');
+  it('offers a manual dispatch that needs a release input', () => {
+    expect(workflow.on.workflow_dispatch.inputs.release.required).toBe(true);
+  });
+
+  it('names the frozen release only in its exclusion', () => {
+    expect(count(/v0\.1\.0/g)).toBe(1);
+  });
+
+  it('cancels superseded branch previews but never an in-flight tag run', () => {
+    expect(workflow.concurrency.group).toBe('release-${{ github.ref }}');
+    expect(workflow.concurrency['cancel-in-progress']).toBe("${{ github.ref_type == 'branch' }}");
   });
 });
 
-describe('release workflow: build once', () => {
-  it('validates with full history and uploads a version-named artifact', () => {
-    const checkout = find('build-once', (step) => String(step.uses).startsWith('actions/checkout@'));
+describe('release workflow: planning', () => {
+  it('lets the planner decide, and checks out the tag only for a manual dispatch', () => {
+    expect(jobs).toHaveProperty(['plan']);
+    const plan = find('plan', (step) => step.id === 'plan');
+    expect(plan.run).toContain('RELEASE_SHA="$(git rev-parse HEAD)" node scripts/release-plan.mjs . > "$RUNNER_TEMP/plan.txt"');
+    // The default step shell has no pipefail: a pipe into tee would hide a planner failure.
+    expect(plan.run).not.toMatch(/\|\s*tee/);
+    expect(plan.run).toContain('>> "$GITHUB_OUTPUT"');
+    expect(plan.env.INPUT_RELEASE).toBe('${{ inputs.release }}');
+    const checkout = uses('plan', 'actions/checkout@')[0];
     expect(checkout.with['fetch-depth']).toBe(0);
-    const validates = steps('build-once').filter((step) => /npm run validate\b(?!:)/.test(step.run ?? ''));
-    expect(validates).toHaveLength(1);
-    const builds = steps('build-once').filter((step) => /npm run build\b/.test(step.run ?? ''));
-    expect(builds).toHaveLength(0);
-    const upload = find('build-once', (step) => String(step.uses).startsWith('actions/upload-artifact@'));
-    expect(upload.with.name).toBe('${{ needs.plan.outputs.artifact-name }}');
-    expect(workflow.jobs['build-once'].env.RELEASE_VERSION).toBe('${{ needs.plan.outputs.version }}');
-    expect(workflow.jobs['build-once'].env.PREVIEW).toContain("needs.plan.outputs.mode == 'preview'");
+    expect(checkout.with.ref).toContain("format('refs/tags/{0}', inputs.release)");
   });
 
-  it('maps the boundary pattern on the validate step only', () => {
-    const gate = find('build-once', (step) => step.run === 'npm run validate');
-    expect(gate.env.L2C_BOUNDARY_PATTERN).toBe('${{ secrets.L2C_BOUNDARY_PATTERN }}');
-    expect(workflow.env).toBeUndefined();
-    expect(text.match(/secrets\.L2C_BOUNDARY_PATTERN/g)).toHaveLength(1);
+  it('requires a production release to be on main', () => {
+    const gate = find('plan', (step) => /merge-base --is-ancestor HEAD origin\/main/.test(step.run ?? ''));
+    expect(gate.if).toBe("steps.plan.outputs.mode == 'production'");
+  });
+
+  it('exports every plan output the later jobs read', () => {
+    for (const key of ['mode', 'version', 'date', 'sha', 'preview', 'full-gate', 'artifact-name', 'record-artifact-name']) {
+      expect(jobs.plan.outputs[key]).toBe(`\${{ steps.plan.outputs.${key} }}`);
+    }
+  });
+
+  it('pins every later job to the planned commit, never to a movable ref', () => {
+    for (const job of ['build-once', 'deploy-preview', 'deploy', 'post-deploy-release-checks']) {
+      for (const checkout of uses(job, 'actions/checkout@')) expect(checkout.with.ref, job).toBe('${{ needs.plan.outputs.sha }}');
+    }
   });
 });
 
-describe('release workflow: deploy paths', () => {
-  it('deploys the retained artifact to the preview alias only in preview mode', () => {
-    const job = workflow.jobs['deploy-preview'];
-    expect(job.if).toContain("== 'preview'");
-    const deploy = find('deploy-preview', (step) => String(step.uses).startsWith('cloudflare/wrangler-action@'));
-    expect(deploy.with.command).toContain('pages deploy site/dist');
-    expect(deploy.with.command).toContain('--branch=preview');
-    expect(deploy.with.command).not.toContain('--branch=main');
-    expect(deploy.with.apiToken).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
-    expect(deploy.with.accountId).toBe('${{ secrets.CLOUDFLARE_ACCOUNT_ID }}');
-    expect(deploy.with.command).toContain('${{ vars.CLOUDFLARE_PAGES_PROJECT }}');
+describe('release workflow: the one build', () => {
+  it('maps the plan into RELEASE_VERSION, RELEASE_DATE and PREVIEW', () => {
+    expect(jobs['build-once'].env).toEqual({
+      RELEASE_VERSION: '${{ needs.plan.outputs.version }}', RELEASE_DATE: '${{ needs.plan.outputs.date }}', PREVIEW: '${{ needs.plan.outputs.preview }}',
+    });
   });
 
-  it('deploys to production only in production mode', () => {
-    const job = workflow.jobs.deploy;
-    expect(job.if).toContain("== 'production'");
-    expect(job.environment).toBe('production');
-    const deploy = find('deploy', (step) => String(step.uses).startsWith('cloudflare/wrangler-action@'));
-    expect(deploy.with.command).toContain('--branch=main');
-    expect(deploy.with.command).not.toContain('--branch=preview');
-    expect(text.match(/--branch=main/g)).toHaveLength(1);
-    expect(text.match(/--branch=preview/g)).toHaveLength(1);
-    const names = steps('deploy').map((step) => step.run ?? '').join('\n');
-    expect(names).toContain('generate-release-record.mjs');
-    expect(names).toContain('update-recovery-index.mjs');
-    expect(JSON.stringify(workflow.jobs['deploy-preview'])).not.toContain('generate-release-record');
+  it('runs the whole chain for tags and the fast gate for branch pushes, and never both', () => {
+    const full = find('build-once', (step) => step.run === 'npm run validate');
+    const fast = find('build-once', (step) => /npm run build/.test(step.run ?? ''));
+    expect(full.if).toBe("needs.plan.outputs.full-gate == 'true'");
+    expect(fast.if).toBe("needs.plan.outputs.full-gate != 'true'");
+    expect(fast.run).toContain('npm run publication:validate');
+    expect(fast.run).toContain('npm run publication:prepare');
   });
 
-  it('keeps the build-once rule: deploy jobs download and verify, never install or build', () => {
-    for (const name of ['deploy-preview', 'deploy']) {
-      const body = JSON.stringify(workflow.jobs[name]);
-      expect(body).toContain('actions/download-artifact@');
-      expect(body).toContain('publication.mjs verify');
-      expect(body).not.toMatch(/npm (?:ci|install)|astro (?:build|sync|check)|npm run build/);
+  it('requires a signed accessibility review for production only', () => {
+    const review = find('build-once', (step) => /validate-accessibility-review/.test(step.run ?? ''));
+    expect(review.if).toBe("needs.plan.outputs.mode == 'production'");
+    expect(review.run).toContain('--require-complete');
+    expect(review.run).not.toMatch(/releases\//);
+  });
+
+  it('maps the boundary pattern on the two gate steps only', () => {
+    expect(count(/secrets\.L2C_BOUNDARY_PATTERN/g)).toBe(2);
+    expect(workflow.env).toBeUndefined();
+    for (const [name, job] of Object.entries(jobs)) expect(job.env?.L2C_BOUNDARY_PATTERN, name).toBeUndefined();
+    for (const step of steps('build-once').filter((entry) => entry.env?.L2C_BOUNDARY_PATTERN)) {
+      expect(step.env.L2C_BOUNDARY_PATTERN).toBe('${{ secrets.L2C_BOUNDARY_PATTERN }}');
+      expect(step.run).toMatch(/npm run (?:validate|publication:validate)/);
     }
   });
 
-  it('checks out with full history in every job', () => {
-    for (const [name, job] of Object.entries<any>(workflow.jobs)) {
-      const checkouts = job.steps.filter((step: any) => String(step.uses).startsWith('actions/checkout@'));
-      expect(checkouts.length, name).toBeGreaterThan(0);
-      for (const step of checkouts) expect(step.with?.['fetch-depth'], name).toBe(0);
+  it('uploads a version-named artifact, kept longer for production', () => {
+    const upload = uses('build-once', 'actions/upload-artifact@')[0];
+    expect(upload.with.name).toBe('${{ needs.plan.outputs.artifact-name }}');
+    expect(upload.with.path).toContain('publication/${{ needs.plan.outputs.version }}/');
+    expect(upload.with['retention-days']).toBe("${{ needs.plan.outputs.mode == 'production' && 90 || 30 }}");
+  });
+});
+
+describe('release workflow: deployment', () => {
+  const wrangler = (job: string) => find(job, (step) => String(step.uses).startsWith('cloudflare/wrangler-action@'));
+
+  it('sends previews to the preview alias and production to main, each exactly once', () => {
+    expect(jobs['deploy-preview'].if).toBe("needs.plan.outputs.mode == 'preview'");
+    expect(jobs.deploy.if).toBe("needs.plan.outputs.mode == 'production'");
+    expect(wrangler('deploy-preview').with.command).toContain('--branch=preview');
+    expect(wrangler('deploy-preview').with.command).not.toContain('--branch=main');
+    expect(wrangler('deploy').with.command).toContain('--branch=main');
+    expect(wrangler('deploy').with.command).not.toContain('--branch=preview');
+    expect(count(/--branch=main/g)).toBe(1);
+    expect(count(/--branch=preview/g)).toBe(1);
+    for (const job of ['deploy-preview', 'deploy']) {
+      expect(wrangler(job).with.command).toContain('--commit-hash=${{ needs.plan.outputs.sha }}');
+      expect(wrangler(job).with.apiToken).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
+      expect(wrangler(job).with.accountId).toBe('${{ secrets.CLOUDFLARE_ACCOUNT_ID }}');
     }
   });
 
+  it('satisfies the existing build-once deployment policy for the production job', () => {
+    expect(validateDeploymentWorkflow(text)).toEqual([]);
+  });
+
+  it('never installs or builds in a deploy job', () => {
+    for (const job of ['deploy-preview', 'deploy']) {
+      const body = JSON.stringify(jobs[job]);
+      expect(body, job).toContain('actions/download-artifact@');
+      expect(body, job).toContain('publication.mjs verify');
+      expect(body, job).not.toMatch(/npm (?:ci|install)|astro (?:build|sync|check)|npm run (?:build|validate)/);
+    }
+  });
+
+  it('writes release records, and updates the recovery index, in the production job only', () => {
+    for (const script of ['generate-release-record.mjs', 'update-recovery-index.mjs', 'cloudflare-readiness']) {
+      expect(JSON.stringify(jobs.deploy), script).toContain(script);
+      expect(JSON.stringify(jobs['deploy-preview']), script).not.toContain(script);
+    }
+    expect(jobs.deploy.environment).toBe('production');
+    expect(jobs['deploy-preview'].environment).toBeUndefined();
+    const record = uses('deploy', 'actions/upload-artifact@')[0];
+    expect(record.with.name).toBe('${{ needs.plan.outputs.record-artifact-name }}');
+    expect(record.with['retention-days']).toBe(365);
+  });
+
+  it('checks the live apex after production deploys, including that it serves this release', () => {
+    expect(jobs['post-deploy-release-checks'].needs).toEqual(['plan', 'deploy']);
+    const body = JSON.stringify(jobs['post-deploy-release-checks']);
+    expect(body).toContain('check-public-release.mjs');
+    expect(body).toContain('verify-live-release.mjs');
+    expect(body).toContain('RELEASE_VERSION');
+    expect(body).toContain('${{ needs.deploy.outputs.pages-url }}');
+  });
+});
+
+describe('release workflow: hygiene', () => {
   it('pins every action to an exact version and holds read-only permissions', () => {
-    const uses = [...text.matchAll(/uses:\s*([^\s]+)/g)].map((match) => match[1]);
-    expect(uses.length).toBeGreaterThan(0);
-    for (const reference of uses) expect(reference).toMatch(/@v\d+\.\d+\.\d+$/);
+    const refs = [...text.matchAll(/uses:\s*([^\s]+)/g)].map((match) => match[1]);
+    expect(refs.length).toBeGreaterThan(8);
+    for (const reference of refs) expect(reference).toMatch(/@v\d+\.\d+\.\d+$/);
     expect(workflow.permissions).toEqual({ contents: 'read' });
     expect(text).not.toMatch(/:\s*write\b/);
+    expect(text).not.toContain('pull_request_target');
+  });
+
+  it('never expands a GitHub expression inside a shell script', () => {
+    for (const [name, job] of Object.entries(jobs)) {
+      for (const step of job.steps) if (step.run) expect(step.run, `${name}: ${step.name ?? step.run.slice(0, 40)}`).not.toContain('${{');
+    }
   });
 });
