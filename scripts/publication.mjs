@@ -938,10 +938,25 @@ export function tagTriggers(patterns, tag) {
 function jobBlock(text, name) {
   return text.match(new RegExp(`\\n  ${name}:[\\s\\S]*?(?=\\n  [a-zA-Z][\\w-]*:|$)`))?.[0] ?? '';
 }
-export function workflowTagPatterns(text) {
-  const raw = text.match(/\n\s+tags:\s*(\[[^\]]*\]|(?:\n\s+- [^\n]+)+)/)?.[1] ?? '';
-  return raw.replace(/^\[|\]$/g, '').split(/,|\n/).map((item) => item.replace(/^\s*-\s*/, '').trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+function workflowList(text, key) {
+  const flow = text.match(new RegExp(`\\n\\s+${key}:[ \\t]*\\[([^\\n]*)\\][ \\t]*(?=\\n|$)`))?.[1];
+  const raw = flow ?? text.match(new RegExp(`\\n\\s+${key}:[ \\t]*((?:\\n\\s+- [^\\n]+)+)`))?.[1] ?? '';
+  return raw.split(flow === undefined ? /\n/ : /,/).map((item) => item.replace(/^\s*-\s*/, '').trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
 }
+/** Reads a single-line flow list up to the last ] on its line (character classes contain ]), or a block list. */
+export function workflowTagPatterns(text) {
+  return workflowList(text, 'tags');
+}
+function jobNeeds(block) {
+  const match = block.match(/\n    needs:[ \t]*([^\n]*)((?:\n      - [^\n]+)*)/);
+  if (!match) return [];
+  return `${match[1]},${match[2].replace(/\n\s+- /g, ',')}`.replace(/[\[\]]/g, '').split(',').map((item) => item.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+}
+function jobGate(block) {
+  const condition = (block.match(/\n    if:[ \t]*([^\n]+)/)?.[1] ?? '').replace(/\$\{\{|\}\}/g, '').replace(/\s+/g, '');
+  return /^needs\.plan\.outputs\.preview==['"]?1['"]?$/.test(condition) ? 'preview' : /^needs\.plan\.outputs\.preview!=['"]?1['"]?$/.test(condition) ? 'production' : 'other';
+}
+const artifactName = (prefix) => new RegExp(`^${prefix}-\\$\\{\\{\\s*needs\\.plan\\.outputs\\.version\\s*\\}\\}-\\$\\{\\{\\s*github\\.sha\\s*\\}\\}$`);
 
 /** The v0.2.0 release workflow (written by W8): the properties of contract A11 that the policy gate requires. */
 export function validateReleaseWorkflow(text, file = '.github/workflows/release.yml') {
@@ -952,26 +967,30 @@ export function validateReleaseWorkflow(text, file = '.github/workflows/release.
   for (const tag of ['v0.2.0', 'v0.2.0-rc.1']) if (!tagTriggers(patterns, tag)) fail('on.push.tags', 'RELEASE-WORKFLOW', `no tag pattern triggers ${tag}`);
   if (tagTriggers(patterns, 'v0.1.0')) fail('on.push.tags', 'RELEASE-WORKFLOW', 'the tag patterns match the frozen v0.1.0 tag; add a !v0.1.0 filter');
   if (/v0\.1\.0/.test(text.replace(/!v0\.1\.0/g, ''))) fail('release', 'RELEASE-WORKFLOW', 'v0.1.0 may appear only inside the !v0.1.0 filter');
-  if (!/branches:\s*\[[^\]]*\bv0\.2\.0-showcase\b/.test(text)) fail('on.push.branches', 'RELEASE-WORKFLOW', 'the preview trigger on branch v0.2.0-showcase is required');
+  if (!workflowList(text, 'branches').includes('v0.2.0-showcase')) fail('on.push.branches', 'RELEASE-WORKFLOW', 'the preview trigger on branch v0.2.0-showcase is required');
   if (!/^permissions:\s*\n\s+contents:\s*read\s*$/m.test(text)) fail('permissions', 'RELEASE-WORKFLOW', 'top-level permissions must be contents: read');
   if (!/L2C_BOUNDARY_PATTERN:\s*\$\{\{\s*secrets\.L2C_BOUNDARY_PATTERN\s*\}\}/.test(text)) fail('env', 'RELEASE-WORKFLOW', 'L2C_BOUNDARY_PATTERN must be mapped from the secret of the same name');
   for (const secret of ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_ZONE_ID']) if (!new RegExp(`secrets\\.${secret}\\b`).test(text)) fail('secrets', 'RELEASE-WORKFLOW', `secrets.${secret} must be used`);
-  if (!/RELEASE_VERSION/.test(text) && !/outputs\.version/.test(text)) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job must output the release version');
-  if (!jobBlock(text, 'plan')) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job is missing');
+  const plan = jobBlock(text, 'plan');
+  if (!/\n    outputs:\s*\n(?:\s+[a-z]+:[^\n]*\n)*?\s+version:/.test(`${plan}\n`)) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job must output the release version');
+  if (!plan) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job is missing');
   const build = jobBlock(text, 'build-once');
   if (!build) fail('jobs.build-once', 'BUILD-ONCE', 'the build-once job is missing');
   else {
     if (!/fetch-depth:\s*0/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'checkout needs fetch-depth: 0 for the history scan');
+    if (!jobNeeds(build).includes('plan')) fail('jobs.build-once', 'BUILD-ONCE', 'build-once must need plan');
     if (!/npm run validate(?![:\w-])/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'the full npm run validate chain is required');
     const artifact = build.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
-    if (!/validated-site-/.test(artifact) || !/RELEASE_VERSION|outputs\.version/.test(artifact)) fail('jobs.build-once', 'BUILD-ONCE', 'the retained artifact name must contain the release version (validated-site-<version>-<sha>)');
+    if (!artifactName('validated-site').test(artifact.trim())) fail('jobs.build-once', 'BUILD-ONCE', 'the retained artifact name must contain the release version (validated-site-${{ needs.plan.outputs.version }}-${{ github.sha }})');
   }
+  for (const [index, step] of [...text.matchAll(/actions\/checkout@[^\n]*\n([\s\S]*?)(?=\n      - |\n  [a-zA-Z]|$)/g)].entries()) if (!/fetch-depth:\s*0/.test(step[1])) fail('jobs', 'RELEASE-WORKFLOW', `checkout step ${index + 1} needs fetch-depth: 0`);
+  for (const name of ['CLOUDFLARE_PAGES_PROJECT', 'CLOUDFLARE_CUSTOM_DOMAIN_ID', 'CLOUDFLARE_REDIRECT_LIST_ID', 'CLOUDFLARE_REDIRECT_RULE_ID']) if (!new RegExp(`vars\\.${name}\\b`).test(text)) fail('vars', 'RELEASE-WORKFLOW', `vars.${name} must be used as in publication.yml`);
   const preview = jobBlock(text, 'deploy-preview');
   const production = jobBlock(text, 'deploy');
   errors.push(...validateDeploymentWorkflow(text, file, 'deploy-preview'), ...validateDeploymentWorkflow(text, file, 'deploy'));
   for (const [name, block] of [['deploy-preview', preview], ['deploy', production]]) {
-    if (block && !/\n    if:[^\n]*preview/i.test(block)) fail(`jobs.${name}`, 'RELEASE-WORKFLOW', `${name} must be gated on the plan preview output`);
-    if (block && !/needs:[^\n]*build-once/.test(block)) fail(`jobs.${name}`, 'BUILD-ONCE', `${name} must need build-once`);
+    if (block && jobGate(block) !== (name === 'deploy' ? 'production' : 'preview')) fail(`jobs.${name}`, 'RELEASE-WORKFLOW', `${name} must be gated on the plan preview output (${name === 'deploy' ? "!= '1'" : "== '1'"})`);
+    if (block && !jobNeeds(block).includes('build-once')) fail(`jobs.${name}`, 'BUILD-ONCE', `${name} must need build-once`);
   }
   const count = (block, needle) => block.split(needle).length - 1;
   if (count(text, '--branch=preview') !== count(preview, '--branch=preview') || !count(preview, '--branch=preview')) fail('jobs.deploy-preview', 'DIRECT-UPLOAD', '--branch=preview must appear only in deploy-preview, and there it is required');
@@ -981,7 +1000,9 @@ export function validateReleaseWorkflow(text, file = '.github/workflows/release.
     if (!production.includes(script)) fail('jobs.deploy', 'RELEASE-WORKFLOW', `${script} must run in the deploy job`);
   }
   const post = jobBlock(text, 'post-deploy-release-checks');
-  if (!/needs:[^\n]*\bdeploy\b/.test(post) || !/check-public-release\.mjs/.test(post)) fail('jobs.post-deploy-release-checks', 'RELEASE-WORKFLOW', 'a post-deploy job that needs deploy and runs check-public-release.mjs is required');
+  const releaseRecord = production.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
+  if (!artifactName('release-record').test(releaseRecord.trim())) fail('jobs.deploy', 'RELEASE-WORKFLOW', 'the release record artifact name must be release-record-${{ needs.plan.outputs.version }}-${{ github.sha }}');
+  if (!jobNeeds(post).includes('deploy') || !/check-public-release\.mjs/.test(post)) fail('jobs.post-deploy-release-checks', 'RELEASE-WORKFLOW', 'a post-deploy job that needs deploy and runs check-public-release.mjs is required');
   return errors;
 }
 

@@ -42,6 +42,8 @@ describe('tag patterns', () => {
   it('reads inline and block tag lists', () => {
     expect(workflowTagPatterns("on:\n  push:\n    tags: ['v0.2.0', \"v0.2.0-rc.*\"]\n")).toEqual(['v0.2.0', 'v0.2.0-rc.*']);
     expect(workflowTagPatterns(RELEASE)).toEqual(['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+', '!v0.1.0']);
+    const a11 = ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+', '!v0.1.0'];
+    expect(workflowTagPatterns("on:\n  push:\n    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+', '!v0.1.0']\n")).toEqual(a11);
     expect(workflowTagPatterns("on:\n  push:\n    tags:\n      - 'v0.2.0'\n      - v0.2.0-rc.*\n  workflow_dispatch:\n")).toEqual(['v0.2.0', 'v0.2.0-rc.*']);
   });
 });
@@ -50,6 +52,14 @@ describe('validateReleaseWorkflow', () => {
   it('accepts a workflow with every required property', () => {
     expect(validateReleaseWorkflow(RELEASE)).toEqual([]);
     expect(validateDeploymentWorkflow(RELEASE, 'release.yml')).toEqual([]);
+  });
+
+  it('accepts A11 literal inline tag list and a block branch list', () => {
+    const block = "\n    tags:\n      - 'v[0-9]+.[0-9]+.[0-9]+'\n      - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'\n      - '!v0.1.0'";
+    expect(RELEASE).toContain(block);
+    const inline = RELEASE.replace(block, "\n    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+', '!v0.1.0']");
+    expect(validateReleaseWorkflow(inline)).toEqual([]);
+    expect(validateReleaseWorkflow(RELEASE.replace('branches: [v0.2.0-showcase]', 'branches:\n      - v0.2.0-showcase'))).toEqual([]);
   });
 
   it('rejects each missing property with a precise field', () => {
@@ -72,6 +82,15 @@ describe('validateReleaseWorkflow', () => {
       ['no recovery index step', RELEASE.replace('update-recovery-index.mjs', 'echo'), /update-recovery-index\.mjs must run in the deploy job/],
       ['an ungated production job', RELEASE.replace("    if: needs.plan.outputs.preview != '1'\n", ''), /jobs\.deploy.*must be gated on the plan preview output/],
       ['no post-deploy check', RELEASE.replace('check-public-release.mjs', 'echo done'), /post-deploy job/],
+      ['swapped preview and production gates', RELEASE.replace("preview == '1'", 'TMP').replace("preview != '1'", "preview == '1'").replace('TMP', "preview != '1'"), /must be gated on the plan preview output/],
+      ['a release record artifact without the sha', RELEASE.replace('release-record-${{ needs.plan.outputs.version }}-${{ github.sha }}', 'release-record-${{ needs.plan.outputs.version }}'), /release record artifact name/],
+      ['a validated-site artifact without the sha', RELEASE.replace('name: validated-site-${{ needs.plan.outputs.version }}-${{ github.sha }}\n          path', 'name: validated-site-${{ needs.plan.outputs.version }}\n          path'), /artifact name must contain the release version/],
+      ['an artifact name from a literal version', RELEASE.replace('name: validated-site-${{ needs.plan.outputs.version }}-${{ github.sha }}\n          path', 'name: validated-site-${{ env.RELEASE_VERSION }}-${{ github.sha }}\n          path'), /artifact name must contain the release version/],
+      ['a plan job with no version output', RELEASE.replace('      version: ${{ steps.v.outputs.version }}\n', ''), /plan job must output the release version/],
+      ['build-once without needs plan', RELEASE.replace('  build-once:\n    needs: plan\n', '  build-once:\n'), /build-once must need plan/],
+      ['post-deploy needing only the preview job', RELEASE.replace('needs: [deploy-preview, deploy]', 'needs: [deploy-preview]'), /post-deploy job/],
+      ['a missing publication.yml var', RELEASE.replaceAll('vars.CLOUDFLARE_REDIRECT_RULE_ID', 'secrets.X'), /vars\.CLOUDFLARE_REDIRECT_RULE_ID/],
+      ['a shallow checkout in another job', RELEASE.replace('  deploy-preview:', '  extra:\n    steps:\n      - uses: actions/checkout@v4.2.2\n  deploy-preview:'), /checkout step 2 needs fetch-depth: 0/],
     ];
     for (const [name, text, expected] of cases) expect(validateReleaseWorkflow(text).join('\n'), name).toMatch(expected);
   });

@@ -47,7 +47,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: @{{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: @{{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         with:
-          command: pages deploy site/dist --project-name=x --branch=preview --commit-dirty=false
+          command: pages deploy site/dist --project-name=@{{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-dirty=false
   deploy:
     if: needs.plan.outputs.preview != '1'
     needs: [plan, build-once]
@@ -62,8 +62,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: @{{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: @{{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_ZONE_ID: @{{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_CUSTOM_DOMAIN_ID: @{{ vars.CLOUDFLARE_CUSTOM_DOMAIN_ID }}
+          CF_REDIRECT_LIST_ID: @{{ vars.CLOUDFLARE_REDIRECT_LIST_ID }}
+          CF_REDIRECT_RULE_ID: @{{ vars.CLOUDFLARE_REDIRECT_RULE_ID }}
         with:
-          command: pages deploy site/dist --project-name=x --branch=main --commit-dirty=false
+          command: pages deploy site/dist --project-name=@{{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-dirty=false
       - name: Release record
         run: node scripts/generate-release-record.mjs .
       - name: Recovery index
