@@ -157,7 +157,7 @@ describe('home page, built output', () => {
     const version = currentReleaseVersion(root);
     const strip = sectionFrom('<section class="project-links"');
     expect(strip).toContain('<h2 id="project-links-title">Project records</h2>');
-    expect([...strip.matchAll(/<li><a href="([^"]+)">([^<]+)<\/a><\/li>/g)].map(([, href, label]) => [href, decode(label)])).toEqual([
+    expect.soft([...strip.matchAll(/<li><a href="([^"]+)">([^<]+)<\/a><\/li>/g)].map(([, href, label]) => [href, decode(label)])).toEqual([
       ['/about/attribution/', 'Bridging the Laptop-to-Cluster Gap: a 2026 Better Scientific Software Fellowship project'],
       ['/about/talks-and-papers/', 'Talks, posters & papers'],
       ['/milestones/2/#release-v0-2-0', `${version} release notes`],
