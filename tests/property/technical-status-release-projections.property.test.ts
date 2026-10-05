@@ -151,7 +151,7 @@ describe('Property 16: Technical status and release projections are traceable', 
             canonicalPath: `/applicability/${applicability.id}/`,
           });
           expect(Object.keys(projected).sort()).toEqual([
-            'canonicalPath', 'consumer', 'projectionId', 'recordId', 'supplement', 'testedScope',
+            'canonicalPath', 'consumer', 'panel', 'projectionId', 'recordId', 'supplement', 'testedScope',
           ]);
           expect(projected.supplement.kind).toBe(
             applicability.status === 'validated' ? 'boundary' : 'status',
