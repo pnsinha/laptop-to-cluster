@@ -32,7 +32,7 @@ The tour is additive to the fellowship statement of work: it is not a SOW-listed
 
 Modules 4 and 5 are the SOW "portability modules" deliverable (SOW topics 2 and 3). Module 3 is supporting material for that deliverable, not a SOW-listed deliverable itself.
 
-Talks and posters are linked from [Talks and papers](/about/talks-and-papers/). This site links to them where they are hosted; it does not host their files.
+Talks and posters are linked from [Talks and papers](/about/talks-and-papers/). This site links to them where they are hosted and hosts none of their files, except the I-GUIDE Forum 2026 poster, which has its own [event page](/events/iguide-forum-2026/).
 
 ## Planned
 
