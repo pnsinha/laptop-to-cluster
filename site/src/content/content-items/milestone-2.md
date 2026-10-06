@@ -49,10 +49,10 @@ The Milestone 1 program review (2026-08-14) asked these questions. They are quot
 
 Source: Milestone 1 program review, 2026-08-14. Where each part is answered:
 
-| Question | Where it is answered |
+| Topic | Where it is answered |
 |---|---|
-| Who is the audience, what should a learner already know, and how should they progress? | [The five-minute tour](/guide/tour/) |
-| What does the workflow source do? | [Module 2: the same stack in one allocation](/guide/baseline-single-node-pattern/#the-same-stack-in-one-allocation) |
-| How would a user modify it to run their own application? | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it) |
-| Is results verification something to expect for your own application? | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it), and the tour |
-| Are the json files for humans or for tools? | [Module 2: files the workflow reads and writes](/guide/baseline-single-node-pattern/#files-the-workflow-reads-and-writes) |
+| Audience, assumed skills and progression | [The five-minute tour](/guide/tour/) |
+| What the workflow source does | [Module 2: the same stack in one allocation](/guide/baseline-single-node-pattern/#the-same-stack-in-one-allocation) |
+| Modifying it for your own application | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it) |
+| Result verification in your own application | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it), and the tour |
+| Whether the JSON files are for people or tools | [Module 2: files the workflow reads and writes](/guide/baseline-single-node-pattern/#files-the-workflow-reads-and-writes) |
