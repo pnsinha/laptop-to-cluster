@@ -5,6 +5,7 @@ import ApplicabilityProjectionView from '../components/ApplicabilityProjection.a
 import Crosswalk from '../components/Crosswalk.astro';
 import Doors from '../components/Doors.astro';
 import Timeline from '../components/Timeline.astro';
+import CrosswalkEnhancement from '../components/CrosswalkEnhancement.astro';
 import { CROSSWALK } from '../content/crosswalk';
 import {
   ANALOGY, BIG_IDEA, DOORS_SECTION, EVENT_BAND, HERO, HOME_DESCRIPTION, HOME_TITLE, PROJECT_RECORDS,
@@ -75,4 +76,5 @@ const records = projectRecordLinks(landing.release);
     </ul>
     <p>{PROJECT_RECORDS.visitLead} <a href={PROJECT_RECORDS.visitHref}>{PROJECT_RECORDS.visitLinkText}</a></p>
   </section>
+  <CrosswalkEnhancement />
 </BaseLayout>

@@ -1,0 +1,117 @@
+/* v0.2.0 conditional enhancements. Imported once by global.css, so the build still
+   emits a single stylesheet. Rules that matter carry the .crosswalk prefix, so their
+   weight does not depend on where the import sits. Nothing here moves. */
+
+/* ---------- Crosswalk highlight (the script adds the controls; without it none of this applies) ---------- */
+.crosswalk .crosswalk__term[data-concept="step"] { --cc: var(--c-step); --cc-bg: var(--c-step-bg); }
+.crosswalk .crosswalk__term[data-concept="gate"] { --cc: var(--c-gate); --cc-bg: var(--c-gate-bg); }
+.crosswalk .crosswalk__term[data-concept="scratch"] { --cc: var(--c-scratch); --cc-bg: var(--c-scratch-bg); }
+.crosswalk .crosswalk__term[data-concept="net"] { --cc: var(--c-net); --cc-bg: var(--c-net-bg); }
+.crosswalk[data-selected="step"] { --pick: var(--c-step); --pick-bg: var(--c-step-bg); }
+.crosswalk[data-selected="gate"] { --pick: var(--c-gate); --pick-bg: var(--c-gate-bg); }
+.crosswalk[data-selected="scratch"] { --pick: var(--c-scratch); --pick-bg: var(--c-scratch-bg); }
+.crosswalk[data-selected="net"] { --pick: var(--c-net); --pick-bg: var(--c-net-bg); }
+
+.crosswalk .crosswalk__term button,
+.crosswalk .crosswalk__clear {
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  min-block-size: 2rem;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-ui);
+  line-height: var(--leading-ui);
+  color: var(--text);
+  text-align: start;
+  overflow-wrap: anywhere;
+  background: none;
+  border: var(--border-strong) solid var(--border);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+.crosswalk .crosswalk__term button { font-weight: var(--weight-semibold); }
+.crosswalk .crosswalk__term button:hover { border-color: var(--cc); }
+.crosswalk .crosswalk__term button[aria-pressed="true"] {
+  background: var(--cc-bg);
+  border-color: var(--cc);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+.crosswalk .crosswalk__term button:focus-visible,
+.crosswalk .crosswalk__clear:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+.crosswalk .crosswalk__status {
+  display: inline-block;
+  margin-block: var(--space-3) 0;
+  margin-inline-end: var(--space-4);
+  font-size: var(--text-fine);
+  line-height: var(--leading-fine);
+  color: var(--muted);
+}
+.crosswalk .crosswalk__clear[hidden] { display: none; }
+/* Lean variant (R13): no per-line class; the section's data-selected attribute
+   drives selection through these attribute selectors, and --pick carries the concept. */
+.crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+.crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+.crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+.crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] {
+  background: var(--pick-bg);
+  outline: var(--border-strong) solid var(--pick);
+  outline-offset: -2px;
+}
+
+@media (forced-colors: active) {
+  .crosswalk .crosswalk__term button,
+  .crosswalk .crosswalk__clear { border-color: ButtonText; }
+  .crosswalk .crosswalk__term button[aria-pressed="true"] { border-color: Highlight; }
+  .crosswalk .crosswalk__term button:focus-visible,
+  .crosswalk .crosswalk__clear:focus-visible { outline-color: Highlight; }
+  .crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+  .crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+  .crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+  .crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] { outline: 2px solid Highlight; }
+}
+
+@media print {
+  .crosswalk .crosswalk__status,
+  .crosswalk .crosswalk__clear { display: none; }
+  .crosswalk .crosswalk__term button { padding-inline: 0; border-color: transparent; }
+  .crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+  .crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+  .crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+  .crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] { background: none; outline: 2px solid #000; }
+}
+
+
+/* ---------- Cheat sheet: one printed page ---------- */
+@page cheat { margin: 0.35in; }
+@media print {
+  html:has(.cheat-sheet) { page: cheat; }
+  body:has(.cheat-sheet) :is(.skip, .site-header, .breadcrumbs, .section-nav, .sources-scope, .table-overflow__instruction, .site-footer nav, .site-footer .release, .content-header .lede) { display: none; }
+  body:has(.cheat-sheet) { font-size: 8.5pt; line-height: 1.15; }
+  body:has(.cheat-sheet) main { inline-size: auto; max-inline-size: none; margin: 0; padding: 0; }
+  body:has(.cheat-sheet) .content-header { margin: 0 0 3pt; padding: 0; }
+  body:has(.cheat-sheet) .content-header h1 { margin: 0; font-size: 13pt; line-height: 1.1; }
+  body:has(.cheat-sheet) article { margin: 0; padding: 0; }
+  .cheat-sheet { display: block; }
+  .cheat-sheet > * { margin-block: 0 3pt; }
+  .cheat-sheet h2 { margin: 3pt 0 1pt; font-size: 10pt; line-height: 1.15; break-after: avoid; }
+  .cheat-sheet p, .cheat-sheet li { margin: 0 0 2pt; font-size: 8.5pt; }
+  .cheat-sheet ul { margin: 0 0 2pt; padding-inline-start: 1.1em; columns: 2; column-gap: 0.25in; }
+  .cheat-sheet li { margin: 0; break-inside: avoid; }
+  .cheat-sheet .table-overflow { margin: 0 0 3pt; border: 0; overflow: visible; }
+  .cheat-sheet table, .cheat-sheet .table-overflow > table { inline-size: 100%; min-inline-size: 0; border-collapse: collapse; }
+  .cheat-sheet tr { break-inside: avoid; }
+  .cheat-sheet th, .cheat-sheet td { padding: 0.5pt 2pt; font-size: 8pt; line-height: 1.15; vertical-align: top; border-block-end: 0.5pt solid #000; }
+  .cheat-sheet th:first-child, .cheat-sheet td:first-child { white-space: nowrap; }
+  .cheat-sheet th:last-child, .cheat-sheet td:last-child { inline-size: 1%; white-space: nowrap; }
+  .cheat-sheet code, .cheat-sheet pre { font-size: 8pt; }
+  .cheat-sheet :not(pre) > code { padding: 0; border: 0; background: none; }
+  .cheat-sheet pre { margin: 0 0 2pt; padding: 0 3pt; white-space: pre-wrap; break-inside: avoid; }
+  body:has(.cheat-sheet) .site-footer { margin: 4pt 0 0; padding: 3pt 0 0; border-block-start: 0.5pt solid #000; }
+  body:has(.cheat-sheet) .site-footer .acknowledgment { margin: 0; font-size: 7pt; line-height: 1.2; }
+}

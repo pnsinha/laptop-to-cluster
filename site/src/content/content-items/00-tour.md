@@ -141,3 +141,4 @@ Pick the destination that matches where you are.
 - [Translate a Compose file](/guide/compose-to-hpc-translation/): see what each part of your Compose file becomes, then edit the example job to run your own services.
 - [Evaluate and adopt](/adoption/evaluate/): what the pattern assumes, where it was tested, and when a service your center already runs is the better choice.
 - [Run the example](/start/): check your cluster and submit the baseline job.
+- [The one-page cheat sheet](/about/cheat-sheet/), to print and keep beside your terminal
