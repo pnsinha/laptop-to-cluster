@@ -79,6 +79,24 @@ describe('W6 Module 2', () => {
     expect(body).not.toMatch(/worker-results\.json|renames/i);
   });
 
+  it('names the files a person opens, and describes diagnostics.json as a subset of the script IDs', () => {
+    const files = section('Files the workflow reads and writes');
+    expect(files).not.toMatch(/nothing in the pattern asks you to read them/i);
+    expect(files).toMatch(/you open two to confirm success \(`result\.json`, `events\.jsonl`\)/);
+    const listed = Object.values(JSON.parse(read('workflows/baseline-slurm-apptainer/diagnostics.json')).diagnostics as Record<string, string>);
+    const printed = new Set([...sbatch.join('\n').matchAll(/"(BSSW-[A-Z-]+)"/g)].map(([, id]) => id));
+    expect(listed.every((id) => printed.has(id))).toBe(true);
+    expect(listed.length).toBeLessThan(printed.size);
+    expect(files).toContain('a subset of the IDs in [Troubleshooting](/diagnostics/)');
+  });
+
+  it('labels the unrun forced stop and time-limit path in the cleanup row', () => {
+    const row = section('How the baseline works').split('\n').find((line) => line.startsWith('| 6. Clean up'))!;
+    expect(row).toContain(`**${DESIGNED_NOT_RUN}**`);
+    expect(row).toMatch(/forced stop/);
+    expect(row).toMatch(/time-limit path/);
+  });
+
   it('puts readiness.py and common.py on the edit list, with the hard-coded contract lines', () => {
     const adapt = section('Adapt it');
     expect(adapt).toMatch(/\*\*12 files\*\*/);
