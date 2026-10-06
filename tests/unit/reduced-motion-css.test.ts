@@ -11,9 +11,8 @@ describe('reduced-motion override', () => {
     const block = css.slice(start, css.indexOf('\n}\n', start));
     for (const decl of [
       'scroll-behavior: auto !important',
-      'transition-duration: 0.01ms !important',
-      'animation-duration: 0.01ms !important',
-      'animation-iteration-count: 1 !important',
+      'transition: none !important',
+      'animation: none !important',
     ]) expect(block, decl).toContain(decl);
     expect(block).toMatch(/\*,\s*\*::before,\s*\*::after/);
   });
