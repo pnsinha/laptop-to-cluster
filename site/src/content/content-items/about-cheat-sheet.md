@@ -14,7 +14,7 @@ publication_date: "2026-10-15"
 ---
 <div class="cheat-sheet">
 
-Print this page (Ctrl+P or Cmd+P) for a sheet to keep beside your terminal. The shapes ■ job step, ◆ readiness gate, ▲ job-scoped scratch and ● loopback keep their meaning in black and white. **Tested**: see [the test record](/adoption/evaluate/). **Designed, not run** means the design describes it, but nobody has run it on a cluster.
+Print this page (Ctrl+P or Cmd+P) for a sheet to keep beside your terminal. The shapes ■ job step, ◆ readiness gate, ▲ job-scoped scratch and ● loopback keep their meaning in black and white. **Tested**: see [the test record](/adoption/evaluate/). **Shim-tested** means it ran off-cluster against test fixtures, never on a cluster. **Designed, not run** means the design describes it, but nobody has run it on a cluster.
 
 ## Six steps in one allocation
 
@@ -49,9 +49,18 @@ Print this page (Ctrl+P or Cmd+P) for a sheet to keep beside your terminal. The 
 
 Set or confirm: account, partition, wall time, CPUs (one per step, plus one), the Apptainer module, the image path with its `.sha256` file, `BSSW_SCRATCH_ROOT` (set it), `WORKER_COUNT` 1–16, `TASK_COUNT` (the tasks in your input), `READINESS_TIMEOUT` 1–300.
 
+Run these from the workflow directory. Slurm runs a copy of the script from its own spool directory, so pass the file locations as absolute paths.
+
 ```bash
-sha256sum -c inputs/tasks.json.sha256
-sbatch --export=ALL,BSSW_SCRATCH_ROOT=<path> slurm/baseline.sbatch
+cd workflows/baseline-slurm-apptainer
+(cd inputs && sha256sum -c tasks.json.sha256)
+WF=$PWD
+sbatch --export=ALL,BSSW_SCRATCH_ROOT=<path>,\
+IMAGE_PATH=$WF/container/baseline.sif,\
+INPUT_PATH=$WF/inputs/tasks.json,\
+INPUT_SHA256_FILE=$WF/inputs/tasks.json.sha256,\
+EXPECTED_PATH=$WF/expected/results.json \
+  slurm/baseline.sbatch
 ```
 
 Done means the last log line begins `BSSW workflow completed` and `result.json` holds `"status": "success"`.
@@ -60,7 +69,9 @@ Done means the last log line begins `BSSW workflow completed` and `result.json` 
 
 **Tested:** `BSSW-READY-TIMEOUT` (75).
 
-**Designed, not run:** `BSSW-PREQ-SLURM` (64), `BSSW-PREQ-APPTAINER` (65), `BSSW-PREQ-COMMAND` (66), `BSSW-PREQ-VALUE` (67), `BSSW-PREQ-IMAGE` (68), `BSSW-PREQ-INPUT` (69, 73), `BSSW-INTEGRITY-INPUT` (70), `BSSW-INTEGRITY-IMAGE` (71), `BSSW-PREQ-STORAGE` (72), `BSSW-COORDINATOR-EXIT` (74), `BSSW-WORKER-EXIT` (76), `BSSW-VERIFY-RESULT` (77), `BSSW-CLEANUP-SIGNAL` (78), `BSSW-CLEANUP-CHILD` (79). Find your ID on the [Troubleshooting](/diagnostics/) page.
+**Shim-tested (off-cluster only):** `BSSW-PREQ-INPUT` (73), `BSSW-INTEGRITY-INPUT` (70), `BSSW-COORDINATOR-EXIT` (74), `BSSW-WORKER-EXIT` (76), `BSSW-VERIFY-RESULT` (77), `BSSW-CLEANUP-CHILD` (79).
+
+**Designed, not run:** `BSSW-PREQ-SLURM` (64), `BSSW-PREQ-APPTAINER` (65), `BSSW-PREQ-COMMAND` (66), `BSSW-PREQ-VALUE` (67), `BSSW-PREQ-IMAGE` (68), `BSSW-PREQ-INPUT` (69), `BSSW-INTEGRITY-IMAGE` (71), `BSSW-PREQ-STORAGE` (72), `BSSW-CLEANUP-SIGNAL` (78). Find your ID on the [Troubleshooting](/diagnostics/) page.
 
 ## Do not
 

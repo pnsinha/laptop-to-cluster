@@ -68,12 +68,35 @@ describe('cheat sheet: content item', () => {
     const expected = scriptCodes();
     expect(expected.size).toBe(15);
     const listed = new Map<string, Set<number>>();
+    // One ID can appear under two evidence labels, one per exit code, so merge its codes.
     for (const [, id, codes] of body.matchAll(/`(BSSW-[A-Z-]+)` \(([\d, ]+)\)/g)) {
-      listed.set(id, new Set(codes.split(',').map((code) => Number(code.trim()))));
+      const merged = listed.get(id) ?? new Set<number>();
+      for (const code of codes.split(',')) merged.add(Number(code.trim()));
+      listed.set(id, merged);
     }
     expect([...listed.keys()].sort()).toEqual([...expected.keys()].sort());
     for (const [id, codes] of expected) expect([...listed.get(id)!].sort(), id).toEqual([...codes].sort());
     expect(body).toMatch(/\*\*Tested:\*\* `BSSW-READY-TIMEOUT` \(75\)/);
+  });
+
+  it('labels Shim-tested exactly the failures the off-cluster scenarios exercise', () => {
+    const shimTest = readFileSync(resolve(root, 'tests/unit/baseline-workflow.test.ts'), 'utf8');
+    const mapping = shimTest.match(/const mappings[^{]*\{([\s\S]*?)\};/)![1];
+    const shimIds = new Set([...mapping.matchAll(/'(BSSW-[A-Z-]+)'/g)].map(([, id]) => id));
+    shimIds.delete('BSSW-READY-TIMEOUT'); // also run on a cluster, so it carries the Tested label
+    const line = body.match(/^\*\*Shim-tested \(off-cluster only\):\*\* (.*)$/m)![1];
+    const listedIds = new Set([...line.matchAll(/`(BSSW-[A-Z-]+)`/g)].map(([, id]) => id));
+    expect([...listedIds].sort()).toEqual([...shimIds].sort());
+    const notRun = body.match(/^\*\*Designed, not run:\*\* (.*)$/m)![1];
+    for (const id of shimIds) expect(notRun, id).not.toMatch(new RegExp(`\`${id}\` \\((?!69\\))`));
+  });
+
+  it('gives the absolute-path submit form and the subshell checksum check', () => {
+    expect(body).toContain('(cd inputs && sha256sum -c tasks.json.sha256)');
+    expect(body).not.toContain('sha256sum -c inputs/');
+    for (const name of ['BSSW_SCRATCH_ROOT=<path>', 'IMAGE_PATH=$WF/', 'INPUT_PATH=$WF/', 'INPUT_SHA256_FILE=$WF/', 'EXPECTED_PATH=$WF/']) {
+      expect(body, name).toContain(name);
+    }
   });
 
   it('states the input ranges the launcher enforces', () => {
