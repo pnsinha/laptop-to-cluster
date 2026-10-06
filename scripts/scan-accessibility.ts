@@ -6,7 +6,7 @@ import { chromium, type Page } from 'playwright';
 import { DOORS, NAV_ITEMS, TIMELINE_STEPS } from '../site/src/content/contracts';
 import { HOME_PATH, MODULE_2_PATH, accessibilityPages, recordPaths } from '../tests/accessibility/browser-fixtures';
 import {
-  checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence,
+  checkComponentGeometry, checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence,
   inspectThemeScript, type Issue, type PageExpectation,
 } from '../tests/accessibility/browser-checks';
 import { auditTokenMap, auditTokens, declaredColorSchemes, pairTokenNames, parseThemeBlocks } from '../tests/accessibility/token-pairs';
@@ -444,6 +444,7 @@ try {
   }
   await gate('/guide/tour/:font-failure', () => checkFontBlocking(browser, origin, '/guide/tour/'));
   await gate('/:crosswalk-layout', () => checkCrosswalkLayout(browser, origin, HOME_PATH));
+  for (const path of [HOME_PATH, '/guide/tour/', MODULE_2_PATH]) await gate(`${path}:component-geometry`, () => checkComponentGeometry(browser, origin, path));
   for (const path of paths) await gate(`${path}:motion`, () => checkMotion(browser, origin, path));
   await gate('/:no-script', () => checkJsOff(browser, origin, HOME_PATH, 'home', { panel: true }));
   await gate(`${MODULE_2_PATH}:no-script`, () => checkJsOff(browser, origin, MODULE_2_PATH, 'module', { panel: true }));

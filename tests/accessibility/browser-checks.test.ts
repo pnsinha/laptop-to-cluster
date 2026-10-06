@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, type Browser } from 'playwright';
-import { checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence, inspectThemeScript } from './browser-checks';
+import { checkComponentGeometry, checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence, inspectThemeScript } from './browser-checks';
 import { serveFixtures } from './fixture-server';
 
 let browser: Browser;
@@ -276,5 +276,25 @@ describe('crosswalk layout and motion checks', () => {
       expect(codes).toContain('/animated/:motion:no-preference:A11Y-MOTION');
       expect(codes).toContain('/animated/:motion:reduce:A11Y-MOTION');
     } finally { await server.close(); }
+  }, 60_000);
+});
+
+describe('component geometry check', () => {
+  const page = (extra: string) => `<!doctype html><html lang="en"><head><title>t</title><style>body{margin:0}.timeline{display:flex}.timeline__bars{inline-size:40px;block-size:40px}.doors{display:flex}.door{inline-size:100px;block-size:40px}${extra}</style></head><body><main><div class="timeline"><div class="timeline__bars"></div><div class="timeline__bars"></div></div><div class="doors"><div class="door"></div><div class="door"></div></div></main></body></html>`;
+
+  it('accepts aligned lanes and doors and flags a stray margin on later items', async () => {
+    const server = await serveFixtures({ '/good/': { body: page('') }, '/shifted/': { body: page('.timeline__bars+.timeline__bars{margin-top:8px}.door+.door{margin-top:8px}') } });
+    try {
+      expect(await checkComponentGeometry(browser, server.origin, '/good/')).toEqual([]);
+      const messages = (await checkComponentGeometry(browser, server.origin, '/shifted/')).map((entry) => entry.message).join('\n');
+      expect(messages).toMatch(/timeline lanes must start at one height/);
+      expect(messages).toMatch(/doors must start at one height/);
+    } finally { await server.close(); }
+  }, 60_000);
+
+  it('flags a concept shape glyph that reaches the accessible name', async () => {
+    const glyph = '<!doctype html><html lang="en"><head><title>t</title></head><body><main><p>Use a <span>\u25B2 scratch</span> area.</p></main></body></html>';
+    const server = await serveFixtures({ '/glyph/': { body: glyph } });
+    try { expect((await checkComponentGeometry(browser, server.origin, '/glyph/')).map((entry) => entry.message).join('\n')).toMatch(/concept shape glyph/); } finally { await server.close(); }
   }, 60_000);
 });

@@ -283,10 +283,10 @@
     --text-supporting: 0.875rem;
     --leading-base: 1.45;
     --muted: CanvasText;
-    --primary: LinkText;
+    --primary: CanvasText;
     --accent: CanvasText;
     /* Primary action */
-    --primary-hover: LinkText;
+    --primary-hover: CanvasText;
     --on-primary: ButtonText;
     /* Lines and focus */
     --border: CanvasText;

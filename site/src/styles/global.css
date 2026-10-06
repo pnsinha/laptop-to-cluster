@@ -107,7 +107,7 @@ main > aside + section { margin-block-start: 0; }
 :where(h1, h2, h3) + :where(p, ul, ol, dl, pre, .table-overflow) { margin-block-start: var(--flow-tight); }
 :where(.module-content, .prose, article, section) > :where(h2):not(:first-child) { margin-block-start: var(--flow-section); }
 :where(.module-content, .prose, article, section) > :where(h3):not(:first-child) { margin-block-start: var(--space-6); }
-:where(.module-content, main > section, main > article) li + li { margin-block-start: var(--flow-tight); }
+:where(.module-content, main > section, main > article) :where(ul, ol):where(:not([class])) > li + li { margin-block-start: var(--flow-tight); }
 .prose ul, .prose ol, .module-content ul, .module-content ol { padding-inline-start: var(--space-6); }
 body[data-composition-profile="landing"] main { padding-block-start: var(--space-6); padding-block-end: var(--space-12); }
 body[data-composition-profile="landing"] main > :where(section, aside, figure) + :where(section, aside, figure) { margin-block-start: var(--space-16); }
@@ -123,6 +123,13 @@ body[data-composition-profile="landing"] main > :where(section, aside, figure) +
 .c-gate::before { content: var(--mark-gate); }
 .c-scratch::before { content: var(--mark-scratch); }
 .c-net::before { content: var(--mark-net); }
+/* The shape is decoration: empty alt text keeps it out of the accessible name. The guard keeps the glyph in engines without the alt syntax. */
+@supports (content: "a" / "") {
+  .c-step::before { content: var(--mark-step) / ""; }
+  .c-gate::before { content: var(--mark-gate) / ""; }
+  .c-scratch::before { content: var(--mark-scratch) / ""; }
+  .c-net::before { content: var(--mark-net) / ""; }
+}
 :is(p, li, dd, dt, figcaption, td, th) :is(.c-step, .c-gate, .c-scratch, .c-net) { background: none; padding: 0; }
 
 /* ---------- 6. home: hero ---------- */
@@ -153,7 +160,7 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 .analogy__breaks li + li { margin-block-start: var(--space-2); }
 
 /* ---------- 8. six-step timeline: an ordered list; the bars are borders ---------- */
-.timeline { container-type: inline-size; max-inline-size: var(--measure-wide); margin-block-start: var(--space-8); --tl-pad: var(--space-4); --overrun: calc(var(--tl-pad) + 2px + 2rem); }
+.timeline { container-type: inline-size; max-inline-size: var(--measure-wide); margin-block-start: var(--space-8); --tl-pad: var(--space-4); --overrun: calc(var(--tl-pad) + 2px + 0.5rem); }
 .timeline__title { display: block; margin-block-end: var(--space-4); color: var(--primary); font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: 1.25; }
 .timeline__steps { margin: 0; padding: var(--tl-pad); list-style: none; border: var(--border-strong) solid var(--border); border-radius: var(--radius-small); }
 .timeline__step { display: grid; grid-template-columns: calc(4 * var(--lane-h)) minmax(0, 1fr); column-gap: var(--space-4); align-content: start; }
@@ -190,7 +197,7 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
   .timeline__steps { --lane-h: 1rem; }
 }
 @container (min-width: 50rem) {
-  .timeline__steps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .timeline__steps { --overrun: calc(var(--tl-pad) + 2px + 2rem); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .timeline__step { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
   .timeline__bars { grid-column: 1; grid-row: 1; grid-template-columns: none; grid-template-rows: repeat(4, var(--lane-h)); border-block-end: var(--border-thin) solid var(--rule); }
   .timeline__step + .timeline__step .timeline__bars::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; border-inline-start: var(--border-thin) dashed var(--rule); }
@@ -455,7 +462,9 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
   * { forced-color-adjust: auto; }
   :focus-visible { outline: 2px solid Highlight; outline-offset: var(--focus-offset); }
   .action--primary { color: ButtonText; background: ButtonFace; border: 2px solid ButtonText; }
-  .door, .record-summary, .evidence-badge, .evidence-rows, .event-band, .timeline__steps, .crosswalk__pane pre, pre, .terminal, .technical-figure, .notice, .support-state, .resource-tile { border: 1px solid CanvasText; }
+  /* Headings keep the text colour in tokens.css, so link colour is restored here for real links only. */
+  a:where(:any-link), .action--secondary, .hero__secondary-link { color: LinkText; }
+  .door, .record-summary, .evidence-rows, .event-band, .timeline__steps, .crosswalk__pane pre, pre, .terminal, .technical-figure, .resource-tile { border: 1px solid CanvasText; }
   .timeline__step[aria-current="step"] { outline-color: Highlight; }
   .timeline__mark--verify { border-color: CanvasText; }
   .theme-control button[aria-pressed="true"] { border-block-end-color: Highlight; }
