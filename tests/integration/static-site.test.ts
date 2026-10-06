@@ -167,11 +167,11 @@ describe('reader-choice landing and resources', () => {
     expect(cards).toHaveLength(12);
     const tileHrefs = cards.map((card) => card.match(/href="([^"]+)"/)?.[1] ?? '');
     expect(new Set(tileHrefs).size).toBe(tileHrefs.length);
-    for (const href of [
-      '/guide/tour/', '/guide/scheduler-as-orchestrator/', '/start/', '/guide/baseline-single-node-pattern/',
-      '/guide/compose-to-hpc-translation/', '/diagnostics/', '/adoption/evaluate/', '/milestones/1/', '/milestones/2/',
-      '/about/talks-and-papers/',
-    ]) expect(tileHrefs, href).toContain(href);
+    expect([...tileHrefs].sort()).toEqual([
+      '/guide/tour/', '/guide/scheduler-as-orchestrator/', '/about/glossary/',
+      '/guide/compose-to-hpc-translation/', '/start/', '/guide/baseline-single-node-pattern/', '/diagnostics/',
+      '/adoption/evaluate/', `/${route.applicability}/`, '/milestones/1/', '/milestones/2/', '/about/talks-and-papers/',
+    ].sort());
     for (const card of cards) {
       expect(card).not.toMatch(/resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i);
       expect(card.match(/class="resource-tile__tag"/g)?.length ?? 0).toBeLessThanOrEqual(1);
