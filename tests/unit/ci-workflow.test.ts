@@ -17,6 +17,13 @@ describe('ci.yml: version-parametrised blocking validation', () => {
     expect(text).not.toContain('pull_request_target');
   });
 
+  it('installs poppler-utils before any validator so hosted PDFs are scanned', () => {
+    const poppler = index((step) => /apt-get install -y poppler-utils/.test(step.run ?? ''));
+    expect(poppler).toBeGreaterThanOrEqual(0);
+    expect(steps[poppler].run).toContain('pdftotext -v');
+    expect(poppler).toBeLessThan(index((step) => step.run === 'npm run publication:validate'));
+  });
+
   it('checks out full history for the history scan', () => {
     expect(steps.find((step) => String(step.uses).startsWith('actions/checkout@')).with['fetch-depth']).toBe(0);
   });

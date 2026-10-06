@@ -23,6 +23,8 @@ jobs:
         run: echo "RELEASE_VERSION=$(node scripts/release-version.mjs)" >> "$GITHUB_ENV"
       - name: Clean pinned install
         run: npm ci --ignore-scripts
+      - name: Install poppler-utils so hosted PDFs are scanned
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils && pdftotext -v
       - name: Install accessibility browser
         run: npx --no-install playwright install --with-deps chromium
       - name: Schema and typed-content checks
