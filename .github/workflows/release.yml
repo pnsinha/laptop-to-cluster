@@ -19,9 +19,12 @@ on:
 permissions:
   contents: read
 
+# Both production triggers (an exact release tag and a manual dispatch) share one fixed group, so two
+# production deploys never run at once. Only a branch push (a preview) is ever cancelled; a production
+# run must finish its record and recovery-index uploads.
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type == 'branch' }}
+  group: ${{ (github.event_name == 'workflow_dispatch' || (github.ref_type == 'tag' && !contains(github.ref_name, '-rc.'))) && 'release-production' || format('release-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'push' && github.ref_type == 'branch' }}
 
 jobs:
   plan:

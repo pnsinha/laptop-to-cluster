@@ -27,9 +27,24 @@ describe('release workflow: triggers', () => {
     expect(count(/v0\.1\.0/g)).toBe(1);
   });
 
-  it('cancels superseded branch previews but never an in-flight tag run', () => {
-    expect(workflow.concurrency.group).toBe('release-${{ github.ref }}');
-    expect(workflow.concurrency['cancel-in-progress']).toBe("${{ github.ref_type == 'branch' }}");
+  /* Evaluates the two concurrency expressions for one trigger, the way Actions would. */
+  const concurrencyFor = (event: string, refType: 'branch' | 'tag', refName: string) => {
+    const ref = refType === 'branch' ? `refs/heads/${refName}` : `refs/tags/${refName}`;
+    const production = event === 'workflow_dispatch' || (refType === 'tag' && !refName.includes('-rc.'));
+    return {
+      group: production ? 'release-production' : `release-${ref}`,
+      cancel: event === 'push' && refType === 'branch',
+    };
+  };
+
+  it('cancels superseded branch previews but never an in-flight tag or dispatch run', () => {
+    expect(workflow.concurrency.group).toBe("${{ (github.event_name == 'workflow_dispatch' || (github.ref_type == 'tag' && !contains(github.ref_name, '-rc.'))) && 'release-production' || format('release-{0}', github.ref) }}");
+    expect(workflow.concurrency['cancel-in-progress']).toBe("${{ github.event_name == 'push' && github.ref_type == 'branch' }}");
+    expect(concurrencyFor('push', 'branch', 'v0.2.0-showcase')).toEqual({ group: 'release-refs/heads/v0.2.0-showcase', cancel: true });
+    expect(concurrencyFor('push', 'tag', 'v0.2.0-rc.1')).toEqual({ group: 'release-refs/tags/v0.2.0-rc.1', cancel: false });
+    /* A dispatch from main and the exact tag push both deploy production: one group, never cancelled. */
+    expect(concurrencyFor('workflow_dispatch', 'branch', 'main')).toEqual({ group: 'release-production', cancel: false });
+    expect(concurrencyFor('push', 'tag', 'v0.2.0')).toEqual({ group: 'release-production', cancel: false });
   });
 });
 
