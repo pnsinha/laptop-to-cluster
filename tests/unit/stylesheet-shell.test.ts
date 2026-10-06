@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const read = (file: string) => readFileSync(`${root}/site/src/styles/${file}`, 'utf8');
 /* The build inlines the two imports, so test the flattened text. */
-const css = read('global.css').replace(/@import "\.\/([a-z-]+\.css)";/g, (_match, file: string) => read(file));
+const css = read('global.css').replace(/@import ["']\.\/([a-z-]+\.css)["'];/g, (_match, file: string) => read(file));
 const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
 type Block = { selectors: string[]; body: string };
 const blocks: Block[] = [...bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, selector, body]) => ({
