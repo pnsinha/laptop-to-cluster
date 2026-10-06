@@ -55,6 +55,24 @@ describe('cheat sheet: print output', () => {
     }
   });
 
+  it('no table or page is wider than the printable area', async () => {
+    /* Content widths of Letter and A4 at 0.35 in and 0.5 in margins. */
+    for (const width of [749, 726, 720, 698]) {
+      const page = await browser.newPage({ viewport: { width, height: 1000 } });
+      page.setDefaultTimeout(5_000);
+      await page.emulateMedia({ media: 'print' });
+      await page.goto(`${server.origin}${ROUTE}`);
+      await page.evaluate(() => document.fonts.ready);
+      const fonts = await page.evaluate(() => ({ serif: document.fonts.check('8pt "Source Serif 4"'), mono: document.fonts.check('8pt "IBM Plex Mono"') }));
+      expect(fonts, `fonts at ${width} px`).toEqual({ serif: true, mono: true });
+      const m = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth, rights: [...document.querySelectorAll('.cheat-sheet table')].map((t) => t.getBoundingClientRect().right) }));
+      expect(m.scroll, `page scrollWidth at ${width} px`).toBeLessThanOrEqual(m.client);
+      expect(m.rights.length).toBeGreaterThan(0);
+      for (const right of m.rights) expect(right, `table right edge at ${width} px (client ${m.client})`).toBeLessThanOrEqual(m.client);
+      await page.close();
+    }
+  });
+
   it('hides the site chrome and keeps only the title, the sheet and the acknowledgment', async () => {
     const page = await printed(ROUTE);
     const visible = await page.evaluate(() => ['.skip', '.site-header', '.breadcrumbs', '.section-nav', '.sources-scope', '.table-overflow__instruction', '.site-footer nav', '.site-footer .release', '.content-header .lede']
