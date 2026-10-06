@@ -20,7 +20,7 @@ const artifactPath = join(output, 'artifact-manifest.json');
 writeFileSync(artifactPath, JSON.stringify(artifact, null, 2) + '\n');
 const verification = verifyArtifactManifest(dist, artifact);
 if (verification.length) throw new Error(verification.join('\n'));
-const sourceCommit = process.env.GITHUB_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+const sourceCommit = process.env.RELEASE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 const binding = {
   schemaVersion: 1,
   version,

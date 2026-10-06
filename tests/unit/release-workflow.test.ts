@@ -27,9 +27,28 @@ describe('release workflow: triggers', () => {
     expect(count(/v0\.1\.0/g)).toBe(1);
   });
 
-  it('cancels superseded branch previews but never an in-flight tag run', () => {
-    expect(workflow.concurrency.group).toBe('release-${{ github.ref }}');
-    expect(workflow.concurrency['cancel-in-progress']).toBe("${{ github.ref_type == 'branch' }}");
+  it('cancels superseded branch previews but never an in-flight tag or dispatch run', () => {
+    expect(workflow.concurrency['cancel-in-progress']).toBe("${{ github.event_name == 'push' && github.ref_type == 'branch' }}");
+  });
+
+  it('puts every production-capable run (dispatch or final tag) in one shared group', () => {
+    const group = String(workflow.concurrency.group);
+    expect(group).toContain("github.event_name == 'workflow_dispatch'");
+    expect(group).toContain("github.ref_type == 'tag' && !contains(github.ref_name, '-rc.')");
+    expect(group).toContain("'release-production'");
+    expect(group).toContain("format('release-{0}', github.ref)");
+  });
+
+  it('installs poppler-utils in the build job before any validator runs', () => {
+    const steps = jobs['build-once'].steps;
+    const poppler = steps.findIndex((step: any) => /apt-get install -y poppler-utils/.test(step.run ?? ''));
+    expect(poppler).toBeGreaterThanOrEqual(0);
+    expect(steps[poppler].run).toContain('pdftotext -v');
+    expect(poppler).toBeLessThan(steps.findIndex((step: any) => /npm run validate|publication:validate/.test(step.run ?? '')));
+  });
+
+  it('passes the planned SHA to the build so the release record names the built commit', () => {
+    expect(jobs['build-once'].env.RELEASE_SHA).toBe('${{ needs.plan.outputs.sha }}');
   });
 });
 
@@ -72,9 +91,10 @@ describe('release workflow: planning', () => {
 });
 
 describe('release workflow: the one build', () => {
-  it('maps the plan into RELEASE_VERSION, RELEASE_DATE and PREVIEW', () => {
+  it('maps the plan into RELEASE_VERSION, RELEASE_DATE, PREVIEW and RELEASE_SHA', () => {
     expect(jobs['build-once'].env).toEqual({
       RELEASE_VERSION: '${{ needs.plan.outputs.version }}', RELEASE_DATE: '${{ needs.plan.outputs.date }}', PREVIEW: '${{ needs.plan.outputs.preview }}',
+      RELEASE_SHA: '${{ needs.plan.outputs.sha }}',
     });
   });
 
@@ -157,7 +177,7 @@ describe('release workflow: deployment', () => {
     expect(jobs['deploy-preview'].environment).toBeUndefined();
     const record = uses('deploy', 'actions/upload-artifact@')[0];
     expect(record.with.name).toBe('${{ needs.plan.outputs.record-artifact-name }}');
-    expect(record.with['retention-days']).toBe(365);
+    expect(record.with['retention-days']).toBe(90);
   });
 
   it('checks the live apex after production deploys, including that it serves this release', () => {

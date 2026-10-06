@@ -29,7 +29,8 @@ describe('publication.yml stays frozen for the first release', () => {
     expect(guard.uses).toBeUndefined();
     expect(guard.run).toContain('"$(git rev-parse HEAD)" != "$GITHUB_SHA"');
     expect(guard.run).toContain('exit 1');
-    expect(guard.run).toContain('gh workflow run publication.yml --ref v0.1.0');
+    expect(guard.run).toContain('rollback.yml');
+    expect(guard.run).not.toContain('gh workflow run publication.yml');
   });
 
   it('still publishes v0.1.0 to production by Direct Upload and passes the deployment policy', () => {
