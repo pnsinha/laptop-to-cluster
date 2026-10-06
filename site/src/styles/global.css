@@ -452,7 +452,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
 /* ---------- 21. forced colours, print, reduced motion ---------- */
 @media (forced-colors: active) {
   * { forced-color-adjust: auto; }
-  :focus-visible { outline-color: Highlight; }
+  :focus-visible { outline: 2px solid Highlight; outline-offset: var(--focus-offset); }
   .action--primary { color: ButtonText; background: ButtonFace; border: 2px solid ButtonText; }
   .door, .record-summary, .evidence-badge, .evidence-rows, .event-band, .timeline__steps, .crosswalk__pane pre, pre, .terminal, .technical-figure, .notice, .support-state, .resource-tile { border: 1px solid CanvasText; }
   .timeline__step[aria-current="step"] { outline-color: Highlight; }
@@ -478,8 +478,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    transition: none !important;
+    animation: none !important;
   }
 }
