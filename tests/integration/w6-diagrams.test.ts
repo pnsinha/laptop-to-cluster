@@ -57,7 +57,7 @@ describe('W6 diagrams', () => {
         expect(left, `${name}: "${text}"`).toBeGreaterThanOrEqual(0);
         expect(right, `${name}: "${text}"`).toBeLessThanOrEqual(width);
         if (middle) {
-          const box = rects.find((r) => r.x <= +a.x && +a.x <= r.x + r.w && r.y <= +a.y && +a.y <= r.y + r.h);
+          const box = rects.filter((r) => r.x <= +a.x && +a.x <= r.x + r.w && r.y <= +a.y && +a.y <= r.y + r.h).sort((p, q) => p.w * p.h - q.w * q.h)[0];
           if (box) {
             expect(left, `${name}: "${text}" in box`).toBeGreaterThanOrEqual(box.x + 4);
             expect(right, `${name}: "${text}" in box`).toBeLessThanOrEqual(box.x + box.w - 4);
