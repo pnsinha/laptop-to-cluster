@@ -130,13 +130,15 @@ describe('media rules', () => {
     expect(forced).toMatch(/\.astro-code span[^{]*\{[^}]*color:\s*CanvasText/);
     expect(forced).toMatch(/\.action--primary\s*\{[^}]*border:\s*2px solid ButtonText/);
     expect(forced).toMatch(/\.timeline__step\[aria-current="step"\]\s*\{[^}]*outline-color:\s*Highlight/);
-    expect(forced).toMatch(/:focus-visible\s*\{[^}]*outline-color:\s*Highlight/);
+    expect(forced).toMatch(/:focus-visible\s*\{[^}]*outline:\s*2px solid Highlight/);
   });
 });
 
 describe('whole-file guards', () => {
   it('has no motion, gradients, glass or shadows', () => {
-    expect(bare).not.toMatch(/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax|linear-gradient|radial-gradient|backdrop-filter|box-shadow/);
+    // Declarations whose value is `none` (the reduced-motion override) are not motion.
+    const motionBare = bare.replace(/(?:animation|transition)\s*:\s*none(?:\s*!important)?\s*;/g, '');
+    expect(motionBare).not.toMatch(/@keyframes|animation-name\s*:|animation\s*:|transition\s*:|scroll-timeline|parallax|linear-gradient|radial-gradient|backdrop-filter|box-shadow/);
   });
 
   it('allows cursor: pointer only on links, buttons and summaries', () => {
