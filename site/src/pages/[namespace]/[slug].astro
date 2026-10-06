@@ -14,9 +14,10 @@ import SourcesAndScope from '../../components/SourcesAndScope.astro';
 import SupportState from '../../components/SupportState.astro';
 import TalksList from '../../components/TalksList.astro';
 import { canonicalPath, hasNoStandalonePage } from '../../content/registry';
-import { assertCompositionProfile, compositionProfileFor, currentRecord, projectApplicabilityForItem } from '../../content/projections';
+import { assertCompositionProfile, compositionProfileFor, currentBaselineRecord, projectApplicabilityForItem } from '../../content/projections';
 import { ABOUT_NAV_ITEMS, learningPathNavigation, recordDateLine, slotNames, sortTalks } from '../../content/page-chrome';
 import { formatDate } from '../../content/format';
+import { currentReleaseVersion, RELEASE_REF_TOKEN, resolveReleaseRefs } from '../../content/release';
 export async function getStaticPaths() {
   const entries = await getCollection('contentItems', ({ data }) =>
     ['published', 'superseded', 'archived'].includes(data.status) && data.route_namespace !== 'start' && !hasNoStandalonePage(data));
@@ -24,7 +25,8 @@ export async function getStaticPaths() {
 }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
-const bodyHtml = entry.rendered?.html;
+const bodyHtml = entry.rendered?.html === undefined ? undefined : resolveReleaseRefs(entry.rendered.html, currentReleaseVersion());
+if (bodyHtml === undefined && entry.body?.includes(`/${RELEASE_REF_TOKEN}/`)) throw new Error(`${entry.id}: release-pinned links need rendered HTML to resolve`);
 const item = entry.data;
 const profile = compositionProfileFor(item);
 assertCompositionProfile(item, profile);
@@ -38,7 +40,7 @@ const currentPath = Astro.url.pathname;
 
 /* Adoption pages show a summary of the current test record (D3); no other profile may. */
 const isAdoption = item.artifact_type === 'checklist' && item.route_namespace === 'adoption';
-const record = isAdoption ? currentRecord(applicability) : undefined;
+const record = isAdoption ? currentBaselineRecord(applicability) : undefined;
 if (isAdoption && !record) throw new Error(`${item.id}: the adoption page needs a current applicability record`);
 const contentItems = (await getCollection('contentItems')).map(({ data }) => data);
 const navigation = isAdoption ? learningPathNavigation(contentItems, item.id) : undefined;

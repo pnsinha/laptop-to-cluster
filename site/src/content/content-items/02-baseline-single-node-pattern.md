@@ -93,7 +93,7 @@ Every JSON file here is machine-parsed: a program reads it. Two of them, `inputs
 | `inputs/tasks.json` | JSON | you | the coordinator and the launcher | The work to do, as inert data. |
 | `expected/results.json` | JSON | you | the verifier | The answers the demonstration verifier compares against. Replace or delete it. |
 | `container/image-lock.json` | JSON | the package | `container/acquire.sh` | Pins the base image. |
-| `diagnostics.json` | JSON | the package | tests and tooling | Lists the stable failure IDs. People read the same IDs in [Troubleshooting](/diagnostics/). |
+| `diagnostics.json` | JSON | the package | tests and tooling | Maps 7 failure kinds to their stable IDs. The launcher prints 8 more IDs that are not in this file; [Troubleshooting](/diagnostics/) covers all 15. |
 | `endpoint.json` | JSON | the coordinator | the launcher, the readiness probe, the workers | Where the coordinator is listening. |
 | `results.json` | JSON | the coordinator | the verifier | Intermediate worker results. Not a success claim. |
 | `result.json` | JSON | the verifier | you and CI | The only success marker: `"status": "success"`. |

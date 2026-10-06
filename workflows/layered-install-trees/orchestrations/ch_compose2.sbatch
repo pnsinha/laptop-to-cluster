@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=00:30:00
-#SBATCH --output=${BSSW_SCRATCH_ROOT}/union-anvil/logs/ch-compose2-%j.out
+#SBATCH --output=logs/ch-compose2-%j.out
 
 # Charliecloud Phase 1: compose both layers + verify cross-tree RPATH under ch-run.
 # Uses minimal Ubuntu 24.04 rootfs (same glibc 2.39 as E4S image, ~399 MB, 2,603 files (logged)).

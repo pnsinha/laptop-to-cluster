@@ -9,7 +9,7 @@
 #SBATCH --mem=16G
 #SBATCH --gres=gpu:1
 #SBATCH --time=00:15:00
-#SBATCH --output=${BSSW_SCRATCH_ROOT}/union-anvil/logs/ch-cuda-fn-%j.out
+#SBATCH --output=logs/ch-cuda-fn-%j.out
 
 # Charliecloud functional GPU test — bundled libcuda (Julia 610) vs host driver (580).
 set +e

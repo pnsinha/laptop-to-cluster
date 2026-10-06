@@ -3,11 +3,11 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { canonicalPath } from '../../content/registry';
 import { TALKS_LABEL } from '../../content/contracts';
-import { currentRecord } from '../../content/projections';
+import { currentBaselineRecord } from '../../content/projections';
 interface Tile { href: string; title: string; summary: string; tag: string }
 const published = (await getCollection('contentItems', ({ data }) => data.status === 'published')).map(({ data }) => data);
 const byId = new Map(published.map((item) => [item.id, item]));
-const record = currentRecord((await getCollection('applicability')).map(({ data }) => data));
+const record = currentBaselineRecord((await getCollection('applicability')).map(({ data }) => data));
 const fromItem = (id: string, tag: string): Tile[] => {
   const item = byId.get(id);
   return item ? [{ href: canonicalPath(item), title: item.title, summary: item.summary, tag }] : [];

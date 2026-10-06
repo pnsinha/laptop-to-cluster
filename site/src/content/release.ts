@@ -11,3 +11,15 @@ export function currentReleaseVersion(root = process.cwd().endsWith('/site') ? '
   if (!newest) throw new Error('currentReleaseVersion: set RELEASE_VERSION or add releases/<version>/release-candidate.json');
   return JSON.parse(readFileSync(join(dir, newest, 'release-candidate.json'), 'utf8')).version ?? newest;
 }
+
+/** Content writes learner links to the package that ships with this release as `.../blob/@release/...`.
+ *  They resolve here to the current release tag. Provenance links stay pinned to the release a run used. */
+export const RELEASE_REF_TOKEN = '@release';
+
+/** Replaces the release token inside href attributes only. */
+export function resolveReleaseRefs(html: string, version: string): string {
+  if (!version) throw new Error('resolveReleaseRefs: a release version is required');
+  return html.replace(/href="([^"]*)"/g, (attribute, href: string) => (
+    href.includes(`/${RELEASE_REF_TOKEN}/`) ? `href="${href.replaceAll(`/${RELEASE_REF_TOKEN}/`, `/${version}/`)}"` : attribute
+  ));
+}

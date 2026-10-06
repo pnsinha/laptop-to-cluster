@@ -9,7 +9,7 @@
 #SBATCH --mem=16G
 #SBATCH --gres=gpu:1
 #SBATCH --time=00:20:00
-#SBATCH --output=${BSSW_SCRATCH_ROOT}/union-anvil/logs/gpu-compose-%j.out
+#SBATCH --output=logs/gpu-compose-%j.out
 
 # Stage 3 (Apptainer) — compose provider + specialized, run arch-adaptive cuda_smoke on A100.
 # This is the Apptainer lane; Charliecloud GPU test (19805890) runs independently.

@@ -248,6 +248,12 @@ describe('applicability and release change projections', () => {
     expect(JSON.stringify(projected)).not.toMatch(/24\.05|1\.3|2026-06-30|public-1|manifest\.json|sha256/);
   });
 
+  it('refuses to badge a runnable module with a superseded record', () => {
+    const technical = contentItemSchema.parse(moduleItem({ applicable_release: 'v0.1.0', last_reviewed: '2026-07-01' }));
+    expect(() => projectApplicabilityForItem(technical, [{ ...applicability(), superseded_by: 'anvil-run-2' }], 'runnable-module'))
+      .toThrow(/anvil-run is superseded by anvil-run-2/);
+  });
+
   it('classifies release changes and requires material-change traceability', () => {
     const baseRelease = {
       id: 'release-v010', version: 'v0.1.0', published_at: '2026-07-31', site_commit: 'b'.repeat(40),

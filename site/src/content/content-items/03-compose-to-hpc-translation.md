@@ -114,7 +114,7 @@ Open the [example job](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/
 | `container/Apptainer.def` and `container/image-lock.json` | Replace with your image and its pinned base. |
 | `container/acquire.sh`, `diagnostics.json` and `README.md` | Leave unchanged. |
 
-**Settings.** The job takes 14 adapter variables, set with `sbatch --export` or a wrapper your center owns. The [package README](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/README.md) lists the defaults and limits: `WORKER_COUNT`, `TASK_COUNT`, `READINESS_TIMEOUT`, `CLEANUP_TIMEOUT`, `IMAGE_PATH`, `IMAGE_SHA256_FILE`, `INPUT_PATH`, `INPUT_SHA256_FILE`, `EXPECTED_PATH`, `BSSW_SCRATCH_ROOT`, `BSSW_APPTAINER_CMD`, `BSSW_SRUN_CMD`, `BSSW_SLURM_VERSION_CMD` and `BSSW_SHA256_CMD`.
+**Settings.** The job takes 14 adapter variables, set with `sbatch --export` or a wrapper your center owns. The [package README](https://github.com/pnsinha/laptop-to-cluster/blob/@release/workflows/baseline-slurm-apptainer/README.md) lists the defaults and limits: `WORKER_COUNT`, `TASK_COUNT`, `READINESS_TIMEOUT`, `CLEANUP_TIMEOUT`, `IMAGE_PATH`, `IMAGE_SHA256_FILE`, `INPUT_PATH`, `INPUT_SHA256_FILE`, `EXPECTED_PATH`, `BSSW_SCRATCH_ROOT`, `BSSW_APPTAINER_CMD`, `BSSW_SRUN_CMD`, `BSSW_SLURM_VERSION_CMD` and `BSSW_SHA256_CMD`.
 
 Set `BSSW_SCRATCH_ROOT` explicitly, to a private job-scoped path your center names. Without it the script falls back to the scheduler's temporary directory and then to `/tmp`, and on a shared node that fallback is not private. Check that the allocation has enough CPUs for the workers you ask for: the example gives each step one CPU, so raise the CPU request along with `WORKER_COUNT`.
 
@@ -128,7 +128,7 @@ W="$PWD/workflows/baseline-slurm-apptainer"
 sbatch --export=ALL,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",IMAGE_PATH="$W/container/baseline.sif",INPUT_SHA256_FILE="$W/inputs/tasks.json.sha256" "$W/slurm/baseline.sbatch"
 ```
 
-When the job finishes, it prints that the workflow completed and where its result is.
+When the job finishes, it reports that the workflow completed; it does not print a path. The result is in the job's private folder: `${SLURM_TMPDIR}/bssw-<job ID>` when `SLURM_TMPDIR` exists, otherwise beneath `${TMPDIR:-/tmp}/bssw-<job ID>`, as the package README states.
 
 ## Step 5: Verify the result
 

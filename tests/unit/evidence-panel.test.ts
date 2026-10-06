@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EVIDENCE_ROW_LABELS } from '../../site/src/content/contracts.js';
 import {
-  currentRecord, formatMonthYear, projectApplicability, projectEvidencePanel, summarizeRecord,
+  currentBaselineRecord, currentRecord, formatMonthYear, namedVersion, projectApplicability, projectEvidencePanel, summarizeRecord,
 } from '../../site/src/content/projections.js';
 import { applicabilityRecordSchema, type ApplicabilityRecord } from '../../site/src/content/schema.js';
 
@@ -117,10 +117,34 @@ describe('summarizeRecord', () => {
     expect(summarizeRecord(record({ plain_language: plain, related_evidence: [negative] }))).toEqual({
       tested: 'Tested on Purdue Anvil · Jul 2026',
       scope: [
-        'Scheduler: Slurm slurm 9.9.9', 'Runtime: Apptainer apptainer 8.8.8', 'Workflow revision: v0.1.0',
+        'Scheduler: Slurm 9.9.9', 'Runtime: Apptainer 8.8.8', 'Workflow revision: v0.1.0',
         plain.tested.text, 'limitation zero',
       ],
     });
     expect(summarizeRecord(record()).scope).toContain('check one');
+  });
+
+  it('keeps a version that does not repeat the product name', () => {
+    const scope = summarizeRecord(record({ scheduler: { family: 'Slurm', version: '25.11.1' }, runtime: { name: 'Apptainer', version: '1.4.3-1.el8' } })).scope;
+    expect(scope.slice(0, 2)).toEqual(['Scheduler: Slurm 25.11.1', 'Runtime: Apptainer 1.4.3-1.el8']);
+  });
+});
+
+describe('namedVersion', () => {
+  it('drops a leading copy of the name, case-insensitively, and nothing else', () => {
+    expect(namedVersion('Slurm', 'slurm 25.11.1')).toBe('Slurm 25.11.1');
+    expect(namedVersion('Apptainer', 'Apptainer 1.4.3-1.el8')).toBe('Apptainer 1.4.3-1.el8');
+    expect(namedVersion('Slurm', '25.11.1')).toBe('Slurm 25.11.1');
+    expect(namedVersion('Slurm', 'slurm-25.11.1')).toBe('Slurm slurm-25.11.1');
+  });
+});
+
+describe('currentBaselineRecord', () => {
+  it('ignores newer records that belong to another workflow', () => {
+    const baseline = record({ id: 'baseline-run' });
+    const other = record({ id: 'other-run', workflow_id: 'layered-install-trees', validation_date: '2026-11-13', execution_date: '2026-11-13', review_after: '2027-02-13' });
+    expect(currentRecord([baseline, other])?.id).toBe('other-run');
+    expect(currentBaselineRecord([baseline, other])?.id).toBe('baseline-run');
+    expect(currentBaselineRecord([other])).toBeUndefined();
   });
 });

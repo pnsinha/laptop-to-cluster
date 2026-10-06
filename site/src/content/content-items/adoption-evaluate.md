@@ -66,7 +66,7 @@ Three labels describe every claim on this site. Tested means it ran on a named c
 
 - One node, loopback only, inert and bounded inputs, nothing kept beyond the allocation, and no production support.
 - Nothing supervises or restarts a service that dies.
-- Readiness is bounded at 300 seconds, so a service that loads slowly needs a new bound.
+- Readiness waits 30 seconds by default (`READINESS_TIMEOUT`); you can raise it to at most 300 seconds, so a service that loads more slowly than that needs a new bound.
 - The coordinator has no authentication. On a node shared with other jobs, loopback is not private: request whole nodes, or add authentication, for anything sensitive.
 - Never put credentials in the inputs.
 

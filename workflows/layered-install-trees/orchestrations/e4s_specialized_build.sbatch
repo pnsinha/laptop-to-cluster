@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 #SBATCH --time=01:30:00
-#SBATCH --output=${BSSW_SCRATCH_ROOT}/union-anvil/logs/specialized-%j.out
+#SBATCH --output=logs/specialized-%j.out
 
 # Stage 2 — Build GPU specialized (Layer 2), reuses CPU provider via upstreams.
 # cuda_arch=80 (A100). Canonical /tmp/e4s-specialized-amrex-sm80; persisted to GPFS.

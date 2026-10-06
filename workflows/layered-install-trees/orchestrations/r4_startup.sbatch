@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=00:20:00
-#SBATCH --output=${BSSW_SCRATCH_ROOT}/union-anvil/logs/r4-startup-%A-%a.out
+#SBATCH --output=logs/r4-startup-%A-%a.out
 
 # R4 — Startup cost, cold and warm. Each array task lands on a fresh node
 # (verify via hostname) => one cold sample per task; warm = 10 in-task repeats.
