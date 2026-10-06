@@ -26,3 +26,5 @@ Here from a conference? This page links to each talk, poster and paper at the pl
 ## About these links
 
 Each link goes to the venue's own page, so its wording and availability are the venue's. A talk's slides are linked after the talk, wherever they are hosted. To report a broken link, use the project's [support page](/about/support/).
+
+A printable [one-page cheat sheet](/about/cheat-sheet/) condenses the translation for use at a terminal.
