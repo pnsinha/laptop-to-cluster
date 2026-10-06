@@ -15,6 +15,10 @@ describe('W6 About pages', () => {
     expect(row).not.toMatch(/Anvil|Expanse|validated|tested/i);
   });
 
+  it('names no system or validation claim anywhere in the About project body', () => {
+    expect(readItem('about-project.md').body).not.toMatch(/Anvil|Expanse|validated on/i);
+  });
+
   it('gives the licenses section an explicit id', () => {
     const { body } = readItem('about-attribution.md');
     for (const id of REQUIRED_FRAGMENTS.attribution) expect(body).toContain(`<h2 id="${id}">`);

@@ -29,7 +29,7 @@ Practitioners adapting their own stack, educators teaching the model, and fellow
 | 3 | Mar 2027 | Training: reusable training packages, container-first Python guidance | Planned |
 | 4 | Apr 2027 | Release: adoption checklist, HPC Best Practices webinar, BSSw.io post, v1.0 tag | Planned |
 
-Each milestone is scoped to what has actually been run, not what should work in principle. Milestone 1 is a single-node baseline validated on Anvil. It does not claim one launch script runs unchanged at every center. Where a pattern has been tested on one system and not others, the module says which.
+Each milestone is scoped to what has actually been run, not what should work in principle. Milestone 1 is a single-node baseline; its [test record](/milestones/1/) says where and when it ran. It does not claim one launch script runs unchanged at every center. Where a pattern has been tested on one system and not others, the module says which.
 
 ## Authority
 
