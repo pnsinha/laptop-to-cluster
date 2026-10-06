@@ -69,6 +69,14 @@ describe('Breadcrumbs', () => {
   });
 });
 
+describe('Breadcrumbs on adoption pages', () => {
+  it('links /adoption/evaluate/ back to the Guide at /resources/', async () => {
+    const html = await render(Breadcrumbs, { currentPath: '/adoption/evaluate/', currentTitle: 'Evaluate and adopt' });
+    expect(html).toContain('<li><a href="/">Home</a></li>');
+    expect(html).toContain('<li><a href="/resources/">Guide</a></li>');
+  });
+});
+
 describe('BaseLayout shell', () => {
   it('preloads exactly two fonts: the serif roman and Plex Sans Regular', async () => {
     const html = await page();
