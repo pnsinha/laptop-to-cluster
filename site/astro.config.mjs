@@ -1,10 +1,7 @@
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import canonicalPolicy from './plugins/canonical-policy.mjs';
 import accessibleTables from './plugins/accessible-tables.mjs';
-import rehypeReleaseRefs from './plugins/release-refs.mjs';
-import { resolveReleaseVersion } from '../scripts/release-version.mjs';
 
 /* github-light and github-dark are kept, except for the few colours that fall under 4.5:1 on the
    code surface (--surface in both themes). Those are swapped for a darker or lighter neighbour. */
@@ -31,7 +28,6 @@ export default defineConfig({
   trailingSlash: 'always',
   integrations: [sitemap(), canonicalPolicy(), accessibleTables()],
   markdown: {
-    rehypePlugins: [rehypeReleaseRefs({ version: resolveReleaseVersion(fileURLToPath(new URL('..', import.meta.url))) })],
     shikiConfig: {
       themes: { light: 'github-light', dark: 'github-dark' },
       defaultColor: false,

@@ -17,6 +17,7 @@ import { canonicalPath, hasNoStandalonePage } from '../../content/registry';
 import { assertCompositionProfile, compositionProfileFor, currentBaselineRecord, projectApplicabilityForItem } from '../../content/projections';
 import { ABOUT_NAV_ITEMS, learningPathNavigation, recordDateLine, slotNames, sortTalks } from '../../content/page-chrome';
 import { formatDate } from '../../content/format';
+import { currentReleaseVersion, RELEASE_REF_TOKEN, resolveReleaseRefs } from '../../content/release';
 export async function getStaticPaths() {
   const entries = await getCollection('contentItems', ({ data }) =>
     ['published', 'superseded', 'archived'].includes(data.status) && data.route_namespace !== 'start' && !hasNoStandalonePage(data));
@@ -24,7 +25,8 @@ export async function getStaticPaths() {
 }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
-const bodyHtml = entry.rendered?.html;
+const bodyHtml = entry.rendered?.html === undefined ? undefined : resolveReleaseRefs(entry.rendered.html, currentReleaseVersion());
+if (bodyHtml === undefined && entry.body?.includes(`/${RELEASE_REF_TOKEN}/`)) throw new Error(`${entry.id}: release-pinned links need rendered HTML to resolve`);
 const item = entry.data;
 const profile = compositionProfileFor(item);
 assertCompositionProfile(item, profile);
