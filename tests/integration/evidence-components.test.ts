@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import ApplicabilityProjectionView from '../../site/src/components/ApplicabilityProjection.astro';
 import RecordSummary from '../../site/src/components/RecordSummary.astro';
 import { EVIDENCE_ROW_LABELS } from '../../site/src/content/contracts.js';
-import { projectApplicability, summarizeRecord } from '../../site/src/content/projections.js';
+import { projectApplicability, projectEvidencePanel, summarizeRecord } from '../../site/src/content/projections.js';
 import { applicabilityRecordSchema, type ApplicabilityRecord } from '../../site/src/content/schema.js';
 
 let container: AstroContainer;
@@ -97,9 +97,10 @@ describe('RecordSummary', () => {
     const summarized = record({ plain_language: plain });
     const html = await container.renderToString(RecordSummary, { props: { record: summarized } });
     const summary = summarizeRecord(summarized);
+    const traces = new Map(projectEvidencePanel(summarized).rows[0].items.map(({ text, from }) => [text, from.join(' ')]));
     expect(html).toMatch(/^<section class="record-summary" data-source-id="fixture-run" aria-label="What was tested">/);
     expect(html).toContain(`<p class="record-summary__tested">${summary.tested}</p>`);
-    expect(decode(html)).toContain(`<ul class="record-summary__scope">${summary.scope.map((value) => `<li>${value}</li>`).join('')}</ul>`);
+    expect(decode(html)).toContain(`<ul class="record-summary__scope">${summary.scope.map((value) => (traces.has(value) ? `<li data-from="${traces.get(value)}">${value}</li>` : `<li>${value}</li>`)).join('')}</ul>`);
     expect(html).toContain('<p><a href="/applicability/fixture-run/">Full test record</a></p></section>');
   });
 });
