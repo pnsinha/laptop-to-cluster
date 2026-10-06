@@ -27,3 +27,16 @@ Run the manual `checksum-verified-recovery` workflow with the prior successful w
 Hostname recovery is a separate workflow mode. It validates `infrastructure/cloudflare/hostname-redirects.v1.json` and restores only the exact three permanent path/query-preserving Bulk Redirect entries under a production-recovery approval environment. It does not download or alter site content.
 
 The deployment record’s direct `*.pages.dev` URL is the temporary noncanonical recovery endpoint while apex routing is repaired. It must remain available, retain apex canonical metadata, and remain absent from sitemap, feed, Open Graph, and public URL inventory output.
+
+## Recovery horizon and the v0.1.0 identity
+
+Retained release records and validated artifacts expire after 90 days, which is the repository cap; the workflows declare 90 so that they say what happens. Recovery from an artifact is therefore possible only inside that window.
+
+| Release | Run | Commit | Recovery artifacts expire |
+|---|---|---|---|
+| v0.1.0 | publication.yml run 31160844556 | `ea4c7c275ae3187fff227b0524351d4cbbce0485` | 2026-11-05 |
+| v0.2.0 | release.yml production run (record the run id here after the deploy) | the release commit | about 90 days after the deploy |
+
+`releases/recovery-index.json` already names v0.1.0 as `current`, so the v0.2.0 deploy records it as `previous`. Before 2026-11-05, download both v0.1.0 artifacts from run 31160844556 (`gh run download 31160844556`) and keep them somewhere that does not expire, for example assets on a GitHub Release. After that date, restoring v0.1.0 means rebuilding it, and the frozen `publication.yml` does not guard that.
+
+Settings the workflows cannot enforce: the `production` environment needs a required reviewer, and `production-recovery` must be created with one before its first use.
