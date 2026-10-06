@@ -159,3 +159,33 @@ describe('whole-file guards', () => {
     expect(bare).toMatch(/max-width:\s*30rem/);
   });
 });
+
+describe('final review fixes: list rhythm, glyph alt text, tail clearance, forced colours', () => {
+  it('spaces only unclassed prose lists, so component lists keep their own rhythm', () => {
+    expect(bare).toContain(':where(.module-content, main > section, main > article) :where(ul, ol):where(:not([class])) > li + li');
+    expect(bare).not.toMatch(/main > article\) li \+ li/);
+  });
+
+  it('gives the concept shape glyphs empty alt text behind a support guard', () => {
+    const start = bare.indexOf('@supports (content: "a" / "")');
+    expect(start).toBeGreaterThan(-1);
+    const guarded = bare.slice(start, bare.indexOf('\n}', start));
+    for (const mark of ['step', 'gate', 'scratch', 'net']) expect(guarded).toContain(`.c-${mark}::before { content: var(--mark-${mark}) / ""; }`);
+  });
+
+  it('stops the narrow scratch tail short of the sentence and lets it run on in the wide layout', () => {
+    expect(body('.timeline')).toMatch(/--overrun:\s*calc\(var\(--tl-pad\) \+ 2px \+ 0\.5rem\)/);
+    expect(bare).toMatch(/@container \(min-width: 50rem\) \{\s*\.timeline__steps \{ --overrun: calc\(var\(--tl-pad\) \+ 2px \+ 2rem\);/);
+  });
+
+  it('keeps the double ink rule on warnings and the link colour on links only under forced colours', () => {
+    const forced = media('(forced-colors: active)');
+    const borderList = forced.match(/([^{}]+)\{\s*border:\s*1px solid CanvasText;\s*\}/)?.[1] ?? '';
+    for (const selector of ['.notice', '.support-state', '.evidence-badge']) expect(borderList).not.toMatch(new RegExp(`${selector.replace('.', '\\.')}(,|\\s|$)`));
+    expect(forced).toMatch(/a:where\(:any-link\), \.action--secondary, \.hero__secondary-link\s*\{\s*color:\s*LinkText/);
+    const tokens = read('tokens.css');
+    const forcedTokens = tokens.slice(tokens.lastIndexOf('@media (forced-colors: active)'));
+    expect(forcedTokens).toMatch(/--primary:\s*CanvasText/);
+    expect(forcedTokens).toMatch(/--primary-hover:\s*CanvasText/);
+  });
+});
