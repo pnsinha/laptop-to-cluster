@@ -130,8 +130,29 @@ describe('boundary scan scopes', () => {
     const withTool = runBoundaryScan({ root, require: true, env, pdfToText: () => `page one\n\n${TOKEN} on page two\n` });
     expect(withTool.findings).toEqual([`site/dist/guide/index.html:2 ${BOUNDARY_MESSAGE}`, `site/public/poster.pdf:3 ${BOUNDARY_MESSAGE}`]);
     expect(leaks(withTool)).toEqual([]);
+    const manual = 'PDF-MANUAL-CHECK site/public/poster.pdf: pdftotext is unavailable; check this PDF by hand before release';
+    writeFileSync(join(root, 'site/dist/guide/index.html'), '<p>clean</p>\n');
     const withoutTool = runBoundaryScan({ root, require: true, env, pdfToText: noPdfTool });
-    expect(withoutTool.warnings).toEqual(['PDF-MANUAL-CHECK site/public/poster.pdf: pdftotext is unavailable; check this PDF by hand before release']);
+    expect(withoutTool.exitCode).toBe(1);
+    expect(withoutTool.errors).toEqual([manual]);
+    expect(withoutTool.stdout.join('\n')).not.toContain('Boundary scan clean');
+    expect(runBoundaryScan({ root, env: { ...env, CI: 'true' }, pdfToText: noPdfTool }).errors).toEqual([manual]);
+    // Locally, without --require, it stays a warning, and the clean line names only the scopes that were scanned.
+    const local = runBoundaryScan({ root, env, pdfToText: noPdfTool });
+    expect(local.exitCode).toBe(0);
+    expect(local.warnings).toEqual([manual]);
+    expect(local.stdout).toEqual(['Boundary scan clean: tracked files, site/dist.']);
+  });
+
+  it('fails a required scan when site/dist is missing, and says so instead of claiming it was scanned', () => {
+    const root = repo({ 'README.md': 'clean\n' });
+    const required = runBoundaryScan({ root, require: true, env, pdfToText: noPdfTool });
+    expect(required.exitCode).toBe(1);
+    expect(required.errors).toEqual(['BOUNDARY-TERM: site/dist is missing; built output was not scanned (run npm run build first)']);
+    expect(required.stdout).toEqual([]);
+    const local = runBoundaryScan({ root, env, pdfToText: noPdfTool });
+    expect(local.exitCode).toBe(0);
+    expect(local.stdout).toEqual(['Boundary scan clean: tracked files, site/public PDFs.']);
   });
 
   it('reports history matches in diffs and in commit messages by commit SHA only', () => {
@@ -167,11 +188,14 @@ describe('boundary scan scopes', () => {
     git(origin, 'commit', '-q', '--allow-empty', '-m', 'Second commit');
     const shallow = join(tempDir(), 'shallow');
     git(origin, 'clone', '-q', '--depth', '1', `file://${origin}`, shallow);
+    mkdirSync(join(shallow, 'site/dist'), { recursive: true });
     const refused = runBoundaryScan({ root: shallow, require: true, history: 'HEAD', env, pdfToText: noPdfTool });
     expect(refused.errors).toEqual(['BOUNDARY-TERM: history scan needs the full history (use fetch-depth: 0)']);
+    mkdirSync(join(origin, 'site/dist'), { recursive: true });
+    writeFileSync(join(origin, 'site/dist/index.html'), '<p>clean</p>\n');
     const clean = runBoundaryScan({ root: origin, require: true, history: 'HEAD', env, pdfToText: noPdfTool });
     expect(clean.exitCode).toBe(0);
     expect(clean.stdout).toEqual(['Boundary scan clean: tracked files, site/dist, site/public PDFs, history of HEAD.']);
-    expect(clean.stderr).toEqual(['WARNING: BOUNDARY-TERM: site/dist is missing; built output was not scanned (run npm run build first)']);
+    expect(clean.stderr).toEqual([]);
   });
 });
