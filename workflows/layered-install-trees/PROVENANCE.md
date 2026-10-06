@@ -3,7 +3,9 @@
 Imported 2026-09-26 from the Anvil working directory
 `revised_union_of_containers/union-anvil/` (see `STATUS.md` and
 `REVISION-RUNS.md` there). Copies below are redacted: Slurm accounts and the
-user scratch root were replaced by `BSSW_*` variables; file content is
+user scratch root were replaced by `BSSW_*` variables, and each script's
+`#SBATCH --output=` path was changed to a literal relative `logs/...` path
+because Slurm does not expand variables in `#SBATCH` lines; file content is
 otherwise unchanged.
 
 | Imported file | Source path | Slurm jobs that used it |

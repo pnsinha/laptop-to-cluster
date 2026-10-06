@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 #SBATCH --time=02:00:00
-#SBATCH --output=${BSSW_SCRATCH_ROOT}/union-anvil/logs/provider-%j.out
+#SBATCH --output=logs/provider-%j.out
 
 # Stage 1 — Build CPU provider (Layer 1), E4S-faithful representative subset.
 # Canonical install path /tmp/e4s-provider-cpu -> persisted to GPFS for layers 2/3.
