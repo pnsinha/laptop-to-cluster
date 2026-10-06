@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import BaseLayout from '../../site/src/layouts/BaseLayout.astro';
 import { attributionSchema } from '../../site/src/content/schema.js';
 import { COMPOSITION_PROFILES } from '../../site/src/content/projections.js';
+import { ACKNOWLEDGMENT_TEXT } from '../../site/src/content/acknowledgment.js';
 
 let container: AstroContainer;
 beforeAll(async () => { container = await AstroContainer.create(); });
@@ -58,6 +59,11 @@ describe('Property 12: Attribution coverage preserves role and funding scope', (
       const projection = attributionSchema.parse({ ...globalAttribution, contributors });
 
       expect(html).toContain('href="/about/project/"');
+      // Every page carries the verbatim acknowledgment and the attribution link in its footer (F-1).
+      const footer = html.slice(html.indexOf('<footer'));
+      expect(footer).toContain('href="/about/attribution/"');
+      const acknowledgment = footer.match(/<p class="acknowledgment"[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? '';
+      expect(acknowledgment.replace(/\s+/g, ' ').trim()).toBe(ACKNOWLEDGMENT_TEXT);
       expect(projection.contributors).toEqual(contributors);
       for (const contributor of contributors) {
         expect(projection.contributors).toContainEqual(contributor);
