@@ -34,7 +34,7 @@ Each entry starts in plain language. The "Compose" notes show what the idea repl
 <dt id="job-scoped-scratch"><strong class="c-scratch">job-scoped scratch</strong></dt>
 <dd>Temporary job storage: a private folder made for one job. Do not keep anything there that you need later. Whether and when it is cleared depends on your center. <em>Compose:</em> a named volume.</dd>
 <dt id="loopback"><strong class="c-net">loopback</strong></dt>
-<dd>Local-only access: the address (usually <code>127.0.0.1</code>) a machine uses to talk to itself. It keeps a service off the network, but other jobs on the same node can still reach it. <em>Compose:</em> replaces a published <code>ports</code> entry.</dd>
+<dd>Local-only access: the address (usually <code>127.0.0.1</code>) a machine uses to talk to itself. It keeps a service off the network, but other jobs on the same node can still reach it. <em>Compose:</em> replaces a published <code>ports</code> entry. Services in this pattern listen on it by default; reaching them from beyond the node needs access your center approves.</dd>
 <dt id="ssh-tunnel"><strong class="c-net">SSH tunnel</strong></dt>
 <dd>An approved, encrypted path from your own computer to a service on a compute node, if your center allows one. <em>Compose:</em> replaces a published port.</dd>
 </dl>
@@ -42,7 +42,7 @@ Each entry starts in plain language. The "Compose" notes show what the idea repl
 ## Evidence words
 
 <dl>
-<dt id="evidence-vocabulary"><strong>Tested, shim-tested, designed not run</strong></dt>
+<dt id="evidence-vocabulary"><strong>Tested, Shim-tested, Designed, not run</strong></dt>
 <dd>Pages on this site use three words for how much proof stands behind a claim.
 <ul>
 <li><strong>Tested:</strong> it ran on a named cluster. The badge or the test record says which cluster and when.</li>

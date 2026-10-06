@@ -49,10 +49,10 @@ The Milestone 1 program review (2026-08-14) made one suggestion and asked four q
 
 Source: Milestone 1 program review, 2026-08-14. Where each part is answered:
 
-| Review text, quoted exactly | Where it is answered |
+| Topic | Where it is answered |
 |---|---|
-| **Suggestion:** I think the site could use a site-map or a “module 0” that gives users a baseline of who the audience is and how they should progress through the modules/site as a whole. It would be helpful to know what assumptions and pre-existing skills a learner should have. | [The five-minute tour](/guide/tour/) |
-| What does the “workflow source” do? | [Module 2: the same stack in one allocation](/guide/baseline-single-node-pattern/#the-same-stack-in-one-allocation) |
-| How would a user modify it to run their own application? | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it) |
-| It seems that the workflow includes results verification, is this something the user would expect to see for their own application? | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it), and the tour |
-| Are the various json files (such as results.json) intended for humans or for other tools to parse? | [Module 2: files the workflow reads and writes](/guide/baseline-single-node-pattern/#files-the-workflow-reads-and-writes) |
+| Audience, assumed skills and progression | [The five-minute tour](/guide/tour/) |
+| What the workflow source does | [Module 2: the same stack in one allocation](/guide/baseline-single-node-pattern/#the-same-stack-in-one-allocation) |
+| Modifying it for your own application | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it) |
+| Result verification in your own application | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it), and the tour |
+| Whether the JSON files are for people or tools | [Module 2: files the workflow reads and writes](/guide/baseline-single-node-pattern/#files-the-workflow-reads-and-writes) |

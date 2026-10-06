@@ -82,6 +82,13 @@ describe('W6 built pages: Troubleshooting', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it('shows a legacy identifier only as an earlier name, never as the stable one', () => {
+    expect(html).not.toMatch(/Stable identifier/i);
+    for (const legacy of ['BSSW-PREREQ-SLURM', 'BSSW-PREREQ-APPTAINER', 'BSSW-STORAGE-UNAVAILABLE', 'BSSW-READINESS-TIMEOUT']) {
+      expect(html, legacy).toMatch(new RegExp(`Earlier name: <code>${legacy}</code>`));
+    }
+  });
+
   it('resolves every /diagnostics/#fragment link anywhere on the site', () => {
     const files = (readdirSync(dist, { recursive: true }) as string[]).filter((name) => name.endsWith('.html'));
     for (const file of files) {

@@ -69,7 +69,7 @@ With the coordinator still running, a separate check compares every result with 
 
 ### 6. Clean up
 
-At the very start, the script registers a cleanup step that runs last, however the job ends: a normal finish, a failure or the scheduler's time limit. It asks every program still running to stop, and then forces any that do not after a short grace period (the forced stop is Designed, not run). The job folder is not deleted. When your center clears it depends on the center, so copy out what you want to keep.
+At the very start, the script registers a cleanup step that runs last, however the job ends: a normal finish, a failure or the scheduler's time limit. It asks every program still running to stop, and then forces any that do not after a short grace period (the time-limit path and the forced stop are Designed, not run). The job folder is not deleted. When your center clears it depends on the center, so copy out what you want to keep.
 
 ## Four ideas that change meaning
 

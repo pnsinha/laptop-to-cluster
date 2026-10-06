@@ -32,7 +32,7 @@ A single-node, single-allocation pattern. One coordinator and one to sixteen wor
 
 | Assumption | Why the example needs it | How to check |
 |---|---|---|
-| Slurm job context and `srun` | The script runs inside an allocation and starts every service as a job step with `srun`. | Run `command -v sbatch srun` on a login node. The script also stops with a named error if it is not inside a Slurm job. |
+| Slurm job context and `srun` | The script runs inside an allocation and starts every service as a [job step](/about/glossary/#job-step) with `srun`. | Run `command -v sbatch srun` on a login node. The script also stops with a named error if it is not inside a Slurm job. |
 | Exclusive single-task job steps are allowed | Each service gets its own `srun --exclusive` step. | Ask your center, or submit a short two-step test job and read the scheduler's reply. |
 | Apptainer on the compute nodes | The services run in an Apptainer image. | In a short job on a compute node, run `apptainer --version`. |
 | Loopback connections work on a compute node | The coordinator listens on 127.0.0.1, and the workers connect to it there. | Ask your center whether compute-node loopback connections are permitted on your partition. |

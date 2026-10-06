@@ -59,6 +59,15 @@ describe('W6 glossary', () => {
     expect(section).not.toMatch(/Anvil|Expanse|Slurm \d|Apptainer \d|\b20\d\d\b/);
   });
 
+  it('says loopback is the default and that wider access needs center approval', () => {
+    expect(definition('loopback')).toMatch(/listen on it by default/);
+    expect(definition('loopback')).toMatch(/access your center approves/);
+  });
+
+  it('names the evidence words with the exact labels', () => {
+    expect(body).toContain(`<dt id="evidence-vocabulary"><strong>Tested, Shim-tested, ${DESIGNED_NOT_RUN}</strong></dt>`);
+  });
+
   it('starts each core entry in plain language, not with the term', () => {
     for (const id of REQUIRED_FRAGMENTS.glossary) {
       const text = definition(id).replace(/<[^>]+>/g, '').trim();

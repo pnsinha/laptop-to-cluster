@@ -17,7 +17,8 @@ describe('cheat sheet: where it is linked from', () => {
   it('every error ID on the sheet appears on the Troubleshooting page', () => {
     // Match the printed text, not an anchor: W2 and W6 own the anchor scheme.
     const sheet = readFileSync(join(root, 'site/src/content/content-items/about-cheat-sheet.md'), 'utf8');
-    const ids = [...sheet.matchAll(/`(BSSW-[A-Z-]+)` \(([\d, ]+)\)/g)].map((m) => m[1]);
+    // An ID with two exit codes can sit under two evidence labels, so count distinct IDs.
+    const ids = [...new Set([...sheet.matchAll(/`(BSSW-[A-Z-]+)` \(([\d, ]+)\)/g)].map((m) => m[1]))];
     expect(ids).toHaveLength(15);
     const html = page('diagnostics');
     for (const id of ids) expect(html, id).toMatch(new RegExp(`${id}(?![A-Z-])`));

@@ -221,6 +221,7 @@ describe('Evaluate and adopt page', () => {
 
   it('links only to pages and fragments that exist, avoids the door cards, and stays within its word budget', () => {
     expect(linkProblems(body)).toEqual([]);
+    expect(body.search(/job step/i), 'first "job step" is the glossary link').toBe(body.indexOf('[job step](/about/glossary/#job-step)') + 1);
     expect(body).not.toMatch(/class="doors?"|door__/);
     expect(body).not.toMatch(/reservation|\bElsa\b|program administrator/i);
     const count = words(body);
