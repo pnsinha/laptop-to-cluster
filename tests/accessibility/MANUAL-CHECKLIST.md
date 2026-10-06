@@ -12,7 +12,7 @@ The scanner (`npm run test:accessibility:browser`) automates what a script can p
 
 Start each page by clicking the address bar, then press Tab. Tick a box only if the behaviour is exactly as described.
 
-- [ ] **Skip link.** First Tab shows "Skip to main content" with a visible ring. Enter moves focus into `main`; the next Tab lands on the first control inside the page content, not back in the header.
+- [ ] **Skip link.** First Tab shows "Skip to content" with a visible ring. Enter moves focus into `main`; the next Tab lands on the first control inside the page content, not back in the header.
 - [ ] **Header navigation, wide.** Tab visits Get started, Guide, Troubleshooting, About, GitHub (external), in that order, then the theme control. The current page's link has a mark that is not only colour. Enter follows the link.
 - [ ] **Header navigation, narrow.** Resize the window to 320 px wide. Tab to "Navigation", press Enter or Space: the menu opens, focus stays on "Navigation", the next Tab lands on Get started. Shift+Tab then Enter closes it. No horizontal scrollbar at any point.
 - [ ] **Theme control.** Tab to System, Light, Dark. Press Space or Enter on Dark: the page turns dark at once and Dark is marked pressed; reload keeps it. Press System: the page follows the operating-system setting again. The ring is visible on each button in both themes.
@@ -29,7 +29,7 @@ Start each page by clicking the address bar, then press Tab. Tick a box only if 
 
 Use VO+Right to move item by item and VO+U for the rotor (Headings, Landmarks, Links).
 
-- [ ] **Landmarks.** Rotor, Landmarks: banner, navigation "Primary", main, navigation "Site records", contentinfo. One heading level 1 per page.
+- [ ] **Landmarks.** Rotor, Landmarks: banner, navigation "Primary", main, navigation "Site records", contentinfo. Pages with a trail also list navigation "Breadcrumb". Learning modules also list navigation "Learning module navigation" and the regions "Tested workflow scope" or "What was tested". One heading level 1 per page.
 - [ ] **Doors.** Move through the doors region. Each door is read as its eyebrow (for example "New to clusters? Start here"), the title as a heading level 3, a one-sentence summary, then a single link whose text says where it goes ("Take the five-minute tour"). The door is not announced as clickable text, and no arrow is spoken.
 - [ ] **Badge, collapsed and expanded.** Move to "What this means for you". VoiceOver says it is a disclosure (button) and "collapsed". VO+Space opens it and VoiceOver says "expanded"; the next VO+Right reads the Tested row, then You need, then Depends on your center. A stale or failed badge is read as ordinary text starting "Warning:", not as a disclosure.
 - [ ] **Timeline order.** VO+Right through the figure: it is announced as a figure with the caption, then a list of 6 items. Each item reads "Step n", the label, then its caption, in order: Get an allocation, Start coordinator, Readiness gate, Run workers, Verify results, Clean up. On Module 2 the lit step is announced as the current step. The decorative bars are not read.

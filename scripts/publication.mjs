@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runBoundaryScan } from './boundary.mjs';
+import { defaultPdfToText, runBoundaryScan } from './boundary.mjs';
 
 export const CANONICAL_ORIGIN = 'https://laptop-to-cluster.org';
 export const REDIRECT_HOSTS = Object.freeze([
@@ -683,7 +683,14 @@ export const ACKNOWLEDGMENT_SHA256 = '408cbbb41af6fe9b3ddfa9f90aedc6a91e2a24d967
 const normalizeSpace = (value) => value.replace(/\s+/g, ' ').trim();
 const acknowledgmentHash = (inner) => sha256(normalizeSpace(stripTags(inner)));
 
-export function validateAcknowledgments(dist, builtPages) {
+/* Hosted PDFs that may keep their own wording, because the page that links them carries the verbatim event acknowledgment beside the link.
+   Anything not listed here must itself carry the verbatim text and never the retired phrase. */
+export const PDF_ACK_EXEMPT = Object.freeze({
+  'iguide-forum-2026-poster.pdf': 'presented as delivered; the event page carries the verbatim acknowledgment and disclaimer beside the download link',
+});
+const RETIRED_PHRASE = 'Scientific Computing Research';
+
+export function validateAcknowledgments(dist, builtPages, { pdfToText = defaultPdfToText, strict = process.env.CI === 'true' } = {}) {
   const errors = [];
   for (const { source, html } of builtPages) {
     const footer = html.match(/<footer class="site-footer"[\s\S]*?<\/footer>/)?.[0] ?? '';
@@ -702,6 +709,36 @@ export function validateAcknowledgments(dist, builtPages) {
     if (/Scientific Computing Research/.test(readFileSync(file, 'utf8'))) {
       errors.push(diagnostic(relative(dist, file).replaceAll('\\', '/'), 'text', 'ACK-VERBATIM', 'the phrase "Scientific Computing Research" is not part of the approved acknowledgment'));
     }
+  }
+  errors.push(...validateHostedPdfAcknowledgments(dist, builtPages, pdfToText, strict));
+  return errors;
+}
+
+/** ACK-VERBATIM for hosted PDFs (F-1: the verbatim text belongs in any hosted PDF). In CI, a missing pdftotext is an error, not a skip. */
+function validateHostedPdfAcknowledgments(dist, builtPages, pdfToText, strict) {
+  const errors = [];
+  const pdfs = filesUnder(dist).filter((candidate) => /\.pdf$/i.test(candidate));
+  if (!pdfs.length) return errors;
+  // The approved text, taken from a built footer that already matched its recorded hash.
+  const approved = builtPages.map(({ html }) => html.match(/<footer class="site-footer"[\s\S]*?<\/footer>/)?.[0] ?? '')
+    .flatMap((footer) => [...footer.matchAll(/<p class="acknowledgment">([\s\S]*?)<\/p>/g)])
+    .map((match) => normalizeSpace(stripTags(match[1])))
+    .find((text) => sha256(text) === ACKNOWLEDGMENT_SHA256);
+  for (const file of pdfs) {
+    const path = relative(dist, file).replaceAll('\\', '/');
+    const text = pdfToText(file);
+    if (text === null || text === undefined) {
+      if (strict) errors.push(diagnostic(path, 'pdf', 'ACK-VERBATIM', 'pdftotext is unavailable, so the hosted PDF acknowledgment could not be checked; install poppler-utils'));
+      continue;
+    }
+    if (Object.hasOwn(PDF_ACK_EXEMPT, path)) {
+      const linked = builtPages.some(({ html }) => html.includes(`href="/${path}"`) && /<section class="event-acknowledgment"/.test(html));
+      if (!linked) errors.push(diagnostic(path, 'pdf', 'ACK-VERBATIM', 'an exempt PDF needs a linking page that carries the verbatim event acknowledgment'));
+      continue;
+    }
+    const normalized = normalizeSpace(text);
+    if (normalized.includes(RETIRED_PHRASE)) errors.push(diagnostic(path, 'pdf', 'ACK-VERBATIM', `the phrase "${RETIRED_PHRASE}" is not part of the approved acknowledgment`));
+    else if (approved && !normalized.includes(approved)) errors.push(diagnostic(path, 'pdf', 'ACK-VERBATIM', 'a hosted PDF must carry the approved acknowledgment and disclaimer verbatim'));
   }
   return errors;
 }

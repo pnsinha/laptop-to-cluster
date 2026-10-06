@@ -27,7 +27,7 @@ jobs:
       - name: Refuse a run whose recorded commit is not the frozen tag
         run: |
           if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]; then
-            echo "::error::GITHUB_SHA is not the v0.1.0 commit; the release record would name the wrong commit. Rebuild v0.1.0 with: gh workflow run publication.yml --ref v0.1.0"
+            echo "::error::GITHUB_SHA is not the v0.1.0 commit; the release record would name the wrong commit. To restore v0.1.0 content, use the checksum-verified recovery workflow (rollback.yml); see RECOVERY.md. Re-running this frozen file is a last resort: it needs no approval and its evidence gate fails from 2026-10-31 UTC."
             exit 1
           fi
       - uses: actions/setup-node@v4.4.0

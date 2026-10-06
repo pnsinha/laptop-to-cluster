@@ -88,7 +88,7 @@ export function scanTrackedFiles(root, regex) {
 
 export function scanBuiltOutput(root, regex) {
   const dist = join(root, 'site/dist');
-  if (!existsSync(dist)) return { findings: [], warnings: ['BOUNDARY-TERM: site/dist is missing; built output was not scanned (run npm run build first)'] };
+  if (!existsSync(dist)) return { findings: [], warnings: ['BOUNDARY-TERM: site/dist is missing; built output was not scanned (run npm run build first)'], scanned: false };
   const findings = [];
   filesBelow(dist).filter((file) => DIST_TEXT.test(file)).forEach((absolute, index) => {
     const path = relative(root, absolute).replaceAll('\\', '/');
@@ -96,7 +96,7 @@ export function scanBuiltOutput(root, regex) {
     if (shown !== path) findings.push(`${shown} ${BOUNDARY_MESSAGE}`);
     findings.push(...scanFile(absolute, shown, regex));
   });
-  return { findings, warnings: [] };
+  return { findings, warnings: [], scanned: true };
 }
 
 export function defaultPdfToText(file) {
@@ -109,15 +109,17 @@ export function scanPublicPdfs(root, regex, pdfToText = defaultPdfToText) {
   const pdfs = existsSync(directory) ? readdirSync(directory).filter((name) => /\.pdf$/i.test(name)).sort() : [];
   const findings = [];
   const warnings = [];
+  let unchecked = 0;
   pdfs.forEach((name, index) => {
     const path = `site/public/${name}`;
     const shown = regex.test(path) ? `public PDF #${index + 1}` : path;
     if (shown !== path) findings.push(`${shown} ${BOUNDARY_MESSAGE}`);
     const text = pdfToText(join(directory, name));
+    if (text === null || text === undefined) unchecked += 1;
     if (text === null || text === undefined) warnings.push(`PDF-MANUAL-CHECK ${shown}: pdftotext is unavailable; check this PDF by hand before release`);
     else findings.push(...matchingLines(text, regex).map((line) => `${shown}:${line} ${BOUNDARY_MESSAGE}`));
   });
-  return { findings, warnings };
+  return { findings, warnings, scanned: unchecked === 0 };
 }
 
 export function scanHistory(root, ref, pattern) {
@@ -144,6 +146,8 @@ export function runBoundaryScan({ root, require = false, history, env = process.
   const warnings = [];
   const notices = [];
   const errors = [];
+  const scopes = [];
+  const strict = require || env.CI === 'true';
   const { pattern } = loadBoundaryPattern(root, env);
   const regex = pattern ? compileBoundaryPattern(pattern) : undefined;
   if (!pattern) {
@@ -160,10 +164,13 @@ export function runBoundaryScan({ root, require = false, history, env = process.
     }
     const built = scanBuiltOutput(root, regex);
     findings.push(...built.findings);
-    warnings.push(...built.warnings);
     const pdfs = scanPublicPdfs(root, regex, pdfToText);
     findings.push(...pdfs.findings);
-    warnings.push(...pdfs.warnings);
+    // Under --require or in CI, a scope that could not be scanned (no site/dist, no pdftotext) is an error, not a warning.
+    (strict ? errors : warnings).push(...built.warnings, ...pdfs.warnings);
+    scopes.push('tracked files');
+    if (built.scanned) scopes.push('site/dist');
+    if (pdfs.scanned) scopes.push('site/public PDFs');
     if (history) {
       try {
         const scanned = scanHistory(root, history, pattern);
@@ -179,7 +186,7 @@ export function runBoundaryScan({ root, require = false, history, env = process.
   const scanned = Boolean(regex) && exitCode === 0;
   const stdout = [
     ...notices.map((notice) => `::notice title=BOUNDARY-TERM::${notice}`),
-    ...(scanned ? [`Boundary scan clean: tracked files, site/dist, site/public PDFs${history ? `, history of ${history}` : ''}.`] : []),
+    ...(scanned ? [`Boundary scan clean: ${[...scopes, ...(history ? [`history of ${history}`] : [])].join(', ')}.`] : []),
   ].map(safe);
   const stderr = [
     ...warnings.map((warning) => `WARNING: ${warning}`),

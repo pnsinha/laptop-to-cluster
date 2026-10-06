@@ -1,6 +1,13 @@
 {
   "schemaVersion": 1,
-  "current": null,
+  "current": {
+    "release": "v0.1.0",
+    "sourceCommit": "ea4c7c275ae3187fff227b0524351d4cbbce0485",
+    "artifactSha256": "ca30708f4ac12bfcb8b58a9eb96d62843912fd3420b015f16d76b25d39812d80",
+    "artifactFileManifestSha256": "e8408af9aa8bce9972ddcf7a69274c524230bed15c4cd20193fc7e0f706a7fc0",
+    "cloudflareDeploymentId": "b0d52f63-fdc5-46f4-99e8-5b5e91ef9b68",
+    "pagesDevFallbackUrl": "https://b0d52f63.laptop-to-cluster.pages.dev"
+  },
   "previous": null,
-  "note": "The deployment workflow replaces current and retains the prior known-good checksum-bound record. v0.1.0 has no earlier release until its first successful deployment."
+  "note": "The deployment workflow replaces current and retains the prior known-good checksum-bound record. current was seeded from the v0.1.0 release record (publication.yml run 31160844556)."
 }

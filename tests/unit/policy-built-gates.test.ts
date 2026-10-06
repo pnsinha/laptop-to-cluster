@@ -64,7 +64,33 @@ describe('ACK-VERBATIM', () => {
     for (const name of ['x.html', 'feed.xml', 'data.json', 'robots.txt']) {
       expect(validateAcknowledgments(dist({ [name]: 'Office of Scientific Computing Research' }), []).join('\n'), name).toMatch(new RegExp(`${name}:text \\[ACK-VERBATIM\\]`));
     }
-    expect(validateAcknowledgments(dist({ 'poster.pdf': 'Scientific Computing Research' }), [])).toEqual([]);
+  });
+
+  describe('hosted PDFs', () => {
+    const siteFooter = `<footer class="site-footer"><p class="acknowledgment">${ACKNOWLEDGMENT_TEXT}</p></footer>`;
+    const withFooter = { source: '/', html: `<html>${siteFooter}</html>` };
+    const eventPage = { source: '/events/iguide-forum-2026/', html: `<html><a href="/iguide-forum-2026-poster.pdf">PDF</a><section class="event-acknowledgment"><h2>x</h2><p>${ACKNOWLEDGMENT_TEXT}</p></section>${siteFooter}</html>` };
+    const stub = (text: string | null) => ({ pdfToText: () => text, strict: true });
+
+    it('accepts a PDF that carries the approved text, even when the extractor wraps lines', () => {
+      expect(validateAcknowledgments(dist({ 'new.pdf': '%PDF' }), [withFooter], stub(ACKNOWLEDGMENT_TEXT.replaceAll(' ', '\n')))).toEqual([]);
+    });
+
+    it('fails a PDF with the retired phrase or without the approved text', () => {
+      expect(validateAcknowledgments(dist({ 'new.pdf': '%PDF' }), [withFooter], stub('Office of Scientific Computing Research')).join('\n')).toMatch(/new\.pdf:pdf \[ACK-VERBATIM\]/);
+      expect(validateAcknowledgments(dist({ 'new.pdf': '%PDF' }), [withFooter], stub('A poster with no acknowledgment')).join('\n')).toMatch(/new\.pdf:pdf \[ACK-VERBATIM\].*verbatim/);
+    });
+
+    it('keeps a named exemption only while its linking page carries the verbatim event acknowledgment', () => {
+      const files = dist({ 'iguide-forum-2026-poster.pdf': '%PDF' });
+      expect(validateAcknowledgments(files, [eventPage], stub('Scientific Computing Research'))).toEqual([]);
+      expect(validateAcknowledgments(files, [withFooter], stub('Scientific Computing Research')).join('\n')).toMatch(/iguide-forum-2026-poster\.pdf:pdf \[ACK-VERBATIM\].*linking page/);
+    });
+
+    it('treats a missing pdftotext as an error in CI and a skip locally', () => {
+      expect(validateAcknowledgments(dist({ 'new.pdf': '%PDF' }), [withFooter], stub(null)).join('\n')).toMatch(/poppler-utils/);
+      expect(validateAcknowledgments(dist({ 'new.pdf': '%PDF' }), [withFooter], { pdfToText: () => null, strict: false })).toEqual([]);
+    });
   });
 });
 

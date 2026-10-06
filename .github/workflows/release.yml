@@ -19,9 +19,9 @@ on:
 permissions:
   contents: read
 
-# Both production triggers (an exact release tag and a manual dispatch) share one fixed group, so two
-# production deploys never run at once. Only a branch push (a preview) is ever cancelled; a production
-# run must finish its record and recovery-index uploads.
+# Every run that can deploy production (a dispatch or a final tag) shares one group that never cancels,
+# so a second run cannot interrupt a deploy between the upload and the release record.
+# Only a superseded branch push is cancelled.
 concurrency:
   group: ${{ (github.event_name == 'workflow_dispatch' || (github.ref_type == 'tag' && !contains(github.ref_name, '-rc.'))) && 'release-production' || format('release-{0}', github.ref) }}
   cancel-in-progress: ${{ github.event_name == 'push' && github.ref_type == 'branch' }}
@@ -69,6 +69,7 @@ jobs:
       RELEASE_VERSION: ${{ needs.plan.outputs.version }}
       RELEASE_DATE: ${{ needs.plan.outputs.date }}
       PREVIEW: ${{ needs.plan.outputs.preview }}
+      RELEASE_SHA: ${{ needs.plan.outputs.sha }}
     steps:
       - uses: actions/checkout@v4.2.2
         with:
@@ -79,6 +80,8 @@ jobs:
           node-version: '22.15.0'
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Install poppler-utils so hosted PDFs are scanned
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils && pdftotext -v
       - name: Install accessibility browser
         if: needs.plan.outputs.full-gate == 'true'
         run: npx --no-install playwright install --with-deps chromium
@@ -215,7 +218,8 @@ jobs:
           name: ${{ needs.plan.outputs.record-artifact-name }}
           path: publication/${{ needs.plan.outputs.version }}/
           if-no-files-found: error
-          retention-days: 365
+          # The repository caps artifact retention at 90 days; say so rather than declare more.
+          retention-days: 90
 
   post-deploy-release-checks:
     needs: [plan, deploy]

@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +19,9 @@ function fixtureRepo(body: string, message: string) {
   writeFileSync(join(directory, 'notes.txt'), body);
   git('add', 'notes.txt');
   git('commit', '-q', '-m', message);
+  // A required scan fails without a built site; the build output is untracked.
+  mkdirSync(join(directory, 'site/dist'), { recursive: true });
+  writeFileSync(join(directory, 'site/dist/index.html'), '<p>clean</p>\n');
   return directory;
 }
 function cli(args: string[], pattern?: string) {
