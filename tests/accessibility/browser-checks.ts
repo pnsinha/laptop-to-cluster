@@ -461,6 +461,41 @@ export async function checkCrosswalkLayout(browser: Browser, origin: string, pat
   return issues;
 }
 
+/** Component geometry: component lists keep their rhythm, the timeline tail clears its sentence, and concept shape glyphs stay out of the accessible name. */
+export async function checkComponentGeometry(browser: Browser, origin: string, path: string): Promise<Issue[]> {
+  const scope = `${path}:component-geometry`;
+  const issues: Issue[] = [];
+  for (const width of [1280, 390]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+    await shim(page);
+    const read = await page.evaluate(() => {
+      const tops = (selector: string) => [...document.querySelectorAll(selector)].map((element) => Math.round(element.getBoundingClientRect().top * 10) / 10);
+      const after = document.querySelector('.timeline__after')?.getBoundingClientRect().top;
+      const tails = [...document.querySelectorAll('.timeline__lane[data-span="fade"]')].map((lane) => {
+        const style = getComputedStyle(lane, '::after');
+        const height = parseFloat(style.height);
+        const vertical = height > parseFloat(style.width);
+        return { vertical, bottom: lane.getBoundingClientRect().top + parseFloat(style.top) + height };
+      });
+      return { bars: tops('.timeline__bars'), doors: tops('.door'), after, tails };
+    });
+    const sameRow = (values: number[]) => values.every((value) => Math.abs(value - values[0]) < 1);
+    if (width === 1280) {
+      if (read.bars.length > 1 && !sameRow(read.bars)) issues.push(issue(`${scope}:${width}px`, 'A11Y-GEOMETRY', `the timeline lanes must start at one height, but their tops are ${read.bars.join(', ')}`));
+      if (read.doors.length > 1 && !sameRow(read.doors)) issues.push(issue(`${scope}:${width}px`, 'A11Y-GEOMETRY', `the doors must start at one height, but their tops are ${read.doors.join(', ')}`));
+    }
+    if (read.after !== undefined) {
+      for (const tail of read.tails) if (tail.vertical && tail.bottom > read.after + 0.5) issues.push(issue(`${scope}:${width}px`, 'A11Y-GEOMETRY', 'the dotted scratch tail must end above the sentence under the timeline'));
+    }
+    const snapshot = await page.locator('body').ariaSnapshot();
+    if (/[\u25A0\u25B2\u25C6\u25CF]/.test(snapshot)) issues.push(issue(`${scope}:${width}px`, 'A11Y-GEOMETRY', 'a concept shape glyph reached the accessible name'));
+    await context.close();
+  }
+  return issues;
+}
+
 /** No required motion: nothing animates or transitions, and scrolling is not smoothed under reduced motion. */
 export async function checkMotion(browser: Browser, origin: string, path: string): Promise<Issue[]> {
   const scope = `${path}:motion`;

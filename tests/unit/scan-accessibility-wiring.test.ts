@@ -28,7 +28,7 @@ describe('scanner wiring: gates, routes, requests', () => {
     expect(scanner).toContain("from '../tests/accessibility/browser-checks'");
     for (const call of [
       'checkThemePrecedence(', 'inspectThemeScript(', 'checkForcedColors(', 'checkPrint(', 'checkJsOff(',
-      'checkPrimaryAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkMotion(',
+      'checkPrimaryAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkComponentGeometry(', 'checkMotion(',
     ]) expect(scanner, call).toContain(call);
   });
 
