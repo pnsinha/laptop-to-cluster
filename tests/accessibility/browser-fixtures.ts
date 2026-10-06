@@ -27,7 +27,7 @@ const moduleLandmarks = ['.skip', '.site-nav--wide a', '.breadcrumbs a', '.modul
 export const accessibilityPages: readonly AccessibilityPageFixture[] = [
   { path: '/', distRoute: '', kind: 'home', criticalOutsideDisclosure: ['Tested workflow scope'], focusLandmarks: ['.skip', '.site-nav--wide a', '.hero__actions a', '.applicability-projection a', '.doors a', '.project-links a'] },
   { path: '/resources/', distRoute: 'resources', kind: 'resources', focusLandmarks: ['.skip', '.site-nav--wide a', '.resource-tile'] },
-  { path: '/start/', distRoute: 'start', kind: 'start', criticalOutsideDisclosure: ['Confirm these assumptions before execution', 'diagnostic registry', 'report a workflow defect'] },
+  { path: '/start/', distRoute: 'start', kind: 'start', criticalOutsideDisclosure: ['Confirm these assumptions before you run anything', 'match the ID or symptom you see', 'report a workflow defect'] },
   { path: '/guide/tour/', distRoute: 'guide/tour', kind: 'conceptual module', focusLandmarks: moduleLandmarks },
   { path: '/guide/scheduler-as-orchestrator/', distRoute: 'guide/scheduler-as-orchestrator', kind: 'conceptual module', focusLandmarks: moduleLandmarks },
   { path: MODULE_2_PATH, distRoute: 'guide/baseline-single-node-pattern', kind: 'runnable module', criticalOutsideDisclosure: ['Prerequisites', 'Tested workflow scope'], focusLandmarks: ['.skip', '.site-nav--wide a', '.breadcrumbs a', '.applicability-projection a', '.module-pager a', '.sources-scope summary'] },

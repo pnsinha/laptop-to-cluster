@@ -45,7 +45,7 @@ describe('representative static accessibility coverage', () => {
       }
     }
     expect(withoutDisclosures(pages.find(({ kind }) => kind === 'runnable module')!.html)).toContain('Prerequisites');
-    expect(withoutDisclosures(pages.find(({ kind }) => kind === 'start')!.html)).toContain('Confirm these assumptions before execution');
+    expect(withoutDisclosures(pages.find(({ kind }) => kind === 'start')!.html)).toContain('Confirm these assumptions before you run anything');
     expect(withoutDisclosures(pages.find(({ kind }) => kind === 'support')!.html)).toContain('project maintainer');
   });
 
