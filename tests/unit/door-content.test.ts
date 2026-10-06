@@ -28,6 +28,8 @@ const KNOWN_ROUTES = new Set([
   '/guide/baseline-single-node-pattern/', '/guide/compose-to-hpc-translation/', '/adoption/evaluate/',
   '/about/glossary/', '/about/support/', '/about/project/', '/about/attribution/', '/about/talks-and-papers/', '/milestones/2/',
 ]);
+// W9's cheat sheet is a sanctioned tour link, but only while its content item exists.
+if (existsSync(resolve(items, 'about-cheat-sheet.md'))) KNOWN_ROUTES.add('/about/cheat-sheet/');
 const FRAGMENTS: Record<string, readonly string[]> = {
   '/about/glossary/': REQUIRED_FRAGMENTS.glossary,
   '/adoption/evaluate/': REQUIRED_FRAGMENTS.evaluate,
