@@ -10,7 +10,8 @@ import SiteHeader from '../../site/src/components/SiteHeader.astro';
 import SourcesAndScope from '../../site/src/components/SourcesAndScope.astro';
 import SupportState from '../../site/src/components/SupportState.astro';
 import UnvalidatedNotice from '../../site/src/components/UnvalidatedNotice.astro';
-import WorkflowFigure from '../../site/src/components/WorkflowFigure.astro';
+import { EVIDENCE_ROW_LABELS } from '../../site/src/content/contracts.js';
+import { currentReleaseVersion } from '../../site/src/content/release.js';
 
 let container: AstroContainer;
 
@@ -115,7 +116,7 @@ describe('Astro navigation components', () => {
     const html = await render(SiteHeader, { currentPath: '/resources/' });
 
     expect(html).toContain('Laptop');
-    expect(html).toContain('→');
+    expect(html).toContain('laptop-to-cluster');
     expect(html).toContain('Cluster');
     expect(html).toContain('<details class="site-nav--compact">');
     expect(html).toContain('<summary>Navigation</summary>');
@@ -150,16 +151,16 @@ describe('Astro navigation components', () => {
     expect(html).toContain('<nav class="breadcrumbs" aria-label="Breadcrumb">');
     expect(html).toContain('<ol>');
     expect(html).toContain('<li><a href="/">Home</a></li>');
-    expect(html).toContain('<li><a href="/resources/">Resources</a></li>');
+    expect(html).toContain('<li><a href="/resources/">Guide</a></li>');
     expect(html).toContain('<li aria-current="page"><span>Scheduler as Orchestrator</span></li>');
   });
 });
 
 
 describe('finalized presentation: header identity, nav, release, support, SectionNav, and 404', () => {
-  it('renders the exact two-line site identity: "laptop → cluster" and "multi-service stacks under the scheduler"', async () => {
+  it('renders the exact two-line site identity: "laptop-to-cluster" and "multi-service stacks under the scheduler"', async () => {
     const html = await render(SiteHeader, { currentPath: '/' });
-    expect(html).toContain('<span class="site-identity__line1">laptop → cluster</span>');
+    expect(html).toContain('<span class="site-identity__line1">laptop-to-cluster</span>');
     expect(html).toContain('<span class="site-identity__line2">multi-service stacks under the scheduler</span>');
   });
 
@@ -168,16 +169,18 @@ describe('finalized presentation: header identity, nav, release, support, Sectio
     expect(html).toMatch(/href="\/diagnostics\/"[^>]*>Troubleshooting/);
   });
 
-  it('shows only v0.1.0 as the release identifier with no "publication candidate" language', async () => {
+  it('shows only the current release as the footer release identifier with no "publication candidate" language', async () => {
     const header = await render(SiteHeader, { currentPath: '/' });
     expect(header).not.toContain('v0.1.0');
+    expect(header).not.toContain(currentReleaseVersion());
     const BaseLayout = (await import('../../site/src/layouts/BaseLayout.astro')).default;
     const page = await container.renderToString(BaseLayout, {
       props: { title: 'Test', description: 'Test page', profile: 'landing' },
       slots: { default: '<p>Body</p>' },
     });
     const footer = page.slice(page.indexOf('<footer'));
-    expect(footer).toContain('v0.1.0');
+    expect(footer).toContain('Release status');
+    expect(footer).toContain(currentReleaseVersion());
     expect(footer.toLowerCase()).not.toContain('publication candidate');
     expect(footer.toLowerCase()).not.toContain('release candidate');
   });
@@ -208,16 +211,50 @@ describe('finalized presentation: header identity, nav, release, support, Sectio
   });
 });
 
-describe('concise applicability and workflow components', () => {
+describe('concise applicability components', () => {
   it('renders only generated applicability fields and one canonical link', async () => {
     const html = await render(ApplicabilityProjectionView, { projection: {
       projectionId: 'landing:m1', consumer: 'landing', recordId: 'm1', canonicalPath: '/applicability/m1/',
       testedScope: 'The workflow was validated on a named system.', supplement: { kind: 'boundary', text: 'Adapt the partition.' },
+      panel: {
+        recordId: 'm1', canonicalPath: '/applicability/m1/', status: 'validated', badgeText: 'Tested on a named system · Jul 2026', collapsible: true,
+        untestedHref: '/adoption/evaluate/#not-tested',
+        rows: [
+          { label: 'Tested', items: [{ text: 'The workflow ran.', from: ['assumptions.0'] }] },
+          { label: 'You need', items: [{ text: 'One node.', from: ['assumptions.0'] }] },
+          { label: 'Depends on your center', items: [{ text: 'Adapt the partition.', from: ['portability_boundaries.0'] }] },
+        ],
+      },
     } });
     expect(html).toContain('data-projection-id="landing:m1"');
     expect(html).toContain('data-source-id="m1"');
     expect(html).toContain('href="/applicability/m1/"');
-    expect(html).not.toMatch(/submission|digest|integrity|provenance|checks/i);
+    expect(html.replace(/ data-from="[^"]*"/g, '')).not.toMatch(/submission|digest|integrity|provenance|checks/i);
+    expect(html).toContain('<p class="evidence-badge">Tested on a named system · Jul 2026</p>');
+    expect(html).toContain('<details class="evidence-panel">');
+    for (const label of EVIDENCE_ROW_LABELS) expect(html).toContain(`<dt>${label}</dt>`);
+    expect(html).toContain('href="/adoption/evaluate/#not-tested"');
+  });
+
+  it('shows a warning badge and the open rows, with no disclosure, for a stale record', async () => {
+    const html = await render(ApplicabilityProjectionView, { projection: {
+      projectionId: 'landing:m1', consumer: 'landing', recordId: 'm1', canonicalPath: '/applicability/m1/',
+      testedScope: 'The workflow was validated on a named system.', supplement: { kind: 'status', text: 'This validation is stale and requires review before reuse.' },
+      panel: {
+        recordId: 'm1', canonicalPath: '/applicability/m1/', status: 'stale', badgeText: 'Review due: last tested on a named system · Jul 2026', collapsible: false,
+        untestedHref: '/adoption/evaluate/#not-tested',
+        rows: [
+          { label: 'Tested', items: [{ text: 'The workflow ran.', from: ['assumptions.0'] }] },
+          { label: 'You need', items: [{ text: 'One node.', from: ['assumptions.0'] }] },
+          { label: 'Depends on your center', items: [{ text: 'Adapt the partition.', from: ['portability_boundaries.0'] }] },
+        ],
+      },
+    } });
+    expect(html).toContain('applicability-projection--escalated');
+    expect(html).toContain('evidence-badge--warning');
+    expect(html).toContain('<strong>Warning:</strong>');
+    expect(html).not.toContain('<details');
+    for (const label of EVIDENCE_ROW_LABELS) expect(html).toContain(`<dt>${label}</dt>`);
   });
 
   it('renders only the authorized diagnostic discriminator and link', async () => {
@@ -227,21 +264,5 @@ describe('concise applicability and workflow components', () => {
     } });
     expect(html).toContain('runtime: Apptainer');
     expect(html).toContain('href="/applicability/m1/"');
-  });
-
-  it('keeps the captioned allocation-to-verification sequence and hides only decorative connectors', async () => {
-    const html = await render(WorkflowFigure);
-    expect(html).toContain('<figure class="workflow-figure">');
-    expect(html).toContain('<figcaption>One allocation, five ordered responsibilities</figcaption>');
-    expect(html).toContain('<ol>');
-    const labels = [...html.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]);
-    expect(labels).toEqual(['Allocation', 'Coordinator', 'Readiness gate', 'Workers', 'Verification']);
-    expect(html.match(/<i aria-hidden="true">↓<\/i>/g)).toHaveLength(4);
-    expect(html).toContain('<li class="workflow-figure__gate"><strong>Readiness gate</strong>');
-    const verification = html.slice(html.indexOf('<strong>Verification</strong>'));
-    expect(verification).toContain('before success is recorded');
-    expect(verification).not.toContain('<i');
-    expect(html.indexOf('Readiness gate')).toBeLessThan(html.indexOf('Workers'));
-    expect(html.indexOf('Verification')).toBeGreaterThan(html.indexOf('Workers'));
   });
 });

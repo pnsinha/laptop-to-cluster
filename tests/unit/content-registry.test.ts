@@ -244,7 +244,7 @@ describe('applicability and release change projections', () => {
       projectionId: 'runnable-module:anvil-run', consumer: 'runnable-module', recordId: 'anvil-run',
       canonicalPath: '/applicability/anvil-run/', supplement: { kind: 'boundary', text: 'storage' },
     });
-    expect(Object.keys(projected!).sort()).toEqual(['canonicalPath', 'consumer', 'projectionId', 'recordId', 'supplement', 'testedScope']);
+    expect(Object.keys(projected!).sort()).toEqual(['canonicalPath', 'consumer', 'panel', 'projectionId', 'recordId', 'supplement', 'testedScope']);
     expect(JSON.stringify(projected)).not.toMatch(/24\.05|1\.3|2026-06-30|public-1|manifest\.json|sha256/);
   });
 
