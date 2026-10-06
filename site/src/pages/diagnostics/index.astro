@@ -1,31 +1,49 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DiagnosticApplicabilityContextView from '../../components/DiagnosticApplicabilityContext.astro';
-import { displayDiagnosticCode } from '../../content/diagnostics';
+import { diagnosticAliasAnchors, diagnosticAnchor, printedDiagnosticId } from '../../content/diagnostics';
 import { projectDiagnosticApplicabilityContext } from '../../content/projections';
 const entries = (await getCollection('contentItems', ({ data }) => data.artifact_type === 'diagnostic' && data.status === 'published'))
   .sort((a, b) => a.data.title.localeCompare(b.data.title));
 const applicability = (await getCollection('applicability')).map(({ data }) => data);
-const sections = await Promise.all(entries.map(async (entry) => ({
-  entry,
-  Content: (await render(entry)).Content,
-  context: entry.data.artifact_type === 'diagnostic' ? projectDiagnosticApplicabilityContext(entry.data, applicability) : undefined,
-})));
+/* R10: anchors come from W2's helpers. The ID the workflow prints (BSSW-PREQ-SLURM) is the
+   primary anchor; older canonical anchors stay as aliases so links published before this
+   release still resolve. Content-item ids keep their historical spelling. */
+/* Astro gives every rendered Markdown heading a slug id, and all 15 entries share the same
+   five section names, so each fragment's ids are scoped to its entry anchor; duplicate ids
+   are an axe failure, not just a lint nit. */
+const scoped = (html: string, anchor: string): string =>
+  html
+    .replace(/\bid="([^"]+)"/g, (_, id: string) => `id="${anchor}--${id}"`)
+    .replace(/\bhref="#([^"]+)"/g, (_, frag: string) => `href="#${anchor}--${frag}"`);
+const sections = entries.map((entry) => {
+  const printed = printedDiagnosticId(entry.data.id);
+  const anchor = diagnosticAnchor(entry.data.id);
+  return {
+    entry,
+    printed,
+    anchor,
+    aliases: diagnosticAliasAnchors(entry.data.id),
+    body: scoped(entry.rendered?.html ?? '', anchor),
+    context: entry.data.artifact_type === 'diagnostic' ? projectDiagnosticApplicabilityContext(entry.data, applicability) : undefined,
+  };
+});
 ---
 <BaseLayout title="Diagnostic registry" description="Short reader codes, stable workflow identifiers, and recovery guidance for every documented baseline failure mode." profile="diagnostic">
 <header class="content-header">
-  <span class="eyebrow">Diagnostics</span>
-  <h1>Find a failure by symptom</h1>
-  <p class="lede">Choose the symptom you see. Each section shows a short reader code and the stable identifier to use in logs and issue reports.</p>
+  <span class="eyebrow">Troubleshooting</span>
+  <h1>Find a failure by the ID it prints</h1>
+  <p class="lede">When a run fails, the job output names an ID that starts with <code>BSSW-</code>. Find that ID below, or choose the symptom you see.</p>
 </header>
 <nav aria-label="Diagnostics on this page">
-  <ul class="diagnostic-index">{entries.map(({ data }) => <li><a href={`#${data.stable_slug}`}>{data.title}</a><span><strong>Code:</strong> <code>{displayDiagnosticCode(data.id)}</code> <span class="diagnostic-stable-id">Stable identifier: <code>{data.id}</code></span><br />{data.summary}</span></li>)}</ul>
+  <ul class="diagnostic-index">{sections.map(({ entry, printed }) => <li><a href={`#${entry.data.stable_slug}`}>{entry.data.title}</a><span><strong>Code:</strong> <code>{printed}</code><br />{entry.data.summary}</span></li>)}</ul>
 </nav>
-{sections.map(({ entry, Content, context }) => <section class="prose" id={entry.data.stable_slug} aria-labelledby={`${entry.data.stable_slug}-heading`}>
-  <h2 id={`${entry.data.stable_slug}-heading`}>{entry.data.title}</h2>
-  <p class="diagnostic-code"><strong>Code:</strong> <code>{displayDiagnosticCode(entry.data.id)}</code> <span class="diagnostic-stable-id">Stable identifier: <code>{entry.data.id}</code></span></p>
-  <Content />
+{sections.map(({ entry, printed, anchor, aliases, body, context }) => <section class="prose" id={anchor} aria-labelledby={`${anchor}-heading`}>
+  {aliases.map((alias) => <span id={alias}></span>)}
+  <h2 id={`${anchor}-heading`}>{printed}: {entry.data.title}</h2>
+  <p class="diagnostic-code"><strong>Code:</strong> <code>{printed}</code>{entry.data.id !== printed && <> <span class="diagnostic-stable-id">Stable identifier: <code>{entry.data.id}</code></span></>}</p>
+  <Fragment set:html={body} />
   {context && <DiagnosticApplicabilityContextView context={context} />}
 </section>)}
 <p class="prose">If execution is blocked, you can still use the conceptual modules and local adaptation guidance. If no symptom matches, <a href="/about/support/">report a missing diagnostic</a> with sanitized reproduction details.</p>

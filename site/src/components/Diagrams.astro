@@ -2,36 +2,36 @@
 const { name } = Astro.props as { name: string };
 ---
 {name === 'compose-to-hpc' && (
-  <figure class="diagram" role="img" aria-label="Compose-to-HPC concept mapping diagram. Docker Compose concepts on the left map to their scheduler-managed HPC equivalents on the right.">
-    <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true" style="color: var(--primary);">
-      <text x="80" y="25" class="hdr hdr--primary" text-anchor="middle">Docker Compose</text>
-      <text x="640" y="25" class="hdr hdr--primary" text-anchor="middle">HPC (Slurm + Apptainer)</text>
-      <line x1="80" y1="35" x2="80" y2="335" class="lane"/>
-      <line x1="640" y1="35" x2="640" y2="335" class="lane"/>
+  <figure class="diagram" role="img" aria-label="Compose-to-HPC concept mapping diagram. Each Docker Compose concept on the left maps to its scheduler-managed form on the right: a service becomes an srun job step, an image becomes a prebuilt Apptainer image file, depends_on becomes the readiness gate, a volume becomes job-scoped scratch, a published port becomes loopback, and a device request becomes a gres request that is designed, not run.">
+    <svg viewBox="0 0 720 450" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
+      <text x="110" y="24" class="hdr hdr--primary" text-anchor="middle">Docker Compose</text>
+      <text x="580" y="24" class="hdr hdr--primary" text-anchor="middle">Slurm + Apptainer</text>
+      <line x1="110" y1="36" x2="110" y2="440" class="lane"/>
+      <line x1="580" y1="36" x2="580" y2="440" class="lane"/>
 
-      <rect x="10" y="50" width="140" height="35" class="box-l"/><text x="80" y="72" class="lbl" text-anchor="middle">service</text>
-      <rect x="570" y="50" width="140" height="35" class="box-r"/><text x="640" y="72" class="lbl" text-anchor="middle">srun job step</text>
-      <line x1="150" y1="67" x2="570" y2="67" class="arr" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="46" width="200" height="54" class="box-l"/><text x="110" y="79" class="lbl" text-anchor="middle">service</text>
+      <rect x="450" y="46" width="260" height="54" class="box-r"/><text x="580" y="79" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> srun job step</text>
+      <line x1="210" y1="73" x2="450" y2="73" class="arr" marker-end="url(#arrowhead)"/>
 
-      <rect x="10" y="100" width="140" height="35" class="box-l"/><text x="80" y="122" class="lbl" text-anchor="middle">image / build</text>
-      <rect x="570" y="100" width="140" height="35" class="box-r"/><text x="640" y="122" class="lbl" text-anchor="middle">.sif (apptainer)</text>
-      <line x1="150" y1="117" x2="570" y2="117" class="arr" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="112" width="200" height="54" class="box-l"/><text x="110" y="145" class="lbl" text-anchor="middle">image / build</text>
+      <rect x="450" y="112" width="260" height="54" class="box-r"/><text x="580" y="145" class="lbl" text-anchor="middle">prebuilt .sif image</text>
+      <line x1="210" y1="139" x2="450" y2="139" class="arr" marker-end="url(#arrowhead)"/>
 
-      <rect x="10" y="150" width="140" height="35" class="box-l"/><text x="80" y="172" class="lbl" text-anchor="middle">depends_on</text>
-      <rect x="570" y="150" width="140" height="35" class="box-r"/><text x="640" y="172" class="lbl" text-anchor="middle">readiness gate</text>
-      <line x1="150" y1="167" x2="570" y2="167" class="arr" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="178" width="200" height="54" class="box-l"/><text x="110" y="211" class="lbl" text-anchor="middle">depends_on</text>
+      <rect x="450" y="178" width="260" height="54" class="box-r"/><text x="580" y="211" class="lbl" text-anchor="middle"><tspan class="mark">◆</tspan> readiness gate</text>
+      <line x1="210" y1="205" x2="450" y2="205" class="arr" marker-end="url(#arrowhead)"/>
 
-      <rect x="10" y="200" width="140" height="35" class="box-l"/><text x="80" y="222" class="lbl" text-anchor="middle">volumes</text>
-      <rect x="570" y="200" width="140" height="35" class="box-r"/><text x="640" y="222" class="lbl" text-anchor="middle">job-scoped scratch</text>
-      <line x1="150" y1="217" x2="570" y2="217" class="arr" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="244" width="200" height="54" class="box-l"/><text x="110" y="277" class="lbl" text-anchor="middle">volumes</text>
+      <rect x="450" y="244" width="260" height="54" class="box-r"/><text x="580" y="277" class="lbl" text-anchor="middle"><tspan class="mark">▲</tspan> job-scoped scratch</text>
+      <line x1="210" y1="271" x2="450" y2="271" class="arr" marker-end="url(#arrowhead)"/>
 
-      <rect x="10" y="250" width="140" height="35" class="box-l"/><text x="80" y="272" class="lbl" text-anchor="middle">ports</text>
-      <rect x="570" y="250" width="140" height="35" class="box-r"/><text x="640" y="272" class="lbl" text-anchor="middle">loopback + tunnel</text>
-      <line x1="150" y1="267" x2="570" y2="267" class="arr" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="310" width="200" height="54" class="box-l"/><text x="110" y="343" class="lbl" text-anchor="middle">ports</text>
+      <rect x="450" y="310" width="260" height="54" class="box-r"/><text x="580" y="343" class="lbl" text-anchor="middle"><tspan class="mark">●</tspan> loopback</text>
+      <line x1="210" y1="337" x2="450" y2="337" class="arr" marker-end="url(#arrowhead)"/>
 
-      <rect x="10" y="300" width="140" height="35" class="box-l"/><text x="80" y="322" class="lbl" text-anchor="middle">device_requests</text>
-      <rect x="570" y="300" width="140" height="35" class="box-r"/><text x="640" y="322" class="lbl" text-anchor="middle">--gres=gpu</text>
-      <line x1="150" y1="317" x2="570" y2="317" class="arr" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="376" width="200" height="54" class="box-l"/><text x="110" y="409" class="lbl" text-anchor="middle">device_requests</text>
+      <rect x="450" y="376" width="260" height="54" class="box-r"/><text x="580" y="400" class="lbl" text-anchor="middle">--gres=gpu</text><text x="580" y="420" class="sub" text-anchor="middle">Designed, not run</text>
+      <line x1="210" y1="403" x2="450" y2="403" class="arr" marker-end="url(#arrowhead)"/>
 
       <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="currentColor"/></marker></defs>
     </svg>
@@ -39,136 +39,119 @@ const { name } = Astro.props as { name: string };
 )}
 
 {name === 'single-node-architecture' && (
-  <figure class="diagram" role="img" aria-label="Single-node architecture diagram. Inside one scheduler allocation: a coordinator service starts first on loopback, a readiness gate polls until the coordinator answers, workers launch only after readiness passes, then a verifier checks all results before writing a success marker.">
-    <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
+  <figure class="diagram" role="img" aria-label="Single-node architecture diagram. Inside one scheduler allocation on one node: the coordinator starts first as an srun job step listening on loopback; the readiness gate polls until the coordinator gives the exact expected answer; worker job steps launch only after the gate passes; then the verifier, which runs inside the same job while the coordinator is still running, checks the results and writes result.json. All steps share one job-scoped scratch directory bound at /work.">
+    <svg viewBox="0 0 720 500" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
+      <rect x="20" y="60" width="680" height="430" class="alloc-border"/>
+      <text x="360" y="44" class="hdr" text-anchor="middle">SCHEDULER ALLOCATION (1 node)</text>
 
-      {/* Allocation boundary */}
-      <rect x="20" y="60" width="680" height="340" class="alloc-border"/>
-      <text x="360" y="50" class="hdr" text-anchor="middle">SCHEDULER ALLOCATION (1 node)</text>
+      <rect x="40" y="80" width="260" height="84" class="box" rx="6"/>
+      <text x="170" y="104" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> Coordinator</text>
+      <text x="170" y="126" class="sub" text-anchor="middle">srun step · apptainer exec</text>
+      <text x="170" y="148" class="sub" text-anchor="middle">127.0.0.1:PORT</text>
 
-      {/* Coordinator */}
-      <rect x="50" y="90" width="200" height="70" class="box" rx="6"/>
-      <text x="150" y="115" class="lbl" text-anchor="middle">Coordinator</text>
-      <text x="150" y="132" class="sub" text-anchor="middle">apptainer exec</text>
-      <text x="150" y="146" class="sub" text-anchor="middle">127.0.0.1:PORT</text>
+      <rect x="40" y="194" width="260" height="64" class="box" rx="6"/>
+      <text x="170" y="218" class="lbl" text-anchor="middle"><tspan class="mark">◆</tspan> Readiness gate</text>
+      <text x="170" y="240" class="sub" text-anchor="middle">polls /health, exact answer</text>
 
-      {/* Readiness gate */}
-      <rect x="50" y="200" width="200" height="60" class="box" rx="6"/>
-      <text x="150" y="225" class="lbl" text-anchor="middle">Readiness gate</text>
-      <text x="150" y="242" class="sub" text-anchor="middle">poll /health until ready</text>
+      <rect x="360" y="80" width="140" height="56" class="box" rx="6"/>
+      <text x="430" y="104" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> Worker 1</text>
+      <text x="430" y="124" class="sub" text-anchor="middle">srun step</text>
+      <rect x="360" y="150" width="140" height="56" class="box" rx="6"/>
+      <text x="430" y="174" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> Worker 2</text>
+      <text x="430" y="194" class="sub" text-anchor="middle">srun step</text>
+      <rect x="360" y="220" width="140" height="56" class="box" rx="6"/>
+      <text x="430" y="244" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> Worker N</text>
+      <text x="430" y="264" class="sub" text-anchor="middle">srun step</text>
 
-      {/* Workers */}
-      <rect x="340" y="90" width="160" height="50" class="box" rx="6"/>
-      <text x="420" y="115" class="lbl" text-anchor="middle">Worker 1</text>
-      <text x="420" y="130" class="sub" text-anchor="middle">srun apptainer exec</text>
+      <rect x="40" y="316" width="260" height="84" class="box" rx="6"/>
+      <text x="170" y="340" class="lbl" text-anchor="middle">Verifier</text>
+      <text x="170" y="362" class="sub" text-anchor="middle">runs inside the job</text>
+      <text x="170" y="384" class="sub" text-anchor="middle">count · uniqueness · content</text>
 
-      <rect x="340" y="150" width="160" height="50" class="box" rx="6"/>
-      <text x="420" y="175" class="lbl" text-anchor="middle">Worker 2</text>
-      <text x="420" y="190" class="sub" text-anchor="middle">srun apptainer exec</text>
+      <rect x="40" y="430" width="260" height="40" class="recessed-ok" rx="6"/>
+      <text x="170" y="456" class="ok" text-anchor="middle">result.json: status success</text>
 
-      <rect x="340" y="210" width="160" height="50" class="box" rx="6"/>
-      <text x="420" y="235" class="lbl" text-anchor="middle">Worker N</text>
-      <text x="420" y="250" class="sub" text-anchor="middle">srun apptainer exec</text>
+      <rect x="520" y="80" width="170" height="390" class="recessed" stroke="var(--border)" stroke-width="1" rx="6"/>
+      <text x="605" y="106" class="lbl" text-anchor="middle"><tspan class="mark">▲</tspan> Job scratch</text>
+      <text x="605" y="130" class="sub" text-anchor="middle">${'{'}RUNTIME_DIR{'}'}</text>
+      <text x="605" y="152" class="sub" text-anchor="middle">bound at /work</text>
+      <text x="605" y="190" class="sub" text-anchor="middle">input.json</text>
+      <text x="605" y="214" class="sub" text-anchor="middle">endpoint.json</text>
+      <text x="605" y="238" class="sub" text-anchor="middle">results.json</text>
+      <text x="605" y="262" class="sub" text-anchor="middle">result.json</text>
+      <text x="605" y="286" class="sub" text-anchor="middle">events.jsonl</text>
+      <text x="605" y="310" class="sub" text-anchor="middle">versions.txt</text>
+      <text x="605" y="334" class="sub" text-anchor="middle">logs/</text>
 
-      {/* Verifier */}
-      <rect x="50" y="300" width="200" height="60" class="box" rx="6"/>
-      <text x="150" y="325" class="lbl" text-anchor="middle">Verifier</text>
-      <text x="150" y="342" class="sub" text-anchor="middle">check count, schema, digests</text>
+      <line x1="170" y1="164" x2="170" y2="194" class="arrow" marker-end="url(#ah)"/>
+      <text x="184" y="184" class="note">starts</text>
 
-      {/* Scratch */}
-      <rect x="560" y="90" width="110" height="170" class="recessed" stroke="var(--border)" stroke-width="1" rx="6"/>
-      <text x="615" y="120" class="sub" text-anchor="middle">Job-scoped</text>
-      <text x="615" y="135" class="sub" text-anchor="middle">scratch</text>
-      <text x="615" y="155" class="sub" text-anchor="middle">$SCRATCH/</text>
-      <text x="615" y="170" class="lbl" text-anchor="middle">/data</text>
-      <text x="615" y="200" class="sub" text-anchor="middle">tasks/</text>
-      <text x="615" y="215" class="sub" text-anchor="middle">results/</text>
-      <text x="615" y="230" class="sub" text-anchor="middle">logs/</text>
+      <line x1="300" y1="226" x2="360" y2="112" class="gate-arrow" marker-end="url(#ah-gate)"/>
+      <text x="306" y="252" class="tag">ready</text>
 
-      {/* Success marker */}
-      <rect x="50" y="370" width="200" height="35" class="recessed-ok" rx="6"/>
-      <text x="150" y="392" class="tag" text-anchor="middle">result.json (success)</text>
+      <line x1="430" y1="276" x2="300" y2="346" class="arrow" marker-end="url(#ah)"/>
+      <text x="372" y="322" class="note">results</text>
 
-      {/* Arrows */}
-      <line x1="150" y1="160" x2="150" y2="200" class="arrow" marker-end="url(#ah)"/>
-      <text x="165" y="185" class="sub">starts</text>
-
-      <line x1="250" y1="230" x2="340" y2="130" class="gate-arrow" marker-end="url(#ah-green)"/>
-      <text x="290" y="175" class="tag">ready</text>
-
-      <line x1="340" y1="260" x2="200" y2="300" class="arrow" marker-end="url(#ah)"/>
-      <text x="250" y="290" class="sub">results</text>
-
-      <line x1="150" y1="360" x2="150" y2="370" class="arrow" marker-end="url(#ah)"/>
+      <line x1="170" y1="400" x2="170" y2="430" class="arrow" marker-end="url(#ah)"/>
 
       <defs>
         <marker id="ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--muted)"/></marker>
-        <marker id="ah-green" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--success)"/></marker>
+        <marker id="ah-gate" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--c-gate)"/></marker>
       </defs>
     </svg>
   </figure>
 )}
 
 {name === 'readiness-sequence' && (
-  <figure class="diagram" role="img" aria-label="Readiness gate sequence diagram showing how the coordinator starts first, the readiness gate polls until the coordinator responds, and only then do workers launch.">
-    <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
+  <figure class="diagram" role="img" aria-label="Readiness gate sequence diagram showing how the coordinator starts first, the readiness gate polls until the coordinator gives the exact expected answer, and only then do workers launch.">
+    <svg viewBox="0 0 720 440" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
       <line x1="10" y1="30" x2="710" y2="30" class="tl"/>
       <text x="10" y="20" class="note">TIME</text>
 
-      {/* Lane labels */}
       <text x="80" y="50" class="lbl" text-anchor="middle">Coordinator</text>
-      <text x="260" y="50" class="lbl" text-anchor="middle">Readiness gate</text>
+      <text x="260" y="50" class="lbl" text-anchor="middle"><tspan class="mark">◆</tspan> Readiness gate</text>
       <text x="480" y="50" class="lbl" text-anchor="middle">Workers</text>
 
-      {/* Step 1: coordinator starts */}
-      <rect x="30" y="60" width="100" height="30" class="bar"/>
-      <text x="80" y="80" class="step" text-anchor="middle">start</text>
-      <text x="145" y="80" class="note">1. coordinator launches</text>
+      <rect x="30" y="62" width="100" height="34" class="bar"/>
+      <text x="80" y="85" class="step" text-anchor="middle">start</text>
+      <text x="145" y="85" class="note">1. coordinator launches</text>
 
-      {/* Step 2: coordinator booting */}
-      <rect x="30" y="100" width="120" height="30" class="bar"/>
-      <text x="80" y="120" class="step" text-anchor="middle">booting...</text>
-      <text x="160" y="120" class="note">2. service initializing</text>
+      <rect x="30" y="108" width="100" height="34" class="bar"/>
+      <text x="80" y="131" class="step" text-anchor="middle">booting</text>
+      <text x="145" y="131" class="note">2. service initializing</text>
 
-      {/* Step 3: poll 1 - no */}
-      <rect x="220" y="140" width="80" height="25" class="bar"/>
-      <text x="260" y="157" class="step" text-anchor="middle">poll</text>
-      <text x="310" y="157" class="no">NO</text>
-      <text x="340" y="157" class="note">3. not ready yet</text>
+      <rect x="220" y="154" width="80" height="34" class="bar"/>
+      <text x="260" y="177" class="step" text-anchor="middle">poll</text>
+      <text x="312" y="177" class="no">NO</text>
+      <text x="350" y="177" class="note">3. not ready yet</text>
 
-      {/* Step 4: poll 2 - no */}
-      <rect x="220" y="175" width="80" height="25" class="bar"/>
-      <text x="260" y="192" class="step" text-anchor="middle">poll</text>
-      <text x="310" y="192" class="no">NO</text>
-      <text x="340" y="192" class="note">4. still booting</text>
+      <rect x="220" y="200" width="80" height="34" class="bar"/>
+      <text x="260" y="223" class="step" text-anchor="middle">poll</text>
+      <text x="312" y="223" class="no">NO</text>
+      <text x="350" y="223" class="note">4. still booting</text>
 
-      {/* Step 5: coordinator ready */}
-      <rect x="30" y="210" width="100" height="25" class="ready-bar"/>
-      <text x="80" y="227" class="ok" text-anchor="middle">READY</text>
-      <text x="145" y="227" class="note">5. /health responds</text>
+      <rect x="30" y="246" width="100" height="34" class="ready-bar"/>
+      <text x="80" y="269" class="ok" text-anchor="middle">READY</text>
+      <text x="145" y="269" class="note">5. /health answers</text>
 
-      {/* Step 6: poll 3 - yes */}
-      <rect x="220" y="245" width="80" height="25" class="ready-bar"/>
-      <text x="260" y="262" class="step" text-anchor="middle">poll</text>
-      <text x="310" y="262" class="ok">YES</text>
-      <text x="340" y="262" class="note">6. readiness confirmed</text>
+      <rect x="220" y="292" width="80" height="34" class="ready-bar"/>
+      <text x="260" y="315" class="step" text-anchor="middle">poll</text>
+      <text x="312" y="315" class="ok">YES</text>
+      <text x="350" y="315" class="note">6. exact answer</text>
 
-      {/* Step 7: workers launch */}
-      <rect x="440" y="285" width="80" height="30" class="launch-bar"/>
-      <text x="480" y="305" class="step" text-anchor="middle">launch</text>
-      <text x="535" y="305" class="note">7. workers start</text>
+      <rect x="440" y="338" width="80" height="34" class="launch-bar"/>
+      <text x="480" y="361" class="step" text-anchor="middle">launch</text>
+      <text x="535" y="361" class="note">7. workers start</text>
 
-      {/* Step 8: work runs */}
-      <rect x="440" y="325" width="80" height="30" class="bar"/>
-      <text x="480" y="345" class="step" text-anchor="middle">working</text>
-      <text x="535" y="345" class="note">8. tasks processed</text>
+      <rect x="440" y="384" width="80" height="34" class="bar"/>
+      <text x="480" y="407" class="step" text-anchor="middle">working</text>
+      <text x="535" y="407" class="note">8. tasks processed</text>
 
-      {/* Timeline arrows */}
-      <line x1="80" y1="130" x2="80" y2="210" class="tl"/>
-      <line x1="260" y1="140" x2="260" y2="270" class="tl"/>
-      <line x1="260" y1="270" x2="440" y2="295" class="gate-arrow" marker-end="url(#seq-ah)"/>
+      <line x1="80" y1="142" x2="80" y2="246" class="tl"/>
+      <line x1="260" y1="188" x2="260" y2="200" class="tl"/>
+      <line x1="260" y1="326" x2="440" y2="348" class="gate-arrow" marker-end="url(#seq-ah)"/>
 
-      <defs><marker id="seq-ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--success)"/></marker></defs>
+      <defs><marker id="seq-ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--c-gate)"/></marker></defs>
     </svg>
   </figure>
 )}

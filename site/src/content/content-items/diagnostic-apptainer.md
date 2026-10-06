@@ -15,6 +15,8 @@ related: [start-guide, module-2-baseline]
 diagnostic_applicability: { record_id: m1-baseline-anvil, discriminator: runtime }
 ---
 ## Signal
+The job prints `BSSW-PREQ-APPTAINER` and exits with code 65.
+
 `command -v apptainer` fails, `apptainer --version` fails, or the runtime is absent on compute nodes.
 
 ## Likely causes

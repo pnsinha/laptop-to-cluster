@@ -15,6 +15,8 @@ container_runtimes: [apptainer]
 related: [start-guide, module-2-baseline]
 ---
 ## Signal
+The job prints `BSSW-READY-TIMEOUT` and exits with code 75.
+
 The semantic health check expires. The launcher exits nonzero and no worker-start event occurs.
 
 ## Likely causes

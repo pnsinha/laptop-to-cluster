@@ -14,6 +14,8 @@ schedulers: [slurm]
 related: [start-guide, module-2-baseline]
 ---
 ## Signal
+The job prints `BSSW-PREQ-SLURM` and exits with code 64.
+
 `sbatch` is unavailable, submission authorization is unknown, or a minimal submission is rejected before the job starts.
 
 ## Likely causes

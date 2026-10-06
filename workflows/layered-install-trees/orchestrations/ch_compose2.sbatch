@@ -10,7 +10,7 @@
 #SBATCH --output=${BSSW_SCRATCH_ROOT}/union-anvil/logs/ch-compose2-%j.out
 
 # Charliecloud Phase 1: compose both layers + verify cross-tree RPATH under ch-run.
-# Uses minimal Ubuntu 24.04 rootfs (same glibc 2.39 as E4S image, ~80 MB not 32 GB).
+# Uses minimal Ubuntu 24.04 rootfs (same glibc 2.39 as E4S image, ~399 MB, 2,603 files (logged)).
 set +e
 export PATH=${BSSW_CHARLIECLOUD_PREFIX}/bin:$PATH
 echo "BSSW_VERSIONS slurm=$(scontrol --version 2>/dev/null | head -1)"

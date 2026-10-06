@@ -13,6 +13,8 @@ publication_date: "2026-07-31"
 related: [start-guide, module-2-baseline]
 ---
 ## Signal
+The job prints `BSSW-PREQ-STORAGE` and exits with code 72.
+
 The selected scratch root is missing or unwritable, quota is insufficient, or the container bind is denied.
 
 ## Likely causes

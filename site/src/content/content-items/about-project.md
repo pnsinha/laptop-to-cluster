@@ -25,11 +25,11 @@ Practitioners adapting their own stack, educators teaching the model, and fellow
 | Milestone | Due | Focus | Status |
 |---|---|---|---|
 | [1](/milestones/1/) | Jul 2026 | Foundation: project site and public repo, first two modules, baseline single-node workflow on Slurm + Apptainer | Delivered |
-| 2 | Dec 2026 | Portability: Slurm and PBS launch templates, Apptainer/Charliecloud patterns, container union (one shared dependency tree reused across several containers), community dissemination | In progress |
+| 2 | Dec 2026 | Portability: Slurm and PBS launch templates (Module 4), Apptainer and Charliecloud patterns, and community talks and posters. Planned: reuse one CPU software layer across GPU variants (Module 5). | In progress |
 | 3 | Mar 2027 | Training: reusable training packages, container-first Python guidance | Planned |
 | 4 | Apr 2027 | Release: adoption checklist, HPC Best Practices webinar, BSSw.io post, v1.0 tag | Planned |
 
-Each milestone is scoped to what has actually been run, not what should work in principle. Milestone 1 is a single-node baseline validated on Anvil. It does not claim one launch script runs unchanged at every center. Where a pattern has been tested on one system and not others, the module says which.
+Each milestone is scoped to what has actually been run, not what should work in principle. Milestone 1 is a single-node baseline; its [test record](/milestones/1/) says where and when it ran. It does not claim one launch script runs unchanged at every center. Where a pattern has been tested on one system and not others, the module says which.
 
 ## Authority
 

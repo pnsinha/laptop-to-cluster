@@ -12,7 +12,7 @@ milestone: 1
 status: published
 publication_date: "2026-07-31"
 ---
-## Licenses
+<h2 id="licenses">Licenses</h2>
 
 ### Executable artifacts
 Executable source, workflow assets, configuration, CI automation, and validation code use the [Apache License 2.0](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/licenses/Apache-2.0.txt).

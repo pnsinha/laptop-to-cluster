@@ -2,15 +2,19 @@
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ContentHeader from '../../components/ContentHeader.astro';
+import ModulePager from '../../components/ModulePager.astro';
 import SourcesAndScope from '../../components/SourcesAndScope.astro';
 import { IMPLEMENTATION_REFERENCE } from '../../content/implementation';
-import { assertCompositionProfile } from '../../content/projections';
+import { learningPathNavigation } from '../../content/page-chrome';
+import { assertCompositionProfile, currentRecord } from '../../content/projections';
 const entries = await getCollection('contentItems');
 const entry = entries.find(({ data }) => data.route_namespace === 'start');
 if (!entry) throw new Error('Missing published getting-started content item');
 const { Content } = await render(entry);
 const item = entry.data;
 assertCompositionProfile(item, 'start');
+const navigation = learningPathNavigation(entries.map(({ data }) => data), item.id) ?? {};
+const record = currentRecord((await getCollection('applicability')).map(({ data }) => data));
 ---
 <BaseLayout title={item.title} description={item.summary} profile="start">
   <ContentHeader {item} />
@@ -22,6 +26,13 @@ assertCompositionProfile(item, 'start');
       <li><a href="/guide/baseline-single-node-pattern/#implementation-reference">Read the annotated implementation reference</a></li>
     </ul>
   </aside>
-  <article class="start-path" aria-label="Getting started steps"><Content /></article>
+  <article class="start-path" aria-label="Running the example, step by step"><Content /></article>
+  {record && (
+    <section aria-labelledby="how-we-know-heading">
+      <h2 id="how-we-know-heading">How we know this works</h2>
+      <p>The example workflow has a published test record: what ran, where it ran, and what it checked. <a href={`/applicability/${record.id}/`}>Read the full test record</a>.</p>
+    </section>
+  )}
+  <ModulePager {navigation} />
   <SourcesAndScope references={item.authority} />
 </BaseLayout>
