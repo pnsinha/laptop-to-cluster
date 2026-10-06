@@ -290,10 +290,11 @@ export function currentBaselineRecord(records: ApplicabilityRecord[], workflowId
   return currentRecord(records.filter(({ workflow_id }) => workflow_id === workflowId));
 }
 
-/** Joins a name and a version, dropping a leading copy of the name from the version ("Slurm" + "slurm 25.11.1" -> "Slurm 25.11.1"). */
+/** Joins a name and a version without rewriting the recorded value: a version that already starts with the name (case-insensitive, then a space or the end) is returned unchanged. */
 export function namedVersion(name: string, version: string): string {
-  const prefix = `${name.toLowerCase()} `;
-  return version.toLowerCase().startsWith(prefix) ? `${name} ${version.slice(prefix.length)}` : `${name} ${version}`;
+  const lower = version.toLowerCase();
+  const n = name.toLowerCase();
+  return lower === n || lower.startsWith(`${n} `) ? version : `${name} ${version}`;
 }
 
 /** What RecordSummary renders: the badge sentence plus scope values taken from the record. */

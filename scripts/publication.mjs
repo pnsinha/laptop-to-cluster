@@ -597,7 +597,7 @@ export function validateBuiltOutput(dist) {
     for (const block of diagnosticProjectionBlocks(page.html)) {
       const sourceId = block.match(/data-source-id="([^"]+)"/)?.[1];
       const facts = applicabilityById.get(sourceId);
-      const permitted = facts && [`environment: ${facts.environment}`, `scheduler: ${facts.schedulerFamily}`, `runtime: ${facts.runtimeName}`].some((value) => block.includes(value));
+      const permitted = facts && [`environment: ${facts.environment}`, `scheduler: ${facts.schedulerFamily}`, `runtime: ${facts.runtimeName}`].some((value) => block.toLowerCase().includes(value.toLowerCase()));
       if (!permitted) errors.push(diagnostic(page.source, 'diagnostic', 'SOURCE-AGREEMENT', 'diagnostic discriminator is stale or does not match its canonical source'));
     }
   }

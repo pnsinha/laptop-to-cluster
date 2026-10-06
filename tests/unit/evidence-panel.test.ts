@@ -117,7 +117,7 @@ describe('summarizeRecord', () => {
     expect(summarizeRecord(record({ plain_language: plain, related_evidence: [negative] }))).toEqual({
       tested: 'Tested on Purdue Anvil · Jul 2026',
       scope: [
-        'Scheduler: Slurm 9.9.9', 'Runtime: Apptainer 8.8.8', 'Workflow revision: v0.1.0',
+        'Scheduler: slurm 9.9.9', 'Runtime: apptainer 8.8.8', 'Workflow revision: v0.1.0',
         plain.tested.text, 'limitation zero',
       ],
     });
@@ -131,9 +131,10 @@ describe('summarizeRecord', () => {
 });
 
 describe('namedVersion', () => {
-  it('drops a leading copy of the name, case-insensitively, and nothing else', () => {
-    expect(namedVersion('Slurm', 'slurm 25.11.1')).toBe('Slurm 25.11.1');
-    expect(namedVersion('Apptainer', 'Apptainer 1.4.3-1.el8')).toBe('Apptainer 1.4.3-1.el8');
+  it('keeps a version that already starts with the name exactly as recorded, and adds the name otherwise', () => {
+    expect(namedVersion('Slurm', 'slurm 25.11.1')).toBe('slurm 25.11.1');
+    expect(namedVersion('Apptainer', 'apptainer 1.4.3-1.el8')).toBe('apptainer 1.4.3-1.el8');
+    expect(namedVersion('Slurm', 'slurm')).toBe('slurm');
     expect(namedVersion('Slurm', '25.11.1')).toBe('Slurm 25.11.1');
     expect(namedVersion('Slurm', 'slurm-25.11.1')).toBe('Slurm slurm-25.11.1');
   });
