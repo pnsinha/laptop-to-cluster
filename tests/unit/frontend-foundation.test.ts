@@ -86,6 +86,7 @@ describe('Cluster Terminal semantic foundation', () => {
     expect(css).toMatch(/@media \(forced-colors:\s*active\)[\s\S]*--canvas:\s*Canvas/);
     expect(css).toMatch(/@media print[\s\S]*body\s*\{[^}]*background:\s*#fff/);
     expect(css).toMatch(/@media \(prefers-reduced-motion:\s*reduce\)/);
-    expect(css).not.toMatch(/@keyframes|animation-name\s*:|animation\s*:|transition\s*:/);
+    const motionStripped = css.replace(/(?:animation|transition)\s*:\s*none(?:\s*!important)?\s*;/g, '');
+    expect(motionStripped).not.toMatch(/@keyframes|animation-name\s*:|animation\s*:|transition\s*:/);
   });
 });
