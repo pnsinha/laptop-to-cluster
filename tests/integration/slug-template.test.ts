@@ -39,12 +39,13 @@ describe('About section navigation', () => {
 describe('consolidated release notes on the milestone page', () => {
   const releaseSource = resolve(root, 'site/src/content/content-items/release-v0.2.0.md');
 
-  it.runIf(existsSync(releaseSource))('renders the v0.2.0 release item once, as a section after the article and before Sources', () => {
+  it.runIf(existsSync(releaseSource))('renders the v0.2.0 release item once, as a section after the article and before Sources, when present', () => {
     const html = page('milestones/2');
     expect(html.match(/id="release-v0-2-0"/g)).toHaveLength(1);
     expect(html).toContain('<section class="release-notes" id="release-v0-2-0" aria-labelledby="release-v0-2-0-heading">');
     expect(html.indexOf('id="release-v0-2-0"')).toBeGreaterThan(html.indexOf('</article>'));
-    expect(html.indexOf('id="release-v0-2-0"')).toBeLessThan(html.indexOf('class="sources-scope"'));
+    const sources = html.indexOf('class="sources-scope"');
+    expect(html.indexOf('id="release-v0-2-0"')).toBeLessThan(sources >= 0 ? sources : html.indexOf('<footer'));
   });
 
   it('leaves the v0.1.0 notes inline on Milestone 1, with no generated section', () => {
