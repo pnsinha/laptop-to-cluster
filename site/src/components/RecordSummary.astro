@@ -1,11 +1,12 @@
 ---
 import type { ApplicabilityRecord } from '../content/schema';
-import { summarizeRecord } from '../content/projections';
+import { projectEvidencePanel, summarizeRecord } from '../content/projections';
 const { record } = Astro.props as { record: ApplicabilityRecord };
 const summary = summarizeRecord(record);
+const traces = new Map(projectEvidencePanel(record).rows[0].items.map(({ text, from }) => [text, from.join(' ')]));
 ---
 <section class="record-summary" data-source-id={record.id} aria-label="What was tested">
   <p class="record-summary__tested">{summary.tested}</p>
-  <ul class="record-summary__scope">{summary.scope.map((value) => <li>{value}</li>)}</ul>
+  <ul class="record-summary__scope">{summary.scope.map((value) => <li data-from={traces.get(value)}>{value}</li>)}</ul>
   <p><a href={`/applicability/${record.id}/`}>Full test record</a></p>
 </section>
