@@ -28,7 +28,7 @@ const REMOTE_FONT = /@import\s+url|fonts\.(?:googleapis|gstatic)|use\.typekit\.n
 const SRC_ENTRY = /^(?:local\(\s*(?:["'][^"']+["']|[A-Za-z][A-Za-z0-9 -]*)\s*\)|url\(\s*["']?\/fonts\/[a-z0-9.-]+\/[A-Za-z0-9._-]+\.woff2["']?\s*\)\s*format\(\s*["']woff2["']\s*\))$/;
 const FONT_LEAD = String.raw`(?:"?(?:Source Serif 4|IBM Plex Sans|IBM Plex Mono|L2C Marks)(?: Fallback)?"?\s*,\s*)*`;
 // Motion that is actually motion: `transition: none` and `animation: none` are the reduced-motion resets and stay legal.
-const MOTION = /@keyframes|animation-name\s*:|animation\s*:\s*(?!none\b)|transition\s*:\s*(?!none\b)|scroll-timeline|parallax/i;
+const MOTION = /@keyframes|animation-name\s*:(?!\s*none(?![\w-]))|animation\s*:(?!\s*none(?![\w-]))|transition\s*:(?!\s*none(?![\w-]))|scroll-timeline|parallax/i;
 /** REMOTE-FONT: third-party hosts and @import url are forbidden; every @font-face is an allowlisted family served from /fonts/*.woff2 (or local()), with font-display: swap for downloads. */
 export function fontFaceIssues(text) {
   const issues = REMOTE_FONT.test(text) ? ['third-party font hosts and @import url are forbidden'] : [];
