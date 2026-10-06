@@ -42,7 +42,7 @@ const sections = entries.map((entry) => {
 {sections.map(({ entry, printed, anchor, aliases, body, context }) => <section class="prose" id={anchor} aria-labelledby={`${anchor}-heading`}>
   {aliases.map((alias) => <span id={alias}></span>)}
   <h2 id={`${anchor}-heading`}>{printed}: {entry.data.title}</h2>
-  <p class="diagnostic-code"><strong>Code:</strong> <code>{printed}</code>{entry.data.id !== printed && <> <span class="diagnostic-stable-id">Stable identifier: <code>{entry.data.id}</code></span></>}</p>
+  <p class="diagnostic-code"><strong>Code:</strong> <code>{printed}</code>{entry.data.id !== printed && <> <span class="diagnostic-stable-id">Earlier name: <code>{entry.data.id}</code></span></>}</p>
   <Fragment set:html={body} />
   {context && <DiagnosticApplicabilityContextView context={context} />}
 </section>)}
