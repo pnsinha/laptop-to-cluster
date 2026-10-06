@@ -73,6 +73,17 @@ describe('W6 diagrams', () => {
     expect(html['readiness-sequence']).toContain('var(--c-gate)');
   });
 
+  it('draws the gate lane without a break from the first poll to the YES poll', () => {
+    const lane = [...html['readiness-sequence'].matchAll(/<line x1="260" y1="(\d+)" x2="260" y2="(\d+)"[^>]*class="tl"/g)]
+      .map((m) => [Number(m[1]), Number(m[2])]).sort((a, b) => a[0] - b[0]);
+    const bars = [...html['readiness-sequence'].matchAll(/<rect x="220" y="(\d+)" width="80" height="(\d+)"/g)]
+      .map((m) => [Number(m[1]), Number(m[1]) + Number(m[2])]);
+    const covered = [...lane, ...bars].sort((a, b) => a[0] - b[0]);
+    let reach = covered[0][1];
+    for (const [start, end] of covered.slice(1)) { expect(start, `gap before y=${start}`).toBeLessThanOrEqual(reach); reach = Math.max(reach, end); }
+    expect(lane.at(-1)![1]).toBe(Math.max(...bars.map(([start]) => start)));
+  });
+
   it('keeps marker ids unique across figures, because Module 1 renders two on one page', () => {
     const ids = NAMES.flatMap((name) => [...html[name].matchAll(/<marker id="([^"]+)"/g)].map((m) => m[1]));
     expect(new Set(ids).size).toBe(ids.length);

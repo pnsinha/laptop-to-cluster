@@ -41,7 +41,7 @@ Talks and posters are linked from [Talks and papers](/about/talks-and-papers/). 
 
 ## Feedback traceability
 
-The Milestone 1 program review (2026-08-14) asked these questions. They are quoted exactly.
+The Milestone 1 program review (2026-08-14) made one suggestion and asked four questions. They are quoted exactly.
 
 > I think the site could use a site-map or a “module 0” that gives users a baseline of who the audience is and how they should progress through the modules/site as a whole. It would be helpful to know what assumptions and pre-existing skills a learner should have.
 
@@ -49,10 +49,10 @@ The Milestone 1 program review (2026-08-14) asked these questions. They are quot
 
 Source: Milestone 1 program review, 2026-08-14. Where each part is answered:
 
-| Question | Where it is answered |
+| Review text, quoted exactly | Where it is answered |
 |---|---|
-| Who is the audience, what should a learner already know, and how should they progress? | [The five-minute tour](/guide/tour/) |
-| What does the workflow source do? | [Module 2: the same stack in one allocation](/guide/baseline-single-node-pattern/#the-same-stack-in-one-allocation) |
+| **Suggestion:** I think the site could use a site-map or a “module 0” that gives users a baseline of who the audience is and how they should progress through the modules/site as a whole. It would be helpful to know what assumptions and pre-existing skills a learner should have. | [The five-minute tour](/guide/tour/) |
+| What does the “workflow source” do? | [Module 2: the same stack in one allocation](/guide/baseline-single-node-pattern/#the-same-stack-in-one-allocation) |
 | How would a user modify it to run their own application? | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it) |
-| Is results verification something to expect for your own application? | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it), and the tour |
-| Are the json files for humans or for tools? | [Module 2: files the workflow reads and writes](/guide/baseline-single-node-pattern/#files-the-workflow-reads-and-writes) |
+| It seems that the workflow includes results verification, is this something the user would expect to see for their own application? | [Module 2: adapt it](/guide/baseline-single-node-pattern/#adapt-it), and the tour |
+| Are the various json files (such as results.json) intended for humans or for other tools to parse? | [Module 2: files the workflow reads and writes](/guide/baseline-single-node-pattern/#files-the-workflow-reads-and-writes) |
