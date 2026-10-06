@@ -282,14 +282,28 @@ export function currentRecord(records: ApplicabilityRecord[]): ApplicabilityReco
   return newest.length === 1 ? newest[0] : undefined;
 }
 
-/** What RecordSummary renders: the badge sentence plus scope values copied verbatim from the record. */
+/** The workflow whose record backs the Tested badge, the getting-started guide and the Evaluate summary. */
+export const BASELINE_WORKFLOW_ID = 'module-2-baseline';
+
+/** The one rule for "the current baseline record": currentRecord over the baseline workflow's records only. */
+export function currentBaselineRecord(records: ApplicabilityRecord[], workflowId: string = BASELINE_WORKFLOW_ID): ApplicabilityRecord | undefined {
+  return currentRecord(records.filter(({ workflow_id }) => workflow_id === workflowId));
+}
+
+/** Joins a name and a version, dropping a leading copy of the name from the version ("Slurm" + "slurm 25.11.1" -> "Slurm 25.11.1"). */
+export function namedVersion(name: string, version: string): string {
+  const prefix = `${name.toLowerCase()} `;
+  return version.toLowerCase().startsWith(prefix) ? `${name} ${version.slice(prefix.length)}` : `${name} ${version}`;
+}
+
+/** What RecordSummary renders: the badge sentence plus scope values taken from the record. */
 export function summarizeRecord(record: ApplicabilityRecord): { tested: string; scope: string[] } {
   const panel = projectEvidencePanel(record);
   return {
     tested: panel.badgeText,
     scope: [
-      `Scheduler: ${record.scheduler.family} ${record.scheduler.version}`,
-      `Runtime: ${record.runtime.name} ${record.runtime.version}`,
+      `Scheduler: ${namedVersion(record.scheduler.family, record.scheduler.version)}`,
+      `Runtime: ${namedVersion(record.runtime.name, record.runtime.version)}`,
       `Workflow revision: ${record.workflow_revision}`,
       ...panel.rows[0].items.map(({ text }) => text),
       ...record.limitations,
@@ -447,6 +461,9 @@ export function projectApplicabilityForItem(
   if (consumer === 'runnable-module' && record.workflow_id !== item.id) {
     throw new RegistryValidationError([`${item.id}: applicability ${record.id} belongs to ${record.workflow_id}`]);
   }
+  if (consumer === 'runnable-module' && record.superseded_by) {
+    throw new RegistryValidationError([`${item.id}: applicability ${record.id} is superseded by ${record.superseded_by}`]);
+  }
   return projectApplicability(record, consumer);
 }
 
@@ -545,7 +562,7 @@ export function projectLandingPage(
 
   const records = applicability.filter((candidate) => baseline!.applicability_records.includes(candidate.id)
     && candidate.workflow_id === baseline!.id);
-  const current = currentRecord(records);
+  const current = currentBaselineRecord(records, baseline!.id);
   const [release] = published
     .filter((item) => item.artifact_type === 'release' && item.status === 'published')
     .sort((a, b) => (b.publication_date ?? '').localeCompare(a.publication_date ?? '') || b.id.localeCompare(a.id));

@@ -14,7 +14,7 @@ import SourcesAndScope from '../../components/SourcesAndScope.astro';
 import SupportState from '../../components/SupportState.astro';
 import TalksList from '../../components/TalksList.astro';
 import { canonicalPath, hasNoStandalonePage } from '../../content/registry';
-import { assertCompositionProfile, compositionProfileFor, currentRecord, projectApplicabilityForItem } from '../../content/projections';
+import { assertCompositionProfile, compositionProfileFor, currentBaselineRecord, projectApplicabilityForItem } from '../../content/projections';
 import { ABOUT_NAV_ITEMS, learningPathNavigation, recordDateLine, slotNames, sortTalks } from '../../content/page-chrome';
 import { formatDate } from '../../content/format';
 export async function getStaticPaths() {
@@ -38,7 +38,7 @@ const currentPath = Astro.url.pathname;
 
 /* Adoption pages show a summary of the current test record (D3); no other profile may. */
 const isAdoption = item.artifact_type === 'checklist' && item.route_namespace === 'adoption';
-const record = isAdoption ? currentRecord(applicability) : undefined;
+const record = isAdoption ? currentBaselineRecord(applicability) : undefined;
 if (isAdoption && !record) throw new Error(`${item.id}: the adoption page needs a current applicability record`);
 const contentItems = (await getCollection('contentItems')).map(({ data }) => data);
 const navigation = isAdoption ? learningPathNavigation(contentItems, item.id) : undefined;

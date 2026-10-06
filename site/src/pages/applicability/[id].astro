@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { formatDate } from '../../content/format';
-import { projectEvidencePanel } from '../../content/projections';
+import { namedVersion, projectEvidencePanel } from '../../content/projections';
 import type { ApplicabilityRecord } from '../../content/schema';
 export async function getStaticPaths() {
   return (await getCollection('applicability')).map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
@@ -25,7 +25,7 @@ const extension = record.review_extension;
     <dl class="record-grid">
       <div><dt>Status</dt><dd>{record.status}</dd></div><div><dt>Environment</dt><dd>{record.environment.public_name}</dd></div>
       <div><dt>Environment role</dt><dd>{record.environment.fallback ? 'Fallback' : 'Primary'}</dd></div><div><dt>Environment scope</dt><dd>{record.environment.notes}</dd></div>
-      <div><dt>Scheduler</dt><dd>{record.scheduler.family} {record.scheduler.version}</dd></div><div><dt>Runtime</dt><dd>{record.runtime.name} {record.runtime.version}</dd></div>
+      <div><dt>Scheduler</dt><dd>{namedVersion(record.scheduler.family, record.scheduler.version)}</dd></div><div><dt>Runtime</dt><dd>{namedVersion(record.runtime.name, record.runtime.version)}</dd></div>
       <div><dt>Workflow revision</dt><dd><code>{record.workflow_revision}</code></dd></div><div><dt>Container image digest</dt><dd><code class="hash">{record.container_digest}</code></dd></div>
       <div><dt>Execution date</dt><dd><time datetime={record.execution_date}>{formatDate(record.execution_date)}</time></dd></div><div><dt>Validation date</dt><dd><time datetime={record.validation_date}>{formatDate(record.validation_date)}</time></dd></div>
       <div><dt>Submission ID</dt><dd><code>{record.submission_id}</code></dd></div><div><dt>Terminal result</dt><dd>{record.result.terminal_state}; exit {record.result.exit_code}</dd></div>

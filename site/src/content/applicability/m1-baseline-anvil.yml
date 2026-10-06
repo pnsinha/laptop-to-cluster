@@ -25,7 +25,7 @@ plain_language:
     text: "The example workflow ran start to finish and every result was correct. A second run was made to fail on purpose; it stopped at the check that the coordinator can serve (the readiness gate), before any worker started."
     from: [result.checks, related_evidence.0]
   you_need:
-    - { text: "Access to one compute node through Slurm. A shared partition is enough.", from: [assumptions.0] }
+    - { text: "Access to one compute node through Slurm. The test used one node on a shared partition.", from: [assumptions.0] }
     - { text: "Apptainer on the compute nodes.", from: [assumptions.1] }
     - { text: "A private folder for the job that you can write to (job-scoped scratch).", from: [portability_boundaries.2] }
   depends_on_center:
