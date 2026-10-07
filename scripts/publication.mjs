@@ -274,7 +274,7 @@ export function evidenceBadgeText(status, environment, validationDate) {
 }
 /** Mirrors `RECORD_LINK_TEXT` in site/src/content/wording.ts. */
 export const RECORD_LINK_TEXT = 'Test record';
-/** The C1 badge pill label and caption for a record status (A17); mirrors `evidenceBadgeLabel` and `evidenceBadgeContext` in wording.ts. Undefined when a needed value is missing. */
+/** The C1 badge pill label and caption for a record status (A19); mirrors `evidenceBadgeLabel` and `evidenceBadgeContext` in wording.ts. Undefined when a needed value is missing. */
 export function evidenceBadgeParts(status, environment, validationDate) {
   const when = formatMonthYear(validationDate);
   if (status === 'validated') return environment && when ? { label: 'Tested', context: `${environment} · ${when}` } : undefined;
