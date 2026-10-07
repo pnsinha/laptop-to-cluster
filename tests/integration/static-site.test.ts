@@ -61,7 +61,7 @@ describe('artifact-aware static composition', () => {
       const block = html[key].match(projectionBlocks)?.[0] ?? '';
       expect(block, key).toContain(`data-projection-id="${consumer}:${source.id}"`);
       expect(block, key).toContain(`data-source-id="${source.id}"`);
-      expect(block, key).toContain(`<p class="evidence-badge">Tested on ${source.environment.public_name} · ${formatMonthYear(source.validation_date)}</p>`);
+      expect(block, key).toContain(`<p class="evidence-badge">Tested</p><p class="evidence-link">${source.environment.public_name} · ${formatMonthYear(source.validation_date)} · <a href="/applicability/${source.id}/">Test record</a></p>`);
       for (const item of [source.plain_language.tested, ...source.plain_language.you_need, ...source.plain_language.depends_on_center]) expect(block, key).toContain(escaped(item.text));
       expect(block.match(/href="\/applicability\/[^"]+\/"/g), key).toEqual([`href="/applicability/${source.id}/"`]);
       // Tightened: the old `<p` count only passed by coincidence once the panel arrived.

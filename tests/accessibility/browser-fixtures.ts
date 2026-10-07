@@ -32,7 +32,7 @@ export const accessibilityPages: readonly AccessibilityPageFixture[] = [
   { path: '/guide/scheduler-as-orchestrator/', distRoute: 'guide/scheduler-as-orchestrator', kind: 'conceptual module', focusLandmarks: moduleLandmarks },
   { path: MODULE_2_PATH, distRoute: 'guide/baseline-single-node-pattern', kind: 'runnable module', criticalOutsideDisclosure: ['Prerequisites', 'Tested workflow scope'], focusLandmarks: ['.skip', '.site-nav--wide a', '.breadcrumbs a', '.applicability-projection a', '.module-pager a', '.sources-scope summary'] },
   { path: '/guide/compose-to-hpc-translation/', distRoute: 'guide/compose-to-hpc-translation', kind: 'conceptual module', focusLandmarks: moduleLandmarks },
-  { path: '/adoption/evaluate/', distRoute: 'adoption/evaluate', kind: 'adoption', criticalOutsideDisclosure: ['Full test record'], focusLandmarks: ['.skip', '.site-nav--wide a', '.breadcrumbs a', '.record-summary a', '.module-pager a'] },
+  { path: '/adoption/evaluate/', distRoute: 'adoption/evaluate', kind: 'adoption', criticalOutsideDisclosure: ['Test record'], focusLandmarks: ['.skip', '.site-nav--wide a', '.breadcrumbs a', '.record-summary a', '.module-pager a'] },
   { path: '/diagnostics/', distRoute: 'diagnostics', kind: 'diagnostics index', criticalOutsideDisclosure: ['report a missing diagnostic', 'Recovery steps', 'Warning:', 'Escalate'] },
   ...recordPages,
   { path: '/milestones/1/', distRoute: 'milestones/1', kind: 'milestone', focusLandmarks: ['.skip', '.site-nav--wide a', '.breadcrumbs a', '.applicability-projection a', '.table-overflow'] },

@@ -51,7 +51,7 @@ describe('projectEvidencePanel', () => {
     const panel = projectEvidencePanel(record({ plain_language: plain, related_evidence: [negative] }));
     expect(panel).toMatchObject({
       recordId: 'fixture-run', canonicalPath: '/applicability/fixture-run/', status: 'validated',
-      badgeText: 'Tested on Purdue Anvil · Jul 2026', collapsible: true, untestedHref: '/adoption/evaluate/#not-tested',
+      badgeText: 'Tested on Purdue Anvil · Jul 2026', badgeLabel: 'Tested', badgeContext: 'Purdue Anvil · Jul 2026', collapsible: true, untestedHref: '/adoption/evaluate/#not-tested',
     });
     expect(panel.rows.map(({ label }) => label)).toEqual([...EVIDENCE_ROW_LABELS]);
     expect(panel.rows[0].items).toEqual([plain.tested]);
@@ -74,14 +74,17 @@ describe('projectEvidencePanel', () => {
 
   it('uses per-status badge text and never collapses an escalated state', () => {
     expect(projectEvidencePanel(record({ status: 'stale' }))).toMatchObject({
-      badgeText: 'Review due: last tested on Purdue Anvil · Jul 2026', collapsible: false,
+      badgeText: 'Review due: last tested on Purdue Anvil · Jul 2026', badgeLabel: 'Review due', badgeContext: 'Last tested on Purdue Anvil · Jul 2026', collapsible: false,
     });
     expect(projectEvidencePanel(record({ status: 'failed', result: failedResult }))).toMatchObject({
-      badgeText: 'Last run failed: see the test record', collapsible: false,
+      badgeText: 'Last run failed: see the test record', badgeLabel: 'Last run failed', collapsible: false,
     });
     expect(projectEvidencePanel(record({ status: 'unvalidated', result: failedResult }))).toMatchObject({
-      badgeText: 'Not yet tested on a cluster', collapsible: false,
+      badgeText: 'Not yet tested on a cluster', badgeLabel: 'Not yet tested', collapsible: false,
     });
+    for (const status of ['failed', 'unvalidated'] as const) {
+      expect(projectEvidencePanel(record({ status, result: failedResult }))).not.toHaveProperty('badgeContext');
+    }
   });
 
   it('keeps versions, exact dates, submission IDs, digests, and evidence paths out of the panel', () => {

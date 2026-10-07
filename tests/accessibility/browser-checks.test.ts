@@ -99,7 +99,7 @@ const printScript = (restore: boolean) => `var o=[];addEventListener('beforeprin
 function mediumPage(options: { css?: string; print?: string; script?: string; extraCss?: string } = {}) {
   const steps = LABELS.map((label, index) => `<li class="timeline__step" data-step="${index + 1}"><strong>${label}</strong> <span class="timeline__caption">c</span></li>`).join('');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title><style>${options.css ?? GOOD_CSS}${options.extraCss ?? ''}@media print{${options.print ?? ''}}</style></head><body><main>
-<h1>Title</h1><p class="notice" role="note"><strong>Warning:</strong> text</p><p class="evidence-badge">Tested on X · Jul 2026</p>
+<h1>Title</h1><p class="notice" role="note"><strong>Warning:</strong> text</p><p class="evidence-badge">Tested</p>
 <details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows"><div class="evidence-row"><dt>Tested</dt><dd><ul><li>a</li></ul></dd></div></dl></details>
 <ul class="doors"><li class="door"><h3 class="door__title">Understand the model</h3><a class="door__link" href="/t">Take the tour</a></li><li class="door"><h3 class="door__title">Translate it</h3><a class="door__link" href="/c">Open the map</a></li></ul>
 <div class="theme-control"><button type="button" aria-pressed="true">System</button><button type="button" aria-pressed="false">Light</button></div>

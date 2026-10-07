@@ -4,6 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { canonicalPath } from '../../content/registry';
 import { TALKS_LABEL } from '../../content/contracts';
 import { currentBaselineRecord } from '../../content/projections';
+import { RECORD_LINK_TEXT } from '../../content/wording';
 interface Tile { href: string; title: string; summary: string; tag: string }
 const published = (await getCollection('contentItems', ({ data }) => data.status === 'published')).map(({ data }) => data);
 const byId = new Map(published.map((item) => [item.id, item]));
@@ -34,7 +35,7 @@ const groups = [
     id: 'evaluate', title: 'Evaluate and adopt', question: 'What was tested, what was not, and is this the right fit for my center?',
     tiles: [
       ...fromItem('adoption-evaluate', 'Evaluation guide'),
-      ...(record ? [{ href: `/applicability/${record.id}/`, title: 'Full test record', summary: 'What ran, where it ran, and what it checked.', tag: 'Test record' }] : []),
+      ...(record ? [{ href: `/applicability/${record.id}/`, title: RECORD_LINK_TEXT, summary: 'What ran, where it ran, and what it checked.', tag: 'Evidence' }] : []),
       ...fromItem('milestone-1', 'Milestone'),
       ...fromItem('milestone-2', 'Milestone'),
       ...fromItem('talks-and-papers', TALKS_LABEL),

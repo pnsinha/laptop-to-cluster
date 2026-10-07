@@ -15,7 +15,7 @@ const spoken = (keys: readonly ConceptKey[]) => (keys.length > 0 ? `${keys.map((
 /* A literal "\n" written inline in the one-line <pre> expression below breaks the
    TypeScript parse of the template (`astro check`: ts(1005), ts(17002)). Keep it in a constant. */
 const NEWLINE = '\n';
-/* Optional named slot "record": the canonical "Full test record" link, shown
+/* Optional named slot "record": the canonical "Test record" link, shown
    beside the script pane's revision label. The label itself never claims a test. */
 const recordLink = Astro.slots.has('record') ? await Astro.slots.render('record') : '';
 ---

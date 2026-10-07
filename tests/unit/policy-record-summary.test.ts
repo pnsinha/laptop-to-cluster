@@ -16,7 +16,7 @@ function canonicalPage(id: string, over: { env?: string; scheduler?: string; run
 const old = canonicalPage('m1-baseline-anvil', { scheduler: 'Slurm 25.11.1', runtime: 'Apptainer 1.4.3', date: '2026-07-25', submission: 'sub-20260725' });
 const current = canonicalPage('m2-baseline-anvil-2026-10', { scheduler: 'Slurm 26.05.4', runtime: 'Apptainer 1.5.3', date: '2026-10-09', submission: 'sub-20261009' });
 const summary = (id = 'm2-baseline-anvil-2026-10', tested = 'Tested on Purdue Anvil · Oct 2026', scope = '<li>Partition names differ.</li>', link = `/applicability/${id}/`) =>
-  `<section class="record-summary" data-source-id="${id}" aria-label="What was tested"><p class="record-summary__tested">${tested}</p><ul class="record-summary__scope">${scope}</ul><p><a href="${link}">Full test record</a></p></section>`;
+  `<section class="record-summary" data-source-id="${id}" aria-label="What was tested"><p class="record-summary__tested">${tested}</p><ul class="record-summary__scope">${scope}</ul><p><a href="${link}">Test record</a></p></section>`;
 const page = (source: string, profile: string, body: string) => ({ source, html: `<body data-composition-profile="${profile}"><header class="content-header"><h1>T</h1><p class="lede">S.</p></header>${body}</body>` });
 const facts = collectApplicabilityFacts([old, current]);
 
@@ -70,7 +70,7 @@ describe('SOURCE-DUPLICATION', () => {
 
   it('strips record summaries and generated projections but flags handwritten canonical values', () => {
     expect(dup([page('/adoption/evaluate/', 'adoption', summary())])).toEqual([]);
-    const projection = '<section class="applicability-projection" data-projection-id="milestone:m2-baseline-anvil-2026-10" data-source-id="m2-baseline-anvil-2026-10"><p class="evidence-badge">Tested on Purdue Anvil · Oct 2026</p></section>';
+    const projection = '<section class="applicability-projection" data-projection-id="milestone:m2-baseline-anvil-2026-10" data-source-id="m2-baseline-anvil-2026-10"><p class="evidence-badge">Tested</p></section>';
     expect(dup([page('/milestones/2/', 'milestone', projection)])).toEqual([]);
     for (const text of ['<p>Validated on Purdue Anvil.</p>', '<p>Runs on Slurm 26.05.4.</p>', '<p>Result: The check passed.</p>', '<p>Run sub-20261009.</p>']) {
       expect(dup([page('/guide/x/', 'learning-conceptual', text)]).join('\n'), text).toMatch(/SOURCE-DUPLICATION/);

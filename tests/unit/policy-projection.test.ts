@@ -6,9 +6,11 @@ import { evidenceRows, isProjectionSection, projectionShapeIssues, validatePageC
 const row = (label: string, items: string[]) => `<div class="evidence-row"><dt>${label}</dt><dd><ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul></dd></div>`;
 const rows = `<dl class="evidence-rows">${row('Tested', ['Result matched.'])}${row('You need', ['A Slurm allocation.'])}${row('Depends on your center', ['Partition names.'])}</dl>`;
 const open = (consumer: string, extra = '') => `<section class="applicability-projection${extra}" data-projection-id="${consumer}:m1" data-source-id="m1" aria-label="Tested workflow scope">`;
-const link = '<p class="evidence-link"><a href="/applicability/m1/">Full test record</a></p>';
-const validated = (consumer = 'milestone') => `${open(consumer)}<p class="evidence-badge">Tested on Purdue Anvil · Jul 2026</p>${link}<details class="evidence-panel"><summary>What this means for you</summary>${rows}<p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn't been tested yet</a></p></details></section>`;
-const escalated = (consumer = 'milestone') => `${open(consumer, ' applicability-projection--escalated')}<p class="evidence-badge evidence-badge--warning"><strong>Warning:</strong> Review due: last tested on Purdue Anvil · Jul 2026</p>${link}${rows}</section>`;
+const anchor = '<a href="/applicability/m1/">Test record</a>';
+const link = `<p class="evidence-link">Purdue Anvil · Jul 2026 · ${anchor}</p>`;
+const escalatedLink = `<p class="evidence-link">Last tested on Purdue Anvil · Jul 2026 · ${anchor}</p>`;
+const validated = (consumer = 'milestone') => `${open(consumer)}<p class="evidence-badge">Tested</p>${link}<details class="evidence-panel"><summary>What this means for you</summary>${rows}<p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn't been tested yet</a></p></details></section>`;
+const escalated = (consumer = 'milestone') => `${open(consumer, ' applicability-projection--escalated')}<p class="evidence-badge evidence-badge--warning"><strong>Warning:</strong> Review due</p>${escalatedLink}${rows}</section>`;
 const page = (block: string, profile = 'milestone', body = '<article><h2>Deliverables</h2><p>Published work.</p></article>') =>
   `<body data-composition-profile="${profile}"><header class="content-header"><h1>Milestone</h1><p class="lede">Summary.</p></header>${block}${body}<section class="sources-scope">Sources and scope</section></body>`;
 

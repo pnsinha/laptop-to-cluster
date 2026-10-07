@@ -124,7 +124,7 @@ describe('home page, built output', () => {
     const recordId = main.match(PROJECTION)?.[0].match(/data-source-id="([^"]+)"/)?.[1];
     expect(recordId).toBeTruthy();
     expect(decode(panes[0].caption)).toBe('docker-compose.yml · simplified · Designed, not run');
-    expect(panes[1].caption).toBe(`slurm/baseline.sbatch · excerpt · line numbers from v0.1.0 · <a href="/applicability/${recordId}/">Full test record</a>`);
+    expect(panes[1].caption).toBe(`slurm/baseline.sbatch · excerpt · line numbers from v0.1.0 · <a href="/applicability/${recordId}/">Test record</a>`);
     expect(panes[2].caption).toBe('bin/coordinator.py · excerpt · line numbers from v0.1.0');
     for (const { caption } of panes) expect(text(caption)).not.toMatch(/\btested\b|validated|anvil|purdue/i);
   });

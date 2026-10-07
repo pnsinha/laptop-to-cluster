@@ -27,6 +27,26 @@ export function evidenceStatusText(status: EvidenceRecordStatus, environment: st
   }
 }
 
+/** The short status word on the evidence badge pill. */
+export function evidenceBadgeLabel(status: EvidenceRecordStatus): string {
+  switch (status) {
+    case 'validated': return 'Tested';
+    case 'stale': return 'Review due';
+    case 'failed': return 'Last run failed';
+    case 'unvalidated': return 'Not yet tested';
+  }
+}
+
+/** The caption before the record link: where and when, for the statuses that have them. */
+export function evidenceBadgeContext(status: EvidenceRecordStatus, environment: string, monthYear: string): string | undefined {
+  if (status === 'validated') return `${environment} · ${monthYear}`;
+  if (status === 'stale') return `Last tested on ${environment} · ${monthYear}`;
+  return undefined;
+}
+
+/** The one name for every link to a canonical test record. */
+export const RECORD_LINK_TEXT = 'Test record';
+
 /** Reader-facing names for learning-module types. */
 export const MODULE_TYPE_LABELS = {
   conceptual: 'Reading',

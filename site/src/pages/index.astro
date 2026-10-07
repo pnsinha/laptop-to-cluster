@@ -12,6 +12,7 @@ import {
   TIMELINE_CAPTIONS, eventBandLead, homeDoors, projectRecordLinks,
 } from '../content/home';
 import { projectLandingPage } from '../content/projections';
+import { RECORD_LINK_TEXT } from '../content/wording';
 
 const content = (await getCollection('contentItems')).map(({ data }) => data);
 const applicability = (await getCollection('applicability')).map(({ data }) => data);
@@ -58,7 +59,7 @@ const records = projectRecordLinks(landing.release);
   </section>
 
   {recordHref ? (
-    <Crosswalk data={CROSSWALK}><a slot="record" href={recordHref}>Full test record</a></Crosswalk>
+    <Crosswalk data={CROSSWALK}><a slot="record" href={recordHref}>{RECORD_LINK_TEXT}</a></Crosswalk>
   ) : (
     <Crosswalk data={CROSSWALK} />
   )}

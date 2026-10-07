@@ -35,7 +35,7 @@ Use VO+Right to move item by item and VO+U for the rotor (Headings, Landmarks, L
 - [ ] **Timeline order.** VO+Right through the figure: it is announced as a figure with the caption, then a list of 6 items. Each item reads "Step n", the label, then its caption, in order: Get an allocation, Start coordinator, Readiness gate, Run workers, Verify results, Clean up. On Module 2 the lit step is announced as the current step. The decorative bars are not read.
 - [ ] **Theme control.** Each button is read as "System, button, pressed" or "Light, button, not pressed" (wording varies by macOS version), and the pressed state changes after VO+Space.
 - [ ] **Crosswalk.** The legend reads as a list of four terms, each with "was ...". The shape marks (square, diamond, triangle, circle) are not spoken. Each pane's caption names the file. If the highlight enhancement ships: the selected term is announced as pressed; the page also tells the reader which lines it affects.
-- [ ] **Record page.** The current record is reachable from every badge by a link named "Full test record". Its table or list reads label then value.
+- [ ] **Record page.** The current record is reachable from every badge by a link named "Test record". Its table or list reads label then value.
 
 ## C. Real forced colours (Windows, if available)
 

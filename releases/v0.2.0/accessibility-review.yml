@@ -134,7 +134,7 @@ checks:
     notes: "Automated: 320, 768 and 1280 px and the 320px-at-200%-zoom layout viewport for horizontal overflow on every page; hero, big idea, doors and crosswalk reading order at 320 px; crosswalk panes stack without overlap. Manual: section E, 200% and 400% zoom."
   - id: link-purpose
     result: pending
-    notes: Scan link text on every route for ambiguous phrases; door links, the Full test record link and the evidence-panel link name their destination.
+    notes: Scan link text on every route for ambiguous phrases; door links, the Test record link and the evidence-panel link name their destination.
   - id: tables
     result: pending
     notes: "Automated: native table, caption, scoped headers and local horizontal scroll under stress. Manual: confirm captions and scroll instructions on the milestone tables."
@@ -170,7 +170,7 @@ checks:
     notes: "Automated: tests/integration/static-site.test.ts asserts exhaustive fields appear only on the canonical record pages and the funding-administration text only on /about/attribution/ (sampled pages). Manual: confirm author, fellowship role, affiliation and non-endorsement wording appear only on /about/attribution/; confirm it passes on the release candidate."
   - id: projection-count
     result: pending
-    notes: "Automated: tests/integration/static-site.test.ts asserts one projection on /, the runnable module and each milestone page, none on resources, conceptual, start, attribution, accessibility and support pages. Manual: confirm /adoption/evaluate/ has no projection and is the only page with a RecordSummary (Full test record link)."
+    notes: "Automated: tests/integration/static-site.test.ts asserts one projection on /, the runnable module and each milestone page, none on resources, conceptual, start, attribution, accessibility and support pages. Manual: confirm /adoption/evaluate/ has no projection and is the only page with a RecordSummary (Test record link)."
   - id: pre-execution-warnings
     result: pending
     notes: Confirm the safety notice and prerequisites sit in the runnable module's main flow before the procedure, and the start page prerequisites are plain visible text.
@@ -188,7 +188,7 @@ checks:
     notes: "Automated: with /fonts/* blocked, text stays visible, nothing overflows at 320 and 1280px, and page height stays within 25% of the normal render. Manual: section E, blocked fonts."
   - id: evidence-badge-panel
     result: pending
-    notes: "Automated: the badge on the home page and Module 2 expands into Tested, You need and Depends on your center; the rows are visible without JavaScript and in print; the Full test record link names its destination. Manual: if /milestones/2/ renders a badge on the release candidate, expand and collapse it there too; expand and collapse with keyboard and VoiceOver; confirm no critical content sits only inside the panel."
+    notes: "Automated: the badge on the home page and Module 2 expands into Tested, You need and Depends on your center; the rows are visible without JavaScript and in print; the Test record link names its destination. Manual: if /milestones/2/ renders a badge on the release candidate, expand and collapse it there too; expand and collapse with keyboard and VoiceOver; confirm no critical content sits only inside the panel."
   - id: voiceover
     result: pending
     notes: "Manual: section B of the manual checklist (doors, badge collapsed and expanded, timeline order, theme control, crosswalk, and the selected concept if the highlight enhancement ships)."

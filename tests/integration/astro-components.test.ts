@@ -217,7 +217,7 @@ describe('concise applicability components', () => {
       projectionId: 'landing:m1', consumer: 'landing', recordId: 'm1', canonicalPath: '/applicability/m1/',
       testedScope: 'The workflow was validated on a named system.', supplement: { kind: 'boundary', text: 'Adapt the partition.' },
       panel: {
-        recordId: 'm1', canonicalPath: '/applicability/m1/', status: 'validated', badgeText: 'Tested on a named system · Jul 2026', collapsible: true,
+        recordId: 'm1', canonicalPath: '/applicability/m1/', status: 'validated', badgeText: 'Tested on a named system · Jul 2026', badgeLabel: 'Tested', badgeContext: 'a named system · Jul 2026', collapsible: true,
         untestedHref: '/adoption/evaluate/#not-tested',
         rows: [
           { label: 'Tested', items: [{ text: 'The workflow ran.', from: ['assumptions.0'] }] },
@@ -230,7 +230,8 @@ describe('concise applicability components', () => {
     expect(html).toContain('data-source-id="m1"');
     expect(html).toContain('href="/applicability/m1/"');
     expect(html.replace(/ data-from="[^"]*"/g, '')).not.toMatch(/submission|digest|integrity|provenance|checks/i);
-    expect(html).toContain('<p class="evidence-badge">Tested on a named system · Jul 2026</p>');
+    expect(html).toContain('<p class="evidence-badge">Tested</p>');
+    expect(html).toContain('<p class="evidence-link">a named system · Jul 2026 · <a href="/applicability/m1/">Test record</a></p>');
     expect(html).toContain('<details class="evidence-panel">');
     for (const label of EVIDENCE_ROW_LABELS) expect(html).toContain(`<dt>${label}</dt>`);
     expect(html).toContain('href="/adoption/evaluate/#not-tested"');
@@ -241,7 +242,7 @@ describe('concise applicability components', () => {
       projectionId: 'landing:m1', consumer: 'landing', recordId: 'm1', canonicalPath: '/applicability/m1/',
       testedScope: 'The workflow was validated on a named system.', supplement: { kind: 'status', text: 'This validation is stale and requires review before reuse.' },
       panel: {
-        recordId: 'm1', canonicalPath: '/applicability/m1/', status: 'stale', badgeText: 'Review due: last tested on a named system · Jul 2026', collapsible: false,
+        recordId: 'm1', canonicalPath: '/applicability/m1/', status: 'stale', badgeText: 'Review due: last tested on a named system · Jul 2026', badgeLabel: 'Review due', badgeContext: 'Last tested on a named system · Jul 2026', collapsible: false,
         untestedHref: '/adoption/evaluate/#not-tested',
         rows: [
           { label: 'Tested', items: [{ text: 'The workflow ran.', from: ['assumptions.0'] }] },

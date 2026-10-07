@@ -69,10 +69,10 @@ describe('Crosswalk', () => {
   it('labels panes by file and revision, adding the record link only to the script pane', async () => {
     const plain = panes(await render());
     expect(plain.map(({ caption }) => decode(caption))).toEqual(CROSSWALK.panes.map(({ file, note }) => `${file} · ${note}`));
-    expect(plain.some(({ caption }) => caption.includes('Full test record'))).toBe(false);
-    const linked = panes(await render({ record: '<a href="/applicability/m2-example/">Full test record</a>' }));
+    expect(plain.some(({ caption }) => caption.includes('Test record'))).toBe(false);
+    const linked = panes(await render({ record: '<a href="/applicability/m2-example/">Test record</a>' }));
     expect(linked[0].caption).toBe('docker-compose.yml · simplified · Designed, not run');
-    expect(linked[1].caption).toBe('slurm/baseline.sbatch · excerpt · line numbers from v0.1.0 · <a href="/applicability/m2-example/">Full test record</a>');
+    expect(linked[1].caption).toBe('slurm/baseline.sbatch · excerpt · line numbers from v0.1.0 · <a href="/applicability/m2-example/">Test record</a>');
     expect(linked[2].caption).toBe('bin/coordinator.py · excerpt · line numbers from v0.1.0');
   });
 });
