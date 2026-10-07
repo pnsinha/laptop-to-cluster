@@ -12,7 +12,7 @@ status: published
 publication_date: "2026-07-31"
 container_runtimes: [apptainer]
 related: [start-guide, module-2-baseline]
-diagnostic_applicability: { record_id: m1-baseline-anvil, discriminator: runtime }
+diagnostic_applicability: { record_id: m2-baseline-anvil-2026-10, discriminator: runtime }
 ---
 ## Signal
 The job prints `BSSW-PREQ-APPTAINER` and exits with code 65.

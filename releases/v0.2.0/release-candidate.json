@@ -4,7 +4,7 @@
   "status": "candidate",
   "repositoryTag": "v0.2.0",
   "canonicalOrigin": "https://laptop-to-cluster.org",
-  "evidenceIds": ["m1-baseline-anvil", "accessibility-review-v0.2.0"],
+  "evidenceIds": ["m2-baseline-anvil-2026-10", "accessibility-review-v0.2.0"],
   "publicSiteUrls": [
     "https://laptop-to-cluster.org/",
     "https://laptop-to-cluster.org/guide/tour/",
@@ -20,7 +20,7 @@
     "https://laptop-to-cluster.org/about/accessibility/",
     "https://laptop-to-cluster.org/about/glossary/",
     "https://laptop-to-cluster.org/milestones/2/",
-    "https://laptop-to-cluster.org/applicability/m1-baseline-anvil/"
+    "https://laptop-to-cluster.org/applicability/m2-baseline-anvil-2026-10/"
   ],
   "changes": [
     { "class": "added", "itemId": "home-newcomer-first" },

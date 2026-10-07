@@ -42,7 +42,7 @@ describe('canonical record page', () => {
   });
 
   it('shows no superseded notice or review extension when the record has neither', async () => {
-    const html = await renderRecord(m1);
+    const html = await renderRecord({ ...m1, superseded_by: undefined });
     expect(html).not.toContain('<strong>Superseded:</strong>');
     expect(html).not.toContain('id="review-extension"');
   });

@@ -10,7 +10,7 @@ audiences: [adopters, fellowship reviewers]
 milestone: 2
 status: published
 publication_date: "2026-10-15"
-applicability_records: [m1-baseline-anvil]
+applicability_records: [m2-baseline-anvil-2026-10]
 related: [module-0-orientation, module-2-baseline, milestone-2]
 ---
 ### Added
