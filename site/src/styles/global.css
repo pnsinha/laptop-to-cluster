@@ -269,9 +269,11 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 /* ---------- 12. evidence: badge, panel, record summary ---------- */
 .applicability-projection { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); max-inline-size: var(--measure-wide); margin-block: var(--space-6); }
 .applicability-projection > * { margin: 0; }
-.evidence-badge { display: inline-block; min-block-size: 2rem; padding: 0.25rem 0.875rem; color: var(--text); background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-pill); line-height: 1.5rem; }
+.evidence-badge { display: inline-block; padding: 0.0625rem 0.625rem; color: var(--text); background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-pill); font-size: var(--text-fine); font-weight: var(--weight-semibold); line-height: var(--leading-fine); }
 .evidence-badge--warning { background: var(--warning-surface); border: 0.25rem double var(--text); }
-.evidence-link { line-height: 2rem; }
+.evidence-link { color: var(--muted); font-size: var(--text-fine); line-height: var(--leading-fine); }
+.evidence-link a { font-size: var(--text-base); }
+.applicability-projection--escalated .evidence-link { color: var(--text); }
 .evidence-panel { flex-basis: 100%; }
 .evidence-panel > summary { min-block-size: 2rem; padding-block: 0.25rem; cursor: pointer; color: var(--primary); font-weight: var(--weight-semibold); text-decoration: underline; text-underline-offset: 0.2em; }
 .evidence-rows { display: grid; gap: var(--space-4); max-inline-size: 44rem; margin: 0; padding: var(--space-4) var(--space-5); background: var(--raised); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }

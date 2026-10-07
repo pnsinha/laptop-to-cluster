@@ -272,6 +272,17 @@ export function evidenceBadgeText(status, environment, validationDate) {
   if (status === 'unvalidated') return 'Not yet tested on a cluster';
   return undefined;
 }
+/** Mirrors `RECORD_LINK_TEXT` in site/src/content/wording.ts. */
+export const RECORD_LINK_TEXT = 'Test record';
+/** The C1 badge pill label and caption for a record status (A17); mirrors `evidenceBadgeLabel` and `evidenceBadgeContext` in wording.ts. Undefined when a needed value is missing. */
+export function evidenceBadgeParts(status, environment, validationDate) {
+  const when = formatMonthYear(validationDate);
+  if (status === 'validated') return environment && when ? { label: 'Tested', context: `${environment} · ${when}` } : undefined;
+  if (status === 'stale') return environment && when ? { label: 'Review due', context: `Last tested on ${environment} · ${when}` } : undefined;
+  if (status === 'failed') return { label: 'Last run failed' };
+  if (status === 'unvalidated') return { label: 'Not yet tested' };
+  return undefined;
+}
 export const RELATED_EVIDENCE_HEADING = 'Related evidence';
 const ROW_SOURCE = Object.freeze({ Tested: 'result.checks', 'You need': 'assumptions', 'Depends on your center': 'portability_boundaries' });
 const TRACE_REF = /^(assumptions|portability_boundaries|limitations|result\.checks|related_evidence)(?:\.(\d+))?$/;
@@ -335,11 +346,17 @@ export function validateProjectionSourceAgreement(source, projectionHtml, canoni
   if (linkId !== sourceId) errors.push(diagnostic(source, 'canonicalLink', 'SOURCE-AGREEMENT', 'projection canonical link must match the source ID'));
   const escalated = projectionHtml.slice(0, projectionHtml.indexOf('>')).includes('applicability-projection--escalated');
   if (escalated !== (status !== 'validated')) errors.push(diagnostic(source, 'projection', 'SOURCE-AGREEMENT', `a ${status || '<missing>'} record ${status === 'validated' ? 'must not render' : 'must render'} the escalated projection`));
-  const expectedBadge = evidenceBadgeText(status, environment, validationDate);
+  const expected = evidenceBadgeParts(status, environment, validationDate);
   const badge = paragraphs(projectionHtml).find((paragraph) => /(?:^|\s)evidence-badge(?:\s|$)/.test(paragraph.classes));
-  const badgeText = badge ? stripTags(badge.inner).replace(/^Warning:\s*/, '') : undefined;
-  if (!expectedBadge || badgeText !== expectedBadge) {
-    errors.push(diagnostic(source, 'badge', 'SOURCE-AGREEMENT', 'badge text must be generated from the record status, environment public name and validation month'));
+  const caption = paragraphs(projectionHtml).find((paragraph) => /(?:^|\s)evidence-link(?:\s|$)/.test(paragraph.classes));
+  const label = badge ? stripTags(badge.inner).replace(/^Warning:\s*/, '').trim() : undefined;
+  const captionText = caption ? stripTags(caption.inner).replace(/\s+/g, ' ').trim() : undefined;
+  if (!expected || label !== expected.label) {
+    errors.push(diagnostic(source, 'badge', 'SOURCE-AGREEMENT', 'badge label must be generated from the record status'));
+  }
+  const expectedCaption = expected?.context ? `${expected.context} · ${RECORD_LINK_TEXT}` : RECORD_LINK_TEXT;
+  if (!expected || captionText !== expectedCaption) {
+    errors.push(diagnostic(source, 'badgeCaption', 'SOURCE-AGREEMENT', 'badge caption must be generated from the record environment public name and validation month, then the Test record link'));
   }
   for (const issue of rowAgreementIssues(evidenceRows(projectionHtml), canonicalLists(canonicalHtml))) errors.push(diagnostic(source, 'rows', 'SOURCE-AGREEMENT', issue));
   return errors;

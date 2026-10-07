@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { evidenceStatusText, moduleHeaderLine, moduleKindLine, MODULE_TYPE_LABELS } from '../../site/src/content/wording.js';
+import { evidenceBadgeContext, evidenceBadgeLabel, evidenceStatusText, moduleHeaderLine, moduleKindLine, MODULE_TYPE_LABELS } from '../../site/src/content/wording.js';
 
 const frontmatter = (path: string) => parse(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(path, 'utf8'))![1]) as Record<string, any>;
 
@@ -17,6 +17,22 @@ describe('evidence status wording', () => {
     for (const status of ['failed', 'unvalidated'] as const) {
       expect(evidenceStatusText(status, 'Fixture Cluster', 'Jul 2026')).not.toMatch(/Fixture Cluster|Jul 2026/);
     }
+  });
+});
+
+describe('evidence badge pill and caption', () => {
+  it('uses a short label for every status', () => {
+    expect(evidenceBadgeLabel('validated')).toBe('Tested');
+    expect(evidenceBadgeLabel('stale')).toBe('Review due');
+    expect(evidenceBadgeLabel('failed')).toBe('Last run failed');
+    expect(evidenceBadgeLabel('unvalidated')).toBe('Not yet tested');
+  });
+
+  it('names the system and month only for validated and stale records', () => {
+    expect(evidenceBadgeContext('validated', 'Fixture Cluster', 'Jul 2026')).toBe('Fixture Cluster · Jul 2026');
+    expect(evidenceBadgeContext('stale', 'Fixture Cluster', 'Jul 2026')).toBe('Last tested on Fixture Cluster · Jul 2026');
+    expect(evidenceBadgeContext('failed', 'Fixture Cluster', 'Jul 2026')).toBeUndefined();
+    expect(evidenceBadgeContext('unvalidated', 'Fixture Cluster', 'Jul 2026')).toBeUndefined();
   });
 });
 

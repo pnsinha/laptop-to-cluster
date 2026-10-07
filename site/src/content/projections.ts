@@ -8,7 +8,7 @@ import {
 } from './schema.js';
 import { RegistryValidationError, canonicalPath, generateCanonicalRoutes, hasNoStandalonePage, releaseNotesHref } from './registry.js';
 import { EVIDENCE_ROW_LABELS, LEARNING_PATH, UNTESTED_HREF, type EvidenceRowLabel } from './contracts.js';
-import { evidenceStatusText } from './wording.js';
+import { evidenceBadgeContext, evidenceBadgeLabel, evidenceStatusText } from './wording.js';
 
 interface MilestoneDeliverableProjection {
   sow_id: string;
@@ -232,7 +232,10 @@ export interface EvidencePanelProjection {
   recordId: string;
   canonicalPath: `/applicability/${string}/`;
   status: EvidenceStatus;
+  /** The full status sentence, used by RecordSummary; the badge itself shows `badgeLabel` and `badgeContext`. */
   badgeText: string;
+  badgeLabel: string;
+  badgeContext?: string;
   collapsible: boolean;
   rows: { label: EvidenceRowLabel; items: EvidenceItem[] }[];
   untestedHref: '/adoption/evaluate/#not-tested';
@@ -263,11 +266,15 @@ export function projectEvidencePanel(record: ApplicabilityRecord): EvidencePanel
     'You need': literalItems('assumptions', record.assumptions),
     'Depends on your center': literalItems('portability_boundaries', record.portability_boundaries),
   };
+  const monthYear = formatMonthYear(record.validation_date);
+  const badgeContext = evidenceBadgeContext(record.status, record.environment.public_name, monthYear);
   return {
     recordId: record.id,
     canonicalPath: `/applicability/${record.id}/`,
     status: record.status,
-    badgeText: evidenceStatusText(record.status, record.environment.public_name, formatMonthYear(record.validation_date)),
+    badgeText: evidenceStatusText(record.status, record.environment.public_name, monthYear),
+    badgeLabel: evidenceBadgeLabel(record.status),
+    ...(badgeContext === undefined ? {} : { badgeContext }),
     collapsible: record.status === 'validated',
     rows: EVIDENCE_ROW_LABELS.map((label) => ({ label, items: items[label] })),
     untestedHref: UNTESTED_HREF,
