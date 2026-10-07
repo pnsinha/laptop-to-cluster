@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "anvil-baseline-20261007-readiness-timeout",
+  "verified": true,
+  "checks": [
+    {
+      "name": "bounded failure",
+      "passed": true,
+      "detail": "FAILED exit 75"
+    },
+    {
+      "name": "timeout diagnostic",
+      "passed": true,
+      "detail": "BSSW-READINESS-TIMEOUT recorded after coordinator start"
+    },
+    {
+      "name": "workers not started",
+      "passed": true,
+      "detail": "no workers-started event is present"
+    },
+    {
+      "name": "redaction review",
+      "passed": true,
+      "detail": "user filesystem paths"
+    }
+  ]
+}

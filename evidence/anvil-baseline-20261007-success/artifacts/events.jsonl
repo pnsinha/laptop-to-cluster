@@ -1,0 +1,6 @@
+{"event":"job-start","at":"2026-10-07T00:49:25Z"}
+{"event":"coordinator-start","at":"2026-10-07T00:49:26Z"}
+{"event":"coordinator-ready","at":"2026-10-07T00:49:29Z"}
+{"event":"worker-start","at":"2026-10-07T00:49:29Z"}
+{"event":"worker-start","at":"2026-10-07T00:49:29Z"}
+{"event":"verification-success","at":"2026-10-07T00:49:35Z"}

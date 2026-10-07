@@ -1,0 +1,12 @@
+{"event": "coordinator-listening", "endpoint": "http://127.0.0.1:39767"}
+coordinator: "GET /health HTTP/1.1" 200 -
+coordinator: "POST /claim HTTP/1.1" 200 -
+coordinator: "POST /result HTTP/1.1" 201 -
+coordinator: "POST /claim HTTP/1.1" 200 -
+coordinator: "POST /result HTTP/1.1" 201 -
+coordinator: "POST /claim HTTP/1.1" 200 -
+coordinator: "POST /result HTTP/1.1" 201 -
+coordinator: "POST /claim HTTP/1.1" 200 -
+coordinator: "POST /result HTTP/1.1" 201 -
+coordinator: "POST /claim HTTP/1.1" 200 -
+coordinator: "POST /claim HTTP/1.1" 200 -
