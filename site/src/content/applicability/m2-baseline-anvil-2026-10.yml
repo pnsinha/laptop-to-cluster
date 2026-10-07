@@ -1,0 +1,83 @@
+id: m2-baseline-anvil-2026-10
+workflow_id: module-2-baseline
+status: validated
+environment:
+  public_name: Purdue Anvil
+  fallback: false
+  notes: Primary representative environment. Validated single-node run on the shared partition.
+scheduler:
+  family: Slurm
+  version: slurm 26.05.4
+runtime:
+  name: Apptainer
+  version: apptainer 1.5.3-3.el8
+container_digest: sha256:e871d1e08d712ed708b88a3ecd5d0f5f137ba31b41a5d8fd83d8e44710b7cd33
+workflow_revision: v0.1.0
+validation_date: "2026-10-07"
+execution_date: "2026-10-07"
+submission_id: "21153962"
+result:
+  terminal_state: COMPLETED
+  exit_code: 0
+  checks:
+    - "scheduler completion: COMPLETED exit 0"
+    - "success marker: artifacts/result.json exists and is schema-checked"
+    - "event ordering: coordinator readiness precedes worker start and verification"
+assumptions:
+  - One Slurm node on a shared partition
+  - Apptainer is installed on the compute nodes (on the test system it is on the default PATH)
+  - Loopback coordinator communication is permitted on the compute node
+limitations:
+  - This run validates single-node execution only; multi-node networking is out of scope
+  - The scheduler stdout records the application success line and cleanup-trap termination; the literal Slurm COMPLETED state is corroborated by reaching the final pipeline step rather than printed explicitly
+  - Validates the v0.1.0 image digest only; a rebuilt image requires revalidation
+portability_boundaries:
+  - Scheduler account and partition are supplied at submission time
+  - How Apptainer is provided (default PATH or a module) depends on the center
+  - Job-scoped scratch source varies by center ($SLURM_TMPDIR vs derived $SCRATCH)
+  - Shared-partition loopback and exclusive step behavior are site-dependent
+  - On Apptainer 1.5.3 the release's acquisition script cannot rebuild the image without privileges (the fakeroot helper is unavailable); the tested image is the earlier build with the same digest.
+evidence:
+  id: anvil-baseline-20261007-success
+  path: evidence/anvil-baseline-20261007-success/manifest.json
+  integrity: sha256:8d8b83efa285c80aac3ca4fbec8dfe85b69f810077d582135dc24bb8919426d4
+related_evidence:
+  - id: anvil-baseline-20261007-readiness-timeout
+    path: evidence/anvil-baseline-20261007-readiness-timeout/manifest.json
+    integrity: sha256:8b61ac4d05c45d09743b7788ce1f94cadc80dd1883cc977c06f016a03d2e1b69
+    role: negative-test
+provenance:
+  - label: Released workflow package (source)
+    reference:
+      repository: https://github.com/pnsinha/laptop-to-cluster
+      release: v0.1.0
+      path: workflows/baseline-slurm-apptainer/README.md
+      integrity: sha256:c711b40cf374131da0522ba9a3bfff9599063cd1f4e91f55a54b4f4f4879a261
+  - label: Recorded evidence bundle (success run)
+    reference:
+      repository: https://github.com/pnsinha/laptop-to-cluster
+      release: a56aaf7099344c225b66e310af6c83da22375523
+      path: evidence/anvil-baseline-20261007-success/manifest.json
+      integrity: sha256:8d8b83efa285c80aac3ca4fbec8dfe85b69f810077d582135dc24bb8919426d4
+  - label: Recorded evidence bundle (readiness-timeout run)
+    reference:
+      repository: https://github.com/pnsinha/laptop-to-cluster
+      release: a56aaf7099344c225b66e310af6c83da22375523
+      path: evidence/anvil-baseline-20261007-readiness-timeout/manifest.json
+      integrity: sha256:8b61ac4d05c45d09743b7788ce1f94cadc80dd1883cc977c06f016a03d2e1b69
+review_after: "2027-01-07"
+plain_language:
+  tested:
+    text: "The example workflow ran start to finish and every result was correct. A second run was made to fail on purpose; it stopped at the check that the coordinator can serve (the readiness gate), before any worker started."
+    from: [result.checks, related_evidence.0]
+  you_need:
+    - { text: "Access to one compute node through Slurm. The test used one node on a shared partition.", from: [assumptions.0] }
+    - { text: "Apptainer on the compute nodes.", from: [assumptions.1] }
+    - { text: "A private folder for the job that you can write to (job-scoped scratch).", from: [portability_boundaries.2] }
+  depends_on_center:
+    - { text: "Your account and partition names. You supply them when you submit the job.", from: [portability_boundaries.0] }
+    - { text: "How Apptainer is made available: on the default command path, or through a module your center provides.", from: [assumptions.1, portability_boundaries.1] }
+    - { text: "Which scratch location the job uses. Centers provide it in different ways.", from: [portability_boundaries.2] }
+    - { text: "The coordinator listens only on loopback (127.0.0.1); reaching it from beyond the node needs access your center approves.", from: [assumptions.2, portability_boundaries.3] }
+    - { text: "Whether each worker can run as its own job step (a program the scheduler launches and tracks inside your allocation) on a shared node.", from: [portability_boundaries.3] }
+    - { text: "Whether you can rebuild the container image yourself. On the newer Apptainer used for the latest test, the release's image build script could not run without extra privileges, so the tested image is the earlier build with the same fingerprint (digest).", from: [portability_boundaries.4] }
