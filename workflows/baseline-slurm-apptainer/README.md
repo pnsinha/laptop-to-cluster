@@ -132,4 +132,4 @@ trust a run there:
 When a run on a new cluster completes, record it as an applicability record
 (`evidence/`) and set the published validation status from its manifest.
 
-Validation record: https://laptop-to-cluster.org/applicability/m1-baseline-anvil/
+Validation record: https://laptop-to-cluster.org/applicability/m2-baseline-anvil-2026-10/

@@ -9,7 +9,7 @@ keywords: [deliverables, Milestone 2, status]
 audiences: [fellowship reviewers, project adopters]
 milestone: 2
 status: published
-applicability_records: [m1-baseline-anvil]
+applicability_records: [m2-baseline-anvil-2026-10]
 publication_date: "2026-09-26"
 related: [module-0-orientation, module-2-baseline, module-3-compose-to-hpc-translation]
 ---

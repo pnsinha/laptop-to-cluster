@@ -13,13 +13,15 @@ const readPage = (path: string) => readFileSync(resolve(dist, path, 'index.html'
 const route = {
   home: '', resources: 'resources', start: 'start', diagnostics: 'diagnostics',
   conceptual: 'guide/scheduler-as-orchestrator', runnable: 'guide/baseline-single-node-pattern',
-  applicability: 'applicability/m1-baseline-anvil',
+  applicability: 'applicability/m2-baseline-anvil-2026-10',
   milestone: 'milestones/1', attribution: 'about/attribution',
   accessibility: 'about/accessibility', support: 'about/support',
   event: 'events/iguide-forum-2026',
 } as const;
 const html = Object.fromEntries(Object.entries(route).map(([key, path]) => [key, readPage(path)])) as Record<keyof typeof route, string>;
-const source = parse(readFileSync(resolve(root, 'site/src/content/applicability/m1-baseline-anvil.yml'), 'utf8')) as any;
+const source = parse(readFileSync(resolve(root, 'site/src/content/applicability/m2-baseline-anvil-2026-10.yml'), 'utf8')) as any;
+const currentSource = source;
+const firstSource = parse(readFileSync(resolve(root, 'site/src/content/applicability/m1-baseline-anvil.yml'), 'utf8')) as any;
 
 function htmlFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -53,6 +55,8 @@ describe('artifact-aware static composition', () => {
   it('renders one source-agreeing projection only on authorized pages', () => {
     const consumers = { home: 'landing', runnable: 'runnable-module', milestone: 'milestone' } as const;
     for (const [key, consumer] of Object.entries(consumers) as Array<[keyof typeof consumers, string]>) {
+      // Milestone 1 stays on the first record; every other page uses the current one.
+      const source = key === 'milestone' ? firstSource : currentSource;
       expect(projectionCount(html[key]), key).toBe(1);
       const block = html[key].match(projectionBlocks)?.[0] ?? '';
       expect(block, key).toContain(`data-projection-id="${consumer}:${source.id}"`);
@@ -85,7 +89,7 @@ describe('artifact-aware static composition', () => {
     ]) expect(canonical).toContain(value);
     expect(canonical).toContain(source.environment.fallback ? 'Fallback' : 'Primary');
     for (const check of source.result.checks) expect(canonical).toContain(check);
-    for (const item of [...source.assumptions, ...source.limitations, ...source.portability_boundaries]) expect(canonical).toContain(item.replaceAll('&', '&amp;'));
+    for (const item of [...source.assumptions, ...source.limitations, ...source.portability_boundaries]) expect(canonical).toContain(escaped(item));
     for (const provenance of source.provenance) {
       expect(canonical).toContain(provenance.label);
       expect(canonical).toContain(provenance.reference.path);

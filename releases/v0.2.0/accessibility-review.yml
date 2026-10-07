@@ -17,6 +17,7 @@ automatedEvidence:
     - /guide/baseline-single-node-pattern/
     - /start/
     - /diagnostics/
+    - /applicability/m2-baseline-anvil-2026-10/
     - /applicability/m1-baseline-anvil/
     - /milestones/2/
     - /about/accessibility/
@@ -41,11 +42,11 @@ editorialHeuristics:
   - No throat-clearing or internal projection/schema terminology appears in ordinary reader prose.
 canonicalDestinationTrace:
   - subject: applicability
-    destination: /applicability/m1-baseline-anvil/
+    destination: /applicability/m2-baseline-anvil-2026-10/
     result: pending
-    notes: Confirm the tested configuration, dates, boundaries, checks and evidence integrity appear only on the current record page; the home page, Module 2, Milestone 2 and the evaluate page show the badge or RecordSummary and link to it. If the re-run slips and the review-extension fallback is used, change this destination to /applicability/m1-baseline-anvil/.
+    notes: Confirm the tested configuration, dates, boundaries, checks and evidence integrity appear only on the current record page; the home page, Module 2, Milestone 2 and the evaluate page show the badge or RecordSummary and link to it.
   - subject: evidence
-    destination: /applicability/m1-baseline-anvil/
+    destination: /applicability/m2-baseline-anvil-2026-10/
     result: pending
     notes: Confirm the evidence id, integrity and review-after fields appear only on the current record page (tests/integration/static-site.test.ts asserts this for both records); the superseded record keeps its own page.
   - subject: authority
@@ -92,7 +93,7 @@ manualRouteSamples:
     route: /diagnostics/
     result: pending
   - kind: applicability
-    route: /applicability/m1-baseline-anvil/
+    route: /applicability/m2-baseline-anvil-2026-10/
     result: pending
   - kind: milestone
     route: /milestones/2/

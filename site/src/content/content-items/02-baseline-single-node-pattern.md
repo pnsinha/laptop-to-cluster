@@ -24,8 +24,8 @@ required_resources: ["One Slurm compute node", "Apptainer available on compute n
 estimated_minutes: 30
 completion_check: { kind: result, text: "Complete only when the job exits zero and the verifier reports the documented task count, unique results, and a success result artifact." }
 validation_status: validated
-validation_date: "2026-07-25"
-applicability_records: [m1-baseline-anvil]
+validation_date: "2026-10-07"
+applicability_records: [m2-baseline-anvil-2026-10]
 schedulers: [slurm]
 container_runtimes: [apptainer]
 related: [module-1-scheduler-orchestrator, start-guide]
