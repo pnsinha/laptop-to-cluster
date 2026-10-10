@@ -345,3 +345,28 @@ describe('guide cards check', () => {
     } finally { await server.close(); }
   }, 60_000);
 });
+
+describe('concept chip check', () => {
+  const page = (css: string) => `<!doctype html><html lang="en"><head><title>t</title><style>body{margin:0}.c-step,.c-gate,.c-scratch,.c-net{--c-bg:#e3f0fc;background:var(--c-bg);padding:0 .3em .05em}@media (prefers-color-scheme:dark){.c-step,.c-gate,.c-scratch,.c-net{--c-bg:#0f2a44}}${css}</style></head><body><main><section id="big-idea"><ol><li class="concept"><span class="concept__term c-step">Step</span></li><li class="concept"><span class="concept__term c-gate">Gate</span></li></ol></section></main></body></html>`;
+  const messages = async (origin: string, path: string) => (await checkComponentGeometry(browser, origin, path)).map((entry) => `${entry.scope} ${entry.code} ${entry.message}`).join('\n');
+
+  it('accepts big-idea terms that keep a tinted chip in light and dark', async () => {
+    const server = await serveFixtures({ '/good/': { body: page('') } });
+    try { expect(await checkComponentGeometry(browser, server.origin, '/good/')).toEqual([]); } finally { await server.close(); }
+  }, 60_000);
+
+  it('flags a term that a reset rule has stripped of its chip, naming the scheme', async () => {
+    const server = await serveFixtures({
+      '/both/': { body: page(':is(p,li) :is(.c-step,.c-gate){background:none;padding:0}') },
+      '/dark/': { body: page('@media (prefers-color-scheme:dark){.c-gate{background:none}}') },
+    });
+    try {
+      const both = await messages(server.origin, '/both/');
+      expect(both).toMatch(/component-geometry:light A11Y-GEOMETRY .*concept terms in the big idea must keep their tinted chip.*Step, Gate/);
+      expect(both).toMatch(/component-geometry:dark A11Y-GEOMETRY /);
+      const dark = await messages(server.origin, '/dark/');
+      expect(dark).toMatch(/component-geometry:dark A11Y-GEOMETRY .*Gate/);
+      expect(dark).not.toMatch(/component-geometry:light/);
+    } finally { await server.close(); }
+  }, 60_000);
+});

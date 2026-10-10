@@ -87,6 +87,20 @@ describe('concept utilities', () => {
   it('drops the tint inside running text but keeps colour and shape', () => {
     expect(body(':is(p, li, dd, dt, figcaption, td, th) :is(.c-step, .c-gate, .c-scratch, .c-net)')).toMatch(/background:\s*none/);
   });
+
+  it('keeps the tinted chip on the big-idea terms even though each concept row is a list item', () => {
+    const reset = ':is(p, li, dd, dt, figcaption, td, th) :is(.c-step, .c-gate, .c-scratch, .c-net)';
+    const chip = '.concept__term:is(.c-step, .c-gate, .c-scratch, .c-net)';
+    const base = body('.c-step, .c-gate, .c-scratch, .c-net');
+    expect(body(chip)).toMatch(/background:\s*var\(--c-bg\)/);
+    expect(body(chip)).toMatch(/padding:\s*0 0\.3em 0\.05em/);
+    /* the same chip the base rule draws, so a change to one is a change to both */
+    expect(base).toMatch(/background:\s*var\(--c-bg\)/);
+    expect(base).toMatch(/padding:\s*0 0\.3em 0\.05em/);
+    /* it has to out-rank the reset (specificity 0,1,1) and so must be written after it, with a class in the subject */
+    expect(bare.indexOf(`${chip} {`)).toBeGreaterThan(bare.indexOf(`${reset} {`));
+    expect(bare.indexOf(reset)).toBeGreaterThan(-1);
+  });
 });
 
 describe('concept rows', () => {

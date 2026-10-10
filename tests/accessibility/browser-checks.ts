@@ -495,6 +495,17 @@ export async function checkComponentGeometry(browser: Browser, origin: string, p
     if (/[\u25A0\u25B2\u25C6\u25CF]/.test(snapshot)) issues.push(issue(`${scope}:${width}px`, 'A11Y-GEOMETRY', 'a concept shape glyph reached the accessible name'));
     await context.close();
   }
+  // The four big-idea terms keep their tinted chip in both colour schemes, even though each concept row is a list item.
+  for (const colorScheme of ['light', 'dark'] as const) {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme });
+    const page = await context.newPage();
+    await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+    const bare = await page.evaluate(() => [...document.querySelectorAll('#big-idea .concept__term')]
+      .filter((term) => ['transparent', 'rgba(0, 0, 0, 0)'].includes(getComputedStyle(term).backgroundColor))
+      .map((term) => (term.textContent ?? '').trim()));
+    if (bare.length > 0) issues.push(issue(`${scope}:${colorScheme}`, 'A11Y-GEOMETRY', `the concept terms in the big idea must keep their tinted chip, but ${bare.join(', ')} ${bare.length > 1 ? 'have' : 'has'} no background in the ${colorScheme} scheme`));
+    await context.close();
+  }
   return issues;
 }
 

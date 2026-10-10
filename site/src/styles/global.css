@@ -132,6 +132,7 @@ body[data-composition-profile="landing"] main > :where(section, aside, figure) +
   .c-net::before { content: var(--mark-net) / ""; }
 }
 :is(p, li, dd, dt, figcaption, td, th) :is(.c-step, .c-gate, .c-scratch, .c-net) { background: none; padding: 0; }
+.concept__term:is(.c-step, .c-gate, .c-scratch, .c-net) { background: var(--c-bg); padding: 0 0.3em 0.05em; }
 
 /* ---------- 6. home: hero ---------- */
 /* Landing type scale: one set of sizes for the home page (36→56 display, 18→20 lede, 26→30 h2, 20→23 terms, 17→18 body, 16 annotations, 14 captions). vw, not cqi: main is not a container. */
