@@ -3,10 +3,10 @@ import { createReadStream, existsSync, readdirSync, readFileSync, statSync } fro
 import { extname, join, normalize, resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { chromium, type Page } from 'playwright';
-import { DOORS, NAV_ITEMS, TIMELINE_STEPS } from '../site/src/content/contracts';
+import { CONCEPTS, DOORS, NAV_ITEMS, TIMELINE_STEPS } from '../site/src/content/contracts';
 import { HOME_PATH, MODULE_2_PATH, accessibilityPages, recordPaths } from '../tests/accessibility/browser-fixtures';
 import {
-  checkComponentGeometry, checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence,
+  checkComponentGeometry, checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkGuideCards, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence,
   inspectThemeScript, type Issue, type PageExpectation,
 } from '../tests/accessibility/browser-checks';
 import { auditTokenMap, auditTokens, declaredColorSchemes, pairTokenNames, parseThemeBlocks } from '../tests/accessibility/token-pairs';
@@ -280,24 +280,37 @@ try {
       const hero = await page.evaluate(() => {
         const heroElement = document.querySelector<HTMLElement>('.hero')!;
         const copy = document.querySelector<HTMLElement>('.hero__copy');
-        const timeline = document.querySelector<HTMLElement>('#big-idea .timeline');
-        const order = ['.hero', '.applicability-projection', '#big-idea', '#doors', '#crosswalk'].map((selector) => document.querySelector(selector));
+        const figure = document.querySelector<HTMLElement>('.hero .hero__figure');
+        const envPair = document.querySelector<HTMLElement>('.hero .env-pair');
+        const order = ['.hero', '.applicability-projection', '#doors', '#big-idea', '#crosswalk'].map((selector) => document.querySelector(selector));
         return {
-          noFigureInHero: !copy?.querySelector('figure'),
+          figureAfterCopy: Boolean(figure && copy && copy.compareDocumentPosition(figure) & Node.DOCUMENT_POSITION_FOLLOWING),
           oneColumn: getComputedStyle(heroElement).display !== 'grid' || getComputedStyle(heroElement).gridTemplateColumns.split(' ').length === 1,
-          timelineAfterHero: Boolean(timeline && heroElement.compareDocumentPosition(timeline) & Node.DOCUMENT_POSITION_FOLLOWING),
-          stepOrder: Boolean(timeline) && [...(timeline?.querySelectorAll('li.timeline__step') ?? [])].every((item) => {
+          envPairColumn: Boolean(envPair) && getComputedStyle(envPair!).gridTemplateColumns.split(' ').length === 1,
+          homeOrder: order.every((element, index) => element !== null && (index === 0 || Boolean(order[index - 1]!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING))),
+        };
+      });
+      if (!hero.oneColumn || !hero.figureAfterCopy || !hero.envPairColumn) {
+        fail('/:320px', 'A11Y-READING-ORDER', 'the hero must be one column with the two-environment figure stacked after the copy, its panels stacked too');
+      }
+      if (!hero.homeOrder) fail('/:320px', 'A11Y-READING-ORDER', 'home order must be hero, evidence projection, doors, big idea, crosswalk');
+    }
+    const kind = accessibilityPages.find((fixture) => fixture.path === path)?.kind;
+    if (kind === 'conceptual module' || kind === 'runnable module') {
+      const timeline = await page.evaluate(() => {
+        const steps = [...document.querySelectorAll<HTMLElement>('.timeline li.timeline__step')];
+        return {
+          count: steps.length,
+          stepOrder: steps.every((item) => {
             const label = item.querySelector('strong');
             const caption = item.querySelector('.timeline__caption');
             return Boolean(label && caption && label.getBoundingClientRect().top <= caption.getBoundingClientRect().top);
           }),
-          homeOrder: order.every((element, index) => element !== null && (index === 0 || Boolean(order[index - 1]!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING))),
         };
       });
-      if (!hero.noFigureInHero || !hero.oneColumn || !hero.timelineAfterHero || !hero.stepOrder) {
-        fail('/:320px', 'A11Y-READING-ORDER', 'the hero must be one column with no figure, and the timeline must follow it with each step label above its caption');
+      if ((timeline.count > 0 || path === MODULE_2_PATH) && (timeline.count === 0 || !timeline.stepOrder)) {
+        fail(`${path}:320px`, 'A11Y-READING-ORDER', 'each timeline step label must sit above its caption at 320px');
       }
-      if (!hero.homeOrder) fail('/:320px', 'A11Y-READING-ORDER', 'home order must be hero, evidence projection, big idea, doors, crosswalk');
     }
   }
 
@@ -428,7 +441,7 @@ try {
   };
   const timelineOrder = { selector: '.timeline__step strong', texts: TIMELINE_STEPS.map(({ label }) => label) };
   const expectations: Record<string, PageExpectation> = {
-    [HOME_PATH]: { ordered: [timelineOrder, { selector: '.door__title', texts: DOORS.map(({ title }) => title) }], present: ['h1', '.evidence-badge', '.crosswalk__legend', '.crosswalk__pane'] },
+    [HOME_PATH]: { ordered: [{ selector: '.concept__term', texts: CONCEPTS.map(({ label }) => label) }, { selector: '.door__title', texts: DOORS.map(({ title }) => title) }], present: ['h1', '.evidence-badge', '.hero__figure', '.crosswalk__legend', '.crosswalk__pane'] },
     [MODULE_2_PATH]: { ordered: [timelineOrder], present: ['h1', '.evidence-badge'] },
   };
   for (const record of recordPaths) expectations[record] = { present: ['h1', '.applicability-record'] };
@@ -445,6 +458,7 @@ try {
   await gate('/guide/tour/:font-failure', () => checkFontBlocking(browser, origin, '/guide/tour/'));
   await gate('/:crosswalk-layout', () => checkCrosswalkLayout(browser, origin, HOME_PATH));
   for (const path of [HOME_PATH, '/guide/tour/', MODULE_2_PATH]) await gate(`${path}:component-geometry`, () => checkComponentGeometry(browser, origin, path));
+  await gate('/resources/:guide-cards', () => checkGuideCards(browser, origin, '/resources/'));
   for (const path of paths) await gate(`${path}:motion`, () => checkMotion(browser, origin, path));
   await gate('/:no-script', () => checkJsOff(browser, origin, HOME_PATH, 'home', { panel: true }));
   await gate(`${MODULE_2_PATH}:no-script`, () => checkJsOff(browser, origin, MODULE_2_PATH, 'module', { panel: true }));

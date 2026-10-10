@@ -28,7 +28,7 @@ const record = currentBaselineRecord((await getCollection('applicability')).map(
   </aside>
   <article class="start-path" aria-label="Running the example, step by step"><Content /></article>
   {record && (
-    <section aria-labelledby="how-we-know-heading">
+    <section class="reading-section" aria-labelledby="how-we-know-heading">
       <h2 id="how-we-know-heading">How we know this works</h2>
       <p>The example workflow has a published test record: what ran, where it ran, and what it checked. <a href={`/applicability/${record.id}/`}>Read the full test record</a>.</p>
     </section>

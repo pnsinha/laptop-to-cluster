@@ -23,11 +23,40 @@ const inContainer = (query: string, selector: string) => {
 const CONCEPTS = ['step', 'gate', 'scratch', 'net'] as const;
 
 describe('hero', () => {
-  it('is one narrow column with no illustration slot', () => {
-    expect(body('.hero')).toMatch(/max-inline-size:\s*46rem/);
-    expect(body('.hero')).not.toMatch(/grid-template-columns/);
-    expect(body('.hero__copy')).toMatch(/max-inline-size:\s*40rem/);
-    expect(body('.hero h1')).toMatch(/max-inline-size:\s*20ch/);
+  it('is one column below 60rem, then copy beside the two-environment figure', () => {
+    expect(body('.hero')).toMatch(/display:\s*grid/);
+    expect(body('.hero')).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/);
+    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?\.hero\s*\{[^}]*grid-template-columns:\s*minmax\(0, 11fr\) minmax\(0, 10fr\)/);
+    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?main > \.hero\s*\{[^}]*padding-block-start:\s*var\(--space-10\)/);
+    expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/margin-block-start:\s*0/);
+    expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/padding-block-start:\s*var\(--space-3\)/);
+    expect(bare).toMatch(/\.hero__copy\s*\{\s*max-inline-size:\s*36rem;\s*\}/);
+    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?\.hero__copy\s*\{[^}]*max-inline-size:\s*34rem/);
+    expect(body('.hero__copy')).not.toMatch(/measure-prose/);
+    expect(body('.hero h1')).toMatch(/max-inline-size:\s*none/);
+    expect(body('.hero h1')).not.toMatch(/14ch/);
+    expect(body('.hero h1')).toMatch(/font-size:\s*var\(--l-display\)/);
+    expect(body('.hero .lede')).toMatch(/max-inline-size:\s*none/);
+    expect(body('.hero .lede')).toMatch(/font-size:\s*var\(--l-lede\)/);
+  });
+
+  it('defines a landing-only type scale of seven properties', () => {
+    const scale = body('body[data-composition-profile="landing"]');
+    for (const prop of ['--l-display', '--l-lede', '--l-h2', '--l-term', '--l-body', '--l-annot', '--l-caption']) {
+      expect(scale, prop).toMatch(new RegExp(`${prop}:\\s*[^;]+`));
+    }
+    expect(body('.home-doors > h2, .concepts > h2, .crosswalk > h2')).toMatch(/font-size:\s*var\(--l-h2\)/);
+  });
+
+  it('draws the hero figure as two bordered environment panels, plain HTML', () => {
+    expect(body('.env-pair')).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+    expect(body('.env')).toMatch(/background:\s*var\(--raised\)[^}]*border:\s*var\(--border-thin\) solid var\(--rule\)/);
+    expect(body('.env__box')).toMatch(/border:\s*var\(--border-thin\) solid var\(--border\)/);
+    expect(body('.env__cmd code')).toMatch(/display:\s*inline-block/);
+    expect(body('.env__alloc')).toMatch(/border:\s*var\(--border-strong\) dashed var\(--primary\)/);
+    expect(body('.hero__figure figcaption')).toMatch(/color:\s*var\(--muted\)/);
+    expect(body('.hero__figure figcaption')).toMatch(/max-inline-size:\s*var\(--measure-lede\)/);
+    expect(bare).toMatch(/@media \(max-width: 30rem\)\s*\{[\s\S]*?\.env-pair\s*\{[^}]*grid-template-columns:\s*1fr/);
   });
 
   it('draws one filled primary action and underlined secondary links', () => {
@@ -39,7 +68,7 @@ describe('hero', () => {
   });
 
   it('carries none of the retired home classes', () => {
-    expect(bare).not.toMatch(/\.workflow-figure|\.compose-mapping|\.path-list|\.hero__visual|\.event-band__eyebrow|\.event-band__copy/);
+    expect(bare).not.toMatch(/\.workflow-figure|\.compose-mapping|\.path-list|\.hero__visual|\.event-band__eyebrow|\.event-band__copy|\.big-idea|\.analogy/);
   });
 });
 
@@ -58,14 +87,36 @@ describe('concept utilities', () => {
   it('drops the tint inside running text but keeps colour and shape', () => {
     expect(body(':is(p, li, dd, dt, figcaption, td, th) :is(.c-step, .c-gate, .c-scratch, .c-net)')).toMatch(/background:\s*none/);
   });
+
+  it('keeps the tinted chip on the big-idea terms even though each concept row is a list item', () => {
+    const reset = ':is(p, li, dd, dt, figcaption, td, th) :is(.c-step, .c-gate, .c-scratch, .c-net)';
+    const chip = '.concept__term:is(.c-step, .c-gate, .c-scratch, .c-net)';
+    const base = body('.c-step, .c-gate, .c-scratch, .c-net');
+    expect(body(chip)).toMatch(/background:\s*var\(--c-bg\)/);
+    expect(body(chip)).toMatch(/padding:\s*0 0\.3em 0\.05em/);
+    /* the same chip the base rule draws, so a change to one is a change to both */
+    expect(base).toMatch(/background:\s*var\(--c-bg\)/);
+    expect(base).toMatch(/padding:\s*0 0\.3em 0\.05em/);
+    /* it has to out-rank the reset (specificity 0,1,1) and so must be written after it, with a class in the subject */
+    expect(bare.indexOf(`${chip} {`)).toBeGreaterThan(bare.indexOf(`${reset} {`));
+    expect(bare.indexOf(reset)).toBeGreaterThan(-1);
+  });
 });
 
-describe('big idea and analogy', () => {
-  it('sets the prose in the reading serif and the analogy under a hairline, with no box', () => {
-    expect(body('.big-idea > p')).toMatch(/font-family:\s*var\(--font-reading\)/);
-    expect(body('.analogy')).toMatch(/border-block-start:\s*var\(--border-thin\) solid var\(--rule\)/);
-    expect(body('.analogy')).not.toMatch(/background|border:|box-shadow/);
-    expect(body('.analogy__breaks')).toMatch(/font-family:\s*var\(--font-reading\)/);
+describe('concept rows', () => {
+  it('sets the intro and notes in the reading serif and separates the rows with hairlines', () => {
+    expect(body('.concepts__intro')).toMatch(/font-family:\s*var\(--font-reading\)/);
+    expect(body('.concept')).toMatch(/border-block-end:\s*var\(--border-thin\) solid var\(--rule\)/);
+    expect(body('.concept')).not.toMatch(/background|border:|box-shadow/);
+    expect(body('.concepts__rows')).toMatch(/margin-inline:\s*0/);
+    expect(body('.concepts__rows')).toMatch(/padding:\s*0/);
+    expect(body('.concepts__rows')).toMatch(/list-style:\s*none/);
+    expect(body('.concept__note')).toMatch(/font-family:\s*var\(--font-reading\)/);
+    expect(body('.concept__note')).toMatch(/max-inline-size:\s*60ch/);
+    expect(body('.concept__side')).toMatch(/font-family:\s*var\(--font-body\)/);
+    expect(body('.concept__was')).toMatch(/font-size:\s*var\(--l-term\)/);
+    expect(body('.concept__term')).toMatch(/font-size:\s*var\(--l-term\)/);
+    expect(bare).toMatch(/@media \(min-width: 52rem\)\s*\{[\s\S]*?\.concept\s*\{[^}]*grid-template-columns:\s*3rem minmax\(0, 2fr\) minmax\(0, 3fr\)/);
   });
 });
 

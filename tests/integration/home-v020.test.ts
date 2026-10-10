@@ -3,10 +3,10 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { CONCEPTS, DOORS, REQUIRED_FRAGMENTS, TIMELINE_STEPS } from '../../site/src/content/contracts';
+import { CONCEPTS, DOORS, REQUIRED_FRAGMENTS } from '../../site/src/content/contracts';
 import { CROSSWALK } from '../../site/src/content/crosswalk';
-import { EVENT_BAND, eventBandLead, resolveLearningPath } from '../../site/src/content/home';
-import type { ContentItem, Talk } from '../../site/src/content/schema';
+import { BIG_IDEA, CONCEPT_NOTES, EVENT_BAND, eventBandLead } from '../../site/src/content/home';
+import type { Talk } from '../../site/src/content/schema';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const home = readFileSync(resolve(root, 'site/dist/index.html'), 'utf8');
@@ -23,9 +23,6 @@ const walk = (directory: string): string[] => readdirSync(directory).flatMap((na
   const path = join(directory, name);
   return statSync(path).isDirectory() ? walk(path) : [path];
 });
-const contentDirectory = resolve(root, 'site/src/content/content-items');
-const contentItems = readdirSync(contentDirectory).filter((file) => file.endsWith('.md'))
-  .map((file) => parse(readFileSync(join(contentDirectory, file), 'utf8').split(/^---\s*$/m)[1]) as ContentItem);
 const talks = parse(readFileSync(resolve(root, 'site/src/content/talks.yml'), 'utf8')) as Talk[];
 const panes = [...main.matchAll(/<figure class="crosswalk__pane" data-pane="([a-z]+)"><figcaption>([\s\S]*?)<\/figcaption><pre><code>([\s\S]*?)<\/code><\/pre><\/figure>/g)]
   .map(([, id, caption, code]) => ({
@@ -42,12 +39,12 @@ const panes = [...main.matchAll(/<figure class="crosswalk__pane" data-pane="([a-
   }));
 
 describe('home page, built output', () => {
-  it('keeps the frozen order: hero, projection, big idea, doors, crosswalk, event band, project records, footer', () => {
+  it('keeps the frozen order: hero, projection, doors, concept rows, crosswalk, event band, project records, footer', () => {
     const marks = [
       '<section class="hero"',
       '<section class="applicability-projection',
-      '<section class="big-idea" id="big-idea"',
       '<ul class="doors" role="list" id="doors">',
+      '<section class="concepts" id="big-idea"',
       '<section class="crosswalk" id="crosswalk"',
       '<aside class="event-band"',
       '<section class="project-links"',
@@ -60,44 +57,66 @@ describe('home page, built output', () => {
     expect(main.slice(main.indexOf(hero) + hero.length).startsWith('<section class="applicability-projection')).toBe(true);
   });
 
-  it('builds the big idea as prose, then the unlit timeline, then the analogy and its breaks', () => {
-    const bigIdea = sectionFrom('<section class="big-idea" id="big-idea"');
-    expect(bigIdea.startsWith('<section class="big-idea" id="big-idea" aria-labelledby="big-idea-title"><h2 id="big-idea-title">The big idea</h2><p>')).toBe(true);
-    const figure = bigIdea.indexOf('<figure class="timeline"');
-    const analogy = bigIdea.indexOf('<div class="analogy">');
-    expect(figure).toBeGreaterThan(bigIdea.indexOf('<p>'));
-    expect(analogy).toBeGreaterThan(figure);
-    expect(bigIdea).toContain('<h4>Where the analogy breaks</h4><ul class="analogy__breaks">');
-    expect(bigIdea.match(/<ul class="analogy__breaks">([\s\S]*?)<\/ul>/)?.[1].match(/<li>/g)).toHaveLength(4);
-  });
-
-  it('renders a narrow hero with the kicker, h1, exactly one filled primary and the Compose shortcut, without an illustration', () => {
+  it('renders the hero as copy beside a plain-HTML two-environment figure, with exactly one filled primary', () => {
     const hero = sectionFrom('<section class="hero"');
     expect(hero).toContain('<div class="hero__copy"><p class="kicker">A free, open-source learning guide for Docker Compose users</p><h1 id="hero-title">Your Compose stack, on a shared cluster</h1><p class="lede">');
     expect(home.match(/class="action action--primary"/g)).toHaveLength(1);
     expect(hero).toContain('<a class="action action--primary" href="#big-idea">Start with the big idea</a>');
     expect(hero).toContain('<a class="hero__secondary-link" href="/guide/compose-to-hpc-translation/">Already have a Compose file? Translate it</a>');
     expect(hero).toContain('<p class="hero__quiet">Support researchers or run a cluster? <a href="/adoption/evaluate/">See what this assumes, and when not to use it</a></p>');
-    expect(hero).not.toMatch(/<figure|<img|<svg|<picture/);
+    expect(hero).toContain('<figure class="hero__figure" aria-labelledby="hero-figure-caption">');
+    expect(hero).toContain('<figcaption id="hero-figure-caption">');
+    expect(hero).toContain('<p class="env__title">Your laptop</p>');
+    expect(hero).toContain('<p class="env__title">A shared cluster</p>');
+    expect(hero).toContain('<code>sbatch slurm/baseline.sbatch</code>');
+    expect(hero).not.toMatch(/<svg|<img|<picture/);
     expect(home).toContain('<title>Bridging the Laptop-to-Cluster Gap');
     expect(home).toContain('<meta property="og:title" content="Bridging the Laptop-to-Cluster Gap">');
     const lede = text(hero.match(/<p class="lede">([\s\S]*?)<\/p>/)?.[1] ?? '');
-    for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/]) expect(lede).toMatch(idea);
+    for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) expect(lede).toMatch(idea);
+    expect(lede).toContain('you request a scheduler allocation (a block of computer time on the cluster), wait your turn');
+  });
+
+  it('renders four concept rows in contract order, each with its Compose name, tinted term and note', () => {
+    const section = sectionFrom('<section class="concepts" id="big-idea"');
+    expect(section.startsWith('<section class="concepts" id="big-idea" aria-labelledby="big-idea-title"><h2 id="big-idea-title">The big idea</h2>')).toBe(true);
+    expect(section).toContain('<ol class="concepts__rows" role="list">');
+    expect(section.match(/<li class="concept" data-concept="[a-z]+">/g)).toHaveLength(4);
+    expect(section).not.toContain('<div class="concept"');
+    const starts = CONCEPTS.map(({ key }) => section.indexOf(`<li class="concept" data-concept="${key}">`));
+    starts.forEach((position, index) => expect(position, CONCEPTS[index].key).toBeGreaterThanOrEqual(0));
+    expect([...starts].sort((a, b) => a - b)).toEqual(starts);
+    CONCEPTS.forEach(({ key, label, was }, index) => {
+      const row = section.slice(starts[index], starts[index + 1] ?? section.length);
+      expect(row, key).toContain(was);
+      expect(row, key).toContain(`<p class="concept__n" aria-hidden="true">${String(index + 1).padStart(2, '0')}</p>`);
+      // Without CSS the label and the words after it must still read as separate words.
+      expect(text(row), key).toContain(`${BIG_IDEA.composeSide} ${was}`);
+      expect(text(row), key).toContain(`${BIG_IDEA.clusterSide} ${label}`);
+      expect(row, key).toContain(`<span class="concept__term c-${key}">${label}</span>`);
+      expect(text(row), key).toContain(text(CONCEPT_NOTES[key]));
+    });
+    // The concept shapes come from the marks font via CSS, never as text glyphs.
+    expect(section).not.toMatch(/[■◆▲●]/);
+  });
+
+  it('keeps the three qualifiers inside the big idea', () => {
+    const bigIdea = text(sectionFrom('<section class="concepts" id="big-idea"'));
+    for (const sentence of [
+      'It does not establish that results are correct.',
+      'It may remain until your center clears it; copy out what you need before the job ends.',
+      'It is not an isolation boundary; access beyond the node requires center approval.',
+    ]) expect(bigIdea, sentence).toContain(sentence);
+  });
+
+  it('leaves the timeline and the analogy off the home page', () => {
+    expect(home).not.toContain('<figure class="timeline"');
+    expect(home).not.toContain('class="analogy"');
   });
 
   it('uses no trailing arrows in the page content', () => {
     expect(main).not.toMatch(/[→↗➔➜⟶]|&rarr;/);
     for (const [, label] of main.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)) expect(text(label)).not.toMatch(/(?:->|»|›|>)\s*$/);
-  });
-
-  it('renders the six-step timeline once, unlit, in the frozen order, with the gate caption', () => {
-    expect(home.match(/<figure class="timeline"/g)).toHaveLength(1);
-    const figure = main.match(/<figure class="timeline"[^>]*>([\s\S]*?)<\/figure>/)?.[1] ?? '';
-    const labels = [...figure.matchAll(/<li class="timeline__step"[^>]*><span class="timeline__num">Step \d<\/span> <strong>([^<]+)<\/strong>/g)].map(([, label]) => label);
-    expect(labels).toEqual(TIMELINE_STEPS.map(({ label }) => label));
-    expect(figure).not.toContain('aria-current');
-    expect(figure.match(/data-step="3"[\s\S]*?<span class="timeline__caption">([^<]*)<\/span>/)?.[1]).toMatch(/proves the coordinator can serve/i);
-    expect(figure).not.toMatch(/<svg\b/);
   });
 
   it('tags every legend concept in both the Compose and the sbatch pane, and quotes the script exactly', () => {
@@ -129,18 +148,16 @@ describe('home page, built output', () => {
     for (const { caption } of panes) expect(text(caption)).not.toMatch(/\btested\b|validated|anvil|purdue/i);
   });
 
-  it('renders the three frozen doors, with door 1 carrying the learning path resolved to titles and canonical URLs', () => {
+  it('renders the three frozen doors, compact, in contract order', () => {
     const doors = [...main.matchAll(/<li class="door" id="door-([a-z]+)">([\s\S]*?)<\/li>(?=<li class="door"|<\/ul>)/g)];
     expect(doors.map(([, id]) => id)).toEqual(DOORS.map(({ id }) => id));
-    doors.forEach(([, , body], index) => expect(body).toContain(`<a class="door__link" href="${DOORS[index].href}">${DOORS[index].linkText}</a>`));
-    expect(main).toContain('<p class="door__who">New to clusters? Start here</p>');
-    const expectedPath = resolveLearningPath(contentItems);
-    expect(expectedPath.length).toBeGreaterThanOrEqual(3);
-    const rendered = [...(doors[0][2].match(/<ol class="door__path">([\s\S]*?)<\/ol>/)?.[1] ?? '').matchAll(/<li><a href="([^"]+)">([^<]+)<\/a><\/li>/g)]
-      .map(([, href, label]) => ({ label: decode(label), href }));
-    expect(rendered).toEqual(expectedPath);
-    expect(doors[1][2]).not.toContain('door__path');
-    expect(doors[2][2]).not.toContain('door__path');
+    doors.forEach(([, , body], index) => {
+      expect(body).toContain('<p class="door__who">');
+      expect(text(body.match(/<p class="door__who">([\s\S]*?)<\/p>/)?.[1] ?? '')).toBe(DOORS[index].eyebrow);
+      expect(body).toContain(`<h3 class="door__title">${DOORS[index].title}</h3>`);
+      expect(body).toContain(`<a class="door__link" href="${DOORS[index].href}">${DOORS[index].linkText}</a>`);
+    });
+    expect(main).not.toContain('door__path');
   });
 
   it('renders the event band from the featured talk with wording that stays true after the date', () => {
@@ -189,10 +206,12 @@ describe('home page, built output', () => {
   });
 
   it('puts plain language before the term on the home page and never says reservation', () => {
-    const prose = text(sectionFrom('<section class="big-idea" id="big-idea"').match(/<h2 id="big-idea-title">The big idea<\/h2><p>([\s\S]*?)<\/p>/)?.[1] ?? '');
-    for (const concept of CONCEPTS) {
-      expect(prose, concept.key).toMatch(new RegExp(`${escapeRegExp(concept.plain)}\\s*\\((?:an? )?${escapeRegExp(concept.label.toLowerCase())}\\)`, 'i'));
-    }
+    const section = sectionFrom('<section class="concepts" id="big-idea"');
+    const notes = [...section.matchAll(/<p class="concept__note">([\s\S]*?)<\/p>/g)].map(([, note]) => text(note));
+    expect(notes).toHaveLength(4);
+    CONCEPTS.forEach((concept, index) => {
+      expect(notes[index], concept.key).toMatch(new RegExp(`${escapeRegExp(concept.plain)}\\s*\\((?:an? )?${escapeRegExp(concept.label.toLowerCase())}\\)`, 'i'));
+    });
     expect(text(main.replace(PROJECTION, ''))).not.toMatch(/reserv/i);
   });
 

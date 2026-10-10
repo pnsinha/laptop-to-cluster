@@ -43,7 +43,7 @@ describe('evidence badge, panel and record summary', () => {
   it('sets the three evidence rows in two columns from 40rem, and the panel full width', () => {
     expect(body('.evidence-panel')).toMatch(/flex-basis:\s*100%/);
     expect(media('(min-width: 40rem)')).toMatch(/\.evidence-row\s*\{[^}]*grid-template-columns:\s*11rem minmax\(0, 1fr\)/);
-    expect(body('.evidence-rows')).toMatch(/max-inline-size:\s*44rem/);
+    expect(body('.evidence-rows')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
   });
 
   it('makes the panel summary a visible, keyboard-reachable control', () => {
@@ -78,6 +78,9 @@ describe('talks, notices, tables and pager', () => {
     expect(body('table')).toMatch(/border-collapse:\s*collapse/);
     expect(body('tbody tr + tr > *')).toMatch(/border-block-start:\s*var\(--border-thin\) solid var\(--rule\)/);
     expect(body('.table-overflow:focus-visible')).toMatch(/outline-offset/);
+    // Tables fill the column and wrap their prose cells; only content that cannot wrap (code) makes the wrapper scroll.
+    expect(body('.table-overflow > table')).toMatch(/inline-size:\s*100%/);
+    expect(body('.table-overflow > table')).not.toMatch(/max-content/);
   });
 
   it('keeps pager links whole-link underlined and sets their titles in the display face', () => {
@@ -178,6 +181,14 @@ describe('final review fixes: list rhythm, glyph alt text, tail clearance, force
     expect(bare).toMatch(/@container \(min-width: 50rem\) \{\s*\.timeline__steps \{ --overrun: calc\(var\(--tl-pad\) \+ 2px \+ 2rem\);/);
   });
 
+  it('keeps the allocation line the strongest line in the hero figure under forced colours', () => {
+    const forced = media('(forced-colors: active)');
+    const boxes = forced.indexOf('border: 1px solid CanvasText;');
+    const own = forced.search(/\.env__alloc\s*\{\s*border:\s*var\(--border-strong\) dashed CanvasText;\s*\}/);
+    expect(boxes).toBeGreaterThanOrEqual(0);
+    expect(own).toBeGreaterThan(boxes);
+  });
+
   it('keeps the double ink rule on warnings and the link colour on links only under forced colours', () => {
     const forced = media('(forced-colors: active)');
     const borderList = forced.match(/([^{}]+)\{\s*border:\s*1px solid CanvasText;\s*\}/)?.[1] ?? '';
@@ -187,5 +198,27 @@ describe('final review fixes: list rhythm, glyph alt text, tail clearance, force
     const forcedTokens = tokens.slice(tokens.lastIndexOf('@media (forced-colors: active)'));
     expect(forcedTokens).toMatch(/--primary:\s*CanvasText/);
     expect(forcedTokens).toMatch(/--primary-hover:\s*CanvasText/);
+  });
+});
+
+describe('guide cards', () => {
+  it('stretches every tile to the height of its row: grid items stretch, each list item is a flex box, and the tile fills it', () => {
+    expect(body('.resource-grid')).toMatch(/display:\s*grid/);
+    expect(body('.resource-grid')).toMatch(/align-items:\s*stretch/);
+    expect(body('.resource-grid > li')).toMatch(/display:\s*flex/);
+    expect(body('.resource-tile')).toMatch(/flex:\s*1\s*;/);
+    expect(body('.resource-tile')).toMatch(/display:\s*flex/);
+    expect(body('.resource-tile')).toMatch(/flex-direction:\s*column/);
+    expect(body('.resource-tile p')).toMatch(/flex-grow:\s*1/);
+  });
+
+  it('underlines the title only: the tile has no decoration, the h3 carries it, and the shared link rule skips the tile', () => {
+    expect(body('.resource-tile')).toMatch(/text-decoration:\s*none/);
+    expect(body('.resource-tile h3')).toMatch(/text-decoration-line:\s*underline/);
+    expect(body('.resource-tile h3')).toMatch(/text-decoration-thickness:\s*1px/);
+    expect(body('.resource-tile h3')).toMatch(/text-underline-offset:\s*0\.2em/);
+    expect(body('.resource-tile:hover h3, .resource-tile:focus-visible h3')).toMatch(/text-decoration-thickness:\s*2px/);
+    expect(bare).toContain(':where(main, .site-footer) a:not(.action--primary, .resource-tile) { text-decoration-line: underline; }');
+    for (const selector of ['.resource-tile p', '.resource-tile__tag']) expect(body(selector), selector).not.toMatch(/text-decoration/);
   });
 });

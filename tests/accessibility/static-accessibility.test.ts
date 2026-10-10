@@ -82,8 +82,9 @@ describe('representative static accessibility coverage', () => {
       }
     }
     const home = pages.find(({ kind }) => kind === 'home')!.html;
-    expect(home).toMatch(/<figure class="timeline" aria-labelledby="timeline-title"><figcaption id="timeline-title" class="timeline__title">[^<]+<\/figcaption><ol class="timeline__steps">/);
-    expect(home).toMatch(/<span class="timeline__bars" aria-hidden="true">/);
+    const modulePage = pages.find(({ kind }) => kind === 'runnable module')!.html;
+    expect(modulePage).toMatch(/<figure class="timeline" aria-labelledby="timeline-title"><figcaption id="timeline-title" class="timeline__title">[^<]+<\/figcaption><ol class="timeline__steps">/);
+    expect(modulePage).toMatch(/<span class="timeline__bars" aria-hidden="true">/);
     expect(home).toMatch(/<span class="crosswalk__mark" aria-hidden="true">/);
     const milestone = pages.find(({ kind }) => kind === 'milestone')!.html;
     expect(milestone).toMatch(/class="table-overflow layout-data" role="region" aria-label="[^"]+ table" tabindex="0"/);

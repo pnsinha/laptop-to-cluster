@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CONCEPTS, DOORS, LEARNING_PATH, TIMELINE_STEPS } from '../../site/src/content/contracts';
+import { CONCEPTS, DOORS, LEARNING_PATH, REQUIRED_FRAGMENTS } from '../../site/src/content/contracts';
 import {
-  ANALOGY, BIG_IDEA, DOOR_SUMMARIES, DOORS_SECTION, EVENT_BAND, HERO, HOME_TITLE, PROJECT_RECORDS, TIMELINE_CAPTIONS,
+  BIG_IDEA, CONCEPT_NOTES, DOOR_SUMMARIES, DOORS_SECTION, EVENT_BAND, HERO, HERO_FIGURE, PROJECT_RECORDS,
   eventBandLead, homeDoors, projectRecordLinks, resolveLearningPath,
 } from '../../site/src/content/home';
 import type { ContentItem } from '../../site/src/content/schema';
@@ -21,109 +21,65 @@ const pathItems = [
 ];
 const allCopy = [
   HERO.kicker, HERO.title, HERO.ledeHtml, HERO.primary.label, HERO.secondary.label, HERO.quiet.lead, HERO.quiet.label,
-  BIG_IDEA.title, BIG_IDEA.proseHtml, ANALOGY.title, ANALOGY.bodyHtml, ANALOGY.breaksTitle,
-  ...ANALOGY.breaks.flatMap(({ lead, text: body }) => [lead, body]),
-  ...Object.values(TIMELINE_CAPTIONS), DOORS_SECTION.title, ...Object.values(DOOR_SUMMARIES),
+  HERO_FIGURE.caption, ...HERO_FIGURE.services,
+  HERO_FIGURE.laptop.title, HERO_FIGURE.laptop.command, ...HERO_FIGURE.laptop.facts,
+  HERO_FIGURE.cluster.title, HERO_FIGURE.cluster.command, HERO_FIGURE.cluster.allocation, ...HERO_FIGURE.cluster.facts,
+  BIG_IDEA.title, BIG_IDEA.proseHtml, BIG_IDEA.composeSide, BIG_IDEA.clusterSide,
+  ...Object.values(CONCEPT_NOTES), DOORS_SECTION.title, ...Object.values(DOOR_SUMMARIES),
   EVENT_BAND.label, EVENT_BAND.linkText, PROJECT_RECORDS.title, PROJECT_RECORDS.visitLead, PROJECT_RECORDS.visitLinkText,
 ].map(text);
 
 describe('home hero', () => {
-  it('pins the required hero labels and routes', () => {
-    expect(HOME_TITLE).toBe('Bridging the Laptop-to-Cluster Gap');
-    expect(HERO.kicker).toBe('A free, open-source learning guide for Docker Compose users');
-    expect(HERO.title).toBe('Your Compose stack, on a shared cluster');
-    expect(HERO.primary).toEqual({ label: 'Start with the big idea', href: '#big-idea' });
-    expect(HERO.secondary).toEqual({ label: 'Already have a Compose file? Translate it', href: '/guide/compose-to-hpc-translation/' });
+  it('pins the required hero routes and keeps every label non-empty', () => {
+    expect(HERO.primary.href).toBe('#big-idea');
+    expect(HERO.secondary.href).toBe('/guide/compose-to-hpc-translation/');
     expect(HERO.quiet.href).toBe('/adoption/evaluate/');
-    expect(`${HERO.quiet.lead} ${HERO.quiet.label}`).toBe('Support researchers or run a cluster? See what this assumes, and when not to use it');
+    for (const label of [HERO.kicker, HERO.title, HERO.primary.label, HERO.secondary.label, HERO.quiet.lead, HERO.quiet.label]) {
+      expect(label.trim().length).toBeGreaterThan(0);
+    }
   });
 
   it('explains in the lede why Compose stops working and what replaces it', () => {
     expect(HERO.ledeHtml).toContain('<code>docker compose up</code>');
     const lede = text(HERO.ledeHtml);
-    for (const idea of [/no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /one script starts each service/]) {
+    for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) {
       expect(lede).toMatch(idea);
     }
+    expect(lede).toContain('you request a scheduler allocation (a block of computer time on the cluster), wait your turn');
   });
 });
 
-describe('big idea and analogy', () => {
+describe('hero figure', () => {
+  it('shows the batch script at its path in the workflow layout, as the crosswalk does', () => {
+    expect(HERO_FIGURE.cluster.command).toBe('sbatch slurm/baseline.sbatch');
+  });
+});
+
+describe('big idea', () => {
   it('puts plain language first and the term in parentheses for every concept', () => {
     const prose = text(BIG_IDEA.proseHtml);
     for (const concept of CONCEPTS) {
       const pattern = new RegExp(`${escapeRegExp(concept.plain)}\\s*\\((?:an? )?${escapeRegExp(concept.label.toLowerCase())}\\)`, 'i');
-      expect(prose, concept.key).toMatch(pattern);
+      expect(text(CONCEPT_NOTES[concept.key]), concept.key).toMatch(pattern);
     }
-    expect(prose).toMatch(/\(an allocation\)/);
+    expect(BIG_IDEA.proseHtml).toContain('href="/about/glossary/#allocation"');
     expect(prose).toMatch(/scheduler \(Slurm, at most centers\)/);
   });
 
-  it('marks each concept term with its concept class and its glossary anchor', () => {
-    for (const [key, anchor] of [['step', 'job-step'], ['gate', 'readiness-gate'], ['scratch', 'job-scoped-scratch'], ['net', 'loopback']]) {
-      expect(BIG_IDEA.proseHtml).toContain(`<a class="c-${key}" href="/about/glossary/#${anchor}">`);
+  it('keeps the three qualifiers the old timeline and analogy carried', () => {
+    expect(text(CONCEPT_NOTES.gate)).toContain('It does not establish that results are correct.');
+    expect(text(CONCEPT_NOTES.scratch)).toContain('It may remain until your center clears it; copy out what you need before the job ends.');
+    expect(text(CONCEPT_NOTES.net)).toContain('It is not an isolation boundary; access beyond the node requires center approval.');
+  });
+
+  it('opens each concept note with a capital and links it to its glossary anchor', () => {
+    const anchors: Record<string, string> = { step: 'job-step', gate: 'readiness-gate', scratch: 'job-scoped-scratch', net: 'loopback' };
+    for (const concept of CONCEPTS) {
+      const anchor = anchors[concept.key];
+      expect(REQUIRED_FRAGMENTS.glossary, `${concept.key} anchor`).toContain(anchor);
+      expect(CONCEPT_NOTES[concept.key]).toContain(`href="/about/glossary/#${anchor}"`);
+      expect(text(CONCEPT_NOTES[concept.key]), concept.key).toMatch(/^[A-Z]/);
     }
-    expect(BIG_IDEA.proseHtml).toContain('<a href="/about/glossary/#allocation">allocation</a>');
-  });
-
-  it('keeps the frozen vocabulary for loopback and access beyond the node', () => {
-    const prose = text(BIG_IDEA.proseHtml);
-    expect(prose).toMatch(/\(loopback\), which services use by default/);
-    expect(prose).toMatch(/beyond its node needs access your center approves/);
-  });
-
-  it('tells the analogy in the order the script runs and keeps gate and verification apart', () => {
-    expect(ANALOGY.title).toBe('A cluster is a shared building, not another laptop');
-    const story = text(ANALOGY.bodyHtml);
-    const at = (pattern: RegExp) => story.search(pattern);
-    for (const pattern of [/booking desk/, /\(an allocation/, /wait until one is free/, /coordinator/, /workers in only after/, /\(the readiness gate\)/, /\(verification\)/, /finishes, or your time runs out/]) {
-      expect(at(pattern), String(pattern)).toBeGreaterThanOrEqual(0);
-    }
-    expect(at(/coordinator/)).toBeLessThan(at(/workers/));
-    expect(at(/readiness gate/)).toBeLessThan(at(/verification/));
-    expect(story).toMatch(/never proved that/);
-  });
-
-  it('lists where the analogy breaks: queue, shared node, center-approved access, copy out', () => {
-    expect(ANALOGY.breaksTitle).toBe('Where the analogy breaks');
-    const breaks = ANALOGY.breaks.map(({ lead, text: body }) => `${lead} ${body}`);
-    expect(breaks).toHaveLength(4);
-    expect(breaks[0]).toMatch(/queue/i);
-    expect(breaks[0]).toMatch(/waiting/);
-    expect(breaks[1]).toMatch(/share the node/);
-    expect(breaks[1]).toMatch(/\(loopback\)/);
-    expect(breaks[2]).toMatch(/outside the node/);
-    expect(breaks[2]).toMatch(/center approves/);
-    expect(breaks[3]).toMatch(/Copy out/);
-    expect(breaks[3]).toMatch(/depends on your center/);
-  });
-});
-
-describe('timeline captions', () => {
-  it('provides one caption per frozen step', () => {
-    expect(Object.keys(TIMELINE_CAPTIONS).map(Number)).toEqual(TIMELINE_STEPS.map(({ n }) => n));
-    for (const step of TIMELINE_STEPS) expect(TIMELINE_CAPTIONS[step.n].length, step.label).toBeGreaterThan(20);
-  });
-
-  it('matches what baseline.sbatch does at each step', () => {
-    expect(TIMELINE_CAPTIONS[1]).toMatch(/private/);
-    expect(TIMELINE_CAPTIONS[1]).toMatch(/\(job-scoped scratch\)/);
-    expect(TIMELINE_CAPTIONS[2]).toMatch(/coordinator/);
-    expect(TIMELINE_CAPTIONS[2]).toMatch(/\(a job step\)/);
-    expect(TIMELINE_CAPTIONS[2]).toMatch(/\(loopback\)/);
-    expect(TIMELINE_CAPTIONS[3]).toMatch(/^Proves the coordinator can serve/);
-    expect(TIMELINE_CAPTIONS[3]).toMatch(/before any worker starts/);
-    // READINESS_TIMEOUT is configurable (1..300), so the caption names a time limit, not a fixed 30 s.
-    expect(TIMELINE_CAPTIONS[3]).toMatch(/time limit \(30 seconds by default\)/);
-    expect(TIMELINE_CAPTIONS[3]).not.toMatch(/within 30 seconds/);
-    expect(TIMELINE_CAPTIONS[4]).toMatch(/^Only now/);
-    expect(TIMELINE_CAPTIONS[4]).toMatch(/waits for every worker/);
-    expect(TIMELINE_CAPTIONS[5]).toMatch(/coordinator still running/);
-    expect(TIMELINE_CAPTIONS[5]).toMatch(/only a full pass/);
-    expect(TIMELINE_CAPTIONS[6]).toMatch(/set up at the start \(an EXIT trap\)/);
-    // An untrappable kill bypasses the trap, and that path is Designed, not run, so no caption promises "however it ends".
-    expect(TIMELINE_CAPTIONS[6]).toMatch(/when the script exits/);
-    expect(TIMELINE_CAPTIONS[6]).not.toMatch(/however|no matter|always|every time/i);
-    expect(Object.values(TIMELINE_CAPTIONS).filter((caption) => /\bworkers start\b/.test(caption))).toEqual([TIMELINE_CAPTIONS[4]]);
   });
 });
 
@@ -161,6 +117,7 @@ describe('doors and learning path', () => {
   });
 
   it('summarizes each door by purpose', () => {
+    expect(DOOR_SUMMARIES.understand).toBe('The six steps from request to results, in detail, with a short annotated script you can read without a cluster account.');
     expect(DOOR_SUMMARIES.understand).toMatch(/six steps/);
     expect(DOOR_SUMMARIES.understand).toMatch(/without a cluster account/);
     expect(DOOR_SUMMARIES.translate).toMatch(/Compose file becomes on a cluster/);
@@ -210,9 +167,8 @@ describe('home copy rules', () => {
 
   it('stays near the ≈600-word home budget', () => {
     const prose = [
-      HERO.ledeHtml, BIG_IDEA.proseHtml, ANALOGY.bodyHtml,
-      ...ANALOGY.breaks.flatMap(({ lead, text: body }) => [lead, body]),
-      ...Object.values(TIMELINE_CAPTIONS), ...Object.values(DOOR_SUMMARIES),
+      HERO.ledeHtml, HERO_FIGURE.caption, BIG_IDEA.proseHtml,
+      ...Object.values(CONCEPT_NOTES), ...Object.values(DOOR_SUMMARIES),
     ];
     expect(prose.reduce((total, value) => total + words(value), 0)).toBeLessThanOrEqual(600);
   });

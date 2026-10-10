@@ -38,9 +38,9 @@
   --weight-regular: 400;
   --weight-semibold: 600; /* Plex Sans SemiBold; serif h2/h3 */
   --weight-display: 600; /* variable serif; no opsz axis is shipped */
-  /* Measure */
-  --measure-prose: 66ch;
-  --measure-lede: 58ch;
+  /* Measure: a physical width, not ch, so sans captions, mono and serif prose share one right edge */
+  --measure-prose: 42rem;
+  --measure-lede: 42rem;
   --measure-wide: 72rem;
   --measure-data: 84rem;
   /* Spacing */

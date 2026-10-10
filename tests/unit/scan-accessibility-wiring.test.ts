@@ -28,8 +28,15 @@ describe('scanner wiring: gates, routes, requests', () => {
     expect(scanner).toContain("from '../tests/accessibility/browser-checks'");
     for (const call of [
       'checkThemePrecedence(', 'inspectThemeScript(', 'checkForcedColors(', 'checkPrint(', 'checkJsOff(',
-      'checkPrimaryAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkComponentGeometry(', 'checkMotion(',
+      'checkPrimaryAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkComponentGeometry(', 'checkGuideCards(', 'checkMotion(',
     ]) expect(scanner, call).toContain(call);
+  });
+
+  it('checks the Guide cards on /resources/ next to the component geometry gate, under its own code', () => {
+    expect(scanner).toContain("await gate('/resources/:guide-cards', () => checkGuideCards(browser, origin, '/resources/'));");
+    expect(scanner.indexOf('checkGuideCards(browser')).toBeGreaterThan(scanner.indexOf('checkComponentGeometry(browser'));
+    expect(scanner.indexOf('checkGuideCards(browser')).toBeLessThan(scanner.indexOf('checkMotion(browser'));
+    expect(readFileSync(fileURLToPath(new URL('../accessibility/browser-checks.ts', import.meta.url)), 'utf8')).toContain("const code = 'A11Y-COMPONENT-GEOMETRY'");
   });
 
   it('drops the v0.1.0 workflow figure, Module 0 slug, and old primary action', () => {
@@ -38,6 +45,15 @@ describe('scanner wiring: gates, routes, requests', () => {
     }
     expect(scanner).toContain('NAV_ITEMS[0].href');
     expect(scanner).toContain("'Start with the big idea', 'big-idea'");
+  });
+
+  it('checks at 320px that each timeline step label sits above its caption, on every module page with a timeline', () => {
+    expect(scanner).toContain("'.timeline li.timeline__step'");
+    expect(scanner).toContain("'.timeline__caption'");
+    expect(scanner).toContain('label.getBoundingClientRect().top <= caption.getBoundingClientRect().top');
+    expect(scanner).toContain("'A11Y-READING-ORDER', 'each timeline step label must sit above its caption at 320px'");
+    expect(scanner).toContain("kind === 'conceptual module' || kind === 'runnable module'");
+    expect(scanner).toContain('path === MODULE_2_PATH');
   });
 
   it('checks 768 and 1280 pixel widths, and only /fonts/*.woff2 as a same-origin font', () => {

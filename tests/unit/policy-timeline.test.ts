@@ -20,11 +20,12 @@ describe('TIMELINE', () => {
     expect(timelineIssues(page(figure()))).toEqual([]);
     expect(timelineIssues(page(figure(TIMELINE_LABELS, 0)))).toEqual([]);
     expect(timelineIssues(page(`${figure()}<ol class="door__path"><li><strong>Tour</strong></li><li><strong>Module 1</strong></li></ol>`))).toEqual([]);
-    expect(validatePageComposition('/', page(figure()))).toEqual([]);
+    expect(validatePageComposition('/guide/tour/', page(figure(), 'learning-conceptual'))).toEqual([]);
   });
 
-  it('requires exactly one on the landing page, and allows none elsewhere', () => {
-    expect(validatePageComposition('/', page('<p>No figure.</p>')).join('\n')).toMatch(/TIMELINE.*exactly one/);
+  it('allows none on the landing page and one well-formed one elsewhere', () => {
+    expect(validatePageComposition('/', page('<p>No figure.</p>'))).toEqual([]);
+    expect(validatePageComposition('/', page(figure())).join('\n')).toMatch(/TIMELINE.*carries no/);
     expect(validatePageComposition('/', page(figure() + figure())).join('\n')).toMatch(/TIMELINE.*at most one/);
     expect(validatePageComposition('/about/', page('<p>No figure.</p>', 'about'))).toEqual([]);
     expect(validatePageComposition('/about/', page(figure(), 'about'))).toEqual([]);
@@ -38,7 +39,7 @@ describe('TIMELINE', () => {
       expect(timelineIssues(page(figure(labels))).join('\n')).toMatch(/step labels must read/);
     }
     const legacy = '<figure class="workflow-figure"><figcaption>One allocation, five ordered responsibilities</figcaption><ol><li><strong>Allocation</strong></li></ol></figure>';
-    expect(validatePageComposition('/', page(legacy)).join('\n')).toMatch(/TIMELINE.*exactly one/);
+    expect(timelineIssues(page(legacy))).toEqual([]);
   });
 
   it('checks the figure label, the step numbering, aria-current and the hidden bars', () => {

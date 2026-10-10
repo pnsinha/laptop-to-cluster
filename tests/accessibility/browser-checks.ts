@@ -302,7 +302,7 @@ export async function checkPrint(browser: Browser, origin: string, path: string,
    Part 3: JS off, primary action, font failure, crosswalk layout, motion (spec §10, §8.3, D13-D15)
 --------------------------------------------------------------------------------------------- */
 
-/** JS off: the home doors, timeline, crosswalk legend and panes, and the evidence panel rows are all in the HTML, in contract order. */
+/** JS off: the home doors and crosswalk legend and panes, the module timeline, and the evidence panel rows are all in the HTML, in contract order. The timeline assertions apply only to learning-module pages ('module'). */
 export async function checkJsOff(browser: Browser, origin: string, path: string, kind: 'home' | 'module', options: { panel: boolean }): Promise<Issue[]> {
   const scope = `${path}:no-script`;
   const issues: Issue[] = [];
@@ -327,9 +327,11 @@ export async function checkJsOff(browser: Browser, origin: string, path: string,
     };
   });
   const same = (a: readonly unknown[], b: readonly unknown[]) => JSON.stringify(a) === JSON.stringify(b);
-  if (read.timeline.figures > 1) issues.push(issue(scope, 'A11Y-NOJS', 'at most one timeline figure per page'));
-  if (!same(read.timeline.labels, TIMELINE_STEPS.map(({ label }) => label)) || read.timeline.captions.length !== 6 || read.timeline.captions.some((caption) => !caption)) {
-    issues.push(issue(scope, 'A11Y-NOJS', 'the timeline must carry the six step labels in order, each with a caption, without JavaScript'));
+  if (kind === 'module') {
+    if (read.timeline.figures > 1) issues.push(issue(scope, 'A11Y-NOJS', 'at most one timeline figure per page'));
+    if (!same(read.timeline.labels, TIMELINE_STEPS.map(({ label }) => label)) || read.timeline.captions.length !== 6 || read.timeline.captions.some((caption) => !caption)) {
+      issues.push(issue(scope, 'A11Y-NOJS', 'the timeline must carry the six step labels in order, each with a caption, without JavaScript'));
+    }
   }
   if (!read.themeControlHidden) issues.push(issue(scope, 'A11Y-NOJS', 'the theme control must stay hidden without JavaScript'));
   if (kind === 'home') {
@@ -491,6 +493,75 @@ export async function checkComponentGeometry(browser: Browser, origin: string, p
     }
     const snapshot = await page.locator('body').ariaSnapshot();
     if (/[\u25A0\u25B2\u25C6\u25CF]/.test(snapshot)) issues.push(issue(`${scope}:${width}px`, 'A11Y-GEOMETRY', 'a concept shape glyph reached the accessible name'));
+    await context.close();
+  }
+  // The four big-idea terms keep their tinted chip in both colour schemes, even though each concept row is a list item.
+  for (const colorScheme of ['light', 'dark'] as const) {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme });
+    const page = await context.newPage();
+    await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+    const { bigIdea, count, bare } = await page.evaluate(() => {
+      const terms = [...document.querySelectorAll('#big-idea .concept__term')];
+      return {
+        bigIdea: Boolean(document.querySelector('#big-idea .concepts__rows')),
+        count: terms.length,
+        bare: terms.filter((term) => ['transparent', 'rgba(0, 0, 0, 0)'].includes(getComputedStyle(term).backgroundColor)).map((term) => (term.textContent ?? '').trim()),
+      };
+    });
+    if (bigIdea && count !== 4) issues.push(issue(`${scope}:${colorScheme}`, 'A11Y-GEOMETRY', `the big idea must show four concept terms, found ${count}`));
+    if (bare.length > 0) issues.push(issue(`${scope}:${colorScheme}`, 'A11Y-GEOMETRY', `the concept terms in the big idea must keep their tinted chip, but ${bare.join(', ')} ${bare.length > 1 ? 'have' : 'has'} no background in the ${colorScheme} scheme`));
+    await context.close();
+  }
+  return issues;
+}
+
+/** Guide cards at 1280 px: tiles that share a row are equally tall, the title is underlined, and the summary and tag are not. */
+export async function checkGuideCards(browser: Browser, origin: string, path: string): Promise<Issue[]> {
+  const scope = `${path}:guide-cards:1280px`;
+  const code = 'A11Y-COMPONENT-GEOMETRY';
+  const issues: Issue[] = [];
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  try {
+    const page = await context.newPage();
+    await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+    await shim(page);
+    const tiles = await page.evaluate(() => {
+      // A decoration paints on the element that declares it and on every descendant, so walk up from the text to the root.
+      const underlined = (element: Element | null) => {
+        for (let node = element; node; node = node.parentElement) if (getComputedStyle(node).textDecorationLine.includes('underline')) return true;
+        return false;
+      };
+      return [...document.querySelectorAll<HTMLElement>('.resource-tile')].map((tile) => {
+        const box = tile.getBoundingClientRect();
+        const title = tile.querySelector('h3');
+        return {
+          name: (title?.textContent ?? tile.textContent ?? '').trim().slice(0, 40),
+          top: box.top,
+          height: box.height,
+          title: title ? underlined(title) : null,
+          others: [...tile.querySelectorAll('p, .resource-tile__tag')].filter((element) => underlined(element)).map((element) => element.tagName === 'P' ? 'summary' : 'tag'),
+        };
+      });
+    });
+    if (tiles.length === 0) return [issue(scope, code, 'no .resource-tile elements found, so the guide cards cannot be checked')];
+    const rows: Array<typeof tiles> = [];
+    for (const tile of [...tiles].sort((a, b) => a.top - b.top)) {
+      const row = rows.find((candidate) => Math.abs(candidate[0].top - tile.top) <= 1);
+      if (row) row.push(tile); else rows.push([tile]);
+    }
+    const shared = rows.filter((row) => row.length > 1);
+    if (shared.length === 0) issues.push(issue(scope, code, 'no two tiles share a row, so equal tile heights cannot be checked'));
+    for (const row of shared) {
+      const heights = row.map((tile) => tile.height);
+      if (Math.max(...heights) - Math.min(...heights) > 1) {
+        issues.push(issue(scope, code, `tiles that share a row must be equally tall, but "${row.map((tile) => tile.name).join('", "')}" are ${heights.map((height) => `${Math.round(height * 10) / 10}px`).join(', ')}`));
+      }
+    }
+    for (const tile of tiles) {
+      if (tile.title !== true) issues.push(issue(scope, code, `the title must be underlined in tile "${tile.name}"`));
+      if (tile.others.length > 0) issues.push(issue(scope, code, `the summary and tag must not be underlined, but the ${tile.others.join(' and ')} of tile "${tile.name}" ${tile.others.length > 1 ? 'are' : 'is'}`));
+    }
+  } finally {
     await context.close();
   }
   return issues;
