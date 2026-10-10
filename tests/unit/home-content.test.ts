@@ -45,7 +45,7 @@ describe('home hero', () => {
     for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) {
       expect(lede).toMatch(idea);
     }
-    expect(lede).toContain('you request a scheduler allocation (a reserved block of computer time), wait your turn');
+    expect(lede).toContain('you request a scheduler allocation (a block of computer time on the cluster), wait your turn');
   });
 });
 
@@ -159,7 +159,7 @@ describe('event band and project records', () => {
 describe('home copy rules', () => {
   it('never says reservation, names no system, version or date, and uses no arrows', () => {
     for (const value of allCopy) {
-      expect(value).not.toMatch(/reservation/i);
+      expect(value).not.toMatch(/reserv/i);
       expect(value).not.toMatch(/anvil|purdue|\b(?:slurm|apptainer)\s+v?\d|\d+\.\d+\.\d+-\d|\b20\d\d-\d\d-\d\d\b/i);
       expect(value).not.toMatch(/[→↗➔➜⟶»]/);
     }

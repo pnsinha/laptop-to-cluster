@@ -74,7 +74,7 @@ describe('home page, built output', () => {
     expect(home).toContain('<meta property="og:title" content="Bridging the Laptop-to-Cluster Gap">');
     const lede = text(hero.match(/<p class="lede">([\s\S]*?)<\/p>/)?.[1] ?? '');
     for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) expect(lede).toMatch(idea);
-    expect(lede).toContain('you request a scheduler allocation (a reserved block of computer time), wait your turn');
+    expect(lede).toContain('you request a scheduler allocation (a block of computer time on the cluster), wait your turn');
   });
 
   it('renders four concept rows in contract order, each with its Compose name, tinted term and note', () => {
@@ -212,7 +212,7 @@ describe('home page, built output', () => {
     CONCEPTS.forEach((concept, index) => {
       expect(notes[index], concept.key).toMatch(new RegExp(`${escapeRegExp(concept.plain)}\\s*\\((?:an? )?${escapeRegExp(concept.label.toLowerCase())}\\)`, 'i'));
     });
-    expect(text(main.replace(PROJECTION, ''))).not.toMatch(/reservation/i);
+    expect(text(main.replace(PROJECTION, ''))).not.toMatch(/reserv/i);
   });
 
   it('removes the old workflow figure and keeps the home sources free of style, script and inline handlers', () => {

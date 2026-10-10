@@ -16,7 +16,7 @@ const doorHref = (id: DoorId): string => DOORS.find((door) => door.id === id)!.h
 export const HERO = {
   kicker: 'A free, open-source learning guide for Docker Compose users',
   title: 'Your Compose stack, on a shared cluster',
-  ledeHtml: 'On your laptop, <code>docker compose up</code> starts the stack on demand. A shared research cluster has no Docker daemon and gives you no root access (administrator rights). Instead, you request a scheduler allocation (a reserved block of computer time), wait your turn, and launch the services with a batch script. This guide shows how to make that translation.',
+  ledeHtml: 'On your laptop, <code>docker compose up</code> starts the stack on demand. A shared research cluster has no Docker daemon and gives you no root access (administrator rights). Instead, you request a scheduler allocation (a block of computer time on the cluster), wait your turn, and launch the services with a batch script. This guide shows how to make that translation.',
   primary: { label: 'Start with the big idea', href: '#big-idea' },
   secondary: { label: 'Already have a Compose file? Translate it', href: doorHref('translate') },
   quiet: { lead: 'Support researchers or run a cluster?', label: 'See what this assumes, and when not to use it', href: doorHref('evaluate') },
