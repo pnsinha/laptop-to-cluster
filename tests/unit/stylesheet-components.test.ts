@@ -78,6 +78,9 @@ describe('talks, notices, tables and pager', () => {
     expect(body('table')).toMatch(/border-collapse:\s*collapse/);
     expect(body('tbody tr + tr > *')).toMatch(/border-block-start:\s*var\(--border-thin\) solid var\(--rule\)/);
     expect(body('.table-overflow:focus-visible')).toMatch(/outline-offset/);
+    // Tables fill the column and wrap their prose cells; only content that cannot wrap (code) makes the wrapper scroll.
+    expect(body('.table-overflow > table')).toMatch(/inline-size:\s*100%/);
+    expect(body('.table-overflow > table')).not.toMatch(/max-content/);
   });
 
   it('keeps pager links whole-link underlined and sets their titles in the display face', () => {
