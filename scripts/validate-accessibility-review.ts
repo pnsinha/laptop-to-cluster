@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
@@ -36,6 +37,9 @@ const V010_DESTINATIONS = {
   provenance: '/about/attribution/', release: '/milestones/1/',
 } as const;
 const VALID_RESULTS = new Set(['pending', 'pass', 'not-applicable']);
+const PLACEHOLDER = 'EXTERNAL_REQUIRED';
+const COMMIT = /^[0-9a-f]{40}$/i;
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 // Releases with a review profile, and the milestone page that renders each release record.
 const MILESTONE_BY_RELEASE: Record<string, number> = { 'v0.1.0': 1, 'v0.2.0': 2 };
@@ -46,6 +50,8 @@ export type ReviewProfile = {
   routeSamples: Record<string, string>;
   destinations: Record<string, string>;
   requiredChecks: readonly string[];
+  /** v0.2.0 and later: the signature names the reviewed commit and deployment (v0.1.0 is frozen without them). */
+  bindsReviewedBuild: boolean;
 };
 
 /** The route samples, canonical destinations and checks a review of `version` must cover.
@@ -54,7 +60,7 @@ export function reviewProfile(version: string, recordId: string): ReviewProfile 
   const milestone = MILESTONE_BY_RELEASE[version];
   if (!milestone) throw new Error(`no accessibility-review profile for ${version}; add one before releasing it`);
   if (version === 'v0.1.0') {
-    return { release: version, id: `accessibility-review-${version}`, routeSamples: { ...V010_ROUTE_SAMPLES }, destinations: { ...V010_DESTINATIONS }, requiredChecks: REQUIRED_CHECKS };
+    return { release: version, id: `accessibility-review-${version}`, routeSamples: { ...V010_ROUTE_SAMPLES }, destinations: { ...V010_DESTINATIONS }, requiredChecks: REQUIRED_CHECKS, bindsReviewedBuild: false };
   }
   const record = `/applicability/${recordId}/`;
   const routeSamples: Record<string, string> = {
@@ -71,6 +77,7 @@ export function reviewProfile(version: string, recordId: string): ReviewProfile 
     release: version, id: `accessibility-review-${version}`, routeSamples,
     destinations: { applicability: record, evidence: record, authority: '/about/attribution/', provenance: '/about/attribution/', release: `/milestones/${milestone}/` },
     requiredChecks: [...REQUIRED_CHECKS, ...V020_EXTRA_CHECKS],
+    bindsReviewedBuild: true,
   };
 }
 
@@ -90,7 +97,8 @@ const EDITORIAL_HEURISTICS = [
 export function pendingReview(profile: ReviewProfile) {
   return {
     schemaVersion: 2, id: profile.id, release: profile.release,
-    reviewer: 'EXTERNAL_REQUIRED', reviewedAt: 'EXTERNAL_REQUIRED', releaseReady: false,
+    reviewer: PLACEHOLDER, reviewedAt: PLACEHOLDER, releaseReady: false,
+    ...(profile.bindsReviewedBuild ? { reviewedCommit: PLACEHOLDER, reviewedDeploymentUrl: PLACEHOLDER } : {}),
     automatedEvidence: { command: 'npm run test:accessibility:browser', representativePages: Object.keys(profile.routeSamples) },
     presentationLevels: PRESENTATION_LEVELS,
     editorialHeuristicsPolicy: { enforcement: 'human-review', approximateFirstWords: 120, buildFailingWordCount: false },
@@ -109,7 +117,65 @@ export function currentRecordId(evidenceIds: readonly string[]): string {
 }
 
 type ReviewRecord = Record<string, any>;
-type ValidationOptions = { requireComplete?: boolean; source?: string; version?: string; recordId?: string };
+type ValidationOptions = {
+  requireComplete?: boolean; source?: string; version?: string; recordId?: string;
+  /** Today as YYYY-MM-DD (UTC); defaults to the clock. A review cannot be dated later than this. */
+  today?: string;
+  /** The commit being released. Required with `requireComplete` for releases that bind the review to a build. */
+  releaseSha?: string;
+  /** Where the git repository is checked out; defaults to the working directory. */
+  gitRoot?: string;
+};
+
+const git = (cwd: string, args: string[]) => spawnSync('git', args, { cwd, encoding: 'utf8' });
+
+/** The commit being released: `--release-sha <sha>`, else RELEASE_SHA, else GITHUB_SHA, else HEAD; undefined when none can be found. */
+export function resolveReleaseSha(argv: readonly string[], env: Record<string, string | undefined>, cwd: string): string | undefined {
+  const flag = argv.findIndex((argument) => argument === '--release-sha' || argument.startsWith('--release-sha='));
+  if (flag >= 0) {
+    const value = argv[flag].startsWith('--release-sha=') ? argv[flag].slice('--release-sha='.length) : argv[flag + 1];
+    if (value && !value.startsWith('--')) return value;
+  }
+  for (const name of ['RELEASE_SHA', 'GITHUB_SHA']) if (env[name]?.trim()) return env[name]!.trim();
+  const head = git(cwd, ['rev-parse', '--verify', '--quiet', 'HEAD^{commit}']);
+  return head.status === 0 && head.stdout.trim() ? head.stdout.trim() : undefined;
+}
+
+/** Problems with how `reviewedCommit` relates to `releaseSha`: it must be this checkout's ancestor of (or equal to) the release, with nothing but the review file changed in between. */
+function reviewedBuildProblems(reviewedCommit: string, releaseSha: string, reviewFile: string, cwd: string): string[] {
+  const resolve = (ref: string) => {
+    const result = git(cwd, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
+    return result.status === 0 ? result.stdout.trim() : undefined;
+  };
+  const release = resolve(releaseSha);
+  if (!release) return [`the release commit ${releaseSha} is not a commit in this checkout`];
+  const reviewed = resolve(reviewedCommit);
+  if (!reviewed) return [`${reviewedCommit} is not a commit in this checkout; fetch the full history before checking the review`];
+  const ancestor = git(cwd, ['merge-base', '--is-ancestor', reviewed, release]);
+  if (ancestor.status === 1) return [`${reviewed} is not an ancestor of the release commit ${release}`];
+  if (ancestor.status !== 0) return [`could not compare ${reviewed} with the release commit: ${ancestor.stderr.trim()}`];
+  const changed = git(cwd, ['diff', '--name-only', reviewed, release, '--', '.', `:!${reviewFile}`]);
+  if (changed.status !== 0) return [`could not list the files that changed after the review: ${changed.stderr.trim()}`];
+  const files = changed.stdout.split('\n').filter(Boolean);
+  if (files.length) return [`${files.length} file(s) changed between the reviewed commit and the release commit (only ${reviewFile} may change); re-review the new commit: ${files.slice(0, 5).join(', ')}${files.length > 5 ? ', ...' : ''}`];
+  return [];
+}
+
+const isIsoDate = (value: unknown, today: string): boolean => {
+  const match = typeof value === 'string' ? ISO_DATE.exec(value) : null;
+  if (!match) return false;
+  const [year, month, day] = match.slice(1).map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day && (value as string) <= today;
+};
+const isHttpsUrl = (value: unknown): boolean => {
+  try {
+    const url = new URL(String(value));
+    return url.protocol === 'https:' && url.hostname.length > 0;
+  } catch {
+    return false;
+  }
+};
 
 export function validateAccessibilityReview(record: ReviewRecord, options: ValidationOptions = {}): string[] {
   const { requireComplete = false, source = 'accessibility-review.yml' } = options;
@@ -166,8 +232,32 @@ export function validateAccessibilityReview(record: ReviewRecord, options: Valid
     if (!check || !check.notes?.trim()) issue(`checks.${id}`, 'result and notes are required');
     else validateResult(`checks.${id}`, check);
   }
-  if (requireComplete && (record.releaseReady !== true || record.reviewer === 'EXTERNAL_REQUIRED' || record.reviewedAt === 'EXTERNAL_REQUIRED')) issue('releaseReady', 'reviewer, review date, and approval are required before release');
+  if (requireComplete && (record.releaseReady !== true || record.reviewer === PLACEHOLDER || record.reviewedAt === PLACEHOLDER)) issue('releaseReady', 'reviewer, review date, and approval are required before release');
+  if (profile.bindsReviewedBuild) validateReviewedBuild(record, profile, options, issue);
   return errors;
+}
+
+/** The review is only worth signing if it names what was reviewed: a commit and a deployment, both checkable at release. */
+function validateReviewedBuild(record: ReviewRecord, profile: ReviewProfile, options: ValidationOptions, issue: (field: string, message: string) => void) {
+  const requireComplete = options.requireComplete ?? false;
+  const today = options.today ?? new Date().toISOString().slice(0, 10);
+  const field = (name: string, ok: boolean, expectation: string) => {
+    const value = record[name];
+    if (value === undefined) issue(name, `is required: ${expectation}, or ${PLACEHOLDER} until the review is signed`);
+    else if (value === PLACEHOLDER) { if (requireComplete) issue(name, `must be ${expectation} before release`); }
+    else if (!ok) issue(name, `must be ${expectation}`);
+  };
+  field('reviewedCommit', COMMIT.test(String(record.reviewedCommit)), 'the 40-character hexadecimal commit that was reviewed');
+  field('reviewedDeploymentUrl', isHttpsUrl(record.reviewedDeploymentUrl), 'the https URL of the deployment that was reviewed');
+  if (!requireComplete) return;
+  if (record.reviewedAt !== PLACEHOLDER && !isIsoDate(record.reviewedAt, today)) issue('reviewedAt', `must be a real YYYY-MM-DD date no later than today (${today}, UTC)`);
+  else if (record.reviewedAt === PLACEHOLDER) issue('reviewedAt', 'must be a YYYY-MM-DD date no later than today (UTC) before release');
+  if (!COMMIT.test(String(record.reviewedCommit))) return;
+  if (!options.releaseSha) {
+    issue('options.releaseSha', 'the release commit is required to check that nothing but the review changed after the reviewed commit');
+    return;
+  }
+  for (const problem of reviewedBuildProblems(String(record.reviewedCommit), options.releaseSha, `releases/${profile.release}/accessibility-review.yml`, options.gitRoot ?? '.')) issue('reviewedCommit', problem);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -179,7 +269,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       process.exit(0);
     }
     const requireComplete = process.argv.includes('--require-complete');
-    const fileArgument = process.argv.slice(2).find((argument) => !argument.startsWith('--'));
+    const argv = process.argv.slice(2);
+    const fileArgument = argv.find((argument, index) => !argument.startsWith('--') && argv[index - 1] !== '--release-sha');
     // An explicit file is validated as the release named by its releases/<v>/ directory, and as the declared release only when the path has no such segment; otherwise the release comes from RELEASE_VERSION or the newest candidate record.
     const pathVersion = fileArgument?.match(/(?:^|[\\/])releases[\\/](v\d+\.\d+\.\d+)[\\/]accessibility-review\.yml$/)?.[1];
     const version = fileArgument ? pathVersion : assertReleaseVersion(resolveReleaseVersion('.'));
@@ -187,7 +278,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const record = parse(readFileSync(file, 'utf8')) as ReviewRecord;
     const releaseVersion = assertReleaseVersion(version ?? String(record.release));
     const recordId = currentRecordId(readReleaseCandidate('.', releaseVersion).evidenceIds);
-    const errors = validateAccessibilityReview(record, { requireComplete, source: file, version: releaseVersion, recordId });
+    const releaseSha = requireComplete ? resolveReleaseSha(argv, process.env, '.') : undefined;
+    const errors = validateAccessibilityReview(record, { requireComplete, source: file, version: releaseVersion, recordId, releaseSha });
     if (errors.length) {
       console.error(errors.map((error) => `ERROR: ${error}`).join('\n'));
       process.exit(1);

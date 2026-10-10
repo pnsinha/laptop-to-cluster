@@ -127,6 +127,7 @@ describe('release workflow: the one build', () => {
     const review = find('build-once', (step) => /validate-accessibility-review/.test(step.run ?? ''));
     expect(review.if).toBe("needs.plan.outputs.mode == 'production'");
     expect(review.run).toContain('--require-complete');
+    expect(review.run).toMatch(/--release-sha "\$RELEASE_SHA"/);
     expect(review.run).not.toMatch(/releases\//);
   });
 

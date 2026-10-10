@@ -3,6 +3,8 @@ id: accessibility-review-v0.2.0
 release: v0.2.0
 reviewer: EXTERNAL_REQUIRED
 reviewedAt: EXTERNAL_REQUIRED
+reviewedCommit: EXTERNAL_REQUIRED
+reviewedDeploymentUrl: EXTERNAL_REQUIRED
 releaseReady: false
 automatedEvidence:
   command: npm run test:accessibility:browser

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parse, stringify } from 'yaml';
 import { afterAll, describe, expect, it } from 'vitest';
 import { accessibilityPages } from '../accessibility/browser-fixtures';
-import { currentRecordId } from '../../scripts/validate-accessibility-review';
+import { currentRecordId, validateAccessibilityReview } from '../../scripts/validate-accessibility-review';
 import { readReleaseCandidate } from '../../scripts/release-version.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -28,6 +28,7 @@ const checkedIn = load(`${root}/releases/v0.2.0/accessibility-review.yml`);
 const signedPath = join(scratch, 'accessibility-review.yml');
 writeFileSync(signedPath, stringify({
   ...checkedIn, reviewer: 'Reviewer Name', reviewedAt: '2026-10-01', releaseReady: true,
+  reviewedCommit: '0123456789abcdef0123456789abcdef01234567', reviewedDeploymentUrl: 'https://0a1b2c3d.laptop-to-cluster.pages.dev',
   checks: checkedIn.checks.map(signResult),
   manualRouteSamples: checkedIn.manualRouteSamples.map(signResult),
   canonicalDestinationTrace: checkedIn.canonicalDestinationTrace.map(signResult),
@@ -48,10 +49,18 @@ describe.each([['the checked-in review', checkedIn], ['a signed copy of it', sig
       expect(record.reviewer).not.toBe('EXTERNAL_REQUIRED');
       expect(String(record.reviewer).trim().length).toBeGreaterThan(0);
       expect(record.reviewedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(record.reviewedCommit).toMatch(/^[0-9a-f]{40}$/);
+      expect(record.reviewedDeploymentUrl).toMatch(/^https:\/\/\S+$/);
     } else {
       expect(record.reviewer).toBe('EXTERNAL_REQUIRED');
       expect(record.reviewedAt).toBe('EXTERNAL_REQUIRED');
+      expect(record.reviewedCommit).toBe('EXTERNAL_REQUIRED');
+      expect(record.reviewedDeploymentUrl).toBe('EXTERNAL_REQUIRED');
     }
+  });
+
+  it('passes the structure check in either state', () => {
+    expect(validateAccessibilityReview(record, { version: 'v0.2.0', recordId })).toEqual([]);
   });
 
   it('lists exactly the pages the scanner visits, except the 404 shell', () => {
