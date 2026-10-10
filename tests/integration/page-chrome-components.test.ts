@@ -89,6 +89,14 @@ describe('ContentHeader title compounds', () => {
     expect(await h1('Run it end-to-end')).toBe('Run it <span class="h-compound">end-to-end</span>');
   });
 
+  it('keeps a combining mark with its letter, so a decomposed title wraps whole', async () => {
+    const decomposed = 'U\u0308ber-Cluster';
+    expect(decomposed).not.toBe('\u00dcber-Cluster');
+    expect(await h1(decomposed)).toBe(`<span class="h-compound">${decomposed}</span>`);
+    expect(await h1(`The ${decomposed} guide`)).toBe(`The <span class="h-compound">${decomposed}</span> guide`);
+    expect(visible(await h1(decomposed))).toBe(decomposed);
+  });
+
   it('wraps letters and digits in any script, and nothing else', async () => {
     expect(await h1('Über-Cluster 2-up')).toBe('<span class="h-compound">Über-Cluster</span> <span class="h-compound">2-up</span>');
     expect(await h1('Plain title')).toBe('Plain title');
@@ -103,7 +111,7 @@ describe('ContentHeader title compounds', () => {
     expect(markup).toContain('Tom &amp; Jerry &lt;script&gt;alert(');
     expect(markup).toContain('<span class="h-compound">a-b</span>');
     expect(visible(markup)).toBe(hostile);
-    for (const [, inner] of markup.matchAll(/<span class="h-compound">([^<]*)<\/span>/g)) expect(inner).toMatch(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)+$/u);
+    for (const [, inner] of markup.matchAll(/<span class="h-compound">([^<]*)<\/span>/g)) expect(inner).toMatch(/^[\p{L}\p{M}\p{N}]+(?:-[\p{L}\p{M}\p{N}]+)+$/u);
   });
 
   it('leaves the visible title unchanged', async () => {

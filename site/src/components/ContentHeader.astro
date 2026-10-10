@@ -5,7 +5,7 @@ const { item } = Astro.props as { item: ContentItem };
 const human = (value: string | number) => String(value).replaceAll('-', ' ');
 const line = pageHeaderLine(item);
 /* A hyphenated word in the title (Laptop-to-Cluster, Single-Node) is wrapped in .h-compound so that it stays on one line from 30rem up. Plain strings and elements are escaped by Astro; the title is never set as raw HTML. */
-const COMPOUND = /[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)+/gu;
+const COMPOUND = /[\p{L}\p{M}\p{N}]+(?:-[\p{L}\p{M}\p{N}]+)+/gu;
 const titleParts: Array<{ text: string; compound: boolean }> = [];
 let cursor = 0;
 for (const match of item.title.matchAll(COMPOUND)) {

@@ -50,7 +50,7 @@ describe('built About page title', () => {
   it('wraps nothing but hyphenated words on any built page', () => {
     for (const route of routes()) {
       const title = h1Of(html(route));
-      for (const [, inner] of title.matchAll(/<span class="h-compound">([\s\S]*?)<\/span>/g)) expect(inner, route).toMatch(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)+$/u);
+      for (const [, inner] of title.matchAll(/<span class="h-compound">([\s\S]*?)<\/span>/g)) expect(inner, route).toMatch(/^[\p{L}\p{M}\p{N}]+(?:-[\p{L}\p{M}\p{N}]+)+$/u);
       expect(title.replace(/<span class="h-compound">([^<]*)<\/span>/g, '$1'), route).not.toMatch(/<(?!\/?span\b)/);
     }
   });
@@ -108,6 +108,30 @@ describe('quote blocks, reading leading and tables in the browser', () => {
     await page.close();
   });
 
+  it('keeps the quote at 0.9444 of the reading size on every built page that has one', async () => {
+    const pages = routes().filter((route) => html(route).includes('<blockquote'));
+    expect(pages).toContain(BASELINE);
+    expect(pages).toContain('/milestones/2/');
+    const offenders: string[] = [];
+    for (const width of [1280, 390]) {
+      for (const route of pages) {
+        const page = await open(route, width);
+        const quotes = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main blockquote')].map((quote) => {
+          /* The reading size here, read from the token on a probe in the quote's own container. */
+          const probe = document.createElement('span');
+          probe.style.fontSize = 'var(--text-reading)';
+          quote.parentElement!.append(probe);
+          const reading = parseFloat(getComputedStyle(probe).fontSize);
+          probe.remove();
+          return { ratio: parseFloat(getComputedStyle(quote).fontSize) / reading, style: getComputedStyle(quote).fontStyle };
+        }));
+        for (const quote of quotes) if (Math.abs(quote.ratio - 0.9444) > 0.006 || quote.style !== 'normal') offenders.push(`${route} @${width}: ratio ${quote.ratio.toFixed(4)}, ${quote.style}`);
+        await page.close();
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it('sets reading text at 1.45 leading', async () => {
     const page = await open(BASELINE, 1280);
     const ratio = await page.evaluate(() => {
@@ -160,6 +184,44 @@ describe('quote blocks, reading leading and tables in the browser', () => {
     await page.close();
   });
 
+  it('aligns a caption with the flush table text and keeps its vertical padding', async () => {
+    const page = await open(BASELINE, 1280);
+    const c = await page.evaluate(() => {
+      const table = document.querySelector('main .table-overflow table')!;
+      const caption = document.createElement('caption');
+      caption.textContent = 'Caption';
+      table.prepend(caption);
+      const own = getComputedStyle(caption);
+      const range = document.createRange();
+      range.selectNodeContents(caption);
+      return { left: own.paddingLeft, right: own.paddingRight, top: own.paddingTop, bottom: own.paddingBottom, edge: range.getBoundingClientRect().left - table.querySelector('thead th')!.getBoundingClientRect().left };
+    });
+    expect([c.left, c.right]).toEqual(['0px', '0px']);
+    expect([c.top, c.bottom]).toEqual(['12px', '12px']);
+    expect(Math.abs(c.edge)).toBeLessThanOrEqual(0.5);
+    await page.close();
+  });
+
+  it('draws the header rule at 2 px in the darker border colour in print, as it does at 1 px on screen', async () => {
+    const page = await open(BASELINE, 1280);
+    const read = () => page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--border)';
+      document.body.append(probe);
+      const border = getComputedStyle(probe).color;
+      probe.remove();
+      const head = getComputedStyle(document.querySelector('main .table-overflow thead th')!);
+      return { width: head.borderBottomWidth, style: head.borderBottomStyle, color: head.borderBottomColor, border };
+    });
+    const screen = await read();
+    expect([screen.width, screen.style]).toEqual(['1px', 'solid']);
+    await page.emulateMedia({ media: 'print' });
+    const print = await read();
+    expect([print.width, print.style]).toEqual(['2px', 'solid']);
+    expect(print.color).toBe(print.border);
+    await page.close();
+  });
+
   it('keeps the table text on the column edge on the narrowest phone, with the scroll region still scrolling', async () => {
     const page = await open(BASELINE, 320);
     const m = await page.evaluate(() => {
@@ -176,6 +238,44 @@ describe('quote blocks, reading leading and tables in the browser', () => {
     expect(Math.abs(m.instructionEdge)).toBeLessThanOrEqual(0.5);
     expect(m.overflowX).toBe('auto');
     expect(m.instruction).not.toBe('none');
+    await page.close();
+  });
+});
+
+describe('scroll cue for frameless tables', () => {
+  /* Scroll shadows would need gradients, which the visual policy forbids (VISUAL-DEPENDENCY), so a region that can scroll shows its instruction instead. */
+  it('shows the scroll instruction at 1280 px on a region that overflows, and hides it on one that fits', async () => {
+    const page = await open('/start/', 1280);
+    const regions = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .table-overflow')].map((region) => ({
+      scrolls: region.scrollWidth > region.clientWidth + 1, shown: getComputedStyle(region.querySelector('.table-overflow__instruction')!).display !== 'none',
+    })));
+    expect(regions.some((region) => region.scrolls), 'a region that overflows at 1280').toBe(true);
+    for (const region of regions) expect(region.shown, JSON.stringify(region)).toBe(region.scrolls);
+    await page.close();
+    const fits = await open(ABOUT, 1280);
+    const about = await fits.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .table-overflow')].map((region) => ({
+      scrolls: region.scrollWidth > region.clientWidth + 1, shown: getComputedStyle(region.querySelector('.table-overflow__instruction')!).display !== 'none',
+    })));
+    expect(about.length).toBeGreaterThan(0);
+    for (const region of about) expect(region.shown, JSON.stringify(region)).toBe(region.scrolls);
+    await fits.close();
+  });
+
+  it('shows the instruction below 64rem on every region, as before', async () => {
+    const page = await open(BASELINE, 820);
+    const shown = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .table-overflow')].map((region) => getComputedStyle(region.querySelector('.table-overflow__instruction')!).display !== 'none'));
+    expect(shown.length).toBeGreaterThan(0);
+    expect(shown.every(Boolean)).toBe(true);
+    await page.close();
+  });
+
+  it('shows no scroll instruction in print, where the regions do not scroll', async () => {
+    const page = await open('/start/', 1280);
+    await page.emulateMedia({ media: 'print' });
+    /* A scroll-state query settles one frame after the region stops being a scroll container. */
+    await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+    const shown = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .table-overflow')].map((region) => ({ overflow: getComputedStyle(region).overflowX, shown: getComputedStyle(region.querySelector('.table-overflow__instruction')!).display !== 'none' })));
+    for (const region of shown) expect(region, JSON.stringify(region)).toEqual({ overflow: 'visible', shown: false });
     await page.close();
   });
 });

@@ -57,10 +57,21 @@ describe('quote blocks', () => {
     expect(bare).not.toMatch(/blockquote[^{}]*\{[^{}]*font-style:\s*italic/);
   });
 
-  it('sets quotes at 0.9444 of the reading size, 17 px on the 18 px reading text', () => {
-    /* Written against the reading token, not in em: an em would resolve against the 16 px article text and give 15 px. */
-    expect(body('blockquote')).toMatch(/font-size:\s*calc\(var\(--text-reading\)\s*\*\s*0\.9444\)/);
-    expect(body('blockquote')).not.toMatch(/font-size:\s*[0-9.]+em/);
+  it('sets quotes at 0.9444em by default', () => {
+    expect(body('blockquote')).toMatch(/font-size:\s*0\.9444em/);
+  });
+
+  it('sets quotes at 0.9444 of the reading token inside every reading container, 17 px on the 18 px text', () => {
+    /* In em, a quote in a reading container would resolve against the 16 px article text (15 px), because the zero-specificity reading rule gives the blockquote 18 px but the blockquote rule wins. So the reading containers get the token form, after the base rule and after the reading rule. */
+    const reading = [...bare.matchAll(/(p\.prose, :where\([^{}]*\) > :where\(p, ul, ol, dl, blockquote\))\s*\{[^{}]*font-family:\s*var\(--font-reading\)/g)];
+    expect(reading).toHaveLength(1);
+    const containers = /:where\((.*)\) > :where\(p, ul, ol, dl, blockquote\)/.exec(reading[0][1])![1];
+    const rule = `:where(${containers}) > blockquote`;
+    const at = bare.indexOf(`${rule} {`);
+    expect(at, 'the reading-container blockquote rule').toBeGreaterThan(-1);
+    expect(bodyIn(base, rule)).toMatch(/font-size:\s*calc\(var\(--text-reading\)\s*\*\s*0\.9444\)/);
+    expect(at).toBeGreaterThan(bare.indexOf('\nblockquote {'));
+    expect(at).toBeGreaterThan(reading[0].index!);
   });
 
   it('keeps the left rule, the muted colour and the padding', () => {
@@ -116,6 +127,11 @@ describe('tables', () => {
     expect(body('.table-overflow')).toMatch(/overflow-x:\s*auto/);
   });
 
+  it('aligns a caption with the flush table text and keeps its vertical padding', () => {
+    expect(body('caption')).toMatch(/padding-inline:\s*0/);
+    expect(body('caption')).toMatch(/padding-block:\s*var\(--space-3\)/);
+  });
+
   it('has no fill on header cells and no per-cell header border, only a rule under the header row', () => {
     expect(body('th')).not.toMatch(/background/);
     expect(body('th')).not.toMatch(/border/);
@@ -135,12 +151,26 @@ describe('tables', () => {
     expect(body('th:last-child, td:last-child')).toMatch(/padding-inline-end:\s*0/);
   });
 
-  it('keeps the focus outline, the sticky scroll instruction and the print header rule', () => {
+  it('thickens and darkens the header rule in print, on the same selectors that draw it', () => {
+    /* thead th has higher specificity than a bare th, so the print rule must name the same selectors. */
+    const print = mediaInner(bare, 'print').join('\n');
+    expect(bodyIn(print, 'thead th, table:not(:has(thead)) tr:first-child > *')).toMatch(/border-block-end-width:\s*2px/);
+    expect(bodyIn(print, 'thead th, table:not(:has(thead)) tr:first-child > *')).toMatch(/border-block-end-color:\s*var\(--border\)/);
+    expect(bodyIn(print, 'th')).not.toMatch(/border-block-end-width/);
+  });
+
+  it('shows the scroll instruction on wide screens only for a region that can scroll, with no gradient or shadow', () => {
+    expect(body('.table-overflow')).toMatch(/container-type:\s*scroll-state/);
+    const query = [...bare.matchAll(/@container scroll-state\(scrollable:\s*inline\)\s*\{([^{}]*\{[^{}]*\}\s*)\}/g)].map(([, inner]) => inner).join('\n');
+    expect(bodyIn(query, '.table-overflow__instruction')).toMatch(/display:\s*block/);
+    expect(bare).not.toMatch(/linear-gradient|radial-gradient|conic-gradient|box-shadow/);
+  });
+
+  it('keeps the focus outline, the sticky scroll instruction and the print overflow rule', () => {
     expect(body('.table-overflow:focus-visible')).toMatch(/outline-offset/);
     expect(body('.table-overflow__instruction')).toMatch(/position:\s*sticky/);
     // With no frame to sit inside, the instruction starts on the same edge as the table text.
     expect(body('.table-overflow__instruction')).toMatch(/padding:\s*var\(--space-2\) var\(--space-3\) var\(--space-2\) 0\s*;/);
-    expect(mediaInner(bare, 'print').join('\n')).toMatch(/th\s*\{\s*border-block-end-width:\s*2px;\s*\}/);
     expect(mediaInner(bare, 'print').join('\n')).toMatch(/\.table-overflow\s*\{\s*overflow:\s*visible;\s*\}/);
   });
 

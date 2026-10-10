@@ -117,9 +117,14 @@ describe('global.css shell', () => {
     expect(bare).toMatch(/:focus-visible\s*\{[^}]*outline:\s*var\(--focus-width\) solid var\(--focus\)/);
   });
 
-  it('lays the footer links out in a row with a dot separator and 24 px targets', () => {
+  it('lays the footer links out in a wrapping row with a gap, no dot separators, and 24 px targets', () => {
     expect(body('.footer-links')).toMatch(/display:\s*flex/);
-    expect(body('.footer-links li:not(:last-child)::after')).toMatch(/content:\s*"·"/);
+    expect(body('.footer-links')).toMatch(/flex-wrap:\s*wrap/);
+    expect(body('.footer-links')).toMatch(/column-gap:\s*var\(--space-5\)/);
+    expect(body('.footer-links')).toMatch(/row-gap:\s*var\(--space-1\)/);
+    // A dot between links can end a line when they wrap, so the gap alone separates them.
+    expect(bare).not.toMatch(/\.footer-links[^{}]*::(?:after|before)/);
+    expect(bare).not.toMatch(/content:\s*"·"/);
     expect(body('.footer-links a')).toMatch(/padding-block:\s*0\.25rem/);
   });
 
@@ -152,12 +157,15 @@ describe('global.css reading column', () => {
     expect(bare).toContain(':where(ul, ol):where(:not([class])) > li + li');
   });
 
-  it('puts .reading-section in both reading rules, the measure rule and the typeface rule', () => {
+  it('puts .reading-section in both reading rules, the measure rule and the typeface rule, and in the quote size rule', () => {
     const rules = [...bare.matchAll(/([^{}]*\.reading-section[^{}]*)\{([^{}]*)\}/g)].map(([, selector, declarations]) => ({ selector, declarations }));
-    expect(rules).toHaveLength(2);
+    expect(rules).toHaveLength(3);
     expect(rules[0].declarations).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
     expect(rules[1].declarations).toMatch(/font-family:\s*var\(--font-reading\)/);
-    for (const { selector } of rules) expect(selector).toMatch(/\.reading-section[^>{}]*\)\s*>\s*:where\(p, ul, ol, dl/);
+    for (const { selector } of rules.slice(0, 2)) expect(selector).toMatch(/\.reading-section[^>{}]*\)\s*>\s*:where\(p, ul, ol, dl/);
+    // The third rule sizes a quote against the reading token (stylesheet-typography.test.ts pins the value and the order).
+    expect(rules[2].selector).toMatch(/\.reading-section[^>{}]*\)\s*>\s*blockquote\s*$/);
+    expect(rules[2].declarations).toMatch(/font-size:\s*calc\(var\(--text-reading\)/);
   });
 });
 
