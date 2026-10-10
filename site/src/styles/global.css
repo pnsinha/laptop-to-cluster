@@ -93,8 +93,8 @@ strong { font-weight: var(--weight-semibold); }
 /* ---------- 4. content flow ---------- */
 main { inline-size: min(100%, var(--measure-wide)); margin-inline: auto; padding: var(--space-6) var(--space-4) var(--space-12); }
 .layout-prose, .prose, .content-header, .module-content, main > article:not(.card), .resource-group, .project-links, .applicability-record, .section-nav { max-inline-size: var(--measure-wide); }
-p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, main > section:not([class])) > :where(p, ul, ol, dl, h2, h3, h4, blockquote) { max-inline-size: var(--measure-prose); }
-p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, main > section:not([class])) > :where(p, ul, ol, dl, blockquote) { font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
+p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, main > section:not([class]), .release-notes, .applicability-record) > :where(p, ul, ol, dl, h2, h3, h4, blockquote) { max-inline-size: var(--measure-prose); }
+p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, main > section:not([class]), .release-notes) > :where(p, ul, ol, dl, blockquote) { font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
 .layout-wide { inline-size: 100%; max-inline-size: var(--measure-wide); }
 .layout-data, .layout-code { inline-size: 100%; max-inline-size: var(--measure-data); }
 :where(h1, h2, h3, p, ul, ol, dl, figure, blockquote) { margin-block: 0; }
@@ -353,8 +353,10 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 .sources-scope details { margin-block-start: var(--flow-body); }
 .sources-scope summary { cursor: pointer; font-size: var(--text-base); font-weight: var(--weight-semibold); }
 .module-facts, .record-context { font-size: var(--text-fine); }
+.record-context { max-inline-size: var(--measure-prose); }
 .module-facts { margin-block-end: var(--space-6); }
 .record-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr)); column-gap: var(--space-8); row-gap: 0; }
+.applicability-record > .record-grid { max-inline-size: none; }
 .record-grid > div { padding-block: var(--space-3); border-block-start: var(--border-thin) solid var(--rule); }
 .record-grid dt { font-weight: var(--weight-semibold); }
 .record-grid dd { margin: var(--flow-tight) 0 0; }
