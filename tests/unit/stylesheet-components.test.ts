@@ -178,6 +178,14 @@ describe('final review fixes: list rhythm, glyph alt text, tail clearance, force
     expect(bare).toMatch(/@container \(min-width: 50rem\) \{\s*\.timeline__steps \{ --overrun: calc\(var\(--tl-pad\) \+ 2px \+ 2rem\);/);
   });
 
+  it('keeps the allocation line the strongest line in the hero figure under forced colours', () => {
+    const forced = media('(forced-colors: active)');
+    const boxes = forced.indexOf('border: 1px solid CanvasText;');
+    const own = forced.search(/\.env__alloc\s*\{\s*border:\s*var\(--border-strong\) dashed CanvasText;\s*\}/);
+    expect(boxes).toBeGreaterThanOrEqual(0);
+    expect(own).toBeGreaterThan(boxes);
+  });
+
   it('keeps the double ink rule on warnings and the link colour on links only under forced colours', () => {
     const forced = media('(forced-colors: active)');
     const borderList = forced.match(/([^{}]+)\{\s*border:\s*1px solid CanvasText;\s*\}/)?.[1] ?? '';

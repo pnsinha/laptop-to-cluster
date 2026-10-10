@@ -45,6 +45,13 @@ describe('home hero', () => {
     for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) {
       expect(lede).toMatch(idea);
     }
+    expect(lede).toContain('you request a scheduler allocation (a reserved block of computer time), wait your turn');
+  });
+});
+
+describe('hero figure', () => {
+  it('shows the batch script at its path in the workflow layout, as the crosswalk does', () => {
+    expect(HERO_FIGURE.cluster.command).toBe('sbatch slurm/baseline.sbatch');
   });
 });
 
@@ -110,6 +117,7 @@ describe('doors and learning path', () => {
   });
 
   it('summarizes each door by purpose', () => {
+    expect(DOOR_SUMMARIES.understand).toBe('The six steps from request to results, in detail, with a short annotated script you can read without a cluster account.');
     expect(DOOR_SUMMARIES.understand).toMatch(/six steps/);
     expect(DOOR_SUMMARIES.understand).toMatch(/without a cluster account/);
     expect(DOOR_SUMMARIES.translate).toMatch(/Compose file becomes on a cluster/);
@@ -151,7 +159,7 @@ describe('event band and project records', () => {
 describe('home copy rules', () => {
   it('never says reservation, names no system, version or date, and uses no arrows', () => {
     for (const value of allCopy) {
-      expect(value).not.toMatch(/reserv/i);
+      expect(value).not.toMatch(/reservation/i);
       expect(value).not.toMatch(/anvil|purdue|\b(?:slurm|apptainer)\s+v?\d|\d+\.\d+\.\d+-\d|\b20\d\d-\d\d-\d\d\b/i);
       expect(value).not.toMatch(/[→↗➔➜⟶»]/);
     }

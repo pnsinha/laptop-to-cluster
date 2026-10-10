@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { CONCEPTS, DOORS, REQUIRED_FRAGMENTS } from '../../site/src/content/contracts';
 import { CROSSWALK } from '../../site/src/content/crosswalk';
-import { CONCEPT_NOTES, EVENT_BAND, eventBandLead } from '../../site/src/content/home';
+import { BIG_IDEA, CONCEPT_NOTES, EVENT_BAND, eventBandLead } from '../../site/src/content/home';
 import type { Talk } from '../../site/src/content/schema';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -68,23 +68,31 @@ describe('home page, built output', () => {
     expect(hero).toContain('<figcaption id="hero-figure-caption">');
     expect(hero).toContain('<p class="env__title">Your laptop</p>');
     expect(hero).toContain('<p class="env__title">A shared cluster</p>');
+    expect(hero).toContain('<code>sbatch slurm/baseline.sbatch</code>');
     expect(hero).not.toMatch(/<svg|<img|<picture/);
     expect(home).toContain('<title>Bridging the Laptop-to-Cluster Gap');
     expect(home).toContain('<meta property="og:title" content="Bridging the Laptop-to-Cluster Gap">');
     const lede = text(hero.match(/<p class="lede">([\s\S]*?)<\/p>/)?.[1] ?? '');
     for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) expect(lede).toMatch(idea);
+    expect(lede).toContain('you request a scheduler allocation (a reserved block of computer time), wait your turn');
   });
 
   it('renders four concept rows in contract order, each with its Compose name, tinted term and note', () => {
     const section = sectionFrom('<section class="concepts" id="big-idea"');
     expect(section.startsWith('<section class="concepts" id="big-idea" aria-labelledby="big-idea-title"><h2 id="big-idea-title">The big idea</h2>')).toBe(true);
-    expect(section.match(/<div class="concept" data-concept="[a-z]+">/g)).toHaveLength(4);
-    const starts = CONCEPTS.map(({ key }) => section.indexOf(`<div class="concept" data-concept="${key}">`));
+    expect(section).toContain('<ol class="concepts__rows" role="list">');
+    expect(section.match(/<li class="concept" data-concept="[a-z]+">/g)).toHaveLength(4);
+    expect(section).not.toContain('<div class="concept"');
+    const starts = CONCEPTS.map(({ key }) => section.indexOf(`<li class="concept" data-concept="${key}">`));
     starts.forEach((position, index) => expect(position, CONCEPTS[index].key).toBeGreaterThanOrEqual(0));
     expect([...starts].sort((a, b) => a - b)).toEqual(starts);
     CONCEPTS.forEach(({ key, label, was }, index) => {
       const row = section.slice(starts[index], starts[index + 1] ?? section.length);
       expect(row, key).toContain(was);
+      expect(row, key).toContain(`<p class="concept__n" aria-hidden="true">${String(index + 1).padStart(2, '0')}</p>`);
+      // Without CSS the label and the words after it must still read as separate words.
+      expect(text(row), key).toContain(`${BIG_IDEA.composeSide} ${was}`);
+      expect(text(row), key).toContain(`${BIG_IDEA.clusterSide} ${label}`);
       expect(row, key).toContain(`<span class="concept__term c-${key}">${label}</span>`);
       expect(text(row), key).toContain(text(CONCEPT_NOTES[key]));
     });
@@ -204,7 +212,7 @@ describe('home page, built output', () => {
     CONCEPTS.forEach((concept, index) => {
       expect(notes[index], concept.key).toMatch(new RegExp(`${escapeRegExp(concept.plain)}\\s*\\((?:an? )?${escapeRegExp(concept.label.toLowerCase())}\\)`, 'i'));
     });
-    expect(text(main.replace(PROJECTION, ''))).not.toMatch(/reserv/i);
+    expect(text(main.replace(PROJECTION, ''))).not.toMatch(/reservation/i);
   });
 
   it('removes the old workflow figure and keeps the home sources free of style, script and inline handlers', () => {

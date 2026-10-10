@@ -91,6 +91,9 @@ describe('concept rows', () => {
     expect(body('.concepts__intro')).toMatch(/font-family:\s*var\(--font-reading\)/);
     expect(body('.concept')).toMatch(/border-block-end:\s*var\(--border-thin\) solid var\(--rule\)/);
     expect(body('.concept')).not.toMatch(/background|border:|box-shadow/);
+    expect(body('.concepts__rows')).toMatch(/margin-inline:\s*0/);
+    expect(body('.concepts__rows')).toMatch(/padding:\s*0/);
+    expect(body('.concepts__rows')).toMatch(/list-style:\s*none/);
     expect(body('.concept__note')).toMatch(/font-family:\s*var\(--font-reading\)/);
     expect(body('.concept__note')).not.toMatch(/max-inline-size/);
     expect(body('.concept__side')).toMatch(/font-family:\s*var\(--font-body\)/);

@@ -16,7 +16,7 @@ const doorHref = (id: DoorId): string => DOORS.find((door) => door.id === id)!.h
 export const HERO = {
   kicker: 'A free, open-source learning guide for Docker Compose users',
   title: 'Your Compose stack, on a shared cluster',
-  ledeHtml: 'On your laptop, <code>docker compose up</code> starts the stack on demand. A shared research cluster has no Docker daemon and gives you no root access (administrator rights). Instead, you request a scheduler allocation, wait your turn, and launch the services with a batch script. This guide shows how to make that translation.',
+  ledeHtml: 'On your laptop, <code>docker compose up</code> starts the stack on demand. A shared research cluster has no Docker daemon and gives you no root access (administrator rights). Instead, you request a scheduler allocation (a reserved block of computer time), wait your turn, and launch the services with a batch script. This guide shows how to make that translation.',
   primary: { label: 'Start with the big idea', href: '#big-idea' },
   secondary: { label: 'Already have a Compose file? Translate it', href: doorHref('translate') },
   quiet: { lead: 'Support researchers or run a cluster?', label: 'See what this assumes, and when not to use it', href: doorHref('evaluate') },
@@ -34,7 +34,7 @@ export const HERO_FIGURE = {
   caption: 'The same three programs in two environments. On your laptop, Docker starts them on demand. On a cluster, a scheduler grants one allocation and your batch script starts them inside it. Shown here: the single-node baseline, one job on one node.',
   services: ['coordinator', 'worker', 'worker'],
   laptop: { title: 'Your laptop', command: 'docker compose up', facts: ['Docker daemon, root access', 'Starts whenever you ask', 'Ports published to your machine'] },
-  cluster: { title: 'A shared cluster', command: 'sbatch baseline.sbatch', allocation: 'One allocation: one node, a fixed time', facts: ['No Docker daemon, no root access', 'A scheduler decides when you run', 'Local-only access inside the node'] },
+  cluster: { title: 'A shared cluster', command: 'sbatch slurm/baseline.sbatch', allocation: 'One allocation: one node, a fixed time', facts: ['No Docker daemon, no root access', 'A scheduler decides when you run', 'Local-only access inside the node'] },
 } as const;
 
 /* One note per concept. Each starts with CONCEPTS.plain verbatim and puts the term in parentheses (a unit test checks this), then carries the qualifier the old timeline and analogy used to carry. */
@@ -48,7 +48,7 @@ export const CONCEPT_NOTES: Record<ConceptKey, string> = {
 export const DOORS_SECTION = { title: 'Pick your path' } as const;
 
 export const DOOR_SUMMARIES: Record<DoorId, string> = {
-  understand: 'Each of the six steps in detail, with a short annotated script you can read without a cluster account.',
+  understand: 'The six steps from request to results, in detail, with a short annotated script you can read without a cluster account.',
   translate: 'See what each part of your Compose file becomes on a cluster, then edit the example job to run your own services.',
   evaluate: 'What the pattern assumes, where it was tested, and when a service your center already runs is the better choice.',
 };

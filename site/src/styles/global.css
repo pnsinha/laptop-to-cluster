@@ -187,7 +187,7 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 /* ---------- 7. home: concept rows (was big idea + analogy) ---------- */
 .concepts > h2 { margin-block-end: var(--space-4); }
 .concepts__intro { max-inline-size: var(--measure-prose); font-family: var(--font-reading); font-size: var(--l-body); line-height: 1.5; }
-.concepts__rows { margin-block-start: var(--space-8); border-block-start: var(--border-thin) solid var(--rule); }
+.concepts__rows { margin-block-start: var(--space-8); margin-inline: 0; padding: 0; list-style: none; border-block-start: var(--border-thin) solid var(--rule); }
 .concept { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2) var(--space-8); padding-block: var(--space-5); border-block-end: var(--border-thin) solid var(--rule); }
 .concept__n { margin: 0; color: var(--muted); font-family: var(--font-technical); font-variant-numeric: tabular-nums; }
 .concept__side { display: block; margin-block-end: var(--space-1); color: var(--muted); font-family: var(--font-body); font-weight: var(--weight-semibold); }
@@ -511,6 +511,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
   /* Headings keep the text colour in tokens.css, so link colour is restored here for real links only. */
   a:where(:any-link), .action--secondary, .hero__secondary-link { color: LinkText; }
   .door, .record-summary, .evidence-rows, .event-band, .timeline__steps, .crosswalk__pane pre, pre, .terminal, .technical-figure, .resource-tile, .env, .env__box, .env__alloc, .env__cmd code { border: 1px solid CanvasText; }
+  .env__alloc { border: var(--border-strong) dashed CanvasText; }
   .timeline__step[aria-current="step"] { outline-color: Highlight; }
   .timeline__mark--verify { border-color: CanvasText; }
   .theme-control button[aria-pressed="true"] { border-block-end-color: Highlight; }
