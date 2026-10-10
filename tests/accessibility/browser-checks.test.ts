@@ -9,20 +9,37 @@ afterAll(async () => { await browser?.close(); });
 
 const THEMES = { light: { canvas: '#fbf9f4' }, dark: { canvas: '#131a29' } };
 const HEAD_SCRIPT = "try{var v=localStorage.getItem('l2c-theme'),c={dark:'#131a29',light:'#fbf9f4'};if(c[v]){document.documentElement.dataset.theme=v;var m=document.createElement('meta');m.name='theme-color';m.content=c[v];document.head.append(m)}}catch(e){}";
-const ENHANCER = "(function(){var k='l2c-theme',r=document.documentElement,w=document.querySelector('[data-theme-control]'),b=w.querySelectorAll('[data-theme-choice]');w.hidden=false;function m(){var e=document.querySelector('meta[name=theme-color]:not([media])');if(!e){e=document.createElement('meta');e.name='theme-color';document.head.append(e)}e.content=getComputedStyle(r).getPropertyValue('--canvas').trim()}function p(){var v=r.dataset.theme||'system';b.forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.themeChoice===v))})}b.forEach(function(x){x.addEventListener('click',function(){var c=x.dataset.themeChoice;if(c==='system'){delete r.dataset.theme;localStorage.removeItem(k)}else{r.dataset.theme=c;localStorage.setItem(k,c)}p();m()})});p()})();";
-const CSS = ':root{color-scheme:light dark;--canvas:#fbf9f4}:root[data-theme=light]{color-scheme:light}@media screen and (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--canvas:#131a29}}:root[data-theme=dark]{color-scheme:dark;--canvas:#131a29}body{background:var(--canvas)}';
-const CONTROL = '<div class="theme-control" data-theme-control hidden><span>Theme</span><button type="button" data-theme-choice="system" aria-pressed="true">System</button><button type="button" data-theme-choice="light" aria-pressed="false">Light</button><button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button></div>';
+const ICONS = '<svg class="theme-control__icon theme-control__icon--moon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="theme-control__icon theme-control__icon--sun" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const toggleButton = (extra = '', name = 'Dark theme') => `<button type="button" class="theme-control__toggle" data-theme-toggle aria-pressed="false"${extra}>${ICONS}<span class="vh">${name}</span></button>`;
+/* The fixture enhancer reads the page state from data-theme (like a real toggle that trusts the head script), so a page that ignores the stored choice is still reported. */
+const enhancer = (broken: string[] = []) => `(function(){var k='l2c-theme',r=document.documentElement,w=document.querySelector('[data-theme-control]'),t=w.querySelector('[data-theme-toggle]'),q=matchMedia('(prefers-color-scheme: dark)');function os(){return q.matches?'dark':'light'}function cur(){return r.dataset.theme||null}function m(){var e=document.querySelector('meta[name=theme-color]:not([media])');if(!e){e=document.createElement('meta');e.name='theme-color';document.head.append(e)}e.content=getComputedStyle(r).getPropertyValue('--canvas').trim()}function p(){t.setAttribute('aria-pressed',String((cur()||os())==='dark'))}t.addEventListener('click',function(){var n=(cur()||os())==='dark'?'light':'dark';${broken.includes('no-clear') ? "r.dataset.theme=n;localStorage.setItem(k,n);" : "if(n===os()){delete r.dataset.theme;localStorage.removeItem(k)}else{r.dataset.theme=n;localStorage.setItem(k,n)}"}p();m()});${broken.includes('no-os-sync') ? '' : broken.includes('os-clears-stored') ? "q.addEventListener('change',function(){delete r.dataset.theme;localStorage.removeItem(k);p()});" : "q.addEventListener('change',function(){if(!localStorage.getItem(k))p()});"}w.hidden=false;p()})();`;
+const ENHANCER = enhancer();
+const CONTROL = `<div class="theme-control" data-theme-control hidden>${toggleButton()}</div>`;
+const CSS = ':root{color-scheme:light dark;--canvas:#fbf9f4}:root[data-theme=light]{color-scheme:light}@media screen and (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--canvas:#131a29}}:root[data-theme=dark]{color-scheme:dark;--canvas:#131a29}body{background:var(--canvas)}'
+  + '.vh{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.theme-control[hidden]{display:none}'
+  + '.theme-control__toggle{display:inline-flex;align-items:center;justify-content:center;inline-size:2rem;block-size:2rem;padding:0;color:inherit;background:transparent;border:1px solid #999;border-radius:999px}.theme-control__icon{inline-size:1.25rem;block-size:1.25rem}'
+  + '.theme-control__toggle[aria-pressed=true] .theme-control__icon--moon,.theme-control__toggle[aria-pressed=false] .theme-control__icon--sun{display:none}.theme-control__toggle:focus-visible{outline:2px solid #1a4fd6;outline-offset:2px}';
 const MEDIA_METAS = '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbf9f4"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131a29">';
 const MEDIA_SCRIPT_ATTR = "try{var v=localStorage.getItem('l2c-theme');if(v=='dark'||v=='light')document.documentElement.dataset.theme=v}catch(e){}";
 const MEDIA_SCRIPT_FULL = "try{var v=localStorage.getItem('l2c-theme');if(v=='dark'||v=='light'){document.documentElement.dataset.theme=v;document.querySelectorAll('meta[name=theme-color]').forEach(function(m){m.content=v=='dark'?'#131a29':'#fbf9f4'})}}catch(e){}";
-const themePage = (variant: 'good' | 'late-script' | 'ignores-stored' | 'media-metas' | 'media-metas-untouched') => {
+type ToggleBreak = 'name' | 'small' | 'no-clear' | 'no-os-sync' | 'os-clears-stored' | 'visible-text' | 'unfocusable' | 'no-ring' | 'icons-stay' | 'always-visible';
+const themePage = (variant: 'good' | 'late-script' | 'ignores-stored' | 'media-metas' | 'media-metas-untouched', broken: ToggleBreak[] = []) => {
+  const css = CSS
+    + (broken.includes('small') ? '.theme-control__toggle{inline-size:20px;block-size:20px}' : '')
+    + (broken.includes('no-ring') ? '.theme-control__toggle:focus-visible{outline:none}' : '')
+    + (broken.includes('icons-stay') ? '.theme-control__toggle .theme-control__icon--moon,.theme-control__toggle .theme-control__icon--sun{display:inline !important}' : '')
+    + (broken.includes('always-visible') ? '.theme-control[hidden]{display:inline-flex}' : '');
+  const button = toggleButton(broken.includes('unfocusable') ? ' tabindex="-1"' : '', broken.includes('name') ? 'Theme' : 'Dark theme');
+  const control = `<div class="theme-control" data-theme-control hidden>${broken.includes('visible-text') ? '<span>System</span>' : ''}${button}</div>`;
+  const header = `<header><nav aria-label="Primary"><a href="/a">Get started</a></nav>${control}</header>`;
+  const script = enhancer(broken);
   if (variant === 'media-metas' || variant === 'media-metas-untouched') {
-    const script = variant === 'media-metas' ? MEDIA_SCRIPT_FULL : MEDIA_SCRIPT_ATTR;
-    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title>${MEDIA_METAS}<script>${script}</script><style>${CSS}</style></head><body><main>${CONTROL}<p>Body</p></main><script>${ENHANCER}</script></body></html>`;
+    const head = variant === 'media-metas' ? MEDIA_SCRIPT_FULL : MEDIA_SCRIPT_ATTR;
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title>${MEDIA_METAS}<script>${head}</script><style>${css}</style></head><body>${header}<main><p>Body</p></main><script>${script}</script></body></html>`;
   }
-  const head = variant === 'good' ? `<script>${HEAD_SCRIPT}</script>` : '';
+  const headScript = variant === 'good' ? `<script>${HEAD_SCRIPT}</script>` : '';
   const late = variant === 'late-script' ? `<script>${HEAD_SCRIPT}</script>` : '';
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title>${head}<style>${CSS}</style></head><body><main>${CONTROL}<p>Body</p></main>${late}<script>${ENHANCER}</script></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title>${headScript}<style>${css}</style></head><body>${header}<main><p>Body</p></main>${late}<script>${script}</script></body></html>`;
 };
 
 describe('theme precedence check', () => {
@@ -50,6 +67,50 @@ describe('theme precedence check', () => {
       expect(codes).toContain('A11Y-THEME-COLOR');
     } finally { await server.close(); }
   }, 90_000);
+});
+
+describe('theme toggle check', () => {
+  const run = async (broken: ToggleBreak[]) => {
+    const server = await serveFixtures({ '/t/': { body: themePage('good', broken) } });
+    try { return await checkThemePrecedence(browser, server.origin, '/t/', THEMES); } finally { await server.close(); }
+  };
+  const messages = (issues: Awaited<ReturnType<typeof run>>) => issues.filter((entry) => entry.code === 'A11Y-THEME-CONTROL').map((entry) => entry.message).join('\n');
+
+  it('passes the one-button toggle on both OS schemes: pressed from the effective theme, icon swap, two clicks back to the OS, keyboard, name, size, no text, no JavaScript', async () => {
+    expect(await run([])).toEqual([]);
+  }, 120_000);
+
+  it('reports an accessible name other than "Dark theme"', async () => {
+    expect(messages(await run(['name']))).toMatch(/accessible name/);
+  }, 120_000);
+
+  it('reports a toggle smaller than 24 by 24 CSS pixels', async () => {
+    expect(messages(await run(['small']))).toMatch(/24/);
+  }, 120_000);
+
+  it('reports a second click that stores the OS value instead of clearing the choice', async () => {
+    expect(messages(await run(['no-clear']))).toMatch(/following the OS|clear/);
+  }, 120_000);
+
+  it('reports a toggle that ignores a live OS change while nothing is stored, and one that wipes a stored choice on an OS change', async () => {
+    expect(messages(await run(['no-os-sync']))).toMatch(/follow a live OS change/);
+    expect(messages(await run(['os-clears-stored']))).toMatch(/leave a stored choice alone/);
+  }, 120_000);
+
+  it('reports visible System, Light or Dark text in the header', async () => {
+    expect(messages(await run(['visible-text']))).toMatch(/visible text/);
+  }, 120_000);
+
+  it('reports a toggle that Tab does not reach, and one with no visible focus ring', async () => {
+    expect(messages(await run(['unfocusable']))).toMatch(/Tab/);
+    expect(messages(await run(['no-ring']))).toMatch(/focus/);
+  }, 120_000);
+
+  it('reports both icons showing at once, and a control that shows without JavaScript', async () => {
+    expect(messages(await run(['icons-stay']))).toMatch(/icon/);
+    const noScript = (await run(['always-visible'])).filter((entry) => entry.code === 'A11Y-THEME-NOJS');
+    expect(noScript).toHaveLength(1);
+  }, 120_000);
 });
 
 describe('theme-color with media-scoped metas', () => {
@@ -92,7 +153,7 @@ const EXPECT = {
 };
 const GOOD_CSS = `
 .notice{border:3px double CanvasText;padding:4px}.door{border:1px solid CanvasText;padding:4px}.evidence-badge{border:1px solid CanvasText;display:inline-block}
-.theme-control button[aria-pressed=true]{outline:2px solid CanvasText;font-weight:700}
+[role=group] button[aria-pressed=true]{outline:2px solid CanvasText;font-weight:700}.theme-control__toggle{border:1px solid CanvasText}.theme-control__icon{inline-size:20px;block-size:20px}.theme-control__toggle[aria-pressed=false] .theme-control__icon--sun{display:none}
 a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid CanvasText;outline-offset:2px}
 .evidence-panel::details-content{content-visibility:visible;display:block}`;
 const printScript = (restore: boolean) => `var o=[];addEventListener('beforeprint',function(){o=[].filter.call(document.querySelectorAll('details.evidence-panel:not([open])'),function(d){return 1});o.forEach(function(d){d.open=true})});addEventListener('afterprint',function(){${restore ? 'o.forEach(function(d){d.open=false})' : ''}})`;
@@ -102,7 +163,8 @@ function mediumPage(options: { css?: string; print?: string; script?: string; ex
 <h1>Title</h1><p class="notice" role="note"><strong>Warning:</strong> text</p><p class="evidence-badge">Tested</p>
 <details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows"><div class="evidence-row"><dt>Tested</dt><dd><ul><li>a</li></ul></dd></div></dl></details>
 <ul class="doors"><li class="door"><h3 class="door__title">Understand the model</h3><a class="door__link" href="/t">Take the tour</a></li><li class="door"><h3 class="door__title">Translate it</h3><a class="door__link" href="/c">Open the map</a></li></ul>
-<div class="theme-control"><button type="button" aria-pressed="true">System</button><button type="button" aria-pressed="false">Light</button></div>
+<div class="theme-control">${toggleButton()}</div>
+<div role="group" aria-label="Sample options"><button type="button" aria-pressed="true">One</button><button type="button" aria-pressed="false">Two</button></div>
 <ol class="timeline__steps">${steps}</ol></main><script>${options.script ?? printScript(true)}</script></body></html>`;
 }
 
@@ -115,14 +177,16 @@ describe('forced colours check', () => {
   it('reports lost text, lost boundaries, a colour-only selected state, and a lost control', async () => {
     const lostText = mediumPage({ extraCss: '*{forced-color-adjust:none}body{background:#fff;color:#fff}.notice,.door,.evidence-badge{color:#fff}' });
     const lostBoundary = mediumPage({ extraCss: '.notice,.door,.evidence-badge{border:0}' });
-    const colourOnly = mediumPage({ css: GOOD_CSS.replace('.theme-control button[aria-pressed=true]{outline:2px solid CanvasText;font-weight:700}', '.theme-control button[aria-pressed=true]{background:#123456}') });
+    const colourOnly = mediumPage({ css: GOOD_CSS.replace('[role=group] button[aria-pressed=true]{outline:2px solid CanvasText;font-weight:700}', '[role=group] button[aria-pressed=true]{background:#123456}') });
     const lostControl = mediumPage({ extraCss: '@media (forced-colors:active){.door__link{display:none}}' });
     const server = await serveFixtures({
       '/text/': { body: lostText }, '/boundary/': { body: lostBoundary }, '/selected/': { body: colourOnly }, '/control/': { body: lostControl },
       '/nav/': { body: mediumPage({ extraCss: 'nav a[aria-current=page]{color:#123456}' }).replace('<main>', '<nav aria-label="s"><ul><li><a href="/a" aria-current="page">A</a></li><li><a href="/b">B</a></li></ul></nav><main>') },
       '/fc-order/': { body: mediumPage({ extraCss: '@media (forced-colors:active){.timeline__step strong{display:none}}' }) },
+      '/toggle-boundary/': { body: mediumPage({ extraCss: '.theme-control__toggle{border:0}' }) },
     });
     try {
+      expect((await checkForcedColors(browser, server.origin, '/toggle-boundary/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/boundary lost.*theme-control__toggle/);
       expect((await checkForcedColors(browser, server.origin, '/text/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/text is lost/);
       expect((await checkForcedColors(browser, server.origin, '/boundary/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/boundary lost/);
       expect((await checkForcedColors(browser, server.origin, '/selected/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/colour only/);
@@ -203,7 +267,7 @@ ${options.foit ? '@font-face{font-family:Missing;src:url(/fonts/missing.woff2) f
 <section><ul class="doors" id="doors">${doors}</ul></section>
 <section class="crosswalk" id="crosswalk"><dl class="crosswalk__legend">${terms}</dl><div class="crosswalk__panes">${panes}</div></section>
 <details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows">${rows}</dl></details>
-<div data-theme-control hidden><button type="button">System</button></div></main></body></html>`;
+<div data-theme-control hidden><button type="button" data-theme-toggle aria-pressed="false"><span class="vh">Dark theme</span></button></div></main></body></html>`;
 }
 
 describe('JS-off completeness check', () => {

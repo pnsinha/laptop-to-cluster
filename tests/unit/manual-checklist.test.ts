@@ -15,6 +15,21 @@ describe('manual accessibility checklist', () => {
     expect(checklist).toContain('VO+Space');
   });
 
+  it('describes the single sun/moon theme toggle, not the old System, Light and Dark buttons', () => {
+    const items = checklist.split('\n').filter((line) => line.startsWith('- [ ] **Theme control.**'));
+    expect(items).toHaveLength(2);
+    const [keyboard, voiceover] = items;
+    expect(keyboard).toContain('sun/moon button');
+    expect(keyboard).toContain('Space or Enter');
+    expect(voiceover).toContain('"Dark theme, toggle button"');
+    expect(voiceover).toContain('not pressed');
+    for (const item of items) {
+      expect(item).not.toContain('System, Light, Dark');
+      expect(item).not.toContain('Light, button');
+      expect(item).not.toContain('Press System');
+    }
+  });
+
   it('uses the frozen labels', () => {
     for (const { label } of TIMELINE_STEPS) expect(checklist, label).toContain(label);
     for (const label of EVIDENCE_ROW_LABELS) expect(checklist, label).toContain(label);

@@ -243,7 +243,7 @@ try {
           return style.display !== 'none' && style.visibility !== 'hidden' && Boolean(element.textContent?.trim());
         });
         const controls = visible.filter((element) => element.matches('a, button, summary, input, select, textarea'));
-        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source, .door__who, .evidence-badge, .evidence-link, .timeline__caption, .crosswalk__legend, .crosswalk__legend dt, .crosswalk__legend dd, .crosswalk figcaption, .theme-control__label, .kicker, .talk__kind, .talk__meta'));
+        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source, .door__who, .evidence-badge, .evidence-link, .timeline__caption, .crosswalk__legend, .crosswalk__legend dt, .crosswalk__legend dd, .crosswalk figcaption, .kicker, .talk__kind, .talk__meta'));
         // Diagram text is scaled by its viewBox: measure what the reader sees, not the CSS value.
         const svgText = [...document.querySelectorAll<SVGTextContentElement>('svg text, svg tspan')].filter((element) => element.getClientRects().length > 0)
           .map((element) => Number.parseFloat(getComputedStyle(element).fontSize) * ((element as unknown as SVGGraphicsElement).getScreenCTM()?.a ?? 1));

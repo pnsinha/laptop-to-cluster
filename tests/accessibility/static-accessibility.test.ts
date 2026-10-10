@@ -43,8 +43,13 @@ describe('representative static accessibility coverage', () => {
       expect(inspectThemeScript(page.html, page.path), page.path).toEqual([]);
       const control = page.html.match(/<[^>]*data-theme-control[^>]*>/)?.[0] ?? '';
       expect(control, page.path).toMatch(/\shidden(?:[\s=>]|$)/);
-      const choices = [...page.html.matchAll(/<button\b[^>]*data-theme-choice="(system|light|dark)"[^>]*aria-pressed="(?:true|false)"[^>]*>(System|Light|Dark)<\/button>/g)].map((match) => `${match[1]}:${match[2]}`);
-      expect(choices, page.path).toEqual(['system:System', 'light:Light', 'dark:Dark']);
+      const toggles = [...page.html.matchAll(/<button\b[^>]*data-theme-toggle[^>]*>([\s\S]*?)<\/button>/g)];
+      expect(toggles, page.path).toHaveLength(1);
+      expect(toggles[0][0], page.path).toMatch(/\saria-pressed="false"/);
+      expect(page.html, page.path).not.toContain('data-theme-choice');
+      const toggleName = toggles[0][1].replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/<[^>]+>/g, '').trim();
+      expect(toggleName, page.path).toBe('Dark theme');
+      expect(toggles[0][1].match(/<svg\b[^>]*aria-hidden="true"/g), page.path).toHaveLength(2);
     }
   });
 

@@ -137,6 +137,8 @@ describe('media rules', () => {
     expect(forced).toMatch(/\.action--primary\s*\{[^}]*border:\s*2px solid ButtonText/);
     expect(forced).toMatch(/\.timeline__step\[aria-current="step"\]\s*\{[^}]*outline-color:\s*Highlight/);
     expect(forced).toMatch(/:focus-visible\s*\{[^}]*outline:\s*2px solid Highlight/);
+    expect(forced).toMatch(/\.theme-control__toggle\s*\{[^}]*border-color:\s*ButtonText/);
+    expect(forced).not.toMatch(/\.theme-control button/);
   });
 });
 
@@ -148,7 +150,7 @@ describe('whole-file guards', () => {
   });
 
   it('allows cursor: pointer only on links, buttons and summaries', () => {
-    const allowed = new Set(['.action', '.resource-tile', '.theme-control button', '.site-nav--compact summary', '.evidence-panel > summary', '.sources-scope summary']);
+    const allowed = new Set(['.action', '.resource-tile', '.theme-control__toggle', '.site-nav--compact summary', '.evidence-panel > summary', '.sources-scope summary']);
     for (const block of blocks.filter((item) => /cursor:\s*pointer/.test(item.body))) {
       for (const selector of block.selectors) expect(allowed.has(selector), selector).toBe(true);
     }
