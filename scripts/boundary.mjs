@@ -10,8 +10,15 @@ export const BOUNDARY_PATTERN_FILE = '.kiro/boundary-pattern.txt';
 export const BOUNDARY_MESSAGE = 'boundary term present';
 const DIST_TEXT = /\.(?:html|xml|json|txt|css|js)$/i;
 
+// One normalisation for the environment value and the local file: a line is a term, so split on
+// newlines, trim, drop empty lines and join as alternatives. Lines are matched one at a time, so a
+// pattern that kept its newlines could never match anything.
+export function normaliseBoundaryPattern(text) {
+  return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).join('|') || undefined;
+}
+
 export function loadBoundaryPattern(root, env = process.env) {
-  const fromEnv = env[BOUNDARY_ENV]?.trim();
+  const fromEnv = normaliseBoundaryPattern(env[BOUNDARY_ENV] ?? '');
   if (fromEnv) return { pattern: fromEnv, source: 'env' };
   const fromFile = readPatternFile(join(root, BOUNDARY_PATTERN_FILE));
   if (fromFile) return { pattern: fromFile, source: 'file' };
@@ -28,7 +35,7 @@ export function loadBoundaryPattern(root, env = process.env) {
 
 function readPatternFile(file) {
   if (!existsSync(file)) return undefined;
-  return readFileSync(file, 'utf8').split(/\r?\n/).map((line) => line.trim()).filter(Boolean).join('|') || undefined;
+  return normaliseBoundaryPattern(readFileSync(file, 'utf8'));
 }
 
 export function isForkPullRequest(env = process.env) {
@@ -43,9 +50,12 @@ export function isForkPullRequest(env = process.env) {
   }
 }
 
+// A pattern that matches the empty string (an empty alternative, `^`, `x*`) would flag every line, or in a
+// malformed secret hide that nothing was ever tested; either way it is refused, so the scan fails closed.
 export function compileBoundaryPattern(pattern) {
   try {
-    return new RegExp(pattern, 'i');
+    const regex = new RegExp(pattern, 'i');
+    return regex.test('') ? undefined : regex;
   } catch {
     return undefined;
   }
@@ -155,7 +165,7 @@ export function runBoundaryScan({ root, require = false, history, env = process.
     else if (require || env.CI === 'true') errors.push(`BOUNDARY-TERM: pattern unavailable; set ${BOUNDARY_ENV} or create ${BOUNDARY_PATTERN_FILE}`);
     else warnings.push('BOUNDARY-TERM: pattern unavailable; scan skipped (use --require to fail instead)');
   } else if (!regex) {
-    errors.push('BOUNDARY-TERM: the pattern is not a valid regular expression');
+    errors.push('BOUNDARY-TERM: the pattern is not a valid regular expression, or it matches the empty string');
   } else {
     try {
       findings.push(...scanTrackedFiles(root, regex));

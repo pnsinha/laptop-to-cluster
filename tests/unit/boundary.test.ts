@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   BOUNDARY_MESSAGE,
+  compileBoundaryPattern,
   isForkPullRequest,
   loadBoundaryPattern,
   matchingLines,
@@ -49,6 +50,25 @@ describe('boundary pattern source', () => {
     expect(loadBoundaryPattern(root, { L2C_BOUNDARY_PATTERN: 'from-env' })).toEqual({ pattern: 'from-env', source: 'env' });
   });
 
+  it('normalises a multi-line environment value exactly as the local file is normalised', () => {
+    const root = tempDir();
+    for (const value of ['alphaterm\nbetaterm\n', 'alphaterm\r\nbetaterm\r\n', '  alphaterm \n\n\t betaterm\r\n\r\n', '\nalphaterm\nbetaterm']) {
+      expect(loadBoundaryPattern(root, { L2C_BOUNDARY_PATTERN: value }), JSON.stringify(value)).toEqual({ pattern: 'alphaterm|betaterm', source: 'env' });
+    }
+    mkdirSync(join(root, '.kiro'));
+    writeFileSync(join(root, '.kiro/boundary-pattern.txt'), 'alphaterm\r\nbetaterm\r\n');
+    expect(loadBoundaryPattern(root, {}).pattern).toBe(loadBoundaryPattern(root, { L2C_BOUNDARY_PATTERN: 'alphaterm\nbetaterm\n' }).pattern);
+    expect(loadBoundaryPattern(root, { L2C_BOUNDARY_PATTERN: '\r\n \n' }).source).toBe('file');
+  });
+
+  it('refuses a pattern that matches the empty string, which would flag every line', () => {
+    for (const pattern of ['alphaterm|', '|betaterm', 'alphaterm||betaterm', '^', '$', '^$', '(alphaterm)?', '(alphaterm)*','(?!alphaterm)']) {
+      expect(compileBoundaryPattern(pattern), pattern).toBeUndefined();
+    }
+    expect(compileBoundaryPattern('alphaterm|betaterm')?.test('xx BETATERM xx')).toBe(true);
+    expect(compileBoundaryPattern('(alphaterm')).toBeUndefined();
+  });
+
   it('falls back to the main worktree pattern file from a linked worktree (A10)', () => {
     const main = repo({ 'README.md': 'clean\n' });
     mkdirSync(join(main, '.kiro'));
@@ -91,12 +111,23 @@ describe('boundary scan modes', () => {
     expect(fork.stdout).toEqual(['::notice title=BOUNDARY-TERM::BOUNDARY-TERM: the pattern secret is unavailable on a fork pull request; scan skipped']);
   });
 
-  it('rejects an invalid pattern without echoing it', () => {
+  it('rejects an invalid pattern, or one that matches the empty string, without echoing it', () => {
     const root = repo({ 'README.md': 'clean\n' });
-    const result = runBoundaryScan({ root, require: true, env: { L2C_BOUNDARY_PATTERN: `(${TOKEN}` } });
-    expect(result.exitCode).toBe(1);
-    expect(result.stderr).toEqual(['ERROR: BOUNDARY-TERM: the pattern is not a valid regular expression']);
-    expect(leaks(result)).toEqual([]);
+    for (const pattern of [`(${TOKEN}`, `${TOKEN}|`, `${TOKEN}\n\n|\n`]) {
+      const result = runBoundaryScan({ root, require: true, env: { L2C_BOUNDARY_PATTERN: pattern } });
+      expect(result.exitCode, pattern).toBe(1);
+      expect(result.stderr, pattern).toEqual(['ERROR: BOUNDARY-TERM: the pattern is not a valid regular expression, or it matches the empty string']);
+      expect(leaks(result)).toEqual([]);
+    }
+  });
+
+  it('finds every term of a multi-line environment value, as a single-line value does', () => {
+    const root = repo({ 'notes.txt': 'alphaterm first\nclean line\nsecond BETATERM\n' });
+    const expected = [`notes.txt:1 ${BOUNDARY_MESSAGE}`, `notes.txt:3 ${BOUNDARY_MESSAGE}`];
+    const run = (value: string) => runBoundaryScan({ root, require: true, env: { L2C_BOUNDARY_PATTERN: value }, pdfToText: () => null }).findings;
+    expect(run('alphaterm|betaterm')).toEqual(expected);
+    expect(run('alphaterm\nbetaterm\n')).toEqual(expected);
+    expect(run('alphaterm\r\nbetaterm\r\n')).toEqual(expected);
   });
 });
 
