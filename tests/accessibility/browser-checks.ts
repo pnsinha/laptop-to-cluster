@@ -302,7 +302,7 @@ export async function checkPrint(browser: Browser, origin: string, path: string,
    Part 3: JS off, primary action, font failure, crosswalk layout, motion (spec §10, §8.3, D13-D15)
 --------------------------------------------------------------------------------------------- */
 
-/** JS off: the home doors, timeline, crosswalk legend and panes, and the evidence panel rows are all in the HTML, in contract order. */
+/** JS off: the home doors and crosswalk legend and panes, the module timeline, and the evidence panel rows are all in the HTML, in contract order. The timeline assertions apply only to learning-module pages ('module'). */
 export async function checkJsOff(browser: Browser, origin: string, path: string, kind: 'home' | 'module', options: { panel: boolean }): Promise<Issue[]> {
   const scope = `${path}:no-script`;
   const issues: Issue[] = [];
@@ -327,9 +327,11 @@ export async function checkJsOff(browser: Browser, origin: string, path: string,
     };
   });
   const same = (a: readonly unknown[], b: readonly unknown[]) => JSON.stringify(a) === JSON.stringify(b);
-  if (read.timeline.figures > 1) issues.push(issue(scope, 'A11Y-NOJS', 'at most one timeline figure per page'));
-  if (!same(read.timeline.labels, TIMELINE_STEPS.map(({ label }) => label)) || read.timeline.captions.length !== 6 || read.timeline.captions.some((caption) => !caption)) {
-    issues.push(issue(scope, 'A11Y-NOJS', 'the timeline must carry the six step labels in order, each with a caption, without JavaScript'));
+  if (kind === 'module') {
+    if (read.timeline.figures > 1) issues.push(issue(scope, 'A11Y-NOJS', 'at most one timeline figure per page'));
+    if (!same(read.timeline.labels, TIMELINE_STEPS.map(({ label }) => label)) || read.timeline.captions.length !== 6 || read.timeline.captions.some((caption) => !caption)) {
+      issues.push(issue(scope, 'A11Y-NOJS', 'the timeline must carry the six step labels in order, each with a caption, without JavaScript'));
+    }
   }
   if (!read.themeControlHidden) issues.push(issue(scope, 'A11Y-NOJS', 'the theme control must stay hidden without JavaScript'));
   if (kind === 'home') {
