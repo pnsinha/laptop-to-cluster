@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync,
@@ -696,7 +697,39 @@ function parseFrontmatter(path: string): Record<string, unknown> | undefined {
   return match ? parseYaml(match[1]) as Record<string, unknown> : undefined;
 }
 
-export function validateEvidenceRepository(root: string, now = new Date().toISOString().slice(0, 10)): string[] {
+/** The public repository whose releases the provenance entries cite. */
+export const REPOSITORY_URL = 'https://github.com/pnsinha/laptop-to-cluster';
+const sameRepository = (value: string) => {
+  const normalise = (url: string) => { try { const { hostname, pathname } = new URL(url); return `${hostname}${pathname}`.toLowerCase().replace(/\/+$/, '').replace(/\.git$/, ''); } catch { return url; } };
+  return normalise(value) === normalise(REPOSITORY_URL);
+};
+
+/** For every provenance entry that cites this repository, the sha256 of `git show <release>:<path>` must equal the recorded integrity.
+ * A release that is not in this checkout is an error under CI and a warning elsewhere, where tags may not have been fetched. */
+export function provenanceIntegrityErrors(
+  record: ApplicabilityRecord,
+  options: { root: string; ci?: boolean; warn?: (message: string) => void },
+): string[] {
+  const { root, ci = process.env.CI === 'true', warn = (message: string) => console.warn(`WARNING: ${message}`) } = options;
+  const errors: string[] = [];
+  for (const [index, { reference }] of record.provenance.entries()) {
+    if (!sameRepository(reference.repository)) continue;
+    const label = `${record.id}.provenance.${index}`;
+    const known = spawnSync('git', ['rev-parse', '--verify', '--quiet', `${reference.release}^{commit}`], { cwd: root, encoding: 'utf8' });
+    if (known.status !== 0) {
+      const message = `${label}: release ${reference.release} is not available in this checkout, so ${reference.path} cannot be checked against its recorded integrity (fetch the tags: git fetch --tags)`;
+      if (ci) errors.push(message); else warn(`${message}; skipped`);
+      continue;
+    }
+    const shown = spawnSync('git', ['show', `${reference.release}:${reference.path}`], { cwd: root, maxBuffer: 256 * 1024 * 1024 });
+    if (shown.status !== 0) { errors.push(`${label}: ${reference.path} is not in ${reference.release}`); continue; }
+    const actual = `sha256:${createHash('sha256').update(shown.stdout).digest('hex')}`;
+    if (actual !== reference.integrity) errors.push(`${label}: integrity ${reference.integrity} does not match ${reference.release}:${reference.path}, which hashes to ${actual}`);
+  }
+  return errors;
+}
+
+export function validateEvidenceRepository(root: string, now = new Date().toISOString().slice(0, 10), options: { ci?: boolean; warn?: (message: string) => void } = {}): string[] {
   const errors: string[] = [];
   const applicabilityDirectory = join(root, 'site/src/content/applicability');
   const records: ApplicabilityRecord[] = [];
@@ -723,6 +756,7 @@ export function validateEvidenceRepository(root: string, now = new Date().toISOS
     if (applicabilityErrors.length) errors.push(...applicabilityErrors); else validRecordIds.add(record.id);
   }
   for (const record of records) errors.push(...validateRelatedEvidence(record, root));
+  for (const record of records) errors.push(...provenanceIntegrityErrors(record, { root, ...options }));
   errors.push(...supersessionErrors(records));
   const contentDirectory = join(root, 'site/src/content/content-items');
   for (const name of readdirSync(contentDirectory).filter((name) => /\.mdx?$/.test(name)).sort()) {
