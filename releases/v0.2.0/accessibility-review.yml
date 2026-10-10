@@ -133,7 +133,7 @@ checks:
     notes: Inspect heading order and landmarks on every route in manualRouteSamples (one h1; banner, Primary navigation, main, Site records navigation, contentinfo); VoiceOver rotor check in section B of the manual checklist.
   - id: zoom-reflow
     result: pending
-    notes: "Automated: 320, 768 and 1280 px and the 320px-at-200%-zoom layout viewport for horizontal overflow on every page; hero, big idea, doors and crosswalk reading order at 320 px; crosswalk panes stack without overlap. Manual: section E, 200% and 400% zoom."
+    notes: "Automated: 320, 768 and 1280 px and the 320px-at-200%-zoom layout viewport for horizontal overflow on every page; hero, evidence projection, doors, big idea and crosswalk reading order at 320 px; on module pages each timeline step label sits above its caption; crosswalk panes stack without overlap. Manual: section E, 200% and 400% zoom."
   - id: link-purpose
     result: pending
     notes: Scan link text on every route for ambiguous phrases; door links, the Test record link and the evidence-panel link name their destination.
@@ -142,7 +142,7 @@ checks:
     notes: "Automated: native table, caption, scoped headers and local horizontal scroll under stress. Manual: confirm captions and scroll instructions on the milestone tables."
   - id: alternatives
     result: pending
-    notes: Confirm informative SVG diagrams have text alternatives and decorative marks (timeline bars, crosswalk shapes) are aria-hidden; the site has no raster images.
+    notes: Confirm informative SVG diagrams have text alternatives and decorative marks (timeline bars on module pages, crosswalk shapes on the home page) are aria-hidden; the site has no raster images.
   - id: media-captions-transcripts
     result: not-applicable
     notes: No video or audio on the site; confirm with a source search before signing.
@@ -157,13 +157,13 @@ checks:
     notes: "Automated: body and controls at least 16px, fine text at least 14px, diagram text at least 14px as rendered, in both schemes. Manual: Source Serif 4, IBM Plex Sans and IBM Plex Mono render from /fonts/ on the live site."
   - id: static-figure
     result: pending
-    notes: "Automated: the Timeline figure keeps its six labels (Get an allocation, Start coordinator, Readiness gate, Run workers, Verify results, Clean up) in order, with captions, under forced colours, print and JavaScript off. Manual: no decoration implies success before Verify results."
+    notes: "Automated: on Module 2 the Timeline figure keeps its six labels (Get an allocation, Start coordinator, Readiness gate, Run workers, Verify results, Clean up) in order, with captions, under forced colours, print and JavaScript off; the home page has no timeline. Manual: no decoration implies success before Verify results."
   - id: forced-colors-print
     result: pending
     notes: "Automated: forced-colors emulation on home, Module 2 and every record page (text, borders, selected state, focus ring, no lost control); print emulation (light palette, evidence rows visible, panels opened and restored by beforeprint/afterprint, step order). Manual: sections C and D of the manual checklist, including link destinations on paper."
   - id: no-javascript
     result: pending
-    notes: "Automated: JavaScript-off contexts check the primary action (#big-idea), the three doors, the six timeline steps, the crosswalk legend and panes (every concept tagged in the compose and sbatch panes), the evidence rows after a native summary click, and that the theme control stays hidden; all pages reflow and keep critical content outside disclosures."
+    notes: "Automated: JavaScript-off contexts check the primary action (#big-idea), the three doors, the hero figure, the four concept rows, the six timeline steps on Module 2, the crosswalk legend and panes (every concept tagged in the compose and sbatch panes), the evidence rows after a native summary click, and that the theme control stays hidden; all pages reflow and keep critical content outside disclosures."
   - id: no-decorative-motion
     result: pending
     notes: "Automated: no animation or transition on any page under no-preference or reduce, and scroll-behavior is auto under reduce. Manual: section E, reduce-motion setting."
@@ -184,7 +184,7 @@ checks:
     notes: Read the first ~120 rendered words of every route; read the home page and the tour with one or two first-time readers (plain language first, term in parentheses).
   - id: theme-precedence
     result: pending
-    notes: "Automated: a stored Light or Dark choice beats the OS; no stored choice follows the OS; an unrecognised value is ignored; the theme attribute is set before the body is parsed (no flash); System follows a live OS change; with JavaScript off the page follows the OS and the control is hidden. Manual: toggle the control on the preview."
+    notes: "Automated: one toggle button with accessible name \"Dark theme\" and aria-pressed (true on a dark page); a stored light or dark choice beats the OS and survives a reload and an OS change; a click that lands on the OS value clears the stored choice; with nothing stored the page follows a live OS change; an unrecognised stored value is ignored; the theme attribute is set before the body is parsed (no flash); with JavaScript off the page follows the OS and the control is hidden. Manual: press the toggle on the preview with the OS set to light and to dark, then reload after choosing."
   - id: font-failure
     result: pending
     notes: "Automated: with /fonts/* blocked, text stays visible, nothing overflows at 320 and 1280px, and page height stays within 25% of the normal render. Manual: section E, blocked fonts."
@@ -193,7 +193,7 @@ checks:
     notes: "Automated: the badge on the home page and Module 2 expands into Tested, You need and Depends on your center; the rows are visible without JavaScript and in print; the Test record link names its destination. Manual: if /milestones/2/ renders a badge on the release candidate, expand and collapse it there too; expand and collapse with keyboard and VoiceOver; confirm no critical content sits only inside the panel."
   - id: voiceover
     result: pending
-    notes: "Manual: section B of the manual checklist (doors, badge collapsed and expanded, timeline order, theme control, crosswalk, and the selected concept if the highlight enhancement ships)."
+    notes: "Manual: section B of the manual checklist (doors, badge collapsed and expanded, timeline order on module pages, the Dark theme toggle button, crosswalk, and the selected concept if the highlight enhancement ships)."
   - id: keyboard-new-components
     result: pending
     notes: "Manual: the doors, the evidence panel, the crosswalk panes and the highlight buttons (if shipped) are operable without a mouse with a visible ring and no trap; section A."

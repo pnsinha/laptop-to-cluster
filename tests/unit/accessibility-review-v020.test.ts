@@ -97,6 +97,29 @@ describe.each([['the checked-in review', checkedIn], ['a signed copy of it', sig
     expect(trace('evidence').destination).toBe(`/applicability/${recordId}/`);
   });
 
+  const note = (id: string): string => record.checks.find((check: { id: string }) => check.id === id).notes;
+
+  it('describes the home reading order the scanner checks: hero, evidence projection, doors, big idea, crosswalk', () => {
+    expect(note('zoom-reflow')).toContain('hero, evidence projection, doors, big idea and crosswalk reading order at 320 px');
+  });
+
+  it('describes the single theme toggle and its precedence rules, not three theme buttons', () => {
+    const text = note('theme-precedence');
+    expect(text).toContain('accessible name "Dark theme"');
+    expect(text).toContain('aria-pressed');
+    expect(text).toContain('a stored light or dark choice beats the OS');
+    expect(text).toContain('a click that lands on the OS value clears the stored choice');
+    expect(text).toContain('with nothing stored the page follows a live OS change');
+    expect(text).not.toMatch(/\bSystem\b|three (theme )?(buttons|choices)|Light or Dark/);
+  });
+
+  it('places the timeline on module pages only, as the scanner and the manual checklist do', () => {
+    const mentions = record.checks.filter((check: { notes: string }) => /timeline/i.test(check.notes));
+    expect(mentions.length).toBeGreaterThan(0);
+    for (const check of mentions) expect(check.notes, check.id).toMatch(/Module 2|module pages?|learning-module/i);
+    expect(note('no-javascript')).toContain('the six timeline steps on Module 2');
+  });
+
   it('describes the timeline figure, not the removed workflow figure', () => {
     const text = JSON.stringify(record);
     expect(text).toContain('Timeline figure');
