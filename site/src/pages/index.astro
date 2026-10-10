@@ -41,7 +41,7 @@ const records = projectRecordLinks(landing.release);
 
   {landing.applicability_projection ? <ApplicabilityProjectionView projection={landing.applicability_projection} /> : <p class="notice notice--info">{landing.validation_unavailable_reason}</p>}
 
-  <section aria-labelledby="doors-title">
+  <section class="home-doors" aria-labelledby="doors-title">
     <h2 id="doors-title">{DOORS_SECTION.title}</h2>
     <Doors doors={doors} compact />
   </section>

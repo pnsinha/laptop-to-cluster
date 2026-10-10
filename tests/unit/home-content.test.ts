@@ -42,7 +42,7 @@ describe('home hero', () => {
   it('explains in the lede why Compose stops working and what replaces it', () => {
     expect(HERO.ledeHtml).toContain('<code>docker compose up</code>');
     const lede = text(HERO.ledeHtml);
-    for (const idea of [/no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /one (?:batch )?script starts each service/]) {
+    for (const idea of [/docker compose up/, /no Docker daemon/, /root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) {
       expect(lede).toMatch(idea);
     }
   });
@@ -55,7 +55,7 @@ describe('big idea', () => {
       const pattern = new RegExp(`${escapeRegExp(concept.plain)}\\s*\\((?:an? )?${escapeRegExp(concept.label.toLowerCase())}\\)`, 'i');
       expect(text(CONCEPT_NOTES[concept.key]), concept.key).toMatch(pattern);
     }
-    expect(prose).toMatch(/\(an allocation\)/);
+    expect(BIG_IDEA.proseHtml).toContain('href="/about/glossary/#allocation"');
     expect(prose).toMatch(/scheduler \(Slurm, at most centers\)/);
   });
 

@@ -16,7 +16,7 @@ const doorHref = (id: DoorId): string => DOORS.find((door) => door.id === id)!.h
 export const HERO = {
   kicker: 'A free, open-source learning guide for Docker Compose users',
   title: 'Your Compose stack, on a shared cluster',
-  ledeHtml: 'On your laptop, <code>docker compose up</code> starts every service whenever you ask. A shared research cluster runs no Docker daemon and gives you no root access (administrator rights), so that command won’t work there. Instead, you ask a scheduler for an allocation, wait your turn, and one batch script starts each service inside it. This guide translates one into the other, one idea at a time.',
+  ledeHtml: 'On your laptop, <code>docker compose up</code> starts the stack on demand. A shared research cluster has no Docker daemon and gives you no root access (administrator rights). Instead, you request a scheduler allocation, wait your turn, and launch the services with a batch script. This guide shows how to make that translation.',
   primary: { label: 'Start with the big idea', href: '#big-idea' },
   secondary: { label: 'Already have a Compose file? Translate it', href: doorHref('translate') },
   quiet: { lead: 'Support researchers or run a cluster?', label: 'See what this assumes, and when not to use it', href: doorHref('evaluate') },
@@ -24,14 +24,14 @@ export const HERO = {
 
 export const BIG_IDEA = {
   title: 'The big idea',
-  proseHtml: 'On a shared cluster, a scheduler (Slurm, at most centers) decides what runs, where and for how long; Docker doesn’t. You ask it for a fixed share of one machine for a fixed time (an <a href="/about/glossary/#allocation">allocation</a>), and one batch script then does inside it what Compose did on your laptop. Four ideas change meaning along the way.',
+  proseHtml: 'A scheduler (Slurm, at most centers) decides where and when your stack runs. Inside one <a href="/about/glossary/#allocation">allocation</a>, four familiar Compose ideas change meaning.',
   composeSide: 'In Compose',
   clusterSide: 'On a cluster',
 } as const;
 
 /* The hero figure: two execution environments, not a startup sequence. Plain HTML, no concept colours. */
 export const HERO_FIGURE = {
-  caption: 'The same three programs in two environments. On your laptop, Docker starts them on demand. On a cluster, a scheduler grants one allocation and your batch script starts them inside it.',
+  caption: 'The same three programs in two environments. On your laptop, Docker starts them on demand. On a cluster, a scheduler grants one allocation and your batch script starts them inside it. Shown here: the single-node baseline, one job on one node.',
   services: ['coordinator', 'worker', 'worker'],
   laptop: { title: 'Your laptop', command: 'docker compose up', facts: ['Docker daemon, root access', 'Starts whenever you ask', 'Ports published to your machine'] },
   cluster: { title: 'A shared cluster', command: 'sbatch baseline.sbatch', allocation: 'One allocation: one node, a fixed time', facts: ['No Docker daemon, no root access', 'A scheduler decides when you run', 'Local-only access inside the node'] },

@@ -26,15 +26,32 @@ describe('hero', () => {
   it('is one column below 60rem, then copy beside the two-environment figure', () => {
     expect(body('.hero')).toMatch(/display:\s*grid/);
     expect(body('.hero')).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/);
-    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?\.hero\s*\{[^}]*grid-template-columns:\s*minmax\(0, 11fr\) minmax\(0, 10fr\)/);
-    expect(body('.hero')).not.toMatch(/max-inline-size:\s*46rem/);
-    expect(body('.hero__copy')).toMatch(/max-inline-size:\s*40rem/);
-    expect(body('.hero h1')).toMatch(/max-inline-size:\s*14ch/);
+    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?\.hero\s*\{[^}]*grid-template-columns:\s*minmax\(0, 11fr\) minmax\(0, 10fr\)[^}]*padding-block-start:\s*var\(--space-10\)/);
+    expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/margin-block-start:\s*0/);
+    expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/padding-block-start:\s*var\(--space-3\)/);
+    expect(body('.hero__copy')).toMatch(/max-inline-size:\s*36rem/);
+    expect(body('.hero__copy')).toMatch(/max-inline-size:\s*34rem/);
+    expect(body('.hero h1')).toMatch(/max-inline-size:\s*none/);
+    expect(body('.hero h1')).not.toMatch(/14ch/);
+    expect(body('.hero h1')).toMatch(/font-size:\s*var\(--l-display\)/);
+    expect(body('.hero .lede')).toMatch(/max-inline-size:\s*none/);
+    expect(body('.hero .lede')).toMatch(/font-size:\s*var\(--l-lede\)/);
+  });
+
+  it('defines a landing-only type scale of seven properties', () => {
+    const scale = body('body[data-composition-profile="landing"]');
+    for (const prop of ['--l-display', '--l-lede', '--l-h2', '--l-term', '--l-body', '--l-annot', '--l-caption']) {
+      expect(scale, prop).toMatch(new RegExp(`${prop}:\\s*[^;]+`));
+    }
+    expect(body('.home-doors > h2, .concepts > h2, .crosswalk > h2')).toMatch(/font-size:\s*var\(--l-h2\)/);
   });
 
   it('draws the hero figure as two bordered environment panels, plain HTML', () => {
     expect(body('.env-pair')).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-    expect(body('.env')).toMatch(/background:\s*var\(--raised\)[^}]*border:\s*var\(--border-thin\) solid var\(--border\)/);
+    expect(body('.env')).toMatch(/background:\s*var\(--raised\)[^}]*border:\s*var\(--border-thin\) solid var\(--rule\)/);
+    expect(body('.env--cluster')).toMatch(/background:\s*var\(--raised\)/);
+    expect(body('.env__box')).toMatch(/border:\s*var\(--border-thin\) solid var\(--border\)/);
+    expect(body('.env__cmd code')).toMatch(/display:\s*inline-block/);
     expect(body('.env__alloc')).toMatch(/border:\s*var\(--border-strong\) dashed var\(--primary\)/);
     expect(body('.hero__figure figcaption')).toMatch(/color:\s*var\(--muted\)/);
     expect(bare).toMatch(/@media \(max-width: 30rem\)\s*\{[\s\S]*?\.env-pair\s*\{[^}]*grid-template-columns:\s*1fr/);
@@ -76,7 +93,11 @@ describe('concept rows', () => {
     expect(body('.concept')).toMatch(/border-block-end:\s*var\(--border-thin\) solid var\(--rule\)/);
     expect(body('.concept')).not.toMatch(/background|border:|box-shadow/);
     expect(body('.concept__note')).toMatch(/font-family:\s*var\(--font-reading\)/);
-    expect(bare).toMatch(/@media \(min-width: 52rem\)\s*\{[\s\S]*?\.concept\s*\{[^}]*grid-template-columns:\s*3rem minmax\(0, 5fr\) minmax\(0, 7fr\)/);
+    expect(body('.concept__note')).toMatch(/max-inline-size:\s*60ch/);
+    expect(body('.concept__side')).toMatch(/font-family:\s*var\(--font-body\)/);
+    expect(body('.concept__was')).toMatch(/font-size:\s*var\(--l-term\)/);
+    expect(body('.concept__term')).toMatch(/font-size:\s*var\(--l-term\)/);
+    expect(bare).toMatch(/@media \(min-width: 52rem\)\s*\{[\s\S]*?\.concept\s*\{[^}]*grid-template-columns:\s*3rem minmax\(0, 2fr\) minmax\(0, 3fr\)/);
   });
 });
 

@@ -72,7 +72,7 @@ describe('home page, built output', () => {
     expect(home).toContain('<title>Bridging the Laptop-to-Cluster Gap');
     expect(home).toContain('<meta property="og:title" content="Bridging the Laptop-to-Cluster Gap">');
     const lede = text(hero.match(/<p class="lede">([\s\S]*?)<\/p>/)?.[1] ?? '');
-    for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /one (?:batch )?script starts each service/]) expect(lede).toMatch(idea);
+    for (const idea of [/docker compose up/, /no Docker daemon/, /root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) expect(lede).toMatch(idea);
   });
 
   it('renders four concept rows in contract order, each with its Compose name, tinted term and note', () => {
