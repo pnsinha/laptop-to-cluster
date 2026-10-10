@@ -32,17 +32,21 @@ a:hover { text-decoration-thickness: 2px; }
 .vh, .crosswalk__sr { position: absolute !important; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; -webkit-user-select: none; user-select: none; }
 
 /* ---------- 2. type ---------- */
-h1, h2, h3, h4 { font-family: var(--font-display); color: var(--primary); letter-spacing: normal; hyphens: manual; text-wrap: balance; }
+h1, h2, h3, h4 { font-family: var(--font-display); color: var(--primary); letter-spacing: normal; hyphens: none; text-wrap: balance; }
 h1, h2, h3 { line-height: 1.2; }
 h1 { max-inline-size: var(--measure-prose); font-size: var(--text-display); font-weight: var(--weight-display); line-height: var(--leading-display); text-wrap: balance; }
 h2 { font-size: var(--text-h2); font-weight: var(--weight-semibold); line-height: var(--leading-heading); }
 h3 { font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: 1.25; }
 h4 { font-family: var(--font-body); font-size: var(--text-ui); font-weight: var(--weight-semibold); line-height: var(--leading-ui); color: var(--text); }
 h1[id], h2[id], h3[id], h4[id] { scroll-margin-block-start: var(--space-6); }
+/* A hyphenated word in a title (ContentHeader wraps it) stays on one line, except on the narrowest phones, where it may break. */
+@media (min-width: 30rem) {
+  .h-compound { white-space: nowrap; }
+}
 p, blockquote, li { text-wrap: pretty; }
 .lede { max-inline-size: var(--measure-lede); font-family: var(--font-reading); font-size: var(--text-lede); line-height: var(--leading-lede); }
 .kicker, .eyebrow { margin: 0; color: var(--accent); font-family: var(--font-body); font-size: var(--text-fine); font-weight: var(--weight-semibold); line-height: var(--leading-fine); }
-blockquote { margin-block: var(--space-4); margin-inline: 0; padding-block: var(--space-2); padding-inline-start: var(--space-4); border-inline-start: var(--border-strong) solid var(--primary); color: var(--muted); font-style: italic; }
+blockquote { margin-block: var(--space-4); margin-inline: 0; padding-block: var(--space-2); padding-inline-start: var(--space-4); border-inline-start: var(--border-strong) solid var(--primary); color: var(--muted); font-size: 0.9444em; }
 strong { font-weight: var(--weight-semibold); }
 
 /* ---------- 3. shell ---------- */
@@ -68,12 +72,16 @@ strong { font-weight: var(--weight-semibold); }
 .theme-control__toggle:hover { border-color: currentColor; }
 .theme-control__icon { inline-size: 1.25rem; block-size: 1.25rem; }
 .theme-control__toggle[aria-pressed="true"] .theme-control__icon--moon, .theme-control__toggle[aria-pressed="false"] .theme-control__icon--sun { display: none; }
-.footer-links { display: flex; flex-wrap: wrap; row-gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.footer-links { display: flex; flex-wrap: wrap; column-gap: var(--space-5); row-gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
 .footer-links li { white-space: nowrap; }
-.footer-links li:not(:last-child)::after { content: "·"; content: "·" / ""; padding-inline: var(--space-3); color: var(--muted); }
 .footer-links a { display: inline-block; padding-block: 0.25rem; }
 .release { max-inline-size: none; margin-block: var(--space-4) 0; color: var(--muted); font-size: var(--text-fine); line-height: 1.3; }
-.site-footer .acknowledgment { max-inline-size: none; margin: var(--space-5) 0 0; color: var(--muted); font-size: var(--text-fine); line-height: 1.55; }
+.site-footer .acknowledgment { max-inline-size: var(--measure-prose); margin: var(--space-5) 0 0; color: var(--muted); font-size: var(--text-fine); line-height: 1.55; }
+/* From 64rem the footer is two columns: links and release status on the left, the acknowledgment in a readable 40rem column on the right, first lines on one baseline. */
+@media (min-width: 64rem) {
+  .site-footer__body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 40rem); gap: var(--space-8); align-items: baseline; }
+  .site-footer .acknowledgment { margin: 0; }
+}
 .event-acknowledgment { max-inline-size: var(--measure-prose); margin-block: var(--space-8) 0; padding-block-start: var(--space-4); border-block-start: var(--border-thin) solid var(--rule); }
 .event-acknowledgment p { font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
 .breadcrumbs { max-inline-size: var(--measure-prose); margin-block-end: var(--space-3); color: var(--muted); font-size: var(--text-fine); }
@@ -95,6 +103,8 @@ main { inline-size: min(100%, var(--measure-wide)); margin-inline: auto; padding
 .layout-prose, .prose, .content-header, .module-content, main > article:not(.card), .resource-group, .project-links, .applicability-record, .section-nav { max-inline-size: var(--measure-wide); }
 p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, .reading-section, .release-notes, .applicability-record) > :where(p, ul, ol, dl, h2, h3, h4, blockquote) { max-inline-size: var(--measure-prose); }
 p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, .reading-section, .release-notes) > :where(p, ul, ol, dl, blockquote) { font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
+/* A quote is 0.9444 of the reading size: 17 px on 18 px text. In em it would resolve against the 16 px article text, so inside a reading container it is written against the token. This rule follows both the base blockquote rule and the reading rule above. */
+:where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, .reading-section, .release-notes) > blockquote { font-size: calc(var(--text-reading) * 0.9444); }
 .layout-wide { inline-size: 100%; max-inline-size: var(--measure-wide); }
 .layout-data, .layout-code { inline-size: 100%; max-inline-size: var(--measure-data); }
 :where(h1, h2, h3, p, ul, ol, dl, figure, blockquote) { margin-block: 0; }
@@ -368,15 +378,18 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 .release-notes > * + * { margin-block-start: var(--flow-body); }
 
 /* ---------- 15. tables ---------- */
-.table-overflow { position: relative; max-inline-size: min(100%, var(--measure-prose)); margin-block: var(--space-6); overflow-x: auto; overscroll-behavior-inline: contain; border: var(--border-thin) solid var(--rule); }
+.table-overflow { position: relative; max-inline-size: min(100%, var(--measure-prose)); margin-block: var(--space-6); overflow-x: auto; overscroll-behavior-inline: contain; container-type: scroll-state; }
 .cheat-sheet .table-overflow { max-inline-size: 100%; }
 .table-overflow:focus-visible { outline-offset: var(--space-1); }
-.table-overflow__instruction { position: sticky; inset-inline-start: 0; inline-size: fit-content; max-inline-size: var(--measure-prose); margin: 0; padding: var(--space-2) var(--space-3); color: var(--muted); font-size: var(--text-fine); border-block-end: var(--border-thin) solid var(--rule); }
+.table-overflow__instruction { position: sticky; inset-inline-start: 0; inline-size: fit-content; max-inline-size: var(--measure-prose); margin: 0; padding: var(--space-2) var(--space-3) var(--space-2) 0; color: var(--muted); font-size: var(--text-fine); border-block-end: var(--border-thin) solid var(--rule); }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .table-overflow > table { inline-size: 100%; }
-caption { padding: var(--space-3); color: var(--primary); font-family: var(--font-display); font-size: 1.125rem; font-weight: var(--weight-semibold); text-align: start; }
+caption { padding-block: var(--space-3); padding-inline: 0; color: var(--primary); font-family: var(--font-display); font-size: 1.125rem; font-weight: var(--weight-semibold); text-align: start; }
 th, td { padding: var(--space-2) var(--space-4); text-align: start; vertical-align: top; }
-th { color: var(--muted); font-weight: var(--weight-semibold); background: var(--surface); border-block-end: var(--border-thin) solid var(--border); }
+th { color: var(--muted); font-weight: var(--weight-semibold); }
+thead th, table:not(:has(thead)) tr:first-child > * { border-block-end: var(--border-thin) solid var(--rule); }
+th:first-child, td:first-child { padding-inline-start: 0; }
+th:last-child, td:last-child { padding-inline-end: 0; }
 tbody tr + tr > * { border-block-start: var(--border-thin) solid var(--rule); }
 td code { white-space: nowrap; }
 
@@ -491,6 +504,10 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
 @media (min-width: 64rem) {
   .table-overflow__instruction { display: none; }
 }
+/* Without a frame, a region that really scrolls must say so. From 64rem the instruction is hidden for tables that fit; this shows it again for one that can scroll sideways, and it must come after the rule above. Scroll shadows would need gradients, which the visual policy forbids. */
+@container scroll-state(scrollable: inline) {
+  .table-overflow__instruction { display: block; }
+}
 @media (max-width: 48rem) {
   .source-excerpt__meta { overflow-wrap: anywhere; }
   .implementation-callout .action { margin-block-end: var(--space-2); }
@@ -531,7 +548,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
   .timeline, .door, .notice, .record-summary, .evidence-rows, .crosswalk__pane, .hero__figure, .concept { break-inside: avoid; }
   :where(h1, h2, h3, h4) { break-after: avoid; }
   .event-band { border-radius: 0; }
-  th { border-block-end-width: 2px; }
+  thead th, table:not(:has(thead)) tr:first-child > * { border-block-end-width: 2px; border-block-end-color: var(--border); }
   a[href^="http"]:not(nav a)::after { content: " (" attr(href) ")"; overflow-wrap: anywhere; }
 }
 @media (prefers-reduced-motion: reduce) {

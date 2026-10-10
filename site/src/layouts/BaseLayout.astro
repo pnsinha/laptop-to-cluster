@@ -46,5 +46,5 @@ const footerLinks = [
 </head><body data-composition-profile={selectedProfile}><a class="skip" href="#main">Skip to content</a>
 <SiteHeader {currentPath} />
 <main id="main" tabindex="-1">{currentPath !== '/' && <Breadcrumbs currentPath={currentPath} currentTitle={title} />}<slot /></main>
-<footer class="site-footer"><nav aria-label="Site records"><ul class="footer-links">{footerLinks.map((link) => <li><a href={link.href}>{link.label}</a></li>)}<li><a href={PROJECT.repository} rel="external">GitHub (external)</a></li></ul></nav><p class="release" aria-label="Release status">Release status: {release}</p><Acknowledgment variant="footer" /></footer>
+<footer class="site-footer"><div class="site-footer__body"><div class="site-footer__links"><nav aria-label="Site records"><ul class="footer-links">{footerLinks.map((link) => <li><a href={link.href}>{link.label}</a></li>)}<li><a href={PROJECT.repository} rel="external">GitHub (external)</a></li></ul></nav><p class="release" aria-label="Release status">Release status: {release}</p></div><Acknowledgment variant="footer" /></div></footer>
 </body></html>
