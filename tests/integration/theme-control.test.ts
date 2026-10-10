@@ -10,6 +10,8 @@ beforeAll(async () => {
 describe('ThemeControl', () => {
   it('renders the contract markup: hidden until the script unhides it, one toggle button with a moon, a sun and the name "Dark theme"', () => {
     expect(html).toContain('<div class="theme-control" data-theme-control hidden>');
+    // The script unhides the control through the toggle's parent, so the toggle must be its direct child.
+    expect(html).toContain('<div class="theme-control" data-theme-control hidden><button ');
     const buttons = [...html.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)];
     expect(buttons).toHaveLength(1);
     expect(buttons[0][1]).toBe(' type="button" class="theme-control__toggle" data-theme-toggle aria-pressed="false"');

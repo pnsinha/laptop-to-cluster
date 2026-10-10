@@ -93,8 +93,8 @@ describe('theme toggle check', () => {
   }, 120_000);
 
   it('reports a toggle that ignores a live OS change while nothing is stored, and one that wipes a stored choice on an OS change', async () => {
-    expect(messages(await run(['no-os-sync']))).toMatch(/OS change/);
-    expect(messages(await run(['os-clears-stored']))).toMatch(/stored choice/);
+    expect(messages(await run(['no-os-sync']))).toMatch(/follow a live OS change/);
+    expect(messages(await run(['os-clears-stored']))).toMatch(/leave a stored choice alone/);
   }, 120_000);
 
   it('reports visible System, Light or Dark text in the header', async () => {
