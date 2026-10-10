@@ -81,6 +81,9 @@ describe('talks, notices, tables and pager', () => {
     // Tables fill the column and wrap their prose cells; only content that cannot wrap (code) makes the wrapper scroll.
     expect(body('.table-overflow > table')).toMatch(/inline-size:\s*100%/);
     expect(body('.table-overflow > table')).not.toMatch(/max-content/);
+    // Tables share the reading column's right edge; the cheat sheet keeps the full width.
+    expect(body('.table-overflow')).toMatch(/max-inline-size:\s*min\(100%,\s*var\(--measure-prose\)\)/);
+    expect(body('.cheat-sheet .table-overflow')).toMatch(/max-inline-size:\s*100%/);
   });
 
   it('keeps pager links whole-link underlined and sets their titles in the display face', () => {
