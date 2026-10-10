@@ -98,6 +98,7 @@ p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-sco
 .layout-wide { inline-size: 100%; max-inline-size: var(--measure-wide); }
 .layout-data, .layout-code { inline-size: 100%; max-inline-size: var(--measure-data); }
 :where(h1, h2, h3, p, ul, ol, dl, figure, blockquote) { margin-block: 0; }
+figure { margin-inline: 0; }
 :where(main, .prose, .module-content, section, article, .content-header, .sources-scope) > * + * { margin-block-start: var(--flow-body); }
 main > aside + *,
 main > section + section,
