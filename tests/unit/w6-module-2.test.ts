@@ -52,7 +52,7 @@ describe('W6 Module 2', () => {
   it('says the verifier runs inside the job, and the cited lines agree with the script', () => {
     const how = section('How the baseline works');
     expect(how).toMatch(/inside the job/i);
-    expect(how).toContain('245-251');
+    expect(how).toContain('245–251');
     expect(lines(245, 251)).toContain('verify.py');
     expect(lines(245, 251)).toContain('verification-success');
     expect(body).not.toMatch(/run the (?:workflow )?\[?verifier/i);
@@ -63,7 +63,7 @@ describe('W6 Module 2', () => {
     expect(lines(219, 222)).toContain('readiness.py');
     expect(lines(228, 237)).toContain('worker.py');
     expect(lines(120, 120)).toContain('trap cleanup EXIT');
-    for (const range of ['2-7', '123-198', '200-206', '208-225', '227-242', '243-251', '82-114']) {
+    for (const range of ['2–7', '123–198', '200–206', '208–225', '227–242', '243–251', '82–114']) {
       expect(section('How the baseline works')).toContain(range);
     }
   });
@@ -104,8 +104,8 @@ describe('W6 Module 2', () => {
       expect(adapt).toContain(`\`${file}\``);
     }
     expect(adapt).not.toMatch(/Left unchanged:[^.]*readiness\.py/);
-    expect(adapt).toContain('lines 29-31');
-    expect(adapt).toContain('lines 27-28');
+    expect(adapt).toContain('lines 29–31');
+    expect(adapt).toContain('lines 27–28');
     const readiness = read('workflows/baseline-slurm-apptainer/bin/readiness.py').split('\n');
     expect(readiness.slice(28, 31).join('\n')).toContain('"status": "ready"');
     const coordinator = read('workflows/baseline-slurm-apptainer/bin/coordinator.py').split('\n');

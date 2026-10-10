@@ -37,7 +37,7 @@ describe('W6 Milestone 2 page', () => {
 
   it('lists the three dissemination engagements with truthful statuses and no hosted-PDF claim', () => {
     expect(milestone.body).toMatch(/\| I-GUIDE Forum 2026 poster \| Delivered \|/);
-    expect(milestone.body).toMatch(/\| US-RSE '26 talk \| Accepted \|/);
+    expect(milestone.body).toMatch(/\| US-RSE’26 talk \| Accepted \|/);
     expect(milestone.body).toMatch(/\| SC26 research poster \| Accepted \|/);
     expect(milestone.body).toContain('(/about/talks-and-papers/)');
     expect(milestone.body).toContain('(/events/iguide-forum-2026/)');

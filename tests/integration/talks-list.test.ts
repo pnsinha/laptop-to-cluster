@@ -8,7 +8,7 @@ beforeAll(async () => {
 });
 
 const talks = [
-  { id: 'usrse26-talk', kind: 'talk', title: 'From Laptop to Cluster: HPC Translation Patterns for AI Stacks', venue: "US-RSE'26", event_date: '2026-10-20', location: 'San Jose, CA', featured: true,
+  { id: 'usrse26-talk', kind: 'talk', title: 'From Laptop to Cluster: HPC Translation Patterns for AI Stacks', venue: "US-RSE’26", event_date: '2026-10-20', location: 'San Jose, CA', featured: true,
     links: [{ label: 'Conference program', href: 'https://us-rse.org/usrse26/program/' }] },
   { id: 'iguide-forum-2026-poster', kind: 'poster', title: 'I-GUIDE Forum 2026 poster', venue: 'I-GUIDE Forum 2026', event_date: '2026-08-05', featured: false,
     links: [{ label: 'Poster and companion page', href: '/events/iguide-forum-2026/' }] },
@@ -23,7 +23,7 @@ describe('TalksList', () => {
     expect(html).toContain('<p class="talk__kind">Talk</p>');
     expect(html).toContain('<p class="talk__kind">Poster</p>');
     expect(html).toContain('<h3>From Laptop to Cluster: HPC Translation Patterns for AI Stacks</h3>');
-    expect(html).toMatch(/<p class="talk__meta">US-RSE(?:'|&#39;)26 · October 20, 2026 · San Jose, CA<\/p>/);
+    expect(html).toMatch(/<p class="talk__meta">US-RSE’26 · October 20, 2026 · San Jose, CA<\/p>/);
     expect(html).toContain('<ul class="talk__links">');
   });
 

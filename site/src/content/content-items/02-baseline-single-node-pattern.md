@@ -15,10 +15,10 @@ milestone: 1
 publication_date: "2026-07-31"
 applicable_release: v0.1.0
 module_type: runnable
-learning_outcomes: ["Explain the coordinator, readiness gate, workers, and verification sequence", "Prepare your center's local values and judge success from the result file, not from process startup", "Decide which parts of the workflow package to keep, edit, or replace for your own application"]
+learning_outcomes: ["Explain the coordinator, readiness gate, workers, and verification sequence", "Prepare your center’s local values and judge success from the result file, not from process startup", "Decide which parts of the workflow package to keep, edit, or replace for your own application"]
 prerequisites:
-  - { id: BSSW-PREREQ-SLURM, check: "Run command -v sbatch and confirm an allocation/account is available", diagnostic_id: BSSW-PREREQ-SLURM }
-  - { id: BSSW-PREREQ-APPTAINER, check: "Run command -v apptainer and record apptainer --version", diagnostic_id: BSSW-PREREQ-APPTAINER }
+  - { id: BSSW-PREREQ-SLURM, check: "Run `command -v sbatch` and confirm an allocation/account is available", diagnostic_id: BSSW-PREREQ-SLURM }
+  - { id: BSSW-PREREQ-APPTAINER, check: "Run `command -v apptainer` and record `apptainer --version`", diagnostic_id: BSSW-PREREQ-APPTAINER }
 section_kinds: [concept, procedure, expected-result, limitations, next-steps]
 required_resources: ["One Slurm compute node", "Apptainer available on compute nodes", "A center-approved writable job-scoped directory", "The immutable v0.1.0 workflow bundle"]
 estimated_minutes: 30
@@ -71,14 +71,14 @@ The script moves through six steps. The table says what each step does and where
 
 | Step | What the script does | Lines |
 |---|---|---|
-| 1. Get an allocation | Requests one node for ten minutes, checks the image and the input, and makes a private job folder that must not already exist. | 2-7, 123-198 |
-| 2. Start coordinator | Launches the coordinator as its own job step. It listens on loopback and writes its address to a file. | 200-206 |
-| 3. Readiness gate | Waits until `/health` gives the exact expected answer, or stops with a named error when the time limit passes. | 208-225 |
-| 4. Run workers | Launches each worker as its own job step, then waits for the workers, never for the coordinator. | 227-242 |
-| 5. Verify results | With the coordinator still running, checks every result. Only a full pass writes `result.json`. | 243-251 |
-| 6. Clean up | On any exit, stops every step politely. A failed run leaves no success file. The forced stop after the grace period, and the time-limit path, are **Designed, not run**. | trap set at 120, cleanup at 82-114 |
+| 1. Get an allocation | Requests one node for ten minutes, checks the image and the input, and makes a private job folder that must not already exist. | 2–7, 123–198 |
+| 2. Start coordinator | Launches the coordinator as its own job step. It listens on loopback and writes its address to a file. | 200–206 |
+| 3. Readiness gate | Waits until `/health` gives the exact expected answer, or stops with a named error when the time limit passes. | 208–225 |
+| 4. Run workers | Launches each worker as its own job step, then waits for the workers, never for the coordinator. | 227–242 |
+| 5. Verify results | With the coordinator still running, checks every result. Only a full pass writes `result.json`. | 243–251 |
+| 6. Clean up | On any exit, stops every step politely. A failed run leaves no success file. The forced stop after the grace period, and the time-limit path, are **Designed, not run**. | trap set at 120, cleanup at 82–114 |
 
-The [readiness gate](/about/glossary/#readiness-gate) proves the coordinator can serve. By default it polls for up to 30 seconds and passes only on the exact expected answer. It does not prove that any result is right. That is [verification](/about/glossary/#verification), and it runs inside the job, as step 5 of the same script (`baseline.sbatch` lines 245-251), not as a separate command afterward. A running process is not yet a successful result.
+The [readiness gate](/about/glossary/#readiness-gate) proves the coordinator can serve. By default it polls for up to 30 seconds and passes only on the exact expected answer. It does not prove that any result is right. That is [verification](/about/glossary/#verification), and it runs inside the job, as step 5 of the same script (`baseline.sbatch` lines 245–251), not as a separate command afterward. A running process is not yet a successful result.
 
 <!-- l2c:diagram-single-node-architecture -->
 
@@ -161,7 +161,7 @@ Two checks guard a run, and they adapt differently:
 | `#SBATCH` header and adapter variables | adapt the values | same mechanism; your account, partition, and limits |
 | Storage setup (private job folder, binds) | keep | private job-scoped state does not depend on the application |
 | Coordinator launch on loopback | replace with your service | your service is the point |
-| Readiness probe (`bin/readiness.py`) | keep the loop; edit what it waits for | the exact `/health` answer is written into `bin/readiness.py` (lines 29-31) and returned by `bin/coordinator.py` (lines 27-28) |
+| Readiness probe (`bin/readiness.py`) | keep the loop; edit what it waits for | the exact `/health` answer is written into `bin/readiness.py` (lines 29–31) and returned by `bin/coordinator.py` (lines 27–28) |
 | Shared task format (`bin/common.py`) | edit if your tasks differ | every program loads tasks through it; it fixes the task shape (`id` plus a `payload` with `message` and `repeat`) and its limits |
 | Worker launch loop (`srun` steps) | replace with your workers | your parallelism and payloads |
 | `bin/verify.py` | replace | the documented seam for result checks |

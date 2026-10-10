@@ -75,19 +75,19 @@ export const EVENT_BAND = { label: 'Featured talk', linkText: 'talk and poster l
 
 const KIND_LABEL: Record<Talk['kind'], string> = { talk: 'Talk', poster: 'Poster', paper: 'Paper' };
 
-/** "Talk at US-RSE ’26 (Tue Oct 20, San Jose)", built from the featured talks.yml entry. */
+/** "Talk at US-RSE’26 (Tue Oct 20, San Jose)", built from the featured talks.yml entry. */
 export function eventBandLead(talk: Pick<Talk, 'kind' | 'venue' | 'event_date' | 'location'>): string {
   const date = new Date(`${talk.event_date}T00:00:00Z`);
   const part = (options: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-US', { ...options, timeZone: 'UTC' });
   const day = `${part({ weekday: 'short' })} ${part({ month: 'short' })} ${date.getUTCDate()}`;
-  const venue = talk.venue.replace(/\s?['’](\d{2})\b/, ' ’$1');
+  const venue = talk.venue.replace(/\s?['’](\d{2})\b/, '’$1');
   const city = talk.location?.split(',')[0]?.trim();
   return `${KIND_LABEL[talk.kind]} at ${venue} (${day}${city ? `, ${city}` : ''})`;
 }
 
 export const PROJECT_RECORDS = {
   title: 'Project records',
-  visitLead: 'Here from the SC26 poster or the US-RSE ’26 talk?',
+  visitLead: 'Here from the SC26 poster or the US-RSE’26 talk?',
   visitLinkText: 'Talk and poster links',
   visitHref: '/about/talks-and-papers/',
 } as const;

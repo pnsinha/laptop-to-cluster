@@ -1,7 +1,7 @@
 - id: usrse26-talk
   kind: talk
   title: "From Laptop to Cluster: HPC Translation Patterns for AI Stacks"
-  venue: "US-RSE'26"
+  venue: "US-RSE’26"
   event_date: "2026-10-20"
   location: "San Jose, CA"
   featured: true

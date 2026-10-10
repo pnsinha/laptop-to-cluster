@@ -23,7 +23,7 @@ Milestone 2 extends the Milestone 1 baseline toward portability across scheduler
 | Module 5: Reuse one CPU software layer across GPU variants | Planned | n/a | SOW topic 3; draft due 2026-11-13 |
 | Adaptation-seam documentation in Module 2 | Published | [Module 2](/guide/baseline-single-node-pattern/) | Revised for v0.2.0 |
 | I-GUIDE Forum 2026 poster | Delivered | [I-GUIDE Forum 2026](/events/iguide-forum-2026/) | Delivered 2026-08-05 |
-| US-RSE '26 talk | Accepted | [Talks and papers](/about/talks-and-papers/) | Tuesday 2026-10-20 |
+| US-RSE’26 talk | Accepted | [Talks and papers](/about/talks-and-papers/) | Tuesday 2026-10-20 |
 | SC26 research poster | Accepted | [Talks and papers](/about/talks-and-papers/) | November 2026 |
 
 ## Scope notes

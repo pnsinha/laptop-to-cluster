@@ -26,6 +26,14 @@ describe('learning module shell', () => {
     expect(at(module2, '>Prerequisites</h3>', overview)).toBeLessThan(at(module2, '<h2 id="procedure">'));
   });
 
+  it('marks the commands in the Module 2 prerequisite checks as code and escapes the rest', () => {
+    expect(module2).toContain('<li>Run <code>command -v sbatch</code> and confirm an allocation/account is available');
+    expect(module2).toContain('<li>Run <code>command -v apptainer</code> and record <code>apptainer --version</code>');
+    const prerequisites = module2.slice(module2.indexOf('>Prerequisites</h3>'), module2.indexOf('</ul>', module2.indexOf('>Prerequisites</h3>')));
+    expect(prerequisites).toContain('<code>');
+    expect(prerequisites).not.toContain('`');
+  });
+
   it('drops the old module-details block and the empty-heading patterns', () => {
     for (const html of [module1, module2]) {
       expect(html).not.toContain('module-facts');

@@ -22,7 +22,7 @@ const literalRows = rowsOf([li('The check passed.'), li('The log matched.')], [l
 const anchor = '<a href="/applicability/m1/">Test record</a>';
 const linkLine = (caption?: string | null) => `<p class="evidence-link">${caption ? `${caption} · ` : ''}${anchor}</p>`;
 const validated = (rows = literalRows, badge = 'Tested', caption: string | null = 'Purdue Anvil · Jul 2026') =>
-  `<section class="applicability-projection" data-projection-id="milestone:m1" data-source-id="m1" aria-label="Tested workflow scope"><p class="evidence-badge">${badge}</p>${linkLine(caption)}<details class="evidence-panel"><summary>What this means for you</summary>${rows}<p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn't been tested yet</a></p></details></section>`;
+  `<section class="applicability-projection" data-projection-id="milestone:m1" data-source-id="m1" aria-label="Tested workflow scope"><p class="evidence-badge">${badge}</p>${linkLine(caption)}<details class="evidence-panel"><summary>What this means for you</summary>${rows}<p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn’t been tested yet</a></p></details></section>`;
 const escalated = (badge: string, caption?: string, rows = literalRows) =>
   `<section class="applicability-projection applicability-projection--escalated" data-projection-id="milestone:m1" data-source-id="m1" aria-label="Tested workflow scope"><p class="evidence-badge evidence-badge--warning"><strong>Warning:</strong> ${badge}</p>${linkLine(caption)}${rows}</section>`;
 const check = (block: string, page = canonical()) => validateProjectionSourceAgreement('/milestones/2/', block, '/applicability/m1/', page);

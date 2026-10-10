@@ -15,7 +15,7 @@ const { panel } = projection;
           <div class="evidence-row"><dt>{row.label}</dt><dd><ul>{row.items.map((item) => <li data-from={item.from.join(' ')}>{item.text}</li>)}</ul></dd></div>
         ))}
       </dl>
-      <p class="evidence-untested"><a href={panel.untestedHref}>What hasn't been tested yet</a></p>
+      <p class="evidence-untested"><a href={panel.untestedHref}>What hasn’t been tested yet</a></p>
     </details>
   </section>
 ) : (

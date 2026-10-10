@@ -140,7 +140,7 @@ raise SystemExit(24)   # timed out`,
   },
   {
     id: 'coordinator-health',
-    title: 'What the coordinator reports as "ready"',
+    title: 'What the coordinator reports as “ready”',
     sourcePath: 'bin/coordinator.py',
     lineStart: 24, lineEnd: 37, language: 'python',
     annotation: 'The /health response is the contract the readiness probe checks. Reporting taskCount means the coordinator has parsed its input and has work to hand out before any worker asks.',
@@ -162,7 +162,7 @@ def claim(self) -> dict:
   },
   {
     id: 'result-verification',
-    title: 'The verifier is the only thing that can write "success"',
+    title: 'The verifier is the only thing that can write “success”',
     sourcePath: 'bin/verify.py',
     lineStart: 22, lineEnd: 70, language: 'python',
     annotation: 'The verifier checks that every task produced exactly one result, that results are unique, and that they match the expected outputs. Only then does it atomically write the success marker — the single artifact a completed run is judged by.',

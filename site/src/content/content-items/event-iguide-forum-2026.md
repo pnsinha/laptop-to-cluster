@@ -21,7 +21,7 @@ If you scanned this from the poster board: the board argues that moving geospati
 laptop to a shared cluster is a contract design problem. This site is that argument with the
 mechanics filled in.
 
-[Download the poster (PDF, 36 x 42 in)](/iguide-forum-2026-poster.pdf)
+[Download the poster (PDF, 36&nbsp;×&nbsp;42&nbsp;in)](/iguide-forum-2026-poster.pdf)
 
 <!-- l2c:acknowledgment -->
 

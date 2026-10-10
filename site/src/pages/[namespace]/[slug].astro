@@ -71,7 +71,7 @@ const milestoneNavItems = allEntries
 const showMilestoneNav = item.artifact_type === 'milestone' && milestoneNavItems.length > 1;
 const showAboutNav = item.route_namespace === 'about';
 ---
-{item.artifact_type === 'learning-module' ? <LearningModuleLayout {item} {bodyHtml}><Content /></LearningModuleLayout> :
+{item.artifact_type === 'learning-module' ? <LearningModuleLayout item={item} {bodyHtml}><Content /></LearningModuleLayout> :
 <BaseLayout title={item.title} description={item.summary} {profile}>
   <ContentHeader {item} />
   {showAboutNav && <SectionNav items={[...ABOUT_NAV_ITEMS]} currentPath={currentPath} label="About sections" />}

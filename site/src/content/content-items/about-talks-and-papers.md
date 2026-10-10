@@ -3,7 +3,7 @@ id: talks-and-papers
 stable_slug: talks-and-papers
 route_namespace: about
 title: "Talks & papers"
-summary: "Where this project has been presented, with a link to each venue's own page."
+summary: "Where this project has been presented, with a link to each venue’s own page."
 description: "Talks, posters and papers about the Laptop-to-Cluster guide, listed by link to the place each one is hosted."
 artifact_type: report
 topics: [dissemination]

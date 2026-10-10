@@ -80,4 +80,4 @@ plain_language:
     - { text: "Which scratch location the job uses. Centers provide it in different ways.", from: [portability_boundaries.2] }
     - { text: "The coordinator listens only on loopback (127.0.0.1); reaching it from beyond the node needs access your center approves.", from: [assumptions.2, portability_boundaries.3] }
     - { text: "Whether each worker can run as its own job step (a program the scheduler launches and tracks inside your allocation) on a shared node.", from: [portability_boundaries.3] }
-    - { text: "Whether you can rebuild the container image yourself. On the newer Apptainer used for the latest test, the release's image build script could not run without extra privileges, so the tested image is the earlier build with the same fingerprint (digest).", from: [portability_boundaries.4] }
+    - { text: "Whether you can rebuild the container image yourself. On the newer Apptainer used for the latest test, the release’s image build script could not run without extra privileges, so the tested image is the earlier build with the same fingerprint (digest).", from: [portability_boundaries.4] }
