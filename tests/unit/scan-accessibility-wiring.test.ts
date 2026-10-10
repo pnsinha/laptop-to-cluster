@@ -28,8 +28,15 @@ describe('scanner wiring: gates, routes, requests', () => {
     expect(scanner).toContain("from '../tests/accessibility/browser-checks'");
     for (const call of [
       'checkThemePrecedence(', 'inspectThemeScript(', 'checkForcedColors(', 'checkPrint(', 'checkJsOff(',
-      'checkPrimaryAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkComponentGeometry(', 'checkMotion(',
+      'checkPrimaryAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkComponentGeometry(', 'checkGuideCards(', 'checkMotion(',
     ]) expect(scanner, call).toContain(call);
+  });
+
+  it('checks the Guide cards on /resources/ next to the component geometry gate, under its own code', () => {
+    expect(scanner).toContain("await gate('/resources/:guide-cards', () => checkGuideCards(browser, origin, '/resources/'));");
+    expect(scanner.indexOf('checkGuideCards(browser')).toBeGreaterThan(scanner.indexOf('checkComponentGeometry(browser'));
+    expect(scanner.indexOf('checkGuideCards(browser')).toBeLessThan(scanner.indexOf('checkMotion(browser'));
+    expect(readFileSync(fileURLToPath(new URL('../accessibility/browser-checks.ts', import.meta.url)), 'utf8')).toContain("const code = 'A11Y-COMPONENT-GEOMETRY'");
   });
 
   it('drops the v0.1.0 workflow figure, Module 0 slug, and old primary action', () => {

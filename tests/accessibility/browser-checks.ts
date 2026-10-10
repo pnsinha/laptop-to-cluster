@@ -498,6 +498,58 @@ export async function checkComponentGeometry(browser: Browser, origin: string, p
   return issues;
 }
 
+/** Guide cards at 1280 px: tiles that share a row are equally tall, the title is underlined, and the summary and tag are not. */
+export async function checkGuideCards(browser: Browser, origin: string, path: string): Promise<Issue[]> {
+  const scope = `${path}:guide-cards:1280px`;
+  const code = 'A11Y-COMPONENT-GEOMETRY';
+  const issues: Issue[] = [];
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  try {
+    const page = await context.newPage();
+    await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+    await shim(page);
+    const tiles = await page.evaluate(() => {
+      // A decoration paints on the element that declares it and on every descendant, so walk up from the text to the root.
+      const underlined = (element: Element | null) => {
+        for (let node = element; node; node = node.parentElement) if (getComputedStyle(node).textDecorationLine.includes('underline')) return true;
+        return false;
+      };
+      return [...document.querySelectorAll<HTMLElement>('.resource-tile')].map((tile) => {
+        const box = tile.getBoundingClientRect();
+        const title = tile.querySelector('h3');
+        return {
+          name: (title?.textContent ?? tile.textContent ?? '').trim().slice(0, 40),
+          top: box.top,
+          height: box.height,
+          title: title ? underlined(title) : null,
+          others: [...tile.querySelectorAll('p, .resource-tile__tag')].filter((element) => underlined(element)).map((element) => element.tagName === 'P' ? 'summary' : 'tag'),
+        };
+      });
+    });
+    if (tiles.length === 0) return [issue(scope, code, 'no .resource-tile elements found, so the guide cards cannot be checked')];
+    const rows: Array<typeof tiles> = [];
+    for (const tile of [...tiles].sort((a, b) => a.top - b.top)) {
+      const row = rows.find((candidate) => Math.abs(candidate[0].top - tile.top) <= 1);
+      if (row) row.push(tile); else rows.push([tile]);
+    }
+    const shared = rows.filter((row) => row.length > 1);
+    if (shared.length === 0) issues.push(issue(scope, code, 'no two tiles share a row, so equal tile heights cannot be checked'));
+    for (const row of shared) {
+      const heights = row.map((tile) => tile.height);
+      if (Math.max(...heights) - Math.min(...heights) > 1) {
+        issues.push(issue(scope, code, `tiles that share a row must be equally tall, but "${row.map((tile) => tile.name).join('", "')}" are ${heights.map((height) => `${Math.round(height * 10) / 10}px`).join(', ')}`));
+      }
+    }
+    for (const tile of tiles) {
+      if (tile.title !== true) issues.push(issue(scope, code, `the title must be underlined in tile "${tile.name}"`));
+      if (tile.others.length > 0) issues.push(issue(scope, code, `the summary and tag must not be underlined, but the ${tile.others.join(' and ')} of tile "${tile.name}" ${tile.others.length > 1 ? 'are' : 'is'}`));
+    }
+  } finally {
+    await context.close();
+  }
+  return issues;
+}
+
 /** No required motion: nothing animates or transitions, and scrolling is not smoothed under reduced motion. */
 export async function checkMotion(browser: Browser, origin: string, path: string): Promise<Issue[]> {
   const scope = `${path}:motion`;

@@ -197,3 +197,25 @@ describe('final review fixes: list rhythm, glyph alt text, tail clearance, force
     expect(forcedTokens).toMatch(/--primary-hover:\s*CanvasText/);
   });
 });
+
+describe('guide cards', () => {
+  it('stretches every tile to the height of its row: grid items stretch, each list item is a flex box, and the tile fills it', () => {
+    expect(body('.resource-grid')).toMatch(/display:\s*grid/);
+    expect(body('.resource-grid')).toMatch(/align-items:\s*stretch/);
+    expect(body('.resource-grid > li')).toMatch(/display:\s*flex/);
+    expect(body('.resource-tile')).toMatch(/flex:\s*1\s*;/);
+    expect(body('.resource-tile')).toMatch(/display:\s*flex/);
+    expect(body('.resource-tile')).toMatch(/flex-direction:\s*column/);
+    expect(body('.resource-tile p')).toMatch(/flex-grow:\s*1/);
+  });
+
+  it('underlines the title only: the tile has no decoration, the h3 carries it, and the shared link rule skips the tile', () => {
+    expect(body('.resource-tile')).toMatch(/text-decoration:\s*none/);
+    expect(body('.resource-tile h3')).toMatch(/text-decoration-line:\s*underline/);
+    expect(body('.resource-tile h3')).toMatch(/text-decoration-thickness:\s*1px/);
+    expect(body('.resource-tile h3')).toMatch(/text-underline-offset:\s*0\.2em/);
+    expect(body('.resource-tile:hover h3, .resource-tile:focus-visible h3')).toMatch(/text-decoration-thickness:\s*2px/);
+    expect(bare).toContain(':where(main, .site-footer) a:not(.action--primary, .resource-tile) { text-decoration-line: underline; }');
+    for (const selector of ['.resource-tile p', '.resource-tile__tag']) expect(body(selector), selector).not.toMatch(/text-decoration/);
+  });
+});

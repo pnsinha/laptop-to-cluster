@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, type Browser } from 'playwright';
-import { checkComponentGeometry, checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence, inspectThemeScript } from './browser-checks';
+import { checkComponentGeometry, checkCrosswalkLayout, checkGuideCards, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence, inspectThemeScript } from './browser-checks';
 import { serveFixtures } from './fixture-server';
 
 let browser: Browser;
@@ -296,5 +296,52 @@ describe('component geometry check', () => {
     const glyph = '<!doctype html><html lang="en"><head><title>t</title></head><body><main><p>Use a <span>\u25B2 scratch</span> area.</p></main></body></html>';
     const server = await serveFixtures({ '/glyph/': { body: glyph } });
     try { expect((await checkComponentGeometry(browser, server.origin, '/glyph/')).map((entry) => entry.message).join('\n')).toMatch(/concept shape glyph/); } finally { await server.close(); }
+  }, 60_000);
+});
+
+describe('guide cards check', () => {
+  const tile = (title: string, summary: string) => `<li><a class="resource-tile" href="/x/"><h3>${title}</h3><p>${summary}</p><span class="resource-tile__tag">Tag</span></a></li>`;
+  const LONG = 'A much longer summary that wraps over several lines inside a narrow tile so that this tile is taller than its neighbour. '.repeat(3);
+  const tiles = [tile('One', LONG), tile('Two', 'Short.'), tile('Three', 'Short.'), tile('Four', LONG)].join('');
+  const BASE = 'body{margin:0}.resource-grid{display:grid;grid-template-columns:repeat(2,220px);gap:8px;margin:0;padding:0;list-style:none}.resource-tile{display:flex;flex-direction:column;color:inherit;text-decoration:none}.resource-tile h3{margin:0;text-decoration-line:underline}';
+  const EQUAL = '.resource-grid{align-items:stretch}.resource-grid>li{display:flex}.resource-tile{flex:1}';
+  const page = (css: string, items = tiles) => `<!doctype html><html lang="en"><head><title>t</title><style>${BASE}${css}</style></head><body><main><ul class="resource-grid">${items}</ul></main></body></html>`;
+  const messages = async (origin: string, path: string) => (await checkGuideCards(browser, origin, path)).map((entry) => `${entry.code}: ${entry.message}`).join('\n');
+
+  it('accepts equal-height tiles with only the title underlined', async () => {
+    const server = await serveFixtures({ '/good/': { body: page(EQUAL) } });
+    try { expect(await checkGuideCards(browser, server.origin, '/good/')).toEqual([]); } finally { await server.close(); }
+  }, 60_000);
+
+  it('flags tiles in one row that differ in height', async () => {
+    const server = await serveFixtures({ '/uneven/': { body: page('.resource-grid{align-items:start}') } });
+    try {
+      const found = await messages(server.origin, '/uneven/');
+      expect(found).toMatch(/A11Y-COMPONENT-GEOMETRY: .*tiles that share a row must be equally tall/);
+    } finally { await server.close(); }
+  }, 60_000);
+
+  it('flags a tile title that is not underlined', async () => {
+    const server = await serveFixtures({ '/plain-title/': { body: page(`${EQUAL}.resource-tile h3{text-decoration-line:none}`) } });
+    try { expect(await messages(server.origin, '/plain-title/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*title must be underlined/); } finally { await server.close(); }
+  }, 60_000);
+
+  it('flags a summary or tag that is underlined, whether by its own rule or by the whole tile', async () => {
+    const server = await serveFixtures({
+      '/own/': { body: page(`${EQUAL}.resource-tile p{text-decoration-line:underline}`) },
+      '/whole/': { body: page(`${EQUAL}.resource-tile{text-decoration-line:underline}`) },
+    });
+    try {
+      expect(await messages(server.origin, '/own/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*summary and tag must not be underlined/);
+      expect(await messages(server.origin, '/whole/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*summary and tag must not be underlined/);
+    } finally { await server.close(); }
+  }, 60_000);
+
+  it('flags a page with no tiles, and a page where no two tiles share a row, since neither can show equal heights', async () => {
+    const server = await serveFixtures({ '/empty/': { body: page('', '') }, '/column/': { body: page(`${EQUAL}.resource-grid{grid-template-columns:220px}`) } });
+    try {
+      expect(await messages(server.origin, '/empty/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*no \.resource-tile/);
+      expect(await messages(server.origin, '/column/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*no two tiles share a row/);
+    } finally { await server.close(); }
   }, 60_000);
 });
