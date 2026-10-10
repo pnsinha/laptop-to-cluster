@@ -3,10 +3,10 @@ import { projectLearningPath } from './projections';
 import type { ContentItem, Talk } from './schema';
 
 /* All home page copy. Fields ending in "Html" are trusted, hand-authored markup
-   rendered with set:html. They carry only <code>, <strong>, glossary links and
-   the concept classes c-step, c-gate, c-scratch and c-net. No tested claim
-   lives here: tested claims come from the applicability record through the
-   projection. */
+   rendered with set:html. They carry only <code> and glossary links; the
+   concept colour and shape come from ConceptMap.astro via CONCEPTS. No tested
+   claim lives here: tested claims come from the applicability record through
+   the projection. */
 
 export const HOME_TITLE = 'Bridging the Laptop-to-Cluster Gap';
 export const HOME_DESCRIPTION = 'Translate a multi-service Docker Compose stack to a scheduler-managed HPC allocation with Slurm and Apptainer.';
