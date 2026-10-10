@@ -239,8 +239,8 @@ export function validatePageComposition(source, html) {
   }
 
   for (const issue of timelineIssues(html)) errors.push(diagnostic(source, 'timeline', 'TIMELINE', issue));
-  if (profile === 'landing' && occurrences(html, /<figure class="timeline"/g) !== 1) {
-    errors.push(diagnostic(source, 'timeline', 'TIMELINE', 'the landing page requires exactly one six-step timeline'));
+  if (profile === 'landing' && occurrences(html, /<figure class="timeline"/g) !== 0) {
+    errors.push(diagnostic(source, 'timeline', 'TIMELINE', 'the landing page carries no six-step timeline; it lives on learning-module pages'));
   }
 
   // Progressive-enhancement policy (2026-08-16): bounded inline scripts and small

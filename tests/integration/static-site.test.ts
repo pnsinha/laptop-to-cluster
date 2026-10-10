@@ -142,11 +142,12 @@ describe('artifact-aware static composition', () => {
 });
 
 describe('reader-choice landing and resources', () => {
-  it('uses the six-step timeline with verify before clean up and the projection before the big idea', () => {
-    expect(html.home).toContain('<figure class="timeline" aria-labelledby="timeline-title">');
-    expect(html.home).toContain('<figcaption id="timeline-title" class="timeline__title">One allocation, start to finish</figcaption>');
-    expect(html.home).toContain('<ol class="timeline__steps">');
-    const figure = html.home.match(/<figure class="timeline"[^>]*>([\s\S]*?)<\/figure>/)?.[1] ?? '';
+  it('uses the six-step timeline on module pages with verify before clean up, and puts the projection before the big idea on home', () => {
+    expect(html.home).not.toContain('<figure class="timeline"');
+    expect(html.runnable).toContain('<figure class="timeline" aria-labelledby="timeline-title">');
+    expect(html.runnable).toContain('<figcaption id="timeline-title" class="timeline__title">One allocation, start to finish</figcaption>');
+    expect(html.runnable).toContain('<ol class="timeline__steps">');
+    const figure = html.runnable.match(/<figure class="timeline"[^>]*>([\s\S]*?)<\/figure>/)?.[1] ?? '';
     expect(figure).not.toBe('');
     expect([...figure.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]))
       .toEqual(TIMELINE_STEPS.map(({ label }) => label));
@@ -156,7 +157,7 @@ describe('reader-choice landing and resources', () => {
     expect(figure.indexOf('<strong>Verify results</strong>')).toBeLessThan(figure.indexOf('<strong>Clean up</strong>'));
     const projection = html.home.indexOf('<section class="applicability-projection');
     expect(projection).toBeGreaterThan(-1);
-    expect(projection).toBeLessThan(html.home.indexOf('<figure class="timeline"'));
+    expect(projection).toBeLessThan(html.home.indexOf('<section class="concepts" id="big-idea"'));
     expect(html.home).not.toMatch(/validation dashboard|from module metadata|No account is required/i);
   });
 
@@ -215,7 +216,7 @@ describe('finalized presentation regression gates', () => {
   });
 
   it('does not restore per-step boxes or connector/arrow SVGs in the workflow', () => {
-    const figure = html.home.match(/<figure class="timeline"[^>]*>([\s\S]*?)<\/figure>/)?.[1] ?? '';
+    const figure = html.runnable.match(/<figure class="timeline"[^>]*>([\s\S]*?)<\/figure>/)?.[1] ?? '';
     expect(figure).not.toBe('');
     expect(figure).not.toMatch(/<svg\b/);
     expect(figure).not.toMatch(/class="[^"]*connector[^"]*"/);
@@ -307,9 +308,9 @@ describe('v0.2.0 routes, timeline placement and evidence summaries', () => {
     expect(errors).toEqual([]);
   });
 
-  it('places the timeline per D13: unlit on home, tour and Module 1, step 3 lit on Module 2, nowhere else', () => {
+  it('places the timeline per D13: unlit on tour and Module 1, step 3 lit on Module 2, nowhere else', () => {
     const lit: Record<string, number[]> = {
-      '': [], 'guide/tour/': [], 'guide/scheduler-as-orchestrator/': [], 'guide/baseline-single-node-pattern/': [3],
+      'guide/tour/': [], 'guide/scheduler-as-orchestrator/': [], 'guide/baseline-single-node-pattern/': [3],
     };
     for (const page of pages) {
       const figures = page.html.match(/<figure class="timeline"/g)?.length ?? 0;
@@ -323,7 +324,7 @@ describe('v0.2.0 routes, timeline placement and evidence summaries', () => {
   });
 
   it('renders the A2 lane markup, the aria-hidden bars and the scratch-tail sentence inside the timeline', () => {
-    const figure = html.home.match(/<figure class="timeline"[^>]*>([\s\S]*?)<\/figure>/)?.[1] ?? '';
+    const figure = html.runnable.match(/<figure class="timeline"[^>]*>([\s\S]*?)<\/figure>/)?.[1] ?? '';
     const lanes = [...figure.matchAll(/<span class="timeline__lane"[^>]*data-lane="([a-z]+)"/g)].map((match) => match[1]);
     expect(lanes).toEqual(TIMELINE_STEPS.flatMap(() => ['scratch', 'coord', 'workers', 'checks']));
     expect(figure.match(/<span class="timeline__bars" aria-hidden="true">/g)).toHaveLength(6);

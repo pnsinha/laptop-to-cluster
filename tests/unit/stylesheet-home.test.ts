@@ -23,11 +23,21 @@ const inContainer = (query: string, selector: string) => {
 const CONCEPTS = ['step', 'gate', 'scratch', 'net'] as const;
 
 describe('hero', () => {
-  it('is one narrow column with no illustration slot', () => {
-    expect(body('.hero')).toMatch(/max-inline-size:\s*46rem/);
-    expect(body('.hero')).not.toMatch(/grid-template-columns/);
+  it('is one column below 60rem, then copy beside the two-environment figure', () => {
+    expect(body('.hero')).toMatch(/display:\s*grid/);
+    expect(body('.hero')).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/);
+    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?\.hero\s*\{[^}]*grid-template-columns:\s*minmax\(0, 11fr\) minmax\(0, 10fr\)/);
+    expect(body('.hero')).not.toMatch(/max-inline-size:\s*46rem/);
     expect(body('.hero__copy')).toMatch(/max-inline-size:\s*40rem/);
-    expect(body('.hero h1')).toMatch(/max-inline-size:\s*20ch/);
+    expect(body('.hero h1')).toMatch(/max-inline-size:\s*14ch/);
+  });
+
+  it('draws the hero figure as two bordered environment panels, plain HTML', () => {
+    expect(body('.env-pair')).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+    expect(body('.env')).toMatch(/background:\s*var\(--raised\)[^}]*border:\s*var\(--border-thin\) solid var\(--border\)/);
+    expect(body('.env__alloc')).toMatch(/border:\s*var\(--border-strong\) dashed var\(--primary\)/);
+    expect(body('.hero__figure figcaption')).toMatch(/color:\s*var\(--muted\)/);
+    expect(bare).toMatch(/@media \(max-width: 30rem\)\s*\{[\s\S]*?\.env-pair\s*\{[^}]*grid-template-columns:\s*1fr/);
   });
 
   it('draws one filled primary action and underlined secondary links', () => {
@@ -39,7 +49,7 @@ describe('hero', () => {
   });
 
   it('carries none of the retired home classes', () => {
-    expect(bare).not.toMatch(/\.workflow-figure|\.compose-mapping|\.path-list|\.hero__visual|\.event-band__eyebrow|\.event-band__copy/);
+    expect(bare).not.toMatch(/\.workflow-figure|\.compose-mapping|\.path-list|\.hero__visual|\.event-band__eyebrow|\.event-band__copy|\.big-idea|\.analogy/);
   });
 });
 
@@ -60,12 +70,13 @@ describe('concept utilities', () => {
   });
 });
 
-describe('big idea and analogy', () => {
-  it('sets the prose in the reading serif and the analogy under a hairline, with no box', () => {
-    expect(body('.big-idea > p')).toMatch(/font-family:\s*var\(--font-reading\)/);
-    expect(body('.analogy')).toMatch(/border-block-start:\s*var\(--border-thin\) solid var\(--rule\)/);
-    expect(body('.analogy')).not.toMatch(/background|border:|box-shadow/);
-    expect(body('.analogy__breaks')).toMatch(/font-family:\s*var\(--font-reading\)/);
+describe('concept rows', () => {
+  it('sets the intro and notes in the reading serif and separates the rows with hairlines', () => {
+    expect(body('.concepts__intro')).toMatch(/font-family:\s*var\(--font-reading\)/);
+    expect(body('.concept')).toMatch(/border-block-end:\s*var\(--border-thin\) solid var\(--rule\)/);
+    expect(body('.concept')).not.toMatch(/background|border:|box-shadow/);
+    expect(body('.concept__note')).toMatch(/font-family:\s*var\(--font-reading\)/);
+    expect(bare).toMatch(/@media \(min-width: 52rem\)\s*\{[\s\S]*?\.concept\s*\{[^}]*grid-template-columns:\s*3rem minmax\(0, 5fr\) minmax\(0, 7fr\)/);
   });
 });
 

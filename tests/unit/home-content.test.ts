@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CONCEPTS, DOORS, LEARNING_PATH, TIMELINE_STEPS } from '../../site/src/content/contracts';
+import { CONCEPTS, DOORS, LEARNING_PATH, REQUIRED_FRAGMENTS } from '../../site/src/content/contracts';
 import {
-  ANALOGY, BIG_IDEA, DOOR_SUMMARIES, DOORS_SECTION, EVENT_BAND, HERO, HOME_TITLE, PROJECT_RECORDS,
+  BIG_IDEA, CONCEPT_NOTES, DOOR_SUMMARIES, DOORS_SECTION, EVENT_BAND, HERO, HERO_FIGURE, PROJECT_RECORDS,
   eventBandLead, homeDoors, projectRecordLinks, resolveLearningPath,
 } from '../../site/src/content/home';
-import { TIMELINE_CAPTIONS } from '../../site/src/content/timeline';
 import type { ContentItem } from '../../site/src/content/schema';
 
 const text = (html: string) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -22,9 +21,11 @@ const pathItems = [
 ];
 const allCopy = [
   HERO.kicker, HERO.title, HERO.ledeHtml, HERO.primary.label, HERO.secondary.label, HERO.quiet.lead, HERO.quiet.label,
-  BIG_IDEA.title, BIG_IDEA.proseHtml, ANALOGY.title, ANALOGY.bodyHtml, ANALOGY.breaksTitle,
-  ...ANALOGY.breaks.flatMap(({ lead, text: body }) => [lead, body]),
-  ...Object.values(TIMELINE_CAPTIONS), DOORS_SECTION.title, ...Object.values(DOOR_SUMMARIES),
+  HERO_FIGURE.caption, ...HERO_FIGURE.services,
+  HERO_FIGURE.laptop.title, HERO_FIGURE.laptop.command, ...HERO_FIGURE.laptop.facts,
+  HERO_FIGURE.cluster.title, HERO_FIGURE.cluster.command, HERO_FIGURE.cluster.allocation, ...HERO_FIGURE.cluster.facts,
+  BIG_IDEA.title, BIG_IDEA.proseHtml, BIG_IDEA.composeSide, BIG_IDEA.clusterSide,
+  ...Object.values(CONCEPT_NOTES), DOORS_SECTION.title, ...Object.values(DOOR_SUMMARIES),
   EVENT_BAND.label, EVENT_BAND.linkText, PROJECT_RECORDS.title, PROJECT_RECORDS.visitLead, PROJECT_RECORDS.visitLinkText,
 ].map(text);
 
@@ -52,12 +53,21 @@ describe('big idea', () => {
     const prose = text(BIG_IDEA.proseHtml);
     for (const concept of CONCEPTS) {
       const pattern = new RegExp(`${escapeRegExp(concept.plain)}\\s*\\((?:an? )?${escapeRegExp(concept.label.toLowerCase())}\\)`, 'i');
-      expect(prose, concept.key).toMatch(pattern);
+      expect(text(CONCEPT_NOTES[concept.key]), concept.key).toMatch(pattern);
     }
     expect(prose).toMatch(/\(an allocation\)/);
     expect(prose).toMatch(/scheduler \(Slurm, at most centers\)/);
   });
 
+  it('opens each concept note with a capital and links it to its glossary anchor', () => {
+    const anchors: Record<string, string> = { step: 'job-step', gate: 'readiness-gate', scratch: 'job-scoped-scratch', net: 'loopback' };
+    for (const concept of CONCEPTS) {
+      const anchor = anchors[concept.key];
+      expect(REQUIRED_FRAGMENTS.glossary, `${concept.key} anchor`).toContain(anchor);
+      expect(CONCEPT_NOTES[concept.key]).toContain(`href="/about/glossary/#${anchor}"`);
+      expect(text(CONCEPT_NOTES[concept.key]), concept.key).toMatch(/^[A-Z]/);
+    }
+  });
 });
 
 describe('doors and learning path', () => {
@@ -143,9 +153,8 @@ describe('home copy rules', () => {
 
   it('stays near the ≈600-word home budget', () => {
     const prose = [
-      HERO.ledeHtml, BIG_IDEA.proseHtml, ANALOGY.bodyHtml,
-      ...ANALOGY.breaks.flatMap(({ lead, text: body }) => [lead, body]),
-      ...Object.values(TIMELINE_CAPTIONS), ...Object.values(DOOR_SUMMARIES),
+      HERO.ledeHtml, HERO_FIGURE.caption, BIG_IDEA.proseHtml,
+      ...Object.values(CONCEPT_NOTES), ...Object.values(DOOR_SUMMARIES),
     ];
     expect(prose.reduce((total, value) => total + words(value), 0)).toBeLessThanOrEqual(600);
   });
