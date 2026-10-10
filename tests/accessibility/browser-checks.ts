@@ -500,9 +500,15 @@ export async function checkComponentGeometry(browser: Browser, origin: string, p
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme });
     const page = await context.newPage();
     await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
-    const bare = await page.evaluate(() => [...document.querySelectorAll('#big-idea .concept__term')]
-      .filter((term) => ['transparent', 'rgba(0, 0, 0, 0)'].includes(getComputedStyle(term).backgroundColor))
-      .map((term) => (term.textContent ?? '').trim()));
+    const { bigIdea, count, bare } = await page.evaluate(() => {
+      const terms = [...document.querySelectorAll('#big-idea .concept__term')];
+      return {
+        bigIdea: Boolean(document.querySelector('#big-idea .concepts__rows')),
+        count: terms.length,
+        bare: terms.filter((term) => ['transparent', 'rgba(0, 0, 0, 0)'].includes(getComputedStyle(term).backgroundColor)).map((term) => (term.textContent ?? '').trim()),
+      };
+    });
+    if (bigIdea && count !== 4) issues.push(issue(`${scope}:${colorScheme}`, 'A11Y-GEOMETRY', `the big idea must show four concept terms, found ${count}`));
     if (bare.length > 0) issues.push(issue(`${scope}:${colorScheme}`, 'A11Y-GEOMETRY', `the concept terms in the big idea must keep their tinted chip, but ${bare.join(', ')} ${bare.length > 1 ? 'have' : 'has'} no background in the ${colorScheme} scheme`));
     await context.close();
   }
