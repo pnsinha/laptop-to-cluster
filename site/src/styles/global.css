@@ -133,11 +133,11 @@ body[data-composition-profile="landing"] main > :where(section, aside, figure) +
 :is(p, li, dd, dt, figcaption, td, th) :is(.c-step, .c-gate, .c-scratch, .c-net) { background: none; padding: 0; }
 
 /* ---------- 6. home: hero ---------- */
-.hero { max-inline-size: 46rem; padding-block: var(--space-4) 0; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8) var(--space-12); align-items: start; padding-block: var(--space-6) 0; }
 .hero__copy { max-inline-size: 40rem; }
 .hero__copy > * { margin: 0; }
 .hero__copy > * + * { margin-block-start: var(--space-4); }
-.hero h1 { max-inline-size: 20ch; }
+.hero h1 { max-inline-size: 14ch; font-size: clamp(2.5rem, 1.6rem + 3.6vw, 3.75rem); line-height: 1.05; }
 .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-6); margin-block-start: var(--space-8); }
 .action { display: inline-block; min-block-size: 2.75rem; padding: 0.75rem 1.25rem; border: var(--border-thin) solid transparent; font-weight: var(--weight-semibold); line-height: 1.25; text-decoration: none; cursor: pointer; }
 .action--primary { color: var(--on-primary); background: var(--primary); border-radius: var(--radius-small); }
@@ -146,18 +146,41 @@ body[data-composition-profile="landing"] main > :where(section, aside, figure) +
 .hero__secondary-link { display: inline-flex; align-items: center; min-block-size: 2.75rem; color: var(--primary); font-weight: var(--weight-semibold); }
 .hero__quiet { color: var(--muted); }
 body[data-composition-profile="landing"] main > .applicability-projection { margin-block-start: var(--space-6); }
+@media (min-width: 60rem) {
+  .hero { grid-template-columns: minmax(0, 11fr) minmax(0, 10fr); }
+}
 
-/* ---------- 7. home: big idea and analogy ---------- */
-.big-idea > h2 { margin-block-end: var(--space-4); }
-.big-idea > p { max-inline-size: var(--measure-prose); font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
-.big-idea > p + p { margin-block-start: 0.75em; }
-.analogy { max-inline-size: var(--measure-prose); margin-block-start: var(--space-12); padding-block-start: var(--space-6); border-block-start: var(--border-thin) solid var(--rule); }
-.analogy > h3 { margin-block-end: var(--space-3); }
-.analogy > h4 { margin-block: var(--space-6) var(--space-2); }
-.analogy > p { font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
-.analogy__breaks { margin: 0; padding-inline-start: 1.25rem; font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
-.analogy__breaks li::marker { color: var(--muted); }
-.analogy__breaks li + li { margin-block-start: var(--space-2); }
+/* ---------- 6b. hero figure: two environments, plain HTML ---------- */
+.hero__figure { margin: 0; }
+.env-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.env { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-small); }
+.env--cluster { background: var(--surface); }
+.env__title { margin: 0; color: var(--primary); font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: 1.25; }
+.env__cmd { margin: 0; }
+.env__services { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.env__box { padding: var(--space-2) var(--space-3); color: var(--text); background: var(--canvas); border: var(--border-strong) solid var(--primary); border-radius: var(--radius-small); font-family: var(--font-technical); font-size: var(--text-fine); text-align: center; }
+.env__alloc { padding: var(--space-3); border: var(--border-strong) dashed var(--primary); border-radius: var(--radius-small); }
+.env__alloc-label { margin: 0 0 var(--space-2); color: var(--primary); font-size: var(--text-fine); font-weight: var(--weight-semibold); }
+.env__facts { margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: var(--text-fine); line-height: var(--leading-fine); }
+.env__facts li + li { margin-block-start: var(--space-1); }
+.hero__figure figcaption { max-inline-size: var(--measure-lede); margin-block-start: var(--space-3); color: var(--muted); font-size: var(--text-fine); line-height: var(--leading-fine); }
+@media (max-width: 30rem) {
+  .env-pair { grid-template-columns: 1fr; }
+}
+
+/* ---------- 7. home: concept rows (was big idea + analogy) ---------- */
+.concepts > h2 { margin-block-end: var(--space-4); }
+.concepts__intro { max-inline-size: var(--measure-prose); font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
+.concepts__rows { margin-block-start: var(--space-8); border-block-start: var(--border-thin) solid var(--rule); }
+.concept { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2) var(--space-8); padding-block: var(--space-5); border-block-end: var(--border-thin) solid var(--rule); }
+.concept__n { margin: 0; color: var(--muted); font-family: var(--font-technical); font-size: var(--text-fine); font-variant-numeric: tabular-nums; }
+.concept__side { display: block; margin-block-end: var(--space-1); color: var(--muted); font-size: var(--text-fine); font-weight: var(--weight-semibold); }
+.concept__was { margin: 0; color: var(--text); font-family: var(--font-display); font-size: var(--text-h3); line-height: 1.25; }
+.concept__term { display: inline-block; font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: 1.25; }
+.concept__note { max-inline-size: var(--measure-prose); margin: var(--space-2) 0 0; font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
+@media (min-width: 52rem) {
+  .concept { grid-template-columns: 3rem minmax(0, 5fr) minmax(0, 7fr); align-items: start; }
+}
 
 /* ---------- 8. six-step timeline: an ordered list; the bars are borders ---------- */
 .timeline { container-type: inline-size; max-inline-size: var(--measure-wide); margin-block-start: var(--space-8); --tl-pad: var(--space-4); --overrun: calc(var(--tl-pad) + 2px + 0.5rem); }
@@ -212,7 +235,7 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 
 /* ---------- 9. doors: three blocks; only the link inside each is the target ---------- */
 .doors { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-.door { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-5) var(--space-5) var(--space-6); background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-door); }
+.door { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5) var(--space-5); background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-door); }
 .door__who { margin: 0; color: var(--accent); font-size: var(--text-fine); font-weight: var(--weight-semibold); }
 .door__title { margin: 0; }
 .door__summary { flex: 1; margin: 0; font-family: var(--font-reading); font-size: 1.0625rem; line-height: var(--leading-reading); }
@@ -466,7 +489,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
   .action--primary { color: ButtonText; background: ButtonFace; border: 2px solid ButtonText; }
   /* Headings keep the text colour in tokens.css, so link colour is restored here for real links only. */
   a:where(:any-link), .action--secondary, .hero__secondary-link { color: LinkText; }
-  .door, .record-summary, .evidence-rows, .event-band, .timeline__steps, .crosswalk__pane pre, pre, .terminal, .technical-figure, .resource-tile { border: 1px solid CanvasText; }
+  .door, .record-summary, .evidence-rows, .event-band, .timeline__steps, .crosswalk__pane pre, pre, .terminal, .technical-figure, .resource-tile, .env, .env__box, .env__alloc { border: 1px solid CanvasText; }
   .timeline__step[aria-current="step"] { outline-color: Highlight; }
   .timeline__mark--verify { border-color: CanvasText; }
   .theme-control button[aria-pressed="true"] { border-block-end-color: Highlight; }
@@ -481,7 +504,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
   .evidence-panel::details-content { content-visibility: visible; display: block; }
   .crosswalk__pane pre { overflow: visible; }
   .table-overflow { overflow: visible; }
-  .timeline, .door, .notice, .record-summary, .evidence-rows, .crosswalk__pane { break-inside: avoid; }
+  .timeline, .door, .notice, .record-summary, .evidence-rows, .crosswalk__pane, .hero__figure, .concept { break-inside: avoid; }
   :where(h1, h2, h3, h4) { break-after: avoid; }
   th { border-block-end-width: 2px; }
   a[href^="http"]:not(nav a)::after { content: " (" attr(href) ")"; overflow-wrap: anywhere; }

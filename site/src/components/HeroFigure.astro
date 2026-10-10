@@ -1,0 +1,24 @@
+---
+import { HERO_FIGURE } from '../content/home';
+const { laptop, cluster, services, caption } = HERO_FIGURE;
+---
+<figure class="hero__figure" aria-labelledby="hero-figure-caption">
+  <div class="env-pair">
+    <div class="env env--laptop">
+      <p class="env__title">{laptop.title}</p>
+      <p class="env__cmd"><code>{laptop.command}</code></p>
+      <ul class="env__services" role="list">{services.map((s) => <li class="env__box">{s}</li>)}</ul>
+      <ul class="env__facts" role="list">{laptop.facts.map((f) => <li>{f}</li>)}</ul>
+    </div>
+    <div class="env env--cluster">
+      <p class="env__title">{cluster.title}</p>
+      <p class="env__cmd"><code>{cluster.command}</code></p>
+      <div class="env__alloc">
+        <p class="env__alloc-label">{cluster.allocation}</p>
+        <ul class="env__services" role="list">{services.map((s) => <li class="env__box">{s}</li>)}</ul>
+      </div>
+      <ul class="env__facts" role="list">{cluster.facts.map((f) => <li>{f}</li>)}</ul>
+    </div>
+  </div>
+  <figcaption id="hero-figure-caption">{caption}</figcaption>
+</figure>

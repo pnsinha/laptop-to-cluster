@@ -3,9 +3,10 @@ import type { Door } from '../content/contracts';
 
 interface Props {
   doors: (Door & { summary: string; path?: { label: string; href: string }[] })[];
+  compact?: boolean;
 }
 
-const { doors } = Astro.props;
+const { doors, compact = false } = Astro.props;
 ---
 <ul class="doors" role="list" id="doors">
   {doors.map(({ id, eyebrow, title, summary, path, href, linkText }) => (
@@ -13,7 +14,7 @@ const { doors } = Astro.props;
       <p class="door__who">{eyebrow}</p>
       <h3 class="door__title">{title}</h3>
       <p class="door__summary">{summary}</p>
-      {path && path.length > 0 && (
+      {!compact && path && path.length > 0 && (
         <ol class="door__path">
           {path.map((step) => <li><a href={step.href}>{step.label}</a></li>)}
         </ol>

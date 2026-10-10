@@ -2,16 +2,16 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
+import ConceptMap from '../components/ConceptMap.astro';
 import Crosswalk from '../components/Crosswalk.astro';
 import Doors from '../components/Doors.astro';
-import Timeline from '../components/Timeline.astro';
+import HeroFigure from '../components/HeroFigure.astro';
 import CrosswalkEnhancement from '../components/CrosswalkEnhancement.astro';
 import { CROSSWALK } from '../content/crosswalk';
 import {
-  ANALOGY, BIG_IDEA, DOORS_SECTION, EVENT_BAND, HERO, HOME_DESCRIPTION, HOME_TITLE, PROJECT_RECORDS,
+  DOORS_SECTION, EVENT_BAND, HERO, HOME_DESCRIPTION, HOME_TITLE, PROJECT_RECORDS,
   eventBandLead, homeDoors, projectRecordLinks,
 } from '../content/home';
-import { TIMELINE_CAPTIONS } from '../content/timeline';
 import { projectLandingPage } from '../content/projections';
 import { RECORD_LINK_TEXT } from '../content/wording';
 
@@ -36,28 +36,17 @@ const records = projectRecordLinks(landing.release);
       </div>
       <p class="hero__quiet">{HERO.quiet.lead} <a href={HERO.quiet.href}>{HERO.quiet.label}</a></p>
     </div>
+    <HeroFigure />
   </section>
 
   {landing.applicability_projection ? <ApplicabilityProjectionView projection={landing.applicability_projection} /> : <p class="notice notice--info">{landing.validation_unavailable_reason}</p>}
 
-  <section class="big-idea" id="big-idea" aria-labelledby="big-idea-title">
-    <h2 id="big-idea-title">{BIG_IDEA.title}</h2>
-    <p set:html={BIG_IDEA.proseHtml} />
-    <Timeline captions={TIMELINE_CAPTIONS} />
-    <div class="analogy">
-      <h3>{ANALOGY.title}</h3>
-      <p set:html={ANALOGY.bodyHtml} />
-      <h4>{ANALOGY.breaksTitle}</h4>
-      <ul class="analogy__breaks">
-        {ANALOGY.breaks.map(({ lead, text }) => <li><strong>{lead}</strong> {text}</li>)}
-      </ul>
-    </div>
-  </section>
-
   <section aria-labelledby="doors-title">
     <h2 id="doors-title">{DOORS_SECTION.title}</h2>
-    <Doors doors={doors} />
+    <Doors doors={doors} compact />
   </section>
+
+  <ConceptMap />
 
   {recordHref ? (
     <Crosswalk data={CROSSWALK}><a slot="record" href={recordHref}>{RECORD_LINK_TEXT}</a></Crosswalk>

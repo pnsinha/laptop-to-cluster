@@ -1,4 +1,4 @@
-import { DOORS, type Door, type DoorId } from './contracts';
+import { DOORS, type ConceptKey, type Door, type DoorId } from './contracts';
 import { projectLearningPath } from './projections';
 import type { ContentItem, Talk } from './schema';
 
@@ -16,7 +16,7 @@ const doorHref = (id: DoorId): string => DOORS.find((door) => door.id === id)!.h
 export const HERO = {
   kicker: 'A free, open-source learning guide for Docker Compose users',
   title: 'Your Compose stack, on a shared cluster',
-  ledeHtml: 'On your laptop, <code>docker compose up</code> starts every service whenever you ask. A shared research cluster runs no Docker daemon and gives you no root access (administrator rights), so that command won’t work there. Instead, you ask a scheduler for a block of computer time, wait your turn, and then one script starts each service inside that block. This guide shows how to translate one into the other, one idea at a time.',
+  ledeHtml: 'On your laptop, <code>docker compose up</code> starts every service whenever you ask. A shared research cluster runs no Docker daemon and gives you no root access (administrator rights), so that command won’t work there. Instead, you ask a scheduler for an allocation, wait your turn, and one batch script starts each service inside it. This guide translates one into the other, one idea at a time.',
   primary: { label: 'Start with the big idea', href: '#big-idea' },
   secondary: { label: 'Already have a Compose file? Translate it', href: doorHref('translate') },
   quiet: { lead: 'Support researchers or run a cluster?', label: 'See what this assumes, and when not to use it', href: doorHref('evaluate') },
@@ -24,20 +24,26 @@ export const HERO = {
 
 export const BIG_IDEA = {
   title: 'The big idea',
-  proseHtml: 'On a shared cluster, a scheduler (Slurm, at most centers) decides what runs, where and for how long; Docker doesn’t. You ask it for a fixed share of one machine for a fixed time (an <a href="/about/glossary/#allocation">allocation</a>), and one batch script then does inside it what Compose did on your laptop. Four ideas change meaning along the way. A service becomes a program the scheduler launches and tracks inside your allocation (a <a class="c-step" href="/about/glossary/#job-step">job step</a>). <code>depends_on</code> becomes a check that the coordinator can really serve before any worker starts (a <a class="c-gate" href="/about/glossary/#readiness-gate">readiness gate</a>). A named volume becomes temporary job storage (<a class="c-scratch" href="/about/glossary/#job-scoped-scratch">job-scoped scratch</a>). A published port becomes local-only access (<a class="c-net" href="/about/glossary/#loopback">loopback</a>), which services use by default; reaching a service from beyond its node needs access your center approves.',
+  proseHtml: 'On a shared cluster, a scheduler (Slurm, at most centers) decides what runs, where and for how long; Docker doesn’t. You ask it for a fixed share of one machine for a fixed time (an <a href="/about/glossary/#allocation">allocation</a>), and one batch script then does inside it what Compose did on your laptop. Four ideas change meaning along the way.',
+  composeSide: 'In Compose',
+  clusterSide: 'On a cluster',
 } as const;
 
-export const ANALOGY = {
-  title: 'A cluster is a shared building, not another laptop',
-  bodyHtml: 'The scheduler is the booking desk. You ask for a room (an <strong>allocation</strong>: set CPUs, memory and hours) and wait until one is free. Once you’re in, your script (the <strong>job</strong>) starts the services itself. A <strong>coordinator</strong>, which hands out tasks, opens first. The script lets <strong>workers</strong> in only after the coordinator hangs its “we’re open” sign (the <strong>readiness gate</strong>). Before you leave, you check that the work is right (<strong>verification</strong>); the sign being up never proved that. When your script finishes, or your time runs out, everyone is sent out (clean up).',
-  breaksTitle: 'Where the analogy breaks',
-  breaks: [
-    { lead: 'You usually queue.', text: 'A cluster may keep your job waiting until a room is free.' },
-    { lead: 'Other people’s jobs may share the node.', text: 'Local-only access (loopback) keeps your services off the network; it is not a lock.' },
-    { lead: 'There is no front door.', text: 'Nothing outside the node reaches your services without access your center approves.' },
-    { lead: 'Copy out what you want to keep.', text: 'Cleanup stops your services but does not empty the room; when temporary job storage is cleared depends on your center.' },
-  ],
+/* The hero figure: two execution environments, not a startup sequence. Plain HTML, no concept colours. */
+export const HERO_FIGURE = {
+  caption: 'The same three programs in two environments. On your laptop, Docker starts them on demand. On a cluster, a scheduler grants one allocation and your batch script starts them inside it.',
+  services: ['coordinator', 'worker', 'worker'],
+  laptop: { title: 'Your laptop', command: 'docker compose up', facts: ['Docker daemon, root access', 'Starts whenever you ask', 'Ports published to your machine'] },
+  cluster: { title: 'A shared cluster', command: 'sbatch baseline.sbatch', allocation: 'One allocation: one node, a fixed time', facts: ['No Docker daemon, no root access', 'A scheduler decides when you run', 'Local-only access inside the node'] },
 } as const;
+
+/* One note per concept. Each starts with CONCEPTS.plain verbatim and puts the term in parentheses (a unit test checks this), then carries the qualifier the old timeline and analogy used to carry. */
+export const CONCEPT_NOTES: Record<ConceptKey, string> = {
+  step: 'A program the scheduler launches and tracks inside your allocation (a <a href="/about/glossary/#job-step">job step</a>).',
+  gate: 'A check that the coordinator can really serve before any worker starts (a <a href="/about/glossary/#readiness-gate">readiness gate</a>). It does not establish that results are correct.',
+  scratch: 'Temporary job storage (<a href="/about/glossary/#job-scoped-scratch">job-scoped scratch</a>). It may remain until your center clears it; copy out what you need before the job ends.',
+  net: 'Local-only access (<a href="/about/glossary/#loopback">loopback</a>). It is not an isolation boundary; access beyond the node requires center approval.',
+};
 
 export const DOORS_SECTION = { title: 'Pick your path' } as const;
 
