@@ -72,7 +72,7 @@ describe('home page, built output', () => {
     expect(home).toContain('<title>Bridging the Laptop-to-Cluster Gap');
     expect(home).toContain('<meta property="og:title" content="Bridging the Laptop-to-Cluster Gap">');
     const lede = text(hero.match(/<p class="lede">([\s\S]*?)<\/p>/)?.[1] ?? '');
-    for (const idea of [/docker compose up/, /no Docker daemon/, /root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) expect(lede).toMatch(idea);
+    for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) expect(lede).toMatch(idea);
   });
 
   it('renders four concept rows in contract order, each with its Compose name, tinted term and note', () => {
@@ -90,6 +90,15 @@ describe('home page, built output', () => {
     });
     // The concept shapes come from the marks font via CSS, never as text glyphs.
     expect(section).not.toMatch(/[■◆▲●]/);
+  });
+
+  it('keeps the three qualifiers inside the big idea', () => {
+    const bigIdea = text(sectionFrom('<section class="concepts" id="big-idea"'));
+    for (const sentence of [
+      'It does not establish that results are correct.',
+      'It may remain until your center clears it; copy out what you need before the job ends.',
+      'It is not an isolation boundary; access beyond the node requires center approval.',
+    ]) expect(bigIdea, sentence).toContain(sentence);
   });
 
   it('leaves the timeline and the analogy off the home page', () => {

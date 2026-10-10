@@ -20,7 +20,7 @@ Start each page by clicking the address bar, then press Tab. Tick a box only if 
 - [ ] **Evidence badge and panel.** Tab to "What this means for you". Enter or Space opens it; the three rows (Tested, You need, Depends on your center) appear; "What hasn't been tested yet" is the next Tab stop. Enter or Space on the summary closes it again; focus stays on the summary.
 - [ ] **Timeline (modules).** On learning-module pages there is no Tab stop inside the timeline. The six steps read in order when you scroll.
 - [ ] **Doors (home).** Exactly three Tab stops, one link per door, in the order Understand, Translate, Evaluate and adopt. Enter on each goes to its page. There is no hover-only content.
-- [ ] **Concept rows (home).** Four glossary links, one per row, in order; no other Tab stops in the section.
+- [ ] **Concept rows (home).** Five Tab stops in the big-idea section, in order: the allocation link in the introduction, then one glossary link per row (job step, readiness gate, job-scoped scratch, loopback). No other Tab stops in the section.
 - [ ] **Crosswalk (static).** The legend has no Tab stops. Each code pane that scrolls sideways takes one Tab stop with a visible ring and scrolls with the arrow keys; Tab then leaves it (no keyboard trap). If the highlight enhancement ships: each legend term is a button, Space selects one, a second Space clears it, and the selection is also shown by an outline, not only colour.
 - [ ] **Pager and Sources.** The previous and next links are ordinary links. The Sources disclosure opens and closes with Enter or Space.
 - [ ] **Footer.** Tab visits Attribution, Talks & papers, Accessibility, Support, Licenses, GitHub (external). The acknowledgment text is plain text, not a link.

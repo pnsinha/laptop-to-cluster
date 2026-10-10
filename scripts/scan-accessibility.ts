@@ -295,6 +295,23 @@ try {
       }
       if (!hero.homeOrder) fail('/:320px', 'A11Y-READING-ORDER', 'home order must be hero, evidence projection, doors, big idea, crosswalk');
     }
+    const kind = accessibilityPages.find((fixture) => fixture.path === path)?.kind;
+    if (kind === 'conceptual module' || kind === 'runnable module') {
+      const timeline = await page.evaluate(() => {
+        const steps = [...document.querySelectorAll<HTMLElement>('.timeline li.timeline__step')];
+        return {
+          count: steps.length,
+          stepOrder: steps.every((item) => {
+            const label = item.querySelector('strong');
+            const caption = item.querySelector('.timeline__caption');
+            return Boolean(label && caption && label.getBoundingClientRect().top <= caption.getBoundingClientRect().top);
+          }),
+        };
+      });
+      if ((timeline.count > 0 || path === MODULE_2_PATH) && (timeline.count === 0 || !timeline.stepOrder)) {
+        fail(`${path}:320px`, 'A11Y-READING-ORDER', 'each timeline step label must sit above its caption at 320px');
+      }
+    }
   }
 
   await open(page, '/resources/');

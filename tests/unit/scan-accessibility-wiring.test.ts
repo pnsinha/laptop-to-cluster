@@ -40,6 +40,15 @@ describe('scanner wiring: gates, routes, requests', () => {
     expect(scanner).toContain("'Start with the big idea', 'big-idea'");
   });
 
+  it('checks at 320px that each timeline step label sits above its caption, on every module page with a timeline', () => {
+    expect(scanner).toContain("'.timeline li.timeline__step'");
+    expect(scanner).toContain("'.timeline__caption'");
+    expect(scanner).toContain('label.getBoundingClientRect().top <= caption.getBoundingClientRect().top');
+    expect(scanner).toContain("'A11Y-READING-ORDER', 'each timeline step label must sit above its caption at 320px'");
+    expect(scanner).toContain("kind === 'conceptual module' || kind === 'runnable module'");
+    expect(scanner).toContain('path === MODULE_2_PATH');
+  });
+
   it('checks 768 and 1280 pixel widths, and only /fonts/*.woff2 as a same-origin font', () => {
     expect(scanner).toContain('for (const width of [768, 1280])');
     expect(scanner).toContain('A11Y-FONT-MIME');

@@ -42,7 +42,7 @@ describe('home hero', () => {
   it('explains in the lede why Compose stops working and what replaces it', () => {
     expect(HERO.ledeHtml).toContain('<code>docker compose up</code>');
     const lede = text(HERO.ledeHtml);
-    for (const idea of [/docker compose up/, /no Docker daemon/, /root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) {
+    for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) {
       expect(lede).toMatch(idea);
     }
   });
@@ -57,6 +57,12 @@ describe('big idea', () => {
     }
     expect(BIG_IDEA.proseHtml).toContain('href="/about/glossary/#allocation"');
     expect(prose).toMatch(/scheduler \(Slurm, at most centers\)/);
+  });
+
+  it('keeps the three qualifiers the old timeline and analogy carried', () => {
+    expect(text(CONCEPT_NOTES.gate)).toContain('It does not establish that results are correct.');
+    expect(text(CONCEPT_NOTES.scratch)).toContain('It may remain until your center clears it; copy out what you need before the job ends.');
+    expect(text(CONCEPT_NOTES.net)).toContain('It is not an isolation boundary; access beyond the node requires center approval.');
   });
 
   it('opens each concept note with a capital and links it to its glossary anchor', () => {
