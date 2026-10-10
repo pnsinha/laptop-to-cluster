@@ -64,10 +64,10 @@ strong { font-weight: var(--weight-semibold); }
 .site-nav--compact summary { display: inline-flex; align-items: center; min-block-size: 2.5rem; cursor: pointer; font-weight: var(--weight-semibold); }
 .theme-control { display: inline-flex; align-items: center; gap: var(--space-2); }
 .theme-control[hidden] { display: none; }
-.theme-control__label { color: var(--muted); font-size: var(--text-fine); }
-.theme-control button { min-block-size: 2rem; padding: var(--space-1) var(--space-2); color: var(--text); background: none; border: 0; border-block-end: var(--border-strong) solid transparent; cursor: pointer; }
-.theme-control button:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
-.theme-control button[aria-pressed="true"] { font-weight: var(--weight-semibold); border-block-end-color: currentColor; }
+.theme-control__toggle { display: inline-flex; align-items: center; justify-content: center; inline-size: 2rem; block-size: 2rem; padding: 0; color: var(--text); background: transparent; border: var(--border-thin) solid var(--rule); border-radius: 999px; cursor: pointer; }
+.theme-control__toggle:hover { border-color: currentColor; }
+.theme-control__icon { inline-size: 1.25rem; block-size: 1.25rem; }
+.theme-control__toggle[aria-pressed="true"] .theme-control__icon--moon, .theme-control__toggle[aria-pressed="false"] .theme-control__icon--sun { display: none; }
 .footer-links { display: flex; flex-wrap: wrap; row-gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
 .footer-links li { white-space: nowrap; }
 .footer-links li:not(:last-child)::after { content: "·"; content: "·" / ""; padding-inline: var(--space-3); color: var(--muted); }
@@ -516,7 +516,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
   .env__alloc { border: var(--border-strong) dashed CanvasText; }
   .timeline__step[aria-current="step"] { outline-color: Highlight; }
   .timeline__mark--verify { border-color: CanvasText; }
-  .theme-control button[aria-pressed="true"] { border-block-end-color: Highlight; }
+  .theme-control__toggle { border-color: ButtonText; }
   .crosswalk__line[data-concepts] { border-inline-start-color: CanvasText; }
   .astro-code, .astro-code span { color: CanvasText; background-color: Canvas; }
 }

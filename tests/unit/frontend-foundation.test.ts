@@ -42,11 +42,11 @@ describe('finalized presentation CSS regression gates', () => {
   });
 
   it('does not apply cursor:pointer on non-link/non-button elements in resource/diagnostic/learning-path/project contexts', () => {
-    // cursor:pointer is only allowed on summary, a, button elements
+    // cursor:pointer is only allowed on summary, a, button elements (the theme toggle is a button whose class name carries none of those words)
     const cursorPointerRules = css.match(/[^{}]+\{[^}]*cursor:\s*pointer[^}]*/g) ?? [];
     for (const rule of cursorPointerRules) {
       const selector = rule.split('{')[0].trim();
-      expect(selector, `cursor:pointer on non-interactive: ${selector}`).toMatch(/summary|button|a|\[role="button"\]/i);
+      expect(selector, `cursor:pointer on non-interactive: ${selector}`).toMatch(/summary|button|a|\[role="button"\]|\.theme-control__toggle/i);
     }
   });
 

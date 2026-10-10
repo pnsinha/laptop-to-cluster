@@ -47,13 +47,45 @@ const readTheme = (page: Page) => page.evaluate((key) => {
     scheme: getComputedStyle(root).colorScheme,
     themeColor: meta?.content.trim().toLowerCase() ?? null,
     canvasValue: getComputedStyle(root).getPropertyValue('--canvas').trim().toLowerCase(),
-    pressed: [...document.querySelectorAll<HTMLElement>('[data-theme-choice][aria-pressed="true"]')].map((element) => element.dataset.themeChoice),
     controlShown: (() => { const control = document.querySelector<HTMLElement>('[data-theme-control]'); return Boolean(control && !control.hidden && control.getClientRects().length); })(),
     log: (window as unknown as { __themeLog?: { attr: number; body: number } }).__themeLog ?? null,
   };
 }, THEME_STORAGE_KEY);
 
-/** §10 Theme: manual choice beats the OS, System follows the OS, no wrong-theme flash, no-JS follows the OS. */
+/** The one sun/moon toggle: state, icons (computed), size, and the text a sighted user can actually see in the header. No named inner functions: this runs under tsx keepNames. */
+const readToggle = (page: Page) => page.evaluate(() => {
+  const toggle = document.querySelector<HTMLElement>('[data-theme-toggle]');
+  const moon = toggle?.querySelector('.theme-control__icon--moon') ?? null;
+  const sun = toggle?.querySelector('.theme-control__icon--sun') ?? null;
+  const rect = toggle?.getBoundingClientRect();
+  const scope = document.querySelector('header') ?? document.querySelector('[data-theme-control]');
+  const seen: string[] = [];
+  if (scope) {
+    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const parent = node.parentElement;
+      const text = node.textContent?.trim();
+      if (!parent || !text || parent.closest('.vh, svg')) continue;
+      const style = getComputedStyle(parent);
+      if (style.display === 'none' || style.visibility === 'hidden' || !parent.getClientRects().length) continue;
+      seen.push(text);
+    }
+  }
+  return {
+    present: toggle !== null,
+    buttons: document.querySelectorAll('[data-theme-control] button').length,
+    pressed: toggle?.getAttribute('aria-pressed') ?? null,
+    rendered: (toggle?.getClientRects().length ?? 0) > 0,
+    moon: moon ? getComputedStyle(moon).display : null,
+    sun: sun ? getComputedStyle(sun).display : null,
+    strokeMatchesText: toggle && moon && sun ? getComputedStyle(moon).stroke === getComputedStyle(toggle).color && getComputedStyle(sun).stroke === getComputedStyle(toggle).color : false,
+    width: rect?.width ?? 0,
+    height: rect?.height ?? 0,
+    visibleText: seen.join(' '),
+  };
+});
+
+/** §10 Theme: a manual choice beats the OS, the one sun/moon toggle falls back to the OS, no wrong-theme flash, no-JS follows the OS. */
 export async function checkThemePrecedence(browser: Browser, origin: string, path: string, themes: ThemeTokens): Promise<Issue[]> {
   const issues: Issue[] = [];
   const url = new URL(path, origin).href;
@@ -95,39 +127,107 @@ export async function checkThemePrecedence(browser: Browser, origin: string, pat
     issues.push(issue(`${path}:theme`, 'A11Y-THEME-COLOR', 'the head script must update theme-color so the theme-color meta in effect (first with no media or a matching media) matches the stored light or dark canvas and differs between them'));
   }
 
-  const context = await browser.newContext({ colorScheme: 'light' });
-  const page = await context.newPage();
-  await page.goto(url, { waitUntil: 'load' });
-  const scope = `${path}:theme-control`;
-  let state = await readTheme(page);
-  if (!state.controlShown || state.pressed.join() !== 'system') issues.push(issue(scope, 'A11Y-THEME-CONTROL', 'the control must be shown by script with System pressed when nothing is stored'));
-  await page.click('[data-theme-choice="dark"]');
-  state = await readTheme(page);
-  if (state.attr !== 'dark' || state.stored !== 'dark' || state.canvas !== themes.dark.canvas.toLowerCase() || state.pressed.join() !== 'dark') {
-    issues.push(issue(scope, 'A11Y-THEME-CONTROL', 'choosing Dark must set data-theme, store the choice, switch the tokens and press only Dark'));
+  const TOGGLE = '[data-theme-toggle]';
+  const NAME = 'Dark theme';
+  const nameCount = (page: Page, pressed: boolean) => page.locator('[data-theme-control]').getByRole('button', { name: NAME, exact: true, pressed }).count();
+  const canvasOf = (theme: 'light' | 'dark') => themes[theme].canvas.toLowerCase();
+  /* Flip the emulated OS scheme and wait until the page's own change listeners have run: a listener added last fires last, and a bounded race stops a missing event from hanging the run. */
+  const flipOs = async (page: Page, scheme: 'light' | 'dark') => {
+    await page.evaluate(() => {
+      const holder = window as unknown as { __osChange?: Promise<boolean> };
+      holder.__osChange = new Promise((resolve) => {
+        matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => resolve(true), { once: true });
+        setTimeout(() => resolve(false), 3000);
+      });
+    });
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.evaluate(() => (window as unknown as { __osChange?: Promise<boolean> }).__osChange);
+  };
+  for (const os of ['light', 'dark'] as const) {
+    const other = os === 'light' ? 'dark' : 'light';
+    const scope = `${path}:theme-toggle:OS ${os}`;
+    const note = (message: string) => issues.push(issue(scope, 'A11Y-THEME-CONTROL', message));
+    const context = await browser.newContext({ colorScheme: os });
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: 'load' });
+    let state = await readTheme(page);
+    let toggle = await readToggle(page);
+    const shows = (value: typeof toggle, theme: 'light' | 'dark') => (theme === 'light' ? value.moon !== 'none' && value.moon !== null && value.sun === 'none' : value.sun !== 'none' && value.sun !== null && value.moon === 'none');
+    if (!state.controlShown || !toggle.present || toggle.buttons !== 1) note('the control must be shown by script and hold exactly one button (the sun/moon toggle)');
+    if (state.attr !== null || state.stored !== null) note(`with nothing stored the page must not carry data-theme or a stored choice (data-theme ${JSON.stringify(state.attr)}, stored ${JSON.stringify(state.stored)})`);
+    if (toggle.pressed !== String(os === 'dark')) note(`with the OS on ${os} and nothing stored, aria-pressed must be "${os === 'dark'}", got ${JSON.stringify(toggle.pressed)}`);
+    if (!shows(toggle, os)) note(`with the page ${os} the icon must be the ${os === 'light' ? 'moon' : 'sun'} and the other icon display: none (moon ${toggle.moon}, sun ${toggle.sun})`);
+    if (!toggle.strokeMatchesText) note('both icons must be stroked in currentColor, so they take the header text colour');
+    if ((await nameCount(page, os === 'dark')) !== 1) note(`the accessible name must be exactly "${NAME}", exposed as a toggle button that is ${os === 'dark' ? '' : 'not '}pressed`);
+    if (/\b(System|Light|Dark)\b/.test(toggle.visibleText)) note(`the header must show no visible text "System", "Light" or "Dark" (found ${JSON.stringify(toggle.visibleText)})`);
+    if (toggle.width < 24 || toggle.height < 24) note(`the toggle is ${toggle.width}x${toggle.height} CSS px; it must be at least 24x24`);
+
+    await page.click(TOGGLE);
+    state = await readTheme(page);
+    toggle = await readToggle(page);
+    if (state.attr !== other || state.stored !== other || state.canvas !== canvasOf(other) || toggle.pressed !== String(other === 'dark') || !shows(toggle, other)) {
+      note(`one click must switch to ${other}: set data-theme, store the choice, switch the tokens, press the toggle to "${other === 'dark'}" and swap the icon`);
+    }
+    if ((await nameCount(page, other === 'dark')) !== 1) note(`after one click the toggle must still be named exactly "${NAME}" and expose its ${other === 'dark' ? '' : 'not '}pressed state`);
+    await page.reload({ waitUntil: 'load' });
+    state = await readTheme(page);
+    toggle = await readToggle(page);
+    if (state.attr !== other || state.stored !== other || toggle.pressed !== String(other === 'dark')) note('a stored choice must survive a reload, with the toggle in the matching state');
+    await flipOs(page, other);
+    await flipOs(page, os);
+    state = await readTheme(page);
+    toggle = await readToggle(page);
+    if (state.attr !== other || state.stored !== other || toggle.pressed !== String(other === 'dark')) note('an OS change must leave a stored choice alone: data-theme, the stored value and aria-pressed must not move');
+    await page.click(TOGGLE);
+    state = await readTheme(page);
+    toggle = await readToggle(page);
+    if (state.attr !== null || state.stored !== null || state.canvas !== canvasOf(os) || toggle.pressed !== String(os === 'dark') || !shows(toggle, os)) {
+      note(`a second click lands on the OS value (${os}), so it must clear the stored choice and data-theme and go back to following the OS`);
+    }
+    await flipOs(page, other);
+    state = await readTheme(page);
+    toggle = await readToggle(page);
+    if (state.attr !== null || state.stored !== null || state.canvas !== canvasOf(other) || toggle.pressed !== String(other === 'dark') || !shows(toggle, other)) {
+      note(`with nothing stored the page and toggle must follow a live OS change to ${other}: tokens, aria-pressed and icon`);
+    }
+    await context.close();
   }
-  await page.reload({ waitUntil: 'load' });
-  state = await readTheme(page);
-  if (state.attr !== 'dark' || state.pressed.join() !== 'dark') issues.push(issue(scope, 'A11Y-THEME-CONTROL', 'a stored choice must survive a reload, with its button pressed'));
-  await page.click('[data-theme-choice="system"]');
-  state = await readTheme(page);
-  if (state.attr !== null || (state.stored !== null && state.stored !== 'system') || state.canvas !== themes.light.canvas.toLowerCase() || state.pressed.join() !== 'system') {
-    issues.push(issue(scope, 'A11Y-THEME-CONTROL', 'choosing System must clear data-theme and the stored choice and follow the OS'));
+
+  const keyboard = await browser.newContext({ colorScheme: 'light' });
+  const keyPage = await keyboard.newPage();
+  await keyPage.goto(url, { waitUntil: 'load' });
+  const keyScope = `${path}:theme-toggle:keyboard`;
+  let reached = false;
+  for (let presses = 0; presses < 60 && !reached; presses += 1) {
+    await keyPage.keyboard.press('Tab');
+    reached = await keyPage.evaluate(() => document.activeElement?.matches('[data-theme-toggle]') ?? false);
   }
-  await page.emulateMedia({ colorScheme: 'dark' });
-  state = await readTheme(page);
-  if (state.attr !== null || state.canvas !== themes.dark.canvas.toLowerCase()) issues.push(issue(scope, 'A11Y-THEME-CONTROL', 'System must follow a live change of the OS scheme'));
-  await page.click('[data-theme-choice="light"]');
-  state = await readTheme(page);
-  if (state.attr !== 'light' || state.canvas !== themes.light.canvas.toLowerCase()) issues.push(issue(scope, 'A11Y-THEME-PRECEDENCE', 'a manual Light choice must beat an OS dark preference'));
-  await context.close();
+  if (!reached) {
+    issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'Tab never reaches the theme toggle'));
+  } else {
+    const ring = await keyPage.locator(':focus').evaluate((element) => {
+      const style = getComputedStyle(element);
+      return element.matches(':focus-visible') && style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
+    });
+    if (!ring) issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'the focused theme toggle must show a visible focus ring (an outline of at least 2px)'));
+    await keyPage.keyboard.press('Space');
+    let state = await readTheme(keyPage);
+    let toggle = await readToggle(keyPage);
+    if (state.attr !== 'dark' || toggle.pressed !== 'true') issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'Space on the focused toggle must switch the page to the other theme'));
+    await keyPage.keyboard.press('Enter');
+    state = await readTheme(keyPage);
+    toggle = await readToggle(keyPage);
+    if (state.attr !== null || state.stored !== null || toggle.pressed !== 'false') issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'Enter on the focused toggle must switch back, and follow the OS again'));
+  }
+  await keyboard.close();
 
   const noScript = await browser.newContext({ colorScheme: 'dark', javaScriptEnabled: false });
   const plain = await noScript.newPage();
   await plain.goto(url, { waitUntil: 'load' });
   const plainState = await readTheme(plain);
-  if (plainState.attr !== null || plainState.canvas !== themes.dark.canvas.toLowerCase() || plainState.controlShown) {
-    issues.push(issue(`${path}:theme-no-script`, 'A11Y-THEME-NOJS', 'without JavaScript the page must follow the OS scheme and keep the theme control hidden'));
+  const plainToggle = await readToggle(plain);
+  if (plainState.attr !== null || plainState.canvas !== themes.dark.canvas.toLowerCase() || plainState.controlShown || plainToggle.rendered) {
+    issues.push(issue(`${path}:theme-no-script`, 'A11Y-THEME-NOJS', 'without JavaScript the page must follow the OS scheme and keep the theme control, and its toggle, hidden'));
   }
   await noScript.close();
   return issues;
@@ -173,7 +273,7 @@ async function checkExpectation(page: Page, scope: string, code: string, expecta
   return issues;
 }
 
-const BOUNDARY_SELECTORS = '.notice, .door, .evidence-badge, .crosswalk__pane pre';
+const BOUNDARY_SELECTORS = '.notice, .door, .evidence-badge, .crosswalk__pane pre, .theme-control__toggle';
 
 /** §10 Forced colours: no lost text, controls, warning boundaries or selected state; keyboard focus stays visible. */
 export async function checkForcedColors(browser: Browser, origin: string, path: string, expectation: PageExpectation = {}): Promise<Issue[]> {
@@ -227,7 +327,7 @@ export async function checkForcedColors(browser: Browser, origin: string, path: 
     const colourOnlySelected: string[] = [];
     for (const element of document.querySelectorAll('[aria-pressed="true"], a[aria-current="page"], [aria-current="step"]')) {
       const pressed = element.hasAttribute('aria-pressed');
-      const group = element.closest('ul, ol, [role="group"], .theme-control') ?? element.parentElement;
+      const group = element.closest('ul, ol, [role="group"]') ?? element.parentElement;
       const other = [...(group?.querySelectorAll(element.tagName) ?? [])].find((peer) => peer !== element
         && (pressed ? peer.getAttribute('aria-pressed') === 'false' : !peer.hasAttribute('aria-current')));
       if (other && signature(other) === signature(element)) colourOnlySelected.push(label(element));

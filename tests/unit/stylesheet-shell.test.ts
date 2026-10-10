@@ -86,11 +86,35 @@ describe('global.css shell', () => {
     expect(bare).toMatch(/@media \(max-width: 48rem\)\s*\{[\s\S]*?\.site-nav--compact\s*\{[^}]*display:\s*block/);
   });
 
-  it('keeps the hidden theme control hidden until the script unhides it, with 2rem buttons', () => {
+  it('keeps the hidden theme control hidden until the script unhides it, as one round 2rem outlined icon toggle', () => {
     expect(body('.theme-control[hidden]')).toMatch(/display:\s*none/);
-    expect(body('.theme-control button')).toMatch(/min-block-size:\s*2rem/);
-    expect(body('.theme-control button[aria-pressed="true"]')).toMatch(/font-weight:\s*var\(--weight-semibold\)/);
-    expect(body('.theme-control button[aria-pressed="true"]')).toMatch(/border-block-end-color:\s*currentColor/);
+    const toggle = body('.theme-control__toggle');
+    expect(toggle).toMatch(/display:\s*inline-flex/);
+    expect(toggle).toMatch(/align-items:\s*center/);
+    expect(toggle).toMatch(/justify-content:\s*center/);
+    expect(toggle).toMatch(/inline-size:\s*2rem/);
+    expect(toggle).toMatch(/block-size:\s*2rem/);
+    expect(toggle).toMatch(/padding:\s*0\s*(;|$)/);
+    expect(toggle).toMatch(/color:\s*var\(--text\)/);
+    expect(toggle).toMatch(/background:\s*(none|transparent)/);
+    expect(toggle).toMatch(/border:\s*var\(--border-thin\) solid var\(--rule\)/);
+    expect(toggle).toMatch(/border-radius:\s*999px/);
+    expect(toggle).toMatch(/cursor:\s*pointer/);
+    expect(body('.theme-control__toggle:hover')).toMatch(/border-color:\s*currentColor/);
+    expect(body('.theme-control__icon')).toMatch(/inline-size:\s*1\.25rem/);
+    expect(body('.theme-control__icon')).toMatch(/block-size:\s*1\.25rem/);
+  });
+
+  it('shows the moon on a light page and the sun on a dark one, from aria-pressed alone', () => {
+    const swap = bare.match(/\.theme-control__toggle\[aria-pressed="true"\] \.theme-control__icon--moon,\s*\.theme-control__toggle\[aria-pressed="false"\] \.theme-control__icon--sun\s*\{[^}]*display:\s*none/);
+    expect(swap).not.toBeNull();
+  });
+
+  it('keeps the system focus ring on the toggle and drops the old label and text-button rules', () => {
+    expect(bare).not.toContain('.theme-control__label');
+    expect(bare).not.toMatch(/\.theme-control button/);
+    expect(body('.theme-control__toggle')).not.toMatch(/outline/);
+    expect(bare).toMatch(/:focus-visible\s*\{[^}]*outline:\s*var\(--focus-width\) solid var\(--focus\)/);
   });
 
   it('lays the footer links out in a row with a dot separator and 24 px targets', () => {

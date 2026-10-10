@@ -47,6 +47,8 @@ describe('SiteHeader', () => {
     expect(html).toContain('<details class="site-nav--compact">');
     expect(html).toContain('<summary>Navigation</summary>');
     expect(html.match(/ data-theme-control[ >]/g)).toHaveLength(1);
+    expect(html.match(/ data-theme-toggle[ >]/g)).toHaveLength(1);
+    expect(html).not.toContain('data-theme-choice');
     expect(html).toContain('<span class="site-identity__line1">laptop-to-cluster</span>');
     expect(html).toContain('<span class="site-identity__line2">multi-service stacks under the scheduler</span>');
     expect(html).not.toMatch(/\son[a-z]+=/i);
