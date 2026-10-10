@@ -175,8 +175,8 @@ describe('quote blocks, reading leading and tables in the browser', () => {
     expect(t.headTopWidth).toBe('0px');
     expect(t.rowLine).toEqual(['1px', 'solid', t.rule]);
     expect(t.firstPad).toBe('0px');
-    expect(t.lastPad).toBe('0px');
-    expect(t.lastBodyPad).toBe('0px');
+    expect(t.lastPad).toBe('4px');
+    expect(t.lastBodyPad).toBe('4px');
     expect(t.innerPad).not.toBe('0px');
     expect(Math.abs(t.firstEdge)).toBeLessThanOrEqual(0.5);
     expect(Math.abs(t.lastEdge)).toBeLessThanOrEqual(0.5);
@@ -244,21 +244,40 @@ describe('quote blocks, reading leading and tables in the browser', () => {
 
 describe('scroll cue for frameless tables', () => {
   /* Scroll shadows would need gradients, which the visual policy forbids (VISUAL-DEPENDENCY), so a region that can scroll shows its instruction instead. */
-  it('shows the scroll instruction at 1280 px on a region that overflows, and hides it on one that fits', async () => {
+  it('fits every table in the reading column at 1024 and 1280 px, so no region scrolls and no instruction shows', async () => {
+    for (const width of [1024, 1280]) for (const route of ['/start/', '/guide/baseline-single-node-pattern/', '/guide/compose-to-hpc-translation/', '/adoption/evaluate/', ABOUT]) {
+      const page = await open(route, width);
+      const regions = await page.evaluate(async () => {
+        await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+        return [...document.querySelectorAll<HTMLElement>('main .table-overflow')].map((region) => ({
+          scrolls: region.scrollWidth > region.clientWidth + 1, shown: getComputedStyle(region.querySelector('.table-overflow__instruction')!).display !== 'none',
+        }));
+      });
+      for (const region of regions) expect(region, `${route} @${width}`).toEqual({ scrolls: false, shown: false });
+      await page.close();
+    }
+  });
+
+  it('shows the scroll instruction at 1280 px on a region that really overflows', async () => {
     const page = await open('/start/', 1280);
-    const regions = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .table-overflow')].map((region) => ({
-      scrolls: region.scrollWidth > region.clientWidth + 1, shown: getComputedStyle(region.querySelector('.table-overflow__instruction')!).display !== 'none',
-    })));
-    expect(regions.some((region) => region.scrolls), 'a region that overflows at 1280').toBe(true);
-    for (const region of regions) expect(region.shown, JSON.stringify(region)).toBe(region.scrolls);
+    const forced = await page.evaluate(async () => {
+      const region = document.querySelector<HTMLElement>('main .table-overflow')!;
+      const cell = region.querySelector('td')!;
+      cell.append(Object.assign(document.createElement('span'), { textContent: 'x'.repeat(400), style: 'white-space: nowrap' }));
+      await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+      return { scrolls: region.scrollWidth > region.clientWidth + 1, shown: getComputedStyle(region.querySelector('.table-overflow__instruction')!).display !== 'none' };
+    });
+    expect(forced).toEqual({ scrolls: true, shown: true });
     await page.close();
-    const fits = await open(ABOUT, 1280);
-    const about = await fits.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .table-overflow')].map((region) => ({
-      scrolls: region.scrollWidth > region.clientWidth + 1, shown: getComputedStyle(region.querySelector('.table-overflow__instruction')!).display !== 'none',
-    })));
-    expect(about.length).toBeGreaterThan(0);
-    for (const region of about) expect(region.shown, JSON.stringify(region)).toBe(region.scrolls);
-    await fits.close();
+  });
+
+  it('prints no scroll instruction at paper width', async () => {
+    const page = await open('/start/', 794);
+    await page.emulateMedia({ media: 'print' });
+    const shown = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('main .table-overflow__instruction')].map((note) => getComputedStyle(note).display));
+    expect(shown.length).toBeGreaterThan(0);
+    for (const display of shown) expect(display).toBe('none');
+    await page.close();
   });
 
   it('shows the instruction below 64rem on every region, as before', async () => {
