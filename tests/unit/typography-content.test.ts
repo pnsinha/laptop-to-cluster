@@ -39,9 +39,14 @@ describe('typographic apostrophes in rendered prose fields', () => {
     expect(talks[0].venue).toBe('US-RSE’26');
   });
 
-  it('the Module 2 test record: every prose field', () => {
+  it('the Module 2 test record: lists copied from the evidence stay byte-identical, every other prose field is typographic', () => {
     const record = parse(read('site/src/content/applicability/m2-baseline-anvil-2026-10.yml')) as Record<string, unknown>;
-    expect(offenders(stringValues(record))).toEqual([]);
+    const manifest = JSON.parse(read('evidence/anvil-baseline-20261007-success/manifest.json')) as Record<string, unknown>;
+    // Evidence fidelity beats typography: these lists repeat the hash-pinned manifest word for word.
+    const mirrored = { assumptions: 'assumptions', limitations: 'limitations', portability_boundaries: 'portabilityBoundaries' } as const;
+    for (const [field, key] of Object.entries(mirrored)) expect(record[field], field).toEqual(manifest[key]);
+    const prose = Object.fromEntries(Object.entries(record).filter(([field]) => !(field in mirrored)));
+    expect(offenders(stringValues(prose))).toEqual([]);
   });
 
   it('Module 2 front matter', () => {

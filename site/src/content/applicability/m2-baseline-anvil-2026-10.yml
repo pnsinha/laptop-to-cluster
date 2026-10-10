@@ -36,7 +36,7 @@ portability_boundaries:
   - How Apptainer is provided (default PATH or a module) depends on the center
   - Job-scoped scratch source varies by center ($SLURM_TMPDIR vs derived $SCRATCH)
   - Shared-partition loopback and exclusive step behavior are site-dependent
-  - On Apptainer 1.5.3 the release’s acquisition script cannot rebuild the image without privileges (the fakeroot helper is unavailable); the tested image is the earlier build with the same digest.
+  - On Apptainer 1.5.3 the release's acquisition script cannot rebuild the image without privileges (the fakeroot helper is unavailable); the tested image is the earlier build with the same digest.
 evidence:
   id: anvil-baseline-20261007-success
   path: evidence/anvil-baseline-20261007-success/manifest.json

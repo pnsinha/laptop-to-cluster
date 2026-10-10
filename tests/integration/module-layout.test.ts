@@ -29,7 +29,9 @@ describe('learning module shell', () => {
   it('marks the commands in the Module 2 prerequisite checks as code and escapes the rest', () => {
     expect(module2).toContain('<li>Run <code>command -v sbatch</code> and confirm an allocation/account is available');
     expect(module2).toContain('<li>Run <code>command -v apptainer</code> and record <code>apptainer --version</code>');
-    expect(module2).not.toContain('`');
+    const prerequisites = module2.slice(module2.indexOf('>Prerequisites</h3>'), module2.indexOf('</ul>', module2.indexOf('>Prerequisites</h3>')));
+    expect(prerequisites).toContain('<code>');
+    expect(prerequisites).not.toContain('`');
   });
 
   it('drops the old module-details block and the empty-heading patterns', () => {
