@@ -130,11 +130,11 @@ describe('doors and learning path', () => {
 describe('event band and project records', () => {
   it('words the featured talk so it stays true after the date', () => {
     expect(eventBandLead({ kind: 'talk', venue: "US-RSE'26", event_date: '2026-10-20', location: 'San Jose, CA' }))
-      .toBe('Talk at US-RSE ’26 (Tue Oct 20, San Jose)');
+      .toBe('Talk at US-RSE’26 (Tue Oct 20, San Jose)');
     expect(eventBandLead({ kind: 'poster', venue: 'SC26', event_date: '2026-11-17', location: 'Chicago, IL' }))
       .toBe('Poster at SC26 (Tue Nov 17, Chicago)');
     expect(eventBandLead({ kind: 'talk', venue: "US-RSE '26", event_date: '2026-10-20' }))
-      .toBe('Talk at US-RSE ’26 (Tue Oct 20)');
+      .toBe('Talk at US-RSE’26 (Tue Oct 20)');
     expect(EVENT_BAND).toEqual({ label: 'Featured talk', linkText: 'talk and poster links', href: '/about/talks-and-papers/' });
     for (const value of [EVENT_BAND.label, EVENT_BAND.linkText]) expect(value).not.toMatch(/upcoming|coming|will|join|next|soon/i);
   });
@@ -148,7 +148,7 @@ describe('event band and project records', () => {
     ]);
     expect(PROJECT_RECORDS).toEqual({
       title: 'Project records',
-      visitLead: 'Here from the SC26 poster or the US-RSE ’26 talk?',
+      visitLead: 'Here from the SC26 poster or the US-RSE’26 talk?',
       visitLinkText: 'Talk and poster links',
       visitHref: '/about/talks-and-papers/',
     });

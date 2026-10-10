@@ -17,6 +17,8 @@ import { canonicalPath, hasNoStandalonePage } from '../../content/registry';
 import { assertCompositionProfile, compositionProfileFor, currentBaselineRecord, projectApplicabilityForItem } from '../../content/projections';
 import { ABOUT_NAV_ITEMS, learningPathNavigation, recordDateLine, slotNames, sortTalks } from '../../content/page-chrome';
 import { formatDate } from '../../content/format';
+import { inlineCodeHtml } from '../../content/inline-code';
+import { markHTMLString } from 'astro/runtime/server/index.js';
 import { currentReleaseVersion, RELEASE_REF_TOKEN, resolveReleaseRefs } from '../../content/release';
 export async function getStaticPaths() {
   const entries = await getCollection('contentItems', ({ data }) =>
@@ -28,6 +30,12 @@ const { Content } = await render(entry);
 const bodyHtml = entry.rendered?.html === undefined ? undefined : resolveReleaseRefs(entry.rendered.html, currentReleaseVersion());
 if (bodyHtml === undefined && entry.body?.includes(`/${RELEASE_REF_TOKEN}/`)) throw new Error(`${entry.id}: release-pinned links need rendered HTML to resolve`);
 const item = entry.data;
+/* The learning-module layout prints each prerequisite check as escaped text. A check that names a command wraps it in backticks, so hand the layout the escaped HTML with <code> already in place. A check without backticks renders exactly as before. */
+const moduleItem = item.artifact_type === 'learning-module'
+  ? { ...item, prerequisites: item.prerequisites.map((prerequisite) => (prerequisite.check
+    ? { ...prerequisite, check: markHTMLString(inlineCodeHtml(prerequisite.check)) as unknown as string }
+    : prerequisite)) }
+  : undefined;
 const profile = compositionProfileFor(item);
 assertCompositionProfile(item, profile);
 const applicability = (await getCollection('applicability')).map(({ data }) => data);
@@ -71,7 +79,7 @@ const milestoneNavItems = allEntries
 const showMilestoneNav = item.artifact_type === 'milestone' && milestoneNavItems.length > 1;
 const showAboutNav = item.route_namespace === 'about';
 ---
-{item.artifact_type === 'learning-module' ? <LearningModuleLayout {item} {bodyHtml}><Content /></LearningModuleLayout> :
+{moduleItem ? <LearningModuleLayout item={moduleItem} {bodyHtml}><Content /></LearningModuleLayout> :
 <BaseLayout title={item.title} description={item.summary} {profile}>
   <ContentHeader {item} />
   {showAboutNav && <SectionNav items={[...ABOUT_NAV_ITEMS]} currentPath={currentPath} label="About sections" />}

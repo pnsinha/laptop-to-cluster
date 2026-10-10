@@ -164,7 +164,7 @@ describe('home page, built output', () => {
     const featured = talks.find(({ featured }) => featured)!;
     const band = main.match(/<aside class="event-band" aria-label="Featured talk">([\s\S]*?)<\/aside>/)?.[1] ?? '';
     expect(band).toBe(`<p>${eventBandLead(featured)}: <a href="${EVENT_BAND.href}">${EVENT_BAND.linkText}</a></p>`);
-    expect(text(band)).toBe('Talk at US-RSE ’26 (Tue Oct 20, San Jose): talk and poster links');
+    expect(text(band)).toBe('Talk at US-RSE’26 (Tue Oct 20, San Jose): talk and poster links');
     expect(text(band)).not.toMatch(/upcoming|coming|will|join|next|soon/i);
     expect(main).not.toContain('Also at I-GUIDE 2026');
   });
@@ -178,7 +178,7 @@ describe('home page, built output', () => {
       ['/milestones/2/#release-v0-2-0', 'v0.2.0 release notes'],
       ['/about/attribution/#licenses', 'Code Apache-2.0 · text CC BY 4.0'],
     ]);
-    expect(strip).toContain('<p>Here from the SC26 poster or the US-RSE ’26 talk? <a href="/about/talks-and-papers/">Talk and poster links</a></p>');
+    expect(strip).toContain('<p>Here from the SC26 poster or the US-RSE’26 talk? <a href="/about/talks-and-papers/">Talk and poster links</a></p>');
     expect(strip).not.toMatch(/ParaTools|Department of Energy|National Science Foundation/);
   });
 

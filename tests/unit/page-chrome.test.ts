@@ -117,7 +117,7 @@ describe('learningPathNavigation', () => {
 describe('talks helpers', () => {
   const talks = [
     { id: 'b', kind: 'poster', title: 'B', venue: 'Venue B', event_date: '2026-08-05', links: [] },
-    { id: 'a', kind: 'talk', title: 'A', venue: "US-RSE'26", event_date: '2026-10-20', links: [] },
+    { id: 'a', kind: 'talk', title: 'A', venue: "US-RSE’26", event_date: '2026-10-20', links: [] },
     { id: 'c', kind: 'poster', title: 'C', venue: 'Venue C', event_date: '2026-11-17', links: [] },
   ] as unknown as Talk[];
   it('sorts newest first without mutating the input', () => {
@@ -125,7 +125,7 @@ describe('talks helpers', () => {
     expect(talks.map(({ id }) => id)).toEqual(['b', 'a', 'c']);
   });
   it('formats venue and long date for the meta line', () => {
-    expect(talkMeta(talks[1])).toBe("US-RSE'26 · October 20, 2026");
+    expect(talkMeta(talks[1])).toBe("US-RSE’26 · October 20, 2026");
   });
   it('tells external links from site paths', () => {
     expect(isExternalHref('https://us-rse.org/usrse26/program/')).toBe(true);

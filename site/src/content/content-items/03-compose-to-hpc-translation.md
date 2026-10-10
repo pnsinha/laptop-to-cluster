@@ -104,8 +104,8 @@ Open the [example job](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/
 | File | What to do |
 |---|---|
 | `slurm/baseline.sbatch` | Set your account, partition, wall time and CPUs, and swap the coordinator and worker launch lines for your services. |
-| `bin/coordinator.py` | Replace with your coordinating service. The health answer it gives is at [lines 27-28](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/bin/coordinator.py#L27-L28). |
-| `bin/readiness.py` | Keep the script and its bounds, but change what "ready" means. The exact answer it waits for is at [lines 29-31](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/bin/readiness.py#L29-L31) and must match what your service returns. |
+| `bin/coordinator.py` | Replace with your coordinating service. The health answer it gives is at [lines 27–28](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/bin/coordinator.py#L27-L28). |
+| `bin/readiness.py` | Keep the script and its bounds, but change what "ready" means. The exact answer it waits for is at [lines 29–31](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/bin/readiness.py#L29-L31) and must match what your service returns. |
 | `bin/worker.py` | Replace with your workers. |
 | `bin/common.py` | Edit it if your tasks differ. It checks the example's task format (an id and a payload with a message and a repeat count), so another shape is rejected as invalid input. |
 | `bin/verify.py` | Replace with your own definition of correct. Checking that every result is right belongs to your application, not to the pattern. |

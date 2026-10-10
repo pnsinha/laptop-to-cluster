@@ -43,7 +43,7 @@ describe('ApplicabilityProjection (validated)', () => {
     expect(html).toMatch(/^<section class="applicability-projection" data-projection-id="runnable-module:fixture-run" data-source-id="fixture-run" aria-label="Tested workflow scope">/);
     expect(html).toContain('<p class="evidence-badge">Tested</p><p class="evidence-link">Purdue Anvil · Jul 2026 · <a href="/applicability/fixture-run/">Test record</a></p>');
     expect(html).toContain('<details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows">');
-    expect(html).toContain('<p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn\'t been tested yet</a></p></details></section>');
+    expect(html).toContain('<p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn’t been tested yet</a></p></details></section>');
     expect(labels(html)).toEqual([...EVIDENCE_ROW_LABELS]);
     expect(html.match(/<div class="evidence-row">/g)).toHaveLength(3);
     expect(html).toContain('<li data-from="assumptions.1 portability_boundaries">Local-only access (loopback) on the node.</li>');
