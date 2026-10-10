@@ -148,7 +148,13 @@ describe('tables', () => {
 
   it('aligns the first and last cell text with the column edges', () => {
     expect(body('th:first-child, td:first-child')).toMatch(/padding-inline-start:\s*0/);
-    expect(body('th:last-child, td:last-child')).toMatch(/padding-inline-end:\s*0/);
+    expect(body('th:last-child, td:last-child')).toMatch(/padding-inline-end:\s*0\.25rem/);
+  });
+
+  it('lets code in a table cell wrap, and hides the scroll instruction in print', () => {
+    expect(body('td code')).toMatch(/overflow-wrap:\s*anywhere/);
+    expect(body('td code')).not.toMatch(/nowrap/);
+    expect(mediaInner(bare, 'print').map((inner) => bodyIn(inner, '.table-overflow__instruction')).join(';')).toMatch(/display:\s*none/);
   });
 
   it('thickens and darkens the header rule in print, on the same selectors that draw it', () => {

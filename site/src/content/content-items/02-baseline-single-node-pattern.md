@@ -88,16 +88,16 @@ The [readiness gate](/about/glossary/#readiness-gate) proves the coordinator can
 
 Every JSON file here is machine-parsed: it is written for programs to read. People write two of them (`inputs/tasks.json`, `expected/results.json`), and you open two to confirm success (`result.json`, `events.jsonl`); nothing else needs reading.
 
-| File | Format | Written by | Read by | Notes |
-|---|---|---|---|---|
-| `inputs/tasks.json` | JSON | you | the coordinator and the launcher | The work to do, as inert data. |
-| `expected/results.json` | JSON | you | the verifier | The answers the demonstration verifier compares against. Replace or delete it. |
-| `container/image-lock.json` | JSON | the package | `container/acquire.sh` | Pins the base image. |
-| `diagnostics.json` | JSON | the package | tests and tooling | Lists the failure IDs the package's tests check, a subset of the IDs in [Troubleshooting](/diagnostics/). |
-| `endpoint.json` | JSON | the coordinator | the launcher, the readiness probe, the workers | Where the coordinator is listening. |
-| `results.json` | JSON | the coordinator | the verifier | Intermediate worker results. Not a success claim. |
-| `result.json` | JSON | the verifier | you and CI | The only success marker: `"status": "success"`. |
-| `events.jsonl` | JSON Lines | the launcher | audit tooling and you | Ordered events; proves readiness came before every worker start. |
+| File | Written by | Read by | Notes |
+|---|---|---|---|
+| `inputs/tasks.json` | you | the coordinator and the launcher | The work to do, as inert data. |
+| `expected/results.json` | you | the verifier | The answers the demonstration verifier compares against. Replace or delete it. |
+| `container/image-lock.json` | the package | `container/acquire.sh` | Pins the base image. |
+| `diagnostics.json` | the package | tests and tooling | Lists the failure IDs the package's tests check, a subset of the IDs in [Troubleshooting](/diagnostics/). |
+| `endpoint.json` | the coordinator | the launcher, the readiness probe, the workers | Where the coordinator is listening. |
+| `results.json` | the coordinator | the verifier | Intermediate worker results. Not a success claim. |
+| `result.json` | the verifier | you and CI | The only success marker: `"status": "success"`. |
+| `events.jsonl` | the launcher | audit tooling and you | JSON Lines, one event per line. Ordered events; proves readiness came before every worker start. |
 
 > **Warning:** `results.json` and `result.json` differ by one letter and mean different things. The first is intermediate worker output. The second is the success marker.
 
