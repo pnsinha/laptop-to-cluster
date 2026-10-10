@@ -26,7 +26,8 @@ describe('hero', () => {
   it('is one column below 60rem, then copy beside the two-environment figure', () => {
     expect(body('.hero')).toMatch(/display:\s*grid/);
     expect(body('.hero')).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/);
-    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?\.hero\s*\{[^}]*grid-template-columns:\s*minmax\(0, 11fr\) minmax\(0, 10fr\)[^}]*padding-block-start:\s*var\(--space-10\)/);
+    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?\.hero\s*\{[^}]*grid-template-columns:\s*minmax\(0, 11fr\) minmax\(0, 10fr\)/);
+    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?main > \.hero\s*\{[^}]*padding-block-start:\s*var\(--space-10\)/);
     expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/margin-block-start:\s*0/);
     expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/padding-block-start:\s*var\(--space-3\)/);
     expect(body('.hero__copy')).toMatch(/max-inline-size:\s*36rem/);
