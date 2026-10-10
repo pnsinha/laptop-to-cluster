@@ -30,7 +30,9 @@ describe('hero', () => {
     expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?main > \.hero\s*\{[^}]*padding-block-start:\s*var\(--space-10\)/);
     expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/margin-block-start:\s*0/);
     expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/padding-block-start:\s*var\(--space-3\)/);
-    expect(body('.hero__copy')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
+    expect(bare).toMatch(/\.hero__copy\s*\{\s*max-inline-size:\s*36rem;\s*\}/);
+    expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?\.hero__copy\s*\{[^}]*max-inline-size:\s*34rem/);
+    expect(body('.hero__copy')).not.toMatch(/measure-prose/);
     expect(body('.hero h1')).toMatch(/max-inline-size:\s*none/);
     expect(body('.hero h1')).not.toMatch(/14ch/);
     expect(body('.hero h1')).toMatch(/font-size:\s*var\(--l-display\)/);
@@ -53,6 +55,7 @@ describe('hero', () => {
     expect(body('.env__cmd code')).toMatch(/display:\s*inline-block/);
     expect(body('.env__alloc')).toMatch(/border:\s*var\(--border-strong\) dashed var\(--primary\)/);
     expect(body('.hero__figure figcaption')).toMatch(/color:\s*var\(--muted\)/);
+    expect(body('.hero__figure figcaption')).toMatch(/max-inline-size:\s*var\(--measure-lede\)/);
     expect(bare).toMatch(/@media \(max-width: 30rem\)\s*\{[\s\S]*?\.env-pair\s*\{[^}]*grid-template-columns:\s*1fr/);
   });
 
@@ -95,7 +98,7 @@ describe('concept rows', () => {
     expect(body('.concepts__rows')).toMatch(/padding:\s*0/);
     expect(body('.concepts__rows')).toMatch(/list-style:\s*none/);
     expect(body('.concept__note')).toMatch(/font-family:\s*var\(--font-reading\)/);
-    expect(body('.concept__note')).not.toMatch(/max-inline-size/);
+    expect(body('.concept__note')).toMatch(/max-inline-size:\s*60ch/);
     expect(body('.concept__side')).toMatch(/font-family:\s*var\(--font-body\)/);
     expect(body('.concept__was')).toMatch(/font-size:\s*var\(--l-term\)/);
     expect(body('.concept__term')).toMatch(/font-size:\s*var\(--l-term\)/);

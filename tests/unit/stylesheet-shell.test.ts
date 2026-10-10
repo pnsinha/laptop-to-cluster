@@ -111,6 +111,30 @@ describe('global.css shell', () => {
   });
 });
 
+describe('global.css reading column', () => {
+  it('balances heading lines at the reading column, and keeps the h1 at the prose measure', () => {
+    /* The h1 rule itself, not the shared heading rule, so that the guarantee survives a change to the shared one. */
+    const own = blocks.filter((block) => block.selectors.length === 1 && block.selectors[0] === 'h1').map((block) => block.body).join(';');
+    expect(own).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
+    expect(own).toMatch(/text-wrap:\s*balance/);
+  });
+
+  it('names the reading sections with a class, never by the absence of one', () => {
+    expect(bare).not.toMatch(/section:not\(\[class\]\)/);
+    /* The one remaining :not([class]) selects classless lists, which is a different job. */
+    expect([...bare.matchAll(/:not\(\[class\]\)/g)]).toHaveLength(1);
+    expect(bare).toContain(':where(ul, ol):where(:not([class])) > li + li');
+  });
+
+  it('puts .reading-section in both reading rules, the measure rule and the typeface rule', () => {
+    const rules = [...bare.matchAll(/([^{}]*\.reading-section[^{}]*)\{([^{}]*)\}/g)].map(([, selector, declarations]) => ({ selector, declarations }));
+    expect(rules).toHaveLength(2);
+    expect(rules[0].declarations).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
+    expect(rules[1].declarations).toMatch(/font-family:\s*var\(--font-reading\)/);
+    for (const { selector } of rules) expect(selector).toMatch(/\.reading-section[^>{}]*\)\s*>\s*:where\(p, ul, ol, dl/);
+  });
+});
+
 describe('global.css floors', () => {
   it('declares no literal font size under 14 px, except inside max()', () => {
     const sizes = [...bare.matchAll(/font-size:\s*([0-9.]+)(rem|px)\b/g)].map(([whole, value, unit]) => ({ whole, px: Number(value) * (unit === 'rem' ? 16 : 1) }));
