@@ -49,7 +49,6 @@ describe('hero', () => {
   it('draws the hero figure as two bordered environment panels, plain HTML', () => {
     expect(body('.env-pair')).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
     expect(body('.env')).toMatch(/background:\s*var\(--raised\)[^}]*border:\s*var\(--border-thin\) solid var\(--rule\)/);
-    expect(body('.env--cluster')).toMatch(/background:\s*var\(--raised\)/);
     expect(body('.env__box')).toMatch(/border:\s*var\(--border-thin\) solid var\(--border\)/);
     expect(body('.env__cmd code')).toMatch(/display:\s*inline-block/);
     expect(body('.env__alloc')).toMatch(/border:\s*var\(--border-strong\) dashed var\(--primary\)/);

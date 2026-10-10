@@ -168,7 +168,6 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 .hero__figure { margin: 0; }
 .env-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .env { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); background: var(--raised); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }
-.env--cluster { background: var(--raised); }
 .env__title { margin: 0; color: var(--primary); font-family: var(--font-display); font-size: var(--l-term); font-weight: var(--weight-semibold); line-height: 1.25; }
 .env__cmd { margin: 0; }
 .env__cmd code { display: inline-block; padding: 0.125rem 0.5rem; background: var(--canvas); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }
@@ -527,6 +526,7 @@ pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow
   .table-overflow { overflow: visible; }
   .timeline, .door, .notice, .record-summary, .evidence-rows, .crosswalk__pane, .hero__figure, .concept { break-inside: avoid; }
   :where(h1, h2, h3, h4) { break-after: avoid; }
+  .event-band { border-radius: 0; }
   th { border-block-end-width: 2px; }
   a[href^="http"]:not(nav a)::after { content: " (" attr(href) ")"; overflow-wrap: anywhere; }
 }
