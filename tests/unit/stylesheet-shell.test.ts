@@ -101,7 +101,7 @@ describe('global.css shell', () => {
 
   it('sets the acknowledgment at 14 px with a readable measure, and gives the event variant its own block', () => {
     expect(body('.site-footer .acknowledgment')).toMatch(/font-size:\s*var\(--text-fine\)/);
-    expect(body('.site-footer .acknowledgment')).toMatch(/max-inline-size:\s*72ch/);
+    expect(body('.site-footer .acknowledgment')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
     expect(body('.event-acknowledgment')).toMatch(/border-block-start:\s*var\(--border-thin\) solid var\(--rule\)/);
   });
 

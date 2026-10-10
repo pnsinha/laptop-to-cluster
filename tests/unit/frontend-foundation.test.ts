@@ -10,7 +10,7 @@ const css = read('global.css').replace(/@import\s+["']\.\/tokens\.css["'];/, () 
 
 describe('frontend foundation styles', () => {
   it('defines shared measures, focus, and bounded technical content', () => {
-    expect(css).toMatch(/--measure-prose:\s*66ch/);
+    expect(css).toMatch(/--measure-prose:\s*42rem/);
     expect(css).toMatch(/--measure-(?:wide|data):/);
     expect(css).toMatch(/:focus-visible[^{]*\{[^}]*outline/s);
     expect(css).toMatch(/pre\s*\{[^}]*overflow-x:\s*auto/s);

@@ -30,8 +30,7 @@ describe('hero', () => {
     expect(bare).toMatch(/@media \(min-width: 60rem\)\s*\{[\s\S]*?main > \.hero\s*\{[^}]*padding-block-start:\s*var\(--space-10\)/);
     expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/margin-block-start:\s*0/);
     expect(body('body[data-composition-profile="landing"] main > .hero')).toMatch(/padding-block-start:\s*var\(--space-3\)/);
-    expect(body('.hero__copy')).toMatch(/max-inline-size:\s*36rem/);
-    expect(body('.hero__copy')).toMatch(/max-inline-size:\s*34rem/);
+    expect(body('.hero__copy')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
     expect(body('.hero h1')).toMatch(/max-inline-size:\s*none/);
     expect(body('.hero h1')).not.toMatch(/14ch/);
     expect(body('.hero h1')).toMatch(/font-size:\s*var\(--l-display\)/);
@@ -94,7 +93,7 @@ describe('concept rows', () => {
     expect(body('.concept')).toMatch(/border-block-end:\s*var\(--border-thin\) solid var\(--rule\)/);
     expect(body('.concept')).not.toMatch(/background|border:|box-shadow/);
     expect(body('.concept__note')).toMatch(/font-family:\s*var\(--font-reading\)/);
-    expect(body('.concept__note')).toMatch(/max-inline-size:\s*60ch/);
+    expect(body('.concept__note')).not.toMatch(/max-inline-size/);
     expect(body('.concept__side')).toMatch(/font-family:\s*var\(--font-body\)/);
     expect(body('.concept__was')).toMatch(/font-size:\s*var\(--l-term\)/);
     expect(body('.concept__term')).toMatch(/font-size:\s*var\(--l-term\)/);

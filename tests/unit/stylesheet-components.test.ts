@@ -43,7 +43,7 @@ describe('evidence badge, panel and record summary', () => {
   it('sets the three evidence rows in two columns from 40rem, and the panel full width', () => {
     expect(body('.evidence-panel')).toMatch(/flex-basis:\s*100%/);
     expect(media('(min-width: 40rem)')).toMatch(/\.evidence-row\s*\{[^}]*grid-template-columns:\s*11rem minmax\(0, 1fr\)/);
-    expect(body('.evidence-rows')).toMatch(/max-inline-size:\s*44rem/);
+    expect(body('.evidence-rows')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
   });
 
   it('makes the panel summary a visible, keyboard-reachable control', () => {
