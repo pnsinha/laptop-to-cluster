@@ -4,10 +4,20 @@ import { pageHeaderLine } from '../content/page-chrome';
 const { item } = Astro.props as { item: ContentItem };
 const human = (value: string | number) => String(value).replaceAll('-', ' ');
 const line = pageHeaderLine(item);
+/* A hyphenated word in the title (Laptop-to-Cluster, Single-Node) is wrapped in .h-compound so that it stays on one line from 30rem up. Plain strings and elements are escaped by Astro; the title is never set as raw HTML. */
+const COMPOUND = /[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)+/gu;
+const titleParts: Array<{ text: string; compound: boolean }> = [];
+let cursor = 0;
+for (const match of item.title.matchAll(COMPOUND)) {
+  if (match.index > cursor) titleParts.push({ text: item.title.slice(cursor, match.index), compound: false });
+  titleParts.push({ text: match[0], compound: true });
+  cursor = match.index + match[0].length;
+}
+if (cursor < item.title.length) titleParts.push({ text: item.title.slice(cursor), compound: false });
 ---
 <header class="content-header">
   {line && <p class="content-header__line">{line}</p>}
-  <h1>{item.title}</h1>
+  <h1>{titleParts.map((part) => (part.compound ? <span class="h-compound">{part.text}</span> : part.text))}</h1>
   <p class="lede">{item.summary}</p>
   {item.status === 'draft' && <aside class="notice" role="note"><strong>Draft:</strong> This page is not yet published guidance.</aside>}
   {item.status === 'superseded' && <aside class="notice" role="note"><strong>Superseded:</strong> Use the identified successor for current guidance.</aside>}

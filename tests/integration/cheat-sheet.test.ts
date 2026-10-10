@@ -13,7 +13,7 @@ describe('cheat sheet: built page', () => {
   it('is an About page with one h1 and the print hook', () => {
     expect(sheet).toContain('data-composition-profile="about"');
     expect(sheet.match(/<h1(?:\s|>)/g)).toHaveLength(1);
-    expect(sheet).toContain('<h1>One-page cheat sheet</h1>');
+    expect(sheet).toContain('<h1><span class="h-compound">One-page</span> cheat sheet</h1>');
     expect(sheet.match(/<div class="cheat-sheet">/g)).toHaveLength(1);
   });
 

@@ -69,3 +69,46 @@ describe('SectionNav with the About items', () => {
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
   });
 });
+
+describe('ContentHeader title compounds', () => {
+  const h1 = async (title: string) => {
+    const html = await render(ContentHeader, { item: { artifact_type: 'attribution', title, summary: 'S.', status: 'published' } });
+    return /<h1>([\s\S]*?)<\/h1>/.exec(html)![1];
+  };
+  /* What a reader sees: tags removed, entities decoded. */
+  const visible = (markup: string) => markup.replace(/<[^>]+>/g, '').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&amp;', '&');
+
+  it('wraps each hyphenated word in a compound span and leaves the rest of the title as it was', async () => {
+    expect(await h1('About the Laptop-to-Cluster Guide')).toBe('About the <span class="h-compound">Laptop-to-Cluster</span> Guide');
+    expect(await h1('Baseline Pattern: Single-Node Service + Workers')).toBe('Baseline Pattern: <span class="h-compound">Single-Node</span> Service + Workers');
+    expect(await h1('The five-minute tour')).toBe('The <span class="h-compound">five-minute</span> tour');
+  });
+
+  it('wraps a compound at the start or the end of the title, and keeps one span for several hyphens', async () => {
+    expect(await h1('Pre-flight checks')).toBe('<span class="h-compound">Pre-flight</span> checks');
+    expect(await h1('Run it end-to-end')).toBe('Run it <span class="h-compound">end-to-end</span>');
+  });
+
+  it('wraps letters and digits in any script, and nothing else', async () => {
+    expect(await h1('Über-Cluster 2-up')).toBe('<span class="h-compound">Über-Cluster</span> <span class="h-compound">2-up</span>');
+    expect(await h1('Plain title')).toBe('Plain title');
+    expect(await h1('Spaced - hyphen, -leading and trailing- ones')).toBe('Spaced - hyphen, -leading and trailing- ones');
+    expect(await h1('Dash—not a hyphen')).toBe('Dash—not a hyphen');
+  });
+
+  it('escapes every character it does not wrap, and the characters inside a span are word characters only', async () => {
+    const hostile = 'Tom & Jerry <script>alert("x")</script> a-b "quoted" it\'s';
+    const markup = await h1(hostile);
+    expect(markup).not.toContain('<script');
+    expect(markup).toContain('Tom &amp; Jerry &lt;script&gt;alert(');
+    expect(markup).toContain('<span class="h-compound">a-b</span>');
+    expect(visible(markup)).toBe(hostile);
+    for (const [, inner] of markup.matchAll(/<span class="h-compound">([^<]*)<\/span>/g)) expect(inner).toMatch(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)+$/u);
+  });
+
+  it('leaves the visible title unchanged', async () => {
+    for (const title of ['About the Laptop-to-Cluster Guide', 'Talks & papers', 'Support, issue reporting, and recovery', 'A "quoted" end-to-end title']) {
+      expect(visible(await h1(title)), title).toBe(title);
+    }
+  });
+});

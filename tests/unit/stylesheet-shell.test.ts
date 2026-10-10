@@ -123,10 +123,10 @@ describe('global.css shell', () => {
     expect(body('.footer-links a')).toMatch(/padding-block:\s*0\.25rem/);
   });
 
-  it('sets the acknowledgment at 14 px across the full footer, and gives the event variant its own block', () => {
+  it('sets the acknowledgment at 14 px in the prose measure, and gives the event variant its own block', () => {
     expect(body('.site-footer .acknowledgment')).toMatch(/font-size:\s*var\(--text-fine\)/);
-    // Footer fine print spans the footer (owner, CP2), not the body reading column.
-    expect(body('.site-footer .acknowledgment')).toMatch(/max-inline-size:\s*none/);
+    // Stacked, the acknowledgment keeps the prose measure; beside the links (64rem up) it fills a 40rem column. The two-column grid is pinned in stylesheet-typography.test.ts.
+    expect(body('.site-footer .acknowledgment')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
     expect(body('.release')).toMatch(/max-inline-size:\s*none/);
     expect(body('.event-acknowledgment')).toMatch(/border-block-start:\s*var\(--border-thin\) solid var\(--rule\)/);
   });
