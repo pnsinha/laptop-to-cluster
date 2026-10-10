@@ -42,7 +42,7 @@ h1[id], h2[id], h3[id], h4[id] { scroll-margin-block-start: var(--space-6); }
 p, blockquote, li { text-wrap: pretty; }
 .lede { max-inline-size: var(--measure-lede); font-family: var(--font-reading); font-size: var(--text-lede); line-height: var(--leading-lede); }
 .kicker, .eyebrow { margin: 0; color: var(--accent); font-family: var(--font-body); font-size: var(--text-fine); font-weight: var(--weight-semibold); line-height: var(--leading-fine); }
-blockquote { margin-block: var(--space-4); padding-block: var(--space-2); padding-inline-start: var(--space-4); border-inline-start: var(--border-strong) solid var(--primary); color: var(--muted); font-style: italic; }
+blockquote { margin-block: var(--space-4); margin-inline: 0; padding-block: var(--space-2); padding-inline-start: var(--space-4); border-inline-start: var(--border-strong) solid var(--primary); color: var(--muted); font-style: italic; }
 strong { font-weight: var(--weight-semibold); }
 
 /* ---------- 3. shell ---------- */
@@ -72,8 +72,8 @@ strong { font-weight: var(--weight-semibold); }
 .footer-links li { white-space: nowrap; }
 .footer-links li:not(:last-child)::after { content: "·"; content: "·" / ""; padding-inline: var(--space-3); color: var(--muted); }
 .footer-links a { display: inline-block; padding-block: 0.25rem; }
-.release { max-inline-size: var(--measure-prose); margin-block: var(--space-4) 0; color: var(--muted); font-size: var(--text-fine); line-height: 1.3; }
-.site-footer .acknowledgment { max-inline-size: var(--measure-prose); margin: var(--space-5) 0 0; color: var(--muted); font-size: var(--text-fine); line-height: 1.55; }
+.release { max-inline-size: none; margin-block: var(--space-4) 0; color: var(--muted); font-size: var(--text-fine); line-height: 1.3; }
+.site-footer .acknowledgment { max-inline-size: none; margin: var(--space-5) 0 0; color: var(--muted); font-size: var(--text-fine); line-height: 1.55; }
 .event-acknowledgment { max-inline-size: var(--measure-prose); margin-block: var(--space-8) 0; padding-block-start: var(--space-4); border-block-start: var(--border-thin) solid var(--rule); }
 .event-acknowledgment p { font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
 .breadcrumbs { max-inline-size: var(--measure-prose); margin-block-end: var(--space-3); color: var(--muted); font-size: var(--text-fine); }
@@ -310,7 +310,7 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 .project-links a { display: inline-block; padding-block: 0.25rem; }
 
 /* ---------- 12. evidence: badge, panel, record summary ---------- */
-.applicability-projection { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); max-inline-size: var(--measure-wide); margin-block: var(--space-6); }
+.applicability-projection { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); max-inline-size: var(--measure-prose); margin-block: var(--space-6); }
 .applicability-projection > * { margin: 0; }
 .evidence-badge { display: inline-block; padding: 0.0625rem 0.625rem; color: var(--text); background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-pill); font-size: var(--text-fine); font-weight: var(--weight-semibold); line-height: var(--leading-fine); }
 .evidence-badge--warning { background: var(--warning-surface); border: 0.25rem double var(--text); }
@@ -358,7 +358,6 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 .record-context { max-inline-size: var(--measure-prose); }
 .module-facts { margin-block-end: var(--space-6); }
 .record-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr)); column-gap: var(--space-8); row-gap: 0; }
-.applicability-record > .record-grid { max-inline-size: none; }
 .record-grid > div { padding-block: var(--space-3); border-block-start: var(--border-thin) solid var(--rule); }
 .record-grid dt { font-weight: var(--weight-semibold); }
 .record-grid dd { margin: var(--flow-tight) 0 0; }
@@ -369,7 +368,8 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
 .release-notes > * + * { margin-block-start: var(--flow-body); }
 
 /* ---------- 15. tables ---------- */
-.table-overflow { position: relative; max-inline-size: 100%; margin-block: var(--space-6); overflow-x: auto; overscroll-behavior-inline: contain; border: var(--border-thin) solid var(--rule); }
+.table-overflow { position: relative; max-inline-size: min(100%, var(--measure-prose)); margin-block: var(--space-6); overflow-x: auto; overscroll-behavior-inline: contain; border: var(--border-thin) solid var(--rule); }
+.cheat-sheet .table-overflow { max-inline-size: 100%; }
 .table-overflow:focus-visible { outline-offset: var(--space-1); }
 .table-overflow__instruction { position: sticky; inset-inline-start: 0; inline-size: fit-content; max-inline-size: var(--measure-prose); margin: 0; padding: var(--space-2) var(--space-3); color: var(--muted); font-size: var(--text-fine); border-block-end: var(--border-thin) solid var(--rule); }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }

@@ -99,9 +99,11 @@ describe('global.css shell', () => {
     expect(body('.footer-links a')).toMatch(/padding-block:\s*0\.25rem/);
   });
 
-  it('sets the acknowledgment at 14 px with a readable measure, and gives the event variant its own block', () => {
+  it('sets the acknowledgment at 14 px across the full footer, and gives the event variant its own block', () => {
     expect(body('.site-footer .acknowledgment')).toMatch(/font-size:\s*var\(--text-fine\)/);
-    expect(body('.site-footer .acknowledgment')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
+    // Footer fine print spans the footer (owner, CP2), not the body reading column.
+    expect(body('.site-footer .acknowledgment')).toMatch(/max-inline-size:\s*none/);
+    expect(body('.release')).toMatch(/max-inline-size:\s*none/);
     expect(body('.event-acknowledgment')).toMatch(/border-block-start:\s*var\(--border-thin\) solid var\(--rule\)/);
   });
 
