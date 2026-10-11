@@ -704,17 +704,16 @@ const sameRepository = (value: string) => {
   return normalise(value) === normalise(REPOSITORY_URL);
 };
 
-/** For every provenance entry that cites this repository, the sha256 of `git show <release>:<path>` must equal the recorded integrity.
+type RepositoryReference = { repository: string; release: string; path: string; integrity: string };
+type IntegrityOptions = { root: string; ci?: boolean; warn?: (message: string) => void };
+
+/** For every reference that cites this repository, the sha256 of `git show <release>:<path>` must equal the recorded integrity.
  * A release that is not in this checkout is an error under CI and a warning elsewhere, where tags may not have been fetched. */
-export function provenanceIntegrityErrors(
-  record: ApplicabilityRecord,
-  options: { root: string; ci?: boolean; warn?: (message: string) => void },
-): string[] {
+function repositoryReferenceErrors(entries: Array<{ label: string; reference: RepositoryReference }>, options: IntegrityOptions): string[] {
   const { root, ci = process.env.CI === 'true', warn = (message: string) => console.warn(`WARNING: ${message}`) } = options;
   const errors: string[] = [];
-  for (const [index, { reference }] of record.provenance.entries()) {
+  for (const { label, reference } of entries) {
     if (!sameRepository(reference.repository)) continue;
-    const label = `${record.id}.provenance.${index}`;
     const known = spawnSync('git', ['rev-parse', '--verify', '--quiet', `${reference.release}^{commit}`], { cwd: root, encoding: 'utf8' });
     if (known.status !== 0) {
       const message = `${label}: release ${reference.release} is not available in this checkout, so ${reference.path} cannot be checked against its recorded integrity (fetch the tags: git fetch --tags)`;
@@ -727,6 +726,19 @@ export function provenanceIntegrityErrors(
     if (actual !== reference.integrity) errors.push(`${label}: integrity ${reference.integrity} does not match ${reference.release}:${reference.path}, which hashes to ${actual}`);
   }
   return errors;
+}
+
+/** An applicability record's provenance entries, checked against the files at the release each one cites. */
+export function provenanceIntegrityErrors(record: ApplicabilityRecord, options: IntegrityOptions): string[] {
+  return repositoryReferenceErrors(record.provenance.map(({ reference }, index) => ({ label: `${record.id}.provenance.${index}`, reference })), options);
+}
+
+/** A content item's supporting artifacts, checked the same way: a module page shows these hashes beside their links. */
+export function supportingArtifactIntegrityErrors(name: string, artifacts: unknown, options: IntegrityOptions): string[] {
+  const entries = (Array.isArray(artifacts) ? artifacts : [])
+    .filter((entry): entry is RepositoryReference => Boolean(entry) && typeof entry === 'object' && ['repository', 'release', 'path', 'integrity'].every((key) => typeof (entry as Record<string, unknown>)[key] === 'string'))
+    .map((reference, index) => ({ label: `${name}.supporting_artifacts.${index}`, reference }));
+  return repositoryReferenceErrors(entries, options);
 }
 
 export function validateEvidenceRepository(root: string, now = new Date().toISOString().slice(0, 10), options: { ci?: boolean; warn?: (message: string) => void } = {}): string[] {
@@ -761,6 +773,7 @@ export function validateEvidenceRepository(root: string, now = new Date().toISOS
   const contentDirectory = join(root, 'site/src/content/content-items');
   for (const name of readdirSync(contentDirectory).filter((name) => /\.mdx?$/.test(name)).sort()) {
     const data = parseFrontmatter(join(contentDirectory, name));
+    if (data) errors.push(...supportingArtifactIntegrityErrors(name, data.supporting_artifacts, { root, ...options }));
     if (!data || !['runnable', 'hybrid'].includes(String(data.module_type))) continue;
     const status = String(data.validation_status ?? '');
     const ids = Array.isArray(data.applicability_records) ? data.applicability_records.map(String) : [];

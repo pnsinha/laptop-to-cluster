@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { REPOSITORY_URL, provenanceIntegrityErrors, validateEvidenceRepository } from '../../scripts/evidence.js';
+import { REPOSITORY_URL, provenanceIntegrityErrors, supportingArtifactIntegrityErrors, validateEvidenceRepository } from '../../scripts/evidence.js';
 import { applicabilityRecordSchema, type ApplicabilityRecord } from '../../site/src/content/schema.js';
 
 const repositoryRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -103,4 +103,26 @@ describe('provenance integrity against the tagged files', () => {
     expect(records.length).toBeGreaterThan(0);
     for (const record of records) expect(provenanceIntegrityErrors(record, { root: repositoryRoot, warn: () => undefined }), record.id).toEqual([]);
   });
+
+  it('checks a module\'s supporting artifacts against the release each one cites', () => {
+    const root = repository();
+    const quiet = { root, ci: true, warn: () => undefined };
+    expect(supportingArtifactIntegrityErrors('01-module.md', [reference()], quiet)).toEqual([]);
+    const errors = supportingArtifactIntegrityErrors('01-module.md', [reference({ integrity: sha(LATER) })], quiet);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('01-module.md.supporting_artifacts.0');
+  });
+
+  it('keeps every published module\'s supporting artifacts in step with the files at the release they cite', () => {
+    const directory = join(repositoryRoot, 'site/src/content/content-items');
+    let checked = 0;
+    for (const name of readdirSync(directory).filter((entry) => /\.mdx?$/.test(entry))) {
+      const match = /^---\n([\s\S]*?)\n---/.exec(readFileSync(join(directory, name), 'utf8'));
+      const artifacts = match ? (parse(match[1])?.supporting_artifacts ?? []) : [];
+      checked += artifacts.length;
+      expect(supportingArtifactIntegrityErrors(name, artifacts, { root: repositoryRoot, warn: () => undefined }), name).toEqual([]);
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
 });
+

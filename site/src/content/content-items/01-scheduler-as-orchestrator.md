@@ -26,7 +26,7 @@ container_runtimes: [apptainer]
 related: [module-2-baseline, start-guide]
 learning_stage: baseline
 supporting_artifacts:
-  - { repository: "https://github.com/pnsinha/laptop-to-cluster", release: v0.1.0, path: README.md, integrity: "sha256:c54a472d6bfc51ff7023a8f1807db245a2e4aa23e81ff80bc9af1e1fa5f325dc" }
+  - { repository: "https://github.com/pnsinha/laptop-to-cluster", release: v0.1.0, path: README.md, integrity: "sha256:a94e0087582c95865ba4e875ec8938ed109b9c1cfae615980d6b10258343a3d1" }
 authority:
   - { kind: sow, citation: "Fellowship SOW, Milestone 1", scope: "Publish the scheduler-as-orchestrator learning module." }
   - { kind: project-decision, citation: "Milestone 1 architecture", scope: "Use one allocation as the bounded baseline orchestration boundary." }
