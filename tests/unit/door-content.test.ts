@@ -33,6 +33,7 @@ if (existsSync(resolve(items, 'about-cheat-sheet.md'))) KNOWN_ROUTES.add('/about
 const FRAGMENTS: Record<string, readonly string[]> = {
   '/about/glossary/': REQUIRED_FRAGMENTS.glossary,
   '/adoption/evaluate/': REQUIRED_FRAGMENTS.evaluate,
+  '/start/': ['get-the-code'],
 };
 function linkProblems(body: string): string[] {
   const hrefs = [...body.matchAll(/\]\((\/[^)\s]*)\)|href="(\/[^"]*)"/g)].map((match) => match[1] ?? match[2]);
@@ -97,6 +98,23 @@ describe('Translate page (Module 3)', () => {
     expect(moduleBlock).not.toContain('sha256sum -c workflows/');
   });
 
+  it('puts the scratch root first in the Step 4 export list and says where the result lands', () => {
+    const step4 = section(body, 'Step 4');
+    expect(step4).toContain('sbatch --export=ALL,BSSW_SCRATCH_ROOT=<path>,INPUT_PATH=');
+    expect(step4).toContain('Replace `<path>` with the private scratch path you chose in Step 3.');
+    expect(step4).not.toContain('If your center names a private scratch path');
+    expect(step4).toContain('`<path>/bssw-<job ID>`');
+    expect(step4).toMatch(/If you leave `BSSW_SCRATCH_ROOT` out, the script falls back to `\$\{SLURM_TMPDIR\}\/bssw-<job ID>`/);
+    expect(step4).toContain('it does not print a path');
+  });
+
+  it('links Step 4 to the Get the code step on the run page, and points every example-job link at the release', () => {
+    expect(section(body, 'Step 4')).toContain('[Get the code](/start/#get-the-code)');
+    const links = [...body.matchAll(/\]\((https:\/\/github\.com\/pnsinha\/laptop-to-cluster\/(?:tree|blob)\/[^)\s]+)\)/g)].map((match) => match[1]);
+    expect(links.length).toBeGreaterThanOrEqual(4);
+    for (const link of links) expect(link, link).toContain('/@release/');
+  });
+
   it('keeps the keep and replace list in agreement with the workflow package', () => {
     const readme = readFileSync(resolve(root, 'workflows/baseline-slurm-apptainer/README.md'), 'utf8');
     const adapterTable = readme.split('## Adapter variables and bounds')[1].split('\n## ')[0];
@@ -110,7 +128,8 @@ describe('Translate page (Module 3)', () => {
     expect(body).toContain('bin/readiness.py#L29-L31');
     expect(body).toContain('bin/coordinator.py#L27-L28');
     for (const file of ['readiness.py', 'coordinator.py', 'common.py', 'verify.py', 'worker.py']) expect(body).toContain(`bin/${file}`);
-    expect(body).toContain('/blob/v0.1.0/workflows/baseline-slurm-apptainer/');
+    expect(body).toContain('/blob/@release/workflows/baseline-slurm-apptainer/');
+    expect(body).not.toContain('/v0.1.0/workflows/baseline-slurm-apptainer');
   });
 
   it('defines success the way the workflow does', () => {
@@ -316,6 +335,12 @@ describe('The five-minute tour (Module 0)', () => {
   it('uses each concept class once in the four-ideas table', () => {
     const table = section(body, 'Four ideas that change meaning');
     for (const concept of ['c-step', 'c-gate', 'c-scratch', 'c-net']) expect(table.match(new RegExp(`class="${concept}"`, 'g')), concept).toHaveLength(1);
+  });
+
+  it('gives one answer on job-folder lifetime: the job does not delete it, and the center may clear it', () => {
+    expect(body).not.toContain('lasts only for the job');
+    expect(body).toContain('The job folder is not deleted.');
+    expect(body).toContain('Your center may clear the job folder, so copy results out promptly.');
   });
 
   it('links only to pages and fragments that exist and keeps retired wording out', () => {

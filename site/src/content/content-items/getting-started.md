@@ -3,7 +3,7 @@ id: start-guide
 stable_slug: getting-started
 route_namespace: start
 title: Run the example
-summary: "Get the image, record your local values, submit the example job, check that it worked, and copy your results out."
+summary: "Get the code and the image, record your local values, submit the example job, check that it worked, and copy your results out."
 artifact_type: guidance-note
 topics: [adaptation, baseline-workflow]
 keywords: [allocation, Apptainer, prerequisites, Slurm, verification]
@@ -28,6 +28,16 @@ Confirm these assumptions before you run anything:
 - **Storage:** a center-approved private, [job-scoped](/about/glossary/#job-scoped-scratch) path with room for the image, the run files, and the results.
 - **Runtime and image:** Apptainer is available on the compute nodes, and you can build or obtain the image (see "Get the container image").
 - **Readiness:** the coordinator and workers can reach each other over loopback inside the node.
+
+## Get the code
+
+Clone the repository at this release. The commands on this page start from its root, `laptop-to-cluster`, unless they say otherwise:
+
+```sh
+git clone --branch @release https://github.com/pnsinha/laptop-to-cluster.git && cd laptop-to-cluster
+```
+
+The code of the example workflow (`workflows/baseline-slurm-apptainer`) in this release is identical to the tested v0.1.0 revision; only its README changed.
 
 ## Check the prerequisites
 
@@ -54,13 +64,15 @@ Write these down before you submit. The right-hand column says how to find each 
 
 ## Get the container image
 
-From the root of your checkout of the repository, run:
+From the root of the repository you cloned in [Get the code](#get-the-code), run:
 
 ```sh
 workflows/baseline-slurm-apptainer/container/acquire.sh
 ```
 
-The script builds the image from a digest-pinned base into a temporary file, records the image's SHA-256 in `container/baseline.sif.sha256`, and then installs `container/baseline.sif`. It needs Apptainer and network access to the registry, so run it where your center allows image builds. If your center builds images elsewhere, build `container/Apptainer.def` there and create `container/baseline.sif.sha256` with your SHA-256 tool. If the script fails, it prints a `BSSW-PREQ-*` or `BSSW-INTEGRITY-*` ID; look it up in [Troubleshooting](/diagnostics/).
+The script builds the image from a digest-pinned base into a temporary file, records the image's SHA-256 in `container/baseline.sif.sha256`, and then installs `container/baseline.sif`. It needs Apptainer and network access to the registry, so run it where your center allows image builds. If your center builds images elsewhere, build `container/Apptainer.def` there and create `container/baseline.sif.sha256` with your SHA-256 tool. If a check in the script fails, it prints a `BSSW-PREQ-*` or `BSSW-INTEGRITY-*` ID; look it up in [Troubleshooting](/diagnostics/).
+
+Some centers do not allow an unprivileged `apptainer build`. On the Apptainer used for the October 2026 test, this script could not build the image without extra privileges, and the test used the earlier build with the same digest. If the build fails with an Apptainer error rather than a BSSW ID, build `container/Apptainer.def` where you have privileges (or ask your center’s support), copy the `.sif` file into `container/`, and create `container/baseline.sif.sha256` with your SHA-256 tool.
 
 ## Check the input
 

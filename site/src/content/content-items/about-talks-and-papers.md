@@ -15,7 +15,7 @@ publication_date: "2026-10-15"
 last_updated: "2026-10-15"
 related: [event-iguide-forum-2026]
 authority:
-  - { kind: project-decision, citation: "Milestone 2 dissemination plan", scope: "Presentations are listed by link to the venue that hosts them; this site hosts no slides, abstracts or posters." }
+  - { kind: project-decision, citation: "Milestone 2 dissemination plan", scope: "Presentations are listed by link to the venue that hosts them; this site hosts no slides, abstracts or posters, except the I-GUIDE Forum 2026 poster, kept as presented on its event page." }
 ---
 Here from a conference? This page links to each talk, poster and paper at the place it is hosted: the conference program, the proceedings or the event page. This site hosts none of the slides or posters. The one exception is the I-GUIDE Forum poster, which has its own page here.
 

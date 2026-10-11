@@ -28,7 +28,8 @@ describe('cheat sheet: built page', () => {
     const article = sheet.match(/<article>[\s\S]*<\/article>/)![0];
     expect(article.match(new RegExp(`<td>${DESIGNED_NOT_RUN}</td>`, 'g'))!.length).toBeGreaterThanOrEqual(4);
     expect(article.match(/<td>Tested<\/td>/g)!.length).toBeGreaterThanOrEqual(10);
-    expect(article).not.toMatch(/Purdue|Anvil|Expanse|Jetstream|\b20\d\d\b|\bv\d+\.\d+|job ?id\b|\b\d{7,}\b/i);
+    // The words a reader sees, not link targets: the Tested pointer goes to a record whose id carries the system and month.
+    expect(article.replace(/href="[^"]*"/g, 'href=""')).not.toMatch(/Purdue|Anvil|Expanse|Jetstream|\b20\d\d\b|\bv\d+\.\d+|job ?id\b|\b\d{7,}\b/i);
   });
 
   it('resolves every internal link and fragment', () => {

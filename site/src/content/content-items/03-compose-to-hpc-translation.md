@@ -39,7 +39,7 @@ deliverable_status: draft
 ---
 You have a Docker Compose file and a shared cluster. This page takes you from one to the other in six steps, numbered 0 to 5. You can read it without a cluster account. If "allocation" or "job step" is new to you, take the [five-minute tour](/guide/tour/) first.
 
-The method: keep the example job's orchestration (the allocation, the readiness gate and the cleanup), and replace its placeholder services and its result check with yours. The example job is the baseline workflow in this project's repository, [pinned to a release on GitHub](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/workflows/baseline-slurm-apptainer).
+The method: keep the example job's orchestration (the allocation, the readiness gate and the cleanup), and replace its placeholder services and its result check with yours. The example job is the baseline workflow in this project's repository, [pinned to a release on GitHub](https://github.com/pnsinha/laptop-to-cluster/tree/@release/workflows/baseline-slurm-apptainer).
 
 ## Step 0: Is this the right pattern?
 
@@ -91,7 +91,7 @@ For each construct in your Compose file, find its cluster form. The terms [job s
 
 ## Step 3: Fill in the template
 
-Open the [example job](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/workflows/baseline-slurm-apptainer). To run your own application you change the files below and a small set of settings.
+Open the [example job](https://github.com/pnsinha/laptop-to-cluster/tree/@release/workflows/baseline-slurm-apptainer). To run your own application you change the files below and a small set of settings.
 
 **Keep**
 
@@ -104,8 +104,8 @@ Open the [example job](https://github.com/pnsinha/laptop-to-cluster/tree/v0.1.0/
 | File | What to do |
 |---|---|
 | `slurm/baseline.sbatch` | Set your account, partition, wall time and CPUs, and swap the coordinator and worker launch lines for your services. |
-| `bin/coordinator.py` | Replace with your coordinating service. The health answer it gives is at [lines 27–28](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/bin/coordinator.py#L27-L28). |
-| `bin/readiness.py` | Keep the script and its bounds, but change what "ready" means. The exact answer it waits for is at [lines 29–31](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/workflows/baseline-slurm-apptainer/bin/readiness.py#L29-L31) and must match what your service returns. |
+| `bin/coordinator.py` | Replace with your coordinating service. The health answer it gives is at [lines 27–28](https://github.com/pnsinha/laptop-to-cluster/blob/@release/workflows/baseline-slurm-apptainer/bin/coordinator.py#L27-L28). |
+| `bin/readiness.py` | Keep the script and its bounds, but change what "ready" means. The exact answer it waits for is at [lines 29–31](https://github.com/pnsinha/laptop-to-cluster/blob/@release/workflows/baseline-slurm-apptainer/bin/readiness.py#L29-L31) and must match what your service returns. |
 | `bin/worker.py` | Replace with your workers. |
 | `bin/common.py` | Edit it if your tasks differ. It checks the example's task format (an id and a payload with a message and a repeat count), so another shape is rejected as invalid input. |
 | `bin/verify.py` | Replace with your own definition of correct. Checking that every result is right belongs to your application, not to the pattern. |
@@ -120,15 +120,15 @@ Set `BSSW_SCRATCH_ROOT` explicitly, to a private job-scoped path your center nam
 
 ## Step 4: Run it
 
-[Run the example](/start/) walks through checking your center, fetching the image and submitting the job. In short, check the input against its checksum record, then submit with absolute paths. Run both from the repository root. The checksum record names a bare `tasks.json`, so the check runs inside the `inputs` folder. Slurm runs a copy of the batch script from its own spool folder, so the script cannot find the workflow folder by itself; the `--export` list gives it absolute paths. If your center names a private scratch path, add `BSSW_SCRATCH_ROOT=<your-private-scratch-path>` to the `--export` list.
+[Run the example](/start/) walks through checking your center, fetching the image and submitting the job. In short, check the input against its checksum record, then submit with absolute paths. Run both from the root of the repository you cloned in [Get the code](/start/#get-the-code). The checksum record names a bare `tasks.json`, so the check runs inside the `inputs` folder. Slurm runs a copy of the batch script from its own spool folder, so the script cannot find the workflow folder by itself; the `--export` list gives it absolute paths. Replace `<path>` with the private scratch path you chose in Step 3.
 
 ```bash
 (cd workflows/baseline-slurm-apptainer/inputs && sha256sum -c tasks.json.sha256)
 W="$PWD/workflows/baseline-slurm-apptainer"
-sbatch --export=ALL,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",IMAGE_PATH="$W/container/baseline.sif",INPUT_SHA256_FILE="$W/inputs/tasks.json.sha256" "$W/slurm/baseline.sbatch"
+sbatch --export=ALL,BSSW_SCRATCH_ROOT=<path>,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",IMAGE_PATH="$W/container/baseline.sif",INPUT_SHA256_FILE="$W/inputs/tasks.json.sha256" "$W/slurm/baseline.sbatch"
 ```
 
-When the job finishes, it reports that the workflow completed; it does not print a path. The result is in the job's private folder: `${SLURM_TMPDIR}/bssw-<job ID>` when `SLURM_TMPDIR` exists, otherwise beneath `${TMPDIR:-/tmp}/bssw-<job ID>`, as the package README states.
+When the job finishes, it reports that the workflow completed; it does not print a path. The result is in the job’s private folder, `<path>/bssw-<job ID>`, under the scratch root you set. If you leave `BSSW_SCRATCH_ROOT` out, the script falls back to `${SLURM_TMPDIR}/bssw-<job ID>` when `SLURM_TMPDIR` exists, otherwise to `${TMPDIR:-/tmp}/bssw-<job ID>`, as the package README states.
 
 ## Step 5: Verify the result
 

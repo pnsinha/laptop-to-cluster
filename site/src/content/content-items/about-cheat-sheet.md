@@ -14,7 +14,7 @@ publication_date: "2026-10-15"
 ---
 <div class="cheat-sheet">
 
-Print this page (Ctrl+P or Cmd+P) for a sheet to keep beside your terminal. The shapes ■ job step, ◆ readiness gate, ▲ job-scoped scratch and ● loopback keep their meaning in black and white. **Tested**: see [the test record](/adoption/evaluate/). **Shim-tested** means it ran off-cluster against test fixtures, never on a cluster. **Designed, not run** means the design describes it, but nobody has run it on a cluster.
+Print this page (Ctrl+P or Cmd+P) for a sheet to keep beside your terminal. The shapes ■ job step, ◆ readiness gate, ▲ job-scoped scratch and ● loopback keep their meaning in black and white. **Tested**: see [the test record](/applicability/m2-baseline-anvil-2026-10/). **Shim-tested** means it ran off-cluster against test fixtures, never on a cluster. **Designed, not run** means the design describes it, but nobody has run it on a cluster.
 
 ## Six steps in one allocation
 

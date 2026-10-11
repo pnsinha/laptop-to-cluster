@@ -3,6 +3,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import RecordPage from '../../site/src/pages/applicability/[id].astro';
+import { currentReleaseVersion } from '../../site/src/content/release.js';
 import { applicabilityRecordSchema, type ApplicabilityRecord } from '../../site/src/content/schema.js';
 
 let container: AstroContainer;
@@ -39,6 +40,16 @@ describe('canonical record page', () => {
     const html = await renderRecord(pinned);
     expect(html).toContain(`/blob/v0.2.0/${m1.evidence.path}">${m1.evidence.id}</a>`);
     expect(html).toContain(`/blob/v0.1.0/${m1.related_evidence[0].path}">`);
+  });
+
+  it('keeps the README provenance link on v0.1.0 and says it predates the run, pointing at the current release', async () => {
+    const html = decode(await renderRecord(m1));
+    const provenance = html.slice(html.indexOf('<h2>Provenance</h2>'));
+    expect(provenance).toContain('/blob/v0.1.0/workflows/baseline-slurm-apptainer/README.md">');
+    const release = currentReleaseVersion();
+    expect(provenance).toContain(`This README predates the test run; the current README is in <a href="https://github.com/pnsinha/laptop-to-cluster/blob/${release}/workflows/baseline-slurm-apptainer/README.md">the release</a>.`);
+    const noReadme = await renderRecord({ ...m1, provenance: m1.provenance.filter(({ reference }) => !reference.path.endsWith('README.md')) });
+    expect(noReadme).not.toContain('predates the test run');
   });
 
   it('shows no superseded notice or review extension when the record has neither', async () => {

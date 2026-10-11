@@ -16,7 +16,10 @@ describe('W6 About pages', () => {
   });
 
   it('names no system or validation claim anywhere in the About project body', () => {
-    expect(readItem('about-project.md').body).not.toMatch(/Anvil|Expanse|validated on/i);
+    const { body } = readItem('about-project.md');
+    // A link target may carry a record id; the words a reader sees must not name a system.
+    expect(body.replace(/\]\([^)]*\)/g, ']')).not.toMatch(/Anvil|Expanse|validated on/i);
+    expect(body).toContain('[test record](/applicability/m1-baseline-anvil/)');
   });
 
   it('gives the licenses section an explicit id', () => {

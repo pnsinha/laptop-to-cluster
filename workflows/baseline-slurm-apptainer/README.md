@@ -38,19 +38,22 @@ Content from that source was rephrased for licensing compliance.
 ```sh
 (cd workflows/baseline-slurm-apptainer/inputs && sha256sum -c tasks.json.sha256)
 W="$PWD/workflows/baseline-slurm-apptainer"
-sbatch --export=ALL,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",IMAGE_PATH="$W/container/baseline.sif",INPUT_SHA256_FILE="$W/inputs/tasks.json.sha256" "$W/slurm/baseline.sbatch"
+sbatch --export=ALL,BSSW_SCRATCH_ROOT=<path>,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",IMAGE_PATH="$W/container/baseline.sif",INPUT_SHA256_FILE="$W/inputs/tasks.json.sha256" "$W/slurm/baseline.sbatch"
 ```
 
 Run both from the repository root. The checksum sidecar names a bare
 `tasks.json`, so check it from the `inputs` directory. Slurm runs a spooled copy
 of the batch script, so the script cannot find the workflow directory from its
-own location; the `--export` list gives it absolute paths instead.
+own location; the `--export` list gives it absolute paths instead. Replace
+`<path>` with a private, job-scoped directory that your center names.
 
 Defaults expect four tasks, two workers, a 30-second readiness deadline, and the
 acquired image beside its checksum. The launcher records Slurm, Apptainer, image,
 and input versions/digests in private job storage. Successful output is beneath
-`${SLURM_TMPDIR}/bssw-${SLURM_JOB_ID}` when `SLURM_TMPDIR` exists, otherwise beneath
-`${TMPDIR:-/tmp}/bssw-${SLURM_JOB_ID}`.
+`<path>/bssw-${SLURM_JOB_ID}`. If you leave `BSSW_SCRATCH_ROOT` out, the launcher
+falls back to `${SLURM_TMPDIR}/bssw-${SLURM_JOB_ID}` when `SLURM_TMPDIR` exists,
+otherwise to `${TMPDIR:-/tmp}/bssw-${SLURM_JOB_ID}`; on a shared node that
+fallback is not private.
 
 ## Adapter variables and bounds
 
@@ -133,3 +136,9 @@ When a run on a new cluster completes, record it as an applicability record
 (`evidence/`) and set the published validation status from its manifest.
 
 Validation record: https://laptop-to-cluster.org/applicability/m2-baseline-anvil-2026-10/
+
+## Acknowledgment
+
+This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.
+
+Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.

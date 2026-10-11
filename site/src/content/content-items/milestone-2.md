@@ -28,7 +28,7 @@ Milestone 2 extends the Milestone 1 baseline toward portability across scheduler
 
 ## Scope notes
 
-The tour is additive to the fellowship statement of work: it is not a SOW-listed deliverable. It is tracked here as `M2-MODULE-0` for transparency, and it answers the first Milestone 1 program-review question below.
+The tour is additive to the fellowship statement of work: it is not a SOW-listed deliverable. It is tracked here as `M2-MODULE-0` for transparency, and it answers the program-review suggestion quoted below.
 
 Modules 4 and 5 are the SOW "portability modules" deliverable (SOW topics 2 and 3). Module 3 is supporting material for that deliverable, not a SOW-listed deliverable itself.
 
