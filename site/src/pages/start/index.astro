@@ -5,12 +5,16 @@ import ContentHeader from '../../components/ContentHeader.astro';
 import ModulePager from '../../components/ModulePager.astro';
 import SourcesAndScope from '../../components/SourcesAndScope.astro';
 import { IMPLEMENTATION_REFERENCE } from '../../content/implementation';
+import { currentReleaseVersion, RELEASE_REF_TOKEN, resolveReleaseRefs } from '../../content/release';
 import { learningPathNavigation } from '../../content/page-chrome';
 import { assertCompositionProfile, currentBaselineRecord } from '../../content/projections';
 const entries = await getCollection('contentItems');
 const entry = entries.find(({ data }) => data.route_namespace === 'start');
 if (!entry) throw new Error('Missing published getting-started content item');
 const { Content } = await render(entry);
+/* The clone command names the release with the @release token, resolved here as it is on the other pages. */
+const bodyHtml = entry.rendered?.html === undefined ? undefined : resolveReleaseRefs(entry.rendered.html, currentReleaseVersion());
+if (bodyHtml === undefined && entry.body?.includes(RELEASE_REF_TOKEN)) throw new Error(`${entry.id}: the release token needs rendered HTML to resolve`);
 const item = entry.data;
 assertCompositionProfile(item, 'start');
 const navigation = learningPathNavigation(entries.map(({ data }) => data), item.id) ?? {};
@@ -26,7 +30,7 @@ const record = currentBaselineRecord((await getCollection('applicability')).map(
       <li><a href="/guide/baseline-single-node-pattern/#implementation-reference">Read the annotated implementation reference</a></li>
     </ul>
   </aside>
-  <article class="start-path" aria-label="Running the example, step by step"><Content /></article>
+  <article class="start-path" aria-label="Running the example, step by step">{bodyHtml === undefined ? <Content /> : <Fragment set:html={bodyHtml} />}</article>
   {record && (
     <section class="reading-section" aria-labelledby="how-we-know-heading">
       <h2 id="how-we-know-heading">How we know this works</h2>

@@ -132,7 +132,7 @@ Read this tour first. Then follow the path in order, or jump to the page that ma
 - A cluster scheduler, not Docker, decides what runs. You ask for an allocation, and a script starts your services inside it.
 - The script has six steps: allocation, coordinator, readiness gate, workers, verification and clean up.
 - The readiness gate proves the coordinator can serve. Verification decides whether the results are right.
-- Services use local-only access (loopback) by default. Reaching them from beyond the node needs access your center approves, and temporary job storage lasts only for the job.
+- Services use local-only access (loopback) by default. Reaching them from beyond the node needs access your center approves. Your center may clear the job folder, so copy results out promptly.
 
 ## Next step
 

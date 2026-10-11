@@ -7,8 +7,9 @@ const lineRange = (start: number, end: number) => `Lines ${start}–${end}`;
 <section class="implementation-reference" id="implementation-reference" aria-labelledby="implementation-reference-heading">
   <header class="implementation-reference__intro">
     <h2 id="implementation-reference-heading">Implementation reference</h2>
-    <p>The excerpts below show the commands and control flow that matter for understanding the pattern, with the defensive checks and integrity plumbing elided for readability. Each excerpt links to its release-pinned line range in the real <code>{reference.release}</code> source on GitHub. Use the complete package when adapting and submitting the workflow.</p>
+    <p>The <code>baseline.sbatch</code> excerpts below are lines from the script itself, in order; a <code># …</code> line marks lines left out. The Python excerpts are shortened. Each excerpt links to its release-pinned line range in the real <code>{reference.release}</code> source on GitHub. Use the complete package when adapting and submitting the workflow.</p>
     <p><a class="action action--secondary" href={reference.packageUrl} rel="external">Open the complete workflow package (external)</a></p>
+    <p><a class="action action--secondary" href={reference.readmeUrl} rel="external">Read the package README (external)</a></p>
   </header>
   {reference.excerpts.map((excerpt) => <figure class="technical-figure source-excerpt">
     <figcaption>

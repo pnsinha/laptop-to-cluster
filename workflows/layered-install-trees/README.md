@@ -1,12 +1,14 @@
 # Layered install trees (provider + specialized)
 
-This package builds a shared CPU "provider" Spack install tree once and a thin
-per-GPU-architecture "specialized" tree on top of it via Spack upstream
-chaining, then composes both trees at runtime under Apptainer or Charliecloud.
-The provider installs at a canonical container-native path (`/tmp/e4s-provider-cpu`);
-the specialized layer at `/tmp/e4s-specialized-amrex-sm80`; persisted copies are
-re-bound at those same canonical paths at compose time, so `DT_RPATH` entries
-resolve within the provider tree or the base image without `LD_LIBRARY_PATH`.
+This package builds a shared CPU “provider” Spack install tree once and a thin
+per-GPU-architecture “specialized” tree on top of it via Spack upstream
+chaining, then composes both trees at runtime under Apptainer. A Charliecloud
+variant is included; its recorded compose run does not pass its own gate (see
+stage 4). The provider installs at a canonical container-native path
+(`/tmp/e4s-provider-cpu`); the specialized layer at `/tmp/e4s-specialized-amrex-sm80`;
+persisted copies are re-bound at those same canonical paths at compose time, so
+under Apptainer the `DT_RPATH` entries resolve within the provider tree or the
+base image without `LD_LIBRARY_PATH` (see stage 3).
 The recorded `ldd` probes ran on the provider's own heFFTe library
 (`libheffte.so`), and the AMReX specialized layer ships only static archives,
 so these runs do not show a shared library in one tree resolving against the
@@ -127,3 +129,9 @@ GPU family. They do not show a shared library resolving across the two trees,
 do not measure a BLAS-provider swap, do not cover multi-node execution, and
 file counts were collected with `find -type f` (apparent sizes; GPFS block
 sizes are not part of the claim).
+
+## Acknowledgment
+
+This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.
+
+Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.

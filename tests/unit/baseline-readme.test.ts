@@ -34,6 +34,6 @@ describe('baseline workflow README', () => {
   it('submits with absolute paths because Slurm runs a spooled copy of the script', () => {
     const submit = readme.split('\n').filter((line) => /^\s*(WORKFLOW|sbatch)/.test(line) || line.includes('sbatch --export'));
     expect(readme).not.toMatch(/^sbatch workflows\/baseline-slurm-apptainer\/slurm\/baseline\.sbatch$/m);
-    expect(submit.join('\n')).toMatch(/sbatch --export=ALL,INPUT_PATH=.*EXPECTED_PATH=.*IMAGE_PATH=.*INPUT_SHA256_FILE=/);
+    expect(submit.join('\n')).toMatch(/sbatch --export=ALL,BSSW_SCRATCH_ROOT=<path>,INPUT_PATH=.*EXPECTED_PATH=.*IMAGE_PATH=.*INPUT_SHA256_FILE=/);
   });
 });

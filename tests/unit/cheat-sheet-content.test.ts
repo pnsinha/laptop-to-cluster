@@ -43,9 +43,11 @@ describe('cheat sheet: content item', () => {
   });
 
   it('defines the evidence labels without naming a system, version, date or job', () => {
-    expect(body).toContain('**Tested**: see [the test record](/adoption/evaluate/)');
+    expect(body).toContain('**Tested**: see [the test record](/applicability/m2-baseline-anvil-2026-10/)');
     expect(body).toContain(`**${DESIGNED_NOT_RUN}**`);
-    expect(body).not.toMatch(/Purdue|Anvil|Expanse|Jetstream|\b20\d\d\b|\bv\d+\.\d+|Slurm \d|Apptainer \d|job ?id\b|\b\d{7,}\b/i);
+    // The words a reader sees name no system, date or job. A link target may carry the record id.
+    const visible = body.replace(/\]\([^)]*\)/g, ']');
+    expect(visible).not.toMatch(/Purdue|Anvil|Expanse|Jetstream|\b20\d\d\b|\bv\d+\.\d+|Slurm \d|Apptainer \d|job ?id\b|\b\d{7,}\b/i);
   });
 
   it('labels every table row Tested or Designed, not run', () => {
@@ -110,6 +112,6 @@ describe('cheat sheet: content item', () => {
 
   it('links only to pages this release publishes', () => {
     const links = [...body.matchAll(/\]\((\/[^)]+)\)/g)].map(([, href]) => href);
-    expect(new Set(links)).toEqual(new Set(['/adoption/evaluate/', '/diagnostics/', '/about/attribution/#licenses']));
+    expect(new Set(links)).toEqual(new Set(['/applicability/m2-baseline-anvil-2026-10/', '/diagnostics/', '/about/attribution/#licenses']));
   });
 });

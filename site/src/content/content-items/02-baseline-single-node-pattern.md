@@ -30,8 +30,7 @@ schedulers: [slurm]
 container_runtimes: [apptainer]
 related: [module-1-scheduler-orchestrator, start-guide]
 learning_stage: baseline
-supporting_artifacts:
-  - { repository: "https://github.com/pnsinha/laptop-to-cluster", release: v0.1.0, path: workflows/baseline-slurm-apptainer/README.md, integrity: "sha256:f7586054384c3d0f6d1632da0da33d987fadb73652d9cd11890ae5b0ccec0b7c" }
+supporting_artifacts: []
 authority:
   - { kind: sow, citation: "Fellowship SOW, Milestone 1", scope: "Publish a baseline Slurm and Apptainer service-plus-workers pattern." }
   - { kind: project-decision, citation: "Milestone 1 validation boundary", scope: "Limit the baseline to one node and require result-based verification." }

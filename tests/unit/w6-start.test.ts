@@ -19,11 +19,28 @@ describe('W6 Run the example', () => {
     expect(data.stable_slug).toBe('getting-started');
   });
 
-  it('has the nine sections, in running order', () => {
+  it('has the ten sections, in running order', () => {
     expect(h2s(body)).toEqual([
-      'Can I run this?', 'Check the prerequisites', 'Record your local values', 'Get the container image',
+      'Can I run this?', 'Get the code', 'Check the prerequisites', 'Record your local values', 'Get the container image',
       'Check the input', 'Submit the job', 'Check that it worked', 'Copy your results out', 'If it still fails',
     ]);
+  });
+
+  it('starts with Get the code: a clone at the release token, and an honest statement about what changed', () => {
+    const code = section('Get the code');
+    expect(code).toContain('git clone --branch @release https://github.com/pnsinha/laptop-to-cluster.git && cd laptop-to-cluster');
+    expect(code).toContain('only its README changed');
+    expect(section('Get the container image')).toContain('(#get-the-code)');
+  });
+
+  it('warns that some centers do not allow an unprivileged image build, without changing the package', () => {
+    const image = section('Get the container image');
+    expect(image).toContain('Some centers do not allow an unprivileged `apptainer build`.');
+    expect(image).toContain('could not build the image without extra privileges');
+    expect(image).toContain('the test used the earlier build with the same digest');
+    expect(image).toContain('rather than a BSSW ID');
+    expect(image).toContain('If a check in the script fails, it prints a `BSSW-PREQ-*` or `BSSW-INTEGRITY-*` ID');
+    expect(image).not.toContain('If the script fails');
   });
 
   it('tells readers to get the image with acquire.sh, a script that exists', () => {
@@ -92,7 +109,10 @@ describe('W6 Run the example', () => {
     expect(body).not.toContain('how-to-use-this-guide');
   });
 
-  it('claims no test result of its own', () => {
-    expect(body).not.toMatch(/Anvil|Expanse|\b20\d\d\b|validated|tested on/i);
+  it('claims no test result of its own, beyond the one dated limitation about the image build', () => {
+    const buildNote = /On the Apptainer used for the October 2026 test, this script could not build the image without extra privileges, and the test used the earlier build with the same digest\./;
+    expect(body).toMatch(buildNote);
+    expect(body.replace(buildNote, '')).not.toMatch(/Anvil|Expanse|\b20\d\d\b|validated|tested on/i);
+    expect(body).not.toMatch(/Anvil|Expanse|validated|tested on/i);
   });
 });

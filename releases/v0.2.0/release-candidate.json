@@ -34,6 +34,7 @@
     { "class": "changed", "itemId": "start-guide" },
     { "class": "changed", "itemId": "glossary" },
     { "class": "changed", "itemId": "applicability-record-plain-language" },
+    { "class": "changed", "itemId": "applicability-record-m2-baseline-2026-10" },
     { "class": "corrected", "itemId": "workflow-validation-link" },
     { "class": "corrected", "itemId": "diagnostic-identifiers" },
     { "class": "corrected", "itemId": "applicability-record-failure-run" }

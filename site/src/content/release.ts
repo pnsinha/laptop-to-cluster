@@ -16,10 +16,13 @@ export function currentReleaseVersion(root = process.cwd().endsWith('/site') ? '
  *  They resolve here to the current release tag. Provenance links stay pinned to the release a run used. */
 export const RELEASE_REF_TOKEN = '@release';
 
-/** Replaces the release token inside href attributes only. */
+/** Replaces the release token in link targets (`.../blob/@release/...`) and wherever it stands alone as a word,
+ *  such as the tag in a `git clone --branch @release` command. Words that merely contain it are left alone. */
 export function resolveReleaseRefs(html: string, version: string): string {
   if (!version) throw new Error('resolveReleaseRefs: a release version is required');
-  return html.replace(/href="([^"]*)"/g, (attribute, href: string) => (
-    href.includes(`/${RELEASE_REF_TOKEN}/`) ? `href="${href.replaceAll(`/${RELEASE_REF_TOKEN}/`, `/${version}/`)}"` : attribute
-  ));
+  return html
+    .replace(/href="([^"]*)"/g, (attribute, href: string) => (
+      href.includes(`/${RELEASE_REF_TOKEN}/`) ? `href="${href.replaceAll(`/${RELEASE_REF_TOKEN}/`, `/${version}/`)}"` : attribute
+    ))
+    .replace(/(?<![\w@/-])@release(?![\w/-])/g, version);
 }

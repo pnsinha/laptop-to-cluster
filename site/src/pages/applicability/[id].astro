@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { formatDate } from '../../content/format';
 import { namedVersion, projectEvidencePanel } from '../../content/projections';
+import { currentReleaseVersion } from '../../content/release';
 import type { ApplicabilityRecord } from '../../content/schema';
 export async function getStaticPaths() {
   return (await getCollection('applicability')).map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
@@ -14,6 +15,10 @@ const repositoryHref = (reference: typeof record.provenance[number]['reference']
    otherwise the workflow revision (true for bundles committed before that revision was tagged). */
 const evidenceRelease = (path: string) => record.provenance.find(({ reference }) => reference.path === path)?.reference.release ?? record.workflow_revision;
 const evidenceHref = (path: string) => `https://github.com/pnsinha/laptop-to-cluster/blob/${encodeURIComponent(evidenceRelease(path))}/${path.split('/').map(encodeURIComponent).join('/')}`;
+/* The provenance links stay pinned to the revision the run used. A README from an earlier release says so, and points at the current one. */
+const currentRelease = currentReleaseVersion();
+const olderReadme = record.provenance.map(({ reference }) => reference).find(({ path, release }) => /(?:^|\/)README\.md$/.test(path) && release !== currentRelease);
+const currentReadmeHref = olderReadme ? `${olderReadme.repository}/blob/${encodeURIComponent(currentRelease)}/${olderReadme.path.split('/').map(encodeURIComponent).join('/')}` : '';
 const plainRows = record.plain_language ? projectEvidencePanel(record).rows : [];
 const extension = record.review_extension;
 ---
@@ -53,5 +58,6 @@ const extension = record.review_extension;
       <ul class="related-evidence">{record.related_evidence.map((reference) => <li><a href={evidenceHref(reference.path)}>{reference.id}</a> (negative test): <code class="integrity">{reference.integrity}</code></li>)}</ul>
     </>}
     <h2>Provenance</h2><ul>{record.provenance.map(({ label, reference }) => <li>{label}: <a href={repositoryHref(reference)}>{reference.path} at {reference.release}</a> (<code class="integrity">{reference.integrity}</code>)</li>)}</ul>
+    {olderReadme && <p class="provenance-note">This README predates the test run; the current README is in <a href={currentReadmeHref}>the release</a>.</p>}
   </section>
 </BaseLayout>
