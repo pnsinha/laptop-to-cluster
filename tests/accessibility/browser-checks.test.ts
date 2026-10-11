@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, type Browser } from 'playwright';
-import { checkComponentGeometry, checkCrosswalkLayout, checkGuideCards, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence, inspectThemeScript } from './browser-checks';
+import { checkComponentGeometry, checkCrosswalkLayout, checkGuideCards, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkPrintOverflow, checkThemePrecedence, inspectThemeScript } from './browser-checks';
 import { serveFixtures } from './fixture-server';
 
 let browser: Browser;
@@ -219,6 +219,29 @@ describe('print check', () => {
       expect((await checkPrint(browser, server.origin, '/order/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT');
       expect((await checkPrint(browser, server.origin, '/print-hidden/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT');
       expect((await checkPrint(browser, server.origin, '/print-order/', EXPECT)).map((entry) => entry.code)).toContain('A11Y-PRINT');
+    } finally { await server.close(); }
+  }, 120_000);
+});
+
+describe('print overflow check', () => {
+  const LONG = 'sbatch --export=ALL,INPUT_PATH="$W/inputs/tasks.json",EXPECTED_PATH="$W/expected/results.json",OUTPUT_PATH="$W/outputs/results.json",VERIFY_PATH="$W/verify" job.sbatch';
+  const TALL = Array.from({ length: 30 }, (_value, index) => `line ${index}`).join('\n');
+  const screenCss = 'pre{max-inline-size:100%;overflow:auto}.capped{max-block-size:6rem}';
+  const page = (printCss: string, code = LONG, klass = '') => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title><style>${screenCss}${printCss}</style></head><body><main><pre class="${klass}" tabindex="0" aria-label="Example"><code>${code}</code></pre></main></body></html>`;
+  const fix = '@media print{pre,pre code{white-space:pre-wrap;overflow-wrap:anywhere}.capped{max-block-size:none;overflow:visible}}';
+
+  it('passes code that wraps and a capped excerpt that prints in full, and reports a line or a height cap that hides text', async () => {
+    const server = await serveFixtures({
+      '/wrapped/': { body: page(fix) },
+      '/tall-fixed/': { body: page(fix, TALL, 'capped') },
+      '/wide/': { body: page('') },
+      '/tall/': { body: page('', TALL, 'capped') },
+    });
+    try {
+      expect(await checkPrintOverflow(browser, server.origin, '/wrapped/')).toEqual([]);
+      expect(await checkPrintOverflow(browser, server.origin, '/tall-fixed/')).toEqual([]);
+      expect((await checkPrintOverflow(browser, server.origin, '/wide/')).map((entry) => entry.code)).toContain('A11Y-PRINT-CLIPPED');
+      expect((await checkPrintOverflow(browser, server.origin, '/tall/')).map((entry) => entry.code)).toContain('A11Y-PRINT-CLIPPED');
     } finally { await server.close(); }
   }, 120_000);
 });

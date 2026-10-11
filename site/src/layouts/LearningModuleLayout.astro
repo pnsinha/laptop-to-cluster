@@ -46,7 +46,7 @@ const runnable = profile === 'learning-runnable';
     <ul>{item.learning_outcomes.map((value) => <li>{value}</li>)}</ul>
     {(runnable || item.prerequisites.length > 0) && <>
       <h3>Prerequisites</h3>
-      <ul>{item.prerequisites.length ? item.prerequisites.map((value) => <li><Fragment set:html={inlineCodeHtml(value.check ?? value.id)} />{value.diagnostic_id && <> — <a href={diagnosticHref(value.diagnostic_id)}>{displayDiagnosticCode(value.diagnostic_id)}</a></>}</li>) : <li>No execution prerequisite is required.</li>}</ul>
+      <ul>{item.prerequisites.length ? item.prerequisites.map((value) => <li><Fragment set:html={inlineCodeHtml(value.check ?? value.id)} />{value.diagnostic_id && <>—<a href={diagnosticHref(value.diagnostic_id)}>{displayDiagnosticCode(value.diagnostic_id)}</a></>}</li>) : <li>No execution prerequisite is required.</li>}</ul>
     </>}
     {item.required_resources && <><h3>Required resources</h3><ul>{item.required_resources.map((value) => <li>{value}</li>)}</ul></>}
   </section>

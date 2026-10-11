@@ -192,3 +192,102 @@ describe('reading leading', () => {
     expect(bare).toMatch(/font-size:\s*var\(--text-reading\);\s*line-height:\s*var\(--leading-reading\)/);
   });
 });
+
+/* Print clipping and typography fixes (fix lane C). */
+describe('print shows long code in full', () => {
+  const print = mediaInner(bare, 'print').join('\n');
+  const wrapRule = bodyIn(print, 'pre, pre code, .implementation-reference pre code');
+  const heightRule = bodyIn(print, '.implementation-reference pre');
+
+  it('wraps every code line in print, with an anywhere break so a long unspaced value cannot be cut off', () => {
+    expect(wrapRule).toMatch(/white-space:\s*pre-wrap/);
+    expect(wrapRule).toMatch(/overflow-wrap:\s*anywhere/);
+  });
+
+  it('lifts the height cap and the scroll box on reference excerpts in print, so the last lines still print', () => {
+    expect(heightRule).toMatch(/max-block-size:\s*none/);
+    expect(heightRule).toMatch(/overflow:\s*visible/);
+  });
+
+  it('places the print rules after the screen rules they override, in global.css itself', () => {
+    const screenRules = ['.implementation-reference pre code {', '\npre code {', '.implementation-reference pre {'].map((rule) => bare.indexOf(rule));
+    const printRule = bare.indexOf('pre, pre code, .implementation-reference pre code {');
+    for (const at of screenRules) expect(at).toBeGreaterThan(-1);
+    expect(printRule).toBeGreaterThan(Math.max(...screenRules));
+    const own = read('global.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(own).toContain('pre, pre code, .implementation-reference pre code {');
+    expect(own).toContain('.implementation-reference pre { max-block-size: none; overflow: visible; }');
+  });
+});
+
+describe('letter-spacing on capitals', () => {
+  it('sets the resource tile tag at 0.06em', () => {
+    expect(body('.resource-tile__tag')).toMatch(/letter-spacing:\s*0\.06em/);
+  });
+
+  it('keeps every uppercase rule between 0.05em and 0.12em', () => {
+    const rules = [...bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([, , declarations]) => /text-transform:\s*uppercase/.test(declarations));
+    expect(rules.length).toBeGreaterThanOrEqual(3);
+    for (const [, selector, declarations] of rules) {
+      const spacing = /letter-spacing:\s*([\d.]+)em/.exec(declarations);
+      expect(spacing, selector.trim()).not.toBeNull();
+      expect(Number(spacing![1]), selector.trim()).toBeGreaterThanOrEqual(0.05);
+      expect(Number(spacing![1]), selector.trim()).toBeLessThanOrEqual(0.12);
+    }
+  });
+});
+
+describe('prose and fine print leading', () => {
+  it('sets the source excerpt annotation, which is prose, at the reading leading, and leaves code at 1.6', () => {
+    expect(body('.source-excerpt__annotation')).toMatch(/line-height:\s*var\(--leading-reading\)/);
+    expect(body('pre, .terminal, .technical-figure')).toMatch(/line-height:\s*var\(--leading-code\)/);
+    expect(bare).toMatch(/--leading-code:\s*1\.6\s*;/);
+  });
+
+  it('sets the footer acknowledgment at 1.5 and changes nothing else in the rule', () => {
+    expect(body('.site-footer .acknowledgment')).toMatch(/line-height:\s*1\.5\s*;?\s*$/);
+    expect(body('.site-footer .acknowledgment')).not.toMatch(/1\.55/);
+    expect(body('.site-footer .acknowledgment')).toMatch(/font-size:\s*var\(--text-fine\)/);
+    expect(body('.site-footer .acknowledgment')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
+  });
+});
+
+describe('full-width actions on a narrow screen', () => {
+  const narrow = mediaInner(bare, '(max-width: 30rem)').join('\n');
+
+  it('starts a wrapped label on the start edge instead of centring several lines', () => {
+    expect(bodyIn(narrow, '.action')).toMatch(/text-align:\s*start/);
+    expect(bodyIn(narrow, '.action')).not.toMatch(/text-align:\s*center/);
+    /* The anonymous flex item shrink-wraps a one-line label, so justify-content centres only text shorter than the line. */
+    expect(bodyIn(narrow, '.action')).toMatch(/display:\s*flex[^}]*justify-content:\s*center/);
+  });
+
+  it('keeps the full width, the target height and the focus ring', () => {
+    expect(bodyIn(narrow, '.hero__actions, .action')).toMatch(/inline-size:\s*100%/);
+    expect(body('.action')).toMatch(/min-block-size:\s*2\.75rem/);
+    expect(bare).toMatch(/:focus-visible\s*\{[^{}]*outline/);
+  });
+});
+
+describe('prerequisite list dash', () => {
+  const layout = readFileSync(`${root}/site/src/layouts/LearningModuleLayout.astro`, 'utf8');
+  const prerequisites = layout.split('\n').find((line) => line.includes('item.prerequisites.length ?')) ?? '';
+
+  it('sets the em dash flush, or with thin spaces, never with ordinary spaces', () => {
+    expect(prerequisites).toContain('diagnostic_id');
+    expect(prerequisites).not.toMatch(/ — </);
+    expect(prerequisites).toMatch(/<>(?:&thinsp;)?—(?:&thinsp;)?<a /);
+  });
+});
+
+describe('cheat sheet measure', () => {
+  it('caps the cheat sheet paragraphs at the prose measure on screen only', () => {
+    expect(mediaInner(bare, 'screen').map((inner) => bodyIn(inner, '.cheat-sheet > p')).join(';')).toMatch(/max-inline-size:\s*var\(--measure-prose\)/);
+    expect(mediaInner(bare, 'print').map((inner) => bodyIn(inner, '.cheat-sheet > p')).join(';')).not.toMatch(/max-inline-size/);
+    expect(body('.cheat-sheet > p')).toBe('');
+  });
+
+  it('leaves the cheat sheet tables and code at the full width', () => {
+    expect(body('.cheat-sheet .table-overflow')).toMatch(/max-inline-size:\s*100%/);
+  });
+});

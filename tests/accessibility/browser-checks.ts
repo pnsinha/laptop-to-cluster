@@ -398,6 +398,32 @@ export async function checkPrint(browser: Browser, origin: string, path: string,
   return issues;
 }
 
+/** Print must not cut code off. At a Letter text width (740 px), every pre must show all of its lines: no sideways scroll width and no height cap hiding the end. */
+export async function checkPrintOverflow(browser: Browser, origin: string, path: string): Promise<Issue[]> {
+  const scope = `${path}:print-overflow`;
+  const context = await browser.newContext({ viewport: { width: 740, height: 900 } });
+  const page = await context.newPage();
+  await page.emulateMedia({ media: 'print' });
+  await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+  await shim(page);
+  const state = await page.evaluate(() => {
+    window.dispatchEvent(new Event('beforeprint'));
+    const shown = [...document.querySelectorAll<HTMLElement>('pre')].filter((element) => element.checkVisibility());
+    const label = (element: HTMLElement) => (element.getAttribute('aria-label') ?? element.closest('figure')?.querySelector('figcaption')?.textContent ?? element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 50);
+    return {
+      print: matchMedia('print').matches,
+      count: shown.length,
+      clipped: shown.filter((element) => element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight)
+        .map((element) => `${label(element)} (${element.scrollWidth}x${element.scrollHeight} in ${element.clientWidth}x${element.clientHeight})`),
+    };
+  });
+  const issues: Issue[] = [];
+  if (!state.print) issues.push(issue(scope, 'A11Y-PRINT', 'print media emulation did not activate'));
+  if (state.clipped.length) issues.push(issue(scope, 'A11Y-PRINT-CLIPPED', `${state.clipped.length} code block(s) lose text on paper (wrap the lines and lift any height cap in print): ${state.clipped.slice(0, 3).join('; ')}`));
+  await context.close();
+  return issues;
+}
+
 /* ---------------------------------------------------------------------------------------------
    Part 3: JS off, primary action, font failure, crosswalk layout, motion (spec §10, §8.3, D13-D15)
 --------------------------------------------------------------------------------------------- */
