@@ -25,8 +25,8 @@ describe('global.css foundation', () => {
     expect(body(':root')).toMatch(/font-size:\s*var\(--text-base\);[\s\S]*line-height:\s*var\(--leading-base\)/);
   });
 
-  it('keeps 16 px controls, 14 px supporting text and a 1.5 control line height', () => {
-    expect(body('button, input, select, textarea, summary')).toMatch(/font-size:\s*var\(--text-base\)[^}]*line-height:\s*1\.5/);
+  it('keeps 15 px controls, 14 px supporting text and a 1.5 control line height', () => {
+    expect(body('button, input, select, textarea, summary')).toMatch(/font-size:\s*var\(--text-label\)[^}]*line-height:\s*1\.5/);
     expect(body('small, .supporting, .technical-label')).toMatch(/font-size:\s*var\(--text-supporting\)/);
     expect(body('body')).toMatch(/font-size:\s*16px/);
   });
@@ -43,6 +43,22 @@ describe('global.css foundation', () => {
     expect(body('h2')).toMatch(/font-size:\s*var\(--text-h2\)/);
     expect(body('h3')).toMatch(/font-size:\s*var\(--text-h3\)/);
     expect(body('h4')).toMatch(/font-family:\s*var\(--font-body\)/);
+  });
+
+  it('sets interface chrome at the 15 px label size: nav, breadcrumb and footer links, skip link, table headers, actions', () => {
+    for (const selector of ['.site-nav__link', '.breadcrumbs a', '.footer-links a', '.skip', '.action', '.hero__secondary-link', '.section-nav__link', 'th']) {
+      expect(body(selector), selector).toMatch(/font-size:\s*var\(--text-label\)/);
+    }
+    expect(body('.action')).toMatch(/min-block-size:\s*2\.75rem/);
+  });
+
+  it('keeps h4 and running text at the 16 px base, not the label size', () => {
+    expect(body('h4')).toMatch(/font-size:\s*var\(--text-base\)/);
+    expect(body('td')).not.toMatch(/font-size/);
+  });
+
+  it('sets the site name at the h3 size, so no wordmark sits off the type ramp', () => {
+    expect(body('.site-identity__line1')).toMatch(/font-size:\s*var\(--text-h3\)/);
   });
 
   it('uses the focus token for the ring, with a visible offset', () => {

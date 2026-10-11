@@ -88,8 +88,23 @@ describe('design tokens', () => {
     expect(css).toContain('--mark-scratch: "▲";');
     expect(css).toContain('--mark-net: "●";');
     expect(css).toMatch(/--text-fine:\s*0\.875rem;/);
-    expect(css).toMatch(/--text-ui:\s*1rem;/);
+    expect(css).toMatch(/--text-label:\s*0\.9375rem;/);
+    expect(css).toMatch(/--text-ui:\s*var\(--text-label\);/);
     expect(css).toMatch(/--text-code:\s*0\.9375rem;/);
+  });
+
+  it('keeps interface labels at 15 px, one step below the 16 px body, and running sans text at 16 px', () => {
+    expect(css).toMatch(/--text-body:\s*var\(--text-base\);/);
+    expect(css).not.toMatch(/--text-body:\s*var\(--text-ui\)/);
+    expect(css).toMatch(/--text-base:\s*1rem;/);
+  });
+
+  it('steps the type ramp evenly: body 16, lede 18, h3 20, h2 24, and a page title that tops out at 32 px', () => {
+    expect(css).toMatch(/--text-reading:\s*1rem;/);
+    expect(css).toMatch(/--text-lede:\s*1\.125rem;/);
+    expect(css).toMatch(/--text-h3:\s*1\.25rem;/);
+    expect(css).toMatch(/--text-h2:\s*1\.5rem;/);
+    expect(css).toMatch(/--text-display:\s*clamp\(1\.75rem,\s*1\.5rem \+ 1cqi,\s*2rem\);/);
   });
 
   it('maps the legacy token names that existing pages still use onto the new scale', () => {

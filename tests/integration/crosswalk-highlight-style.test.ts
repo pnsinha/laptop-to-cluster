@@ -142,7 +142,7 @@ describe('crosswalk highlight: computed styles in a real browser', () => {
     expect(sizes).toHaveLength(5);
     for (const { label, height, font } of sizes) {
       expect(height, label!).toBeGreaterThanOrEqual(32);
-      expect(font, label!).toBeGreaterThanOrEqual(16);
+      expect(font, label!).toBeGreaterThanOrEqual(15);
     }
     const statusFont = await page.locator('.crosswalk__status').evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
     expect(statusFont).toBeGreaterThanOrEqual(14);

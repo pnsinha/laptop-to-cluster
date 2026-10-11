@@ -79,7 +79,7 @@ describe('Cluster Terminal semantic foundation', () => {
     expect(css).toMatch(/--text-supporting:\s*0\.875rem/);
     expect(css).toMatch(/--leading-base:\s*1\.(?:4[5-9]|[5-9])/);
     expect(css).toMatch(/:root\s*\{[\s\S]*font-size:\s*var\(--text-base\);[\s\S]*line-height:\s*var\(--leading-base\)/);
-    expect(css).toMatch(/button, input, select, textarea, summary\s*\{[^}]*font-size:\s*var\(--text-base\)[^}]*line-height:\s*1\.5/s);
+    expect(css).toMatch(/button, input, select, textarea, summary\s*\{[^}]*font-size:\s*var\(--text-label\)[^}]*line-height:\s*1\.5/s);
     expect(css).toMatch(/small, \.supporting, \.technical-label\s*\{[^}]*font-size:\s*var\(--text-supporting\)/s);
     expect(css).toMatch(/h1, h2, h3\s*\{[^}]*line-height:\s*1\.[0-9]/s);
     expect(css).toMatch(/pre, \.terminal, \.technical-figure\s*\{[^}]*background:\s*var\(--surface\)/s);

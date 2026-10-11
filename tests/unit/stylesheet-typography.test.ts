@@ -61,8 +61,8 @@ describe('quote blocks', () => {
     expect(body('blockquote')).toMatch(/font-size:\s*0\.9444em/);
   });
 
-  it('sets quotes at 0.9444 of the reading token inside every reading container, 17 px on the 18 px text', () => {
-    /* In em, a quote in a reading container would resolve against the 16 px article text (15 px), because the zero-specificity reading rule gives the blockquote 18 px but the blockquote rule wins. So the reading containers get the token form, after the base rule and after the reading rule. */
+  it('sets quotes at 0.9444 of the reading token inside every reading container, 15 px on the 16 px text', () => {
+    /* In em, a quote in a reading container would resolve against the article text it sits in; the zero-specificity reading rule sets the reading size on the blockquote, but the blockquote rule wins. So the reading containers get the token form, after the base rule and after the reading rule. */
     const reading = [...bare.matchAll(/(p\.prose, :where\([^{}]*\) > :where\(p, ul, ol, dl, blockquote\))\s*\{[^{}]*font-family:\s*var\(--font-reading\)/g)];
     expect(reading).toHaveLength(1);
     const containers = /:where\((.*)\) > :where\(p, ul, ol, dl, blockquote\)/.exec(reading[0][1])![1];
@@ -190,6 +190,11 @@ describe('reading leading', () => {
     expect(bare).toMatch(/--leading-reading:\s*1\.45\s*;/);
     expect(bare).not.toMatch(/--leading-reading:\s*1\.5\s*;/);
     expect(bare).toMatch(/font-size:\s*var\(--text-reading\);\s*line-height:\s*var\(--leading-reading\)/);
+  });
+
+  it('sets reading text at 16 px at every width, with no clamp that can grow it', () => {
+    expect(bare).toMatch(/--text-reading:\s*1rem\s*;/);
+    expect(bare).not.toMatch(/--text-reading:\s*clamp/);
   });
 });
 

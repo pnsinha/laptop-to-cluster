@@ -1,8 +1,8 @@
 /*
  * laptop-to-cluster.org design tokens: the v0.2.0 visual system.
  * Light is the base palette. Without a stored choice the page follows
- * prefers-color-scheme; a text-labelled System / Light / Dark control sets
- * data-theme on <html>. Dark tokens are screen-only, so print always starts
+ * prefers-color-scheme; one icon toggle (light or dark) sets data-theme on
+ * <html>. Dark tokens are screen-only, so print always starts
  * from the light base and then applies the print overrides.
  * Every text/background pair used by the specimen is checked by
  * contrast_check.py (WCAG 2.2 AA in both modes).
@@ -17,16 +17,17 @@
   --font-body: "IBM Plex Sans", "IBM Plex Sans Fallback", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   --font-technical: "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Mono", Consolas, "Noto Sans Mono", "DejaVu Sans Mono", "Liberation Mono", "Droid Sans Mono", monospace;
   --font-marks: "L2C Marks", "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", sans-serif; /* four glyphs only (U+25A0 U+25B2 U+25C6 U+25CF), one face so they match in size */
-  /* Type sizes (cqi falls back to the viewport when no container is set) */
+  /* Type sizes: one even ramp, 16 / 18 / 20 / 24 / 32 px at desktop (cqi falls back to the viewport when no container is set) */
   --text-fine: 0.875rem; /* 14px: captions, eyebrows, footer; the floor for essential text */
-  --text-ui: 1rem; /* 16px: UI sans, nav, buttons, controls, tables */
+  --text-label: 0.9375rem; /* 15px: interface labels, one step below the 16px body: nav, buttons, controls, breadcrumbs, table headers, pager, skip link */
+  --text-ui: var(--text-label); /* UI sans chrome resolves to the label size (15px); running sans text uses --text-base (16px) */
   --text-code: 0.9375rem; /* 15px: code blocks */
   --text-code-inline: max(0.875em, 0.875rem); /* inline code: 0.875em, never below 14px */
-  --text-reading: clamp(1.0625rem, 1rem + 0.5cqi, 1.125rem); /* 17-18px reading serif */
-  --text-lede: clamp(1.1875rem, 1.05rem + 0.9cqi, 1.3125rem); /* 19-21px */
-  --text-h3: 1.375rem; /* 22px */
-  --text-h2: clamp(1.5rem, 1.3rem + 1.1cqi, 1.75rem); /* 24-28px */
-  --text-display: clamp(2.25rem, 1.6rem + 2.8cqi, 3rem); /* 36-48px */
+  --text-reading: 1rem; /* 16px reading serif: body text is never above 16px, at any width */
+  --text-lede: 1.125rem; /* 18px */
+  --text-h3: 1.25rem; /* 20px */
+  --text-h2: 1.5rem; /* 24px */
+  --text-display: clamp(1.75rem, 1.5rem + 1cqi, 2rem); /* page h1: 28px narrow, 32px at desktop, never above 40px */
   /* Leading and weight */
   --leading-display: 1.1;
   --leading-heading: 1.2;
@@ -75,7 +76,7 @@
   --mark-scratch: "▲";
   --mark-net: "●";
   /* Legacy names that existing pages still use. Same scale, new names. */
-  --text-body: var(--text-ui);
+  --text-body: var(--text-base);
   --text-lead: var(--text-lede);
   --text-heading: var(--text-h2);
   --text-subheading: var(--text-h3);

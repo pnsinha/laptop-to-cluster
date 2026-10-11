@@ -250,7 +250,7 @@ try {
         const mainLinks = visible.filter((element) => element.matches('main a'));
         return {
           body: Number.parseFloat(getComputedStyle(document.body).fontSize),
-          controls: Math.min(...controls.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 16),
+          controls: Math.min(...controls.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 15),
           technical: Math.min(...technical.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 14),
           svgText: Math.min(...svgText, 14),
           linksHaveNonColorCue: mainLinks.every((element) => {
@@ -262,7 +262,7 @@ try {
           statusNamed: /Release status:/.test(document.querySelector('.release')?.textContent ?? ''),
         };
       });
-      if (sizing.body < 16 || sizing.controls < 16) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'body and control text must remain at least 16 CSS pixels');
+      if (sizing.body < 16 || sizing.controls < 15) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'body text must remain at least 16 CSS pixels and control text at least 15 (the label size, one step below the body)');
       if (sizing.technical < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'supporting and technical text must remain at least 14 CSS pixels');
       if (sizing.svgText < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', `diagram text renders at ${sizing.svgText.toFixed(1)} CSS pixels; the floor is 14`);
       if (!sizing.linksHaveNonColorCue || !sizing.statusNamed) fail(`${path}:${colorScheme}`, 'A11Y-COLOR-MEANING', 'links and status must include non-color cues');

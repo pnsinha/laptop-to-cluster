@@ -48,6 +48,16 @@ describe('hero', () => {
     expect(body('.home-doors > h2, .concepts > h2, .crosswalk > h2')).toMatch(/font-size:\s*var\(--l-h2\)/);
   });
 
+  it('keeps the landing scale on the content ramp: a 32 px headline at most, 18 lede, 24 h2, 20 terms, 16 body', () => {
+    const scale = body('body[data-composition-profile="landing"]');
+    expect(scale).toMatch(/--l-display:\s*clamp\(1\.75rem,\s*1\.55rem \+ 0\.6vw,\s*2rem\)/);
+    expect(scale).toMatch(/--l-lede:\s*1\.125rem/);
+    expect(scale).toMatch(/--l-h2:\s*1\.5rem/);
+    expect(scale).toMatch(/--l-term:\s*1\.25rem/);
+    expect(scale).toMatch(/--l-body:\s*1rem/);
+    expect(scale).toMatch(/--l-annot:\s*1rem/);
+  });
+
   it('draws the hero figure as two bordered environment panels, plain HTML', () => {
     expect(body('.env-pair')).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
     expect(body('.env')).toMatch(/background:\s*var\(--raised\)[^}]*border:\s*var\(--border-thin\) solid var\(--rule\)/);
