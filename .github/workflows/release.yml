@@ -92,7 +92,7 @@ jobs:
           L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
       - name: Accessibility review must be signed for production
         if: needs.plan.outputs.mode == 'production'
-        run: npx --no-install tsx scripts/validate-accessibility-review.ts --require-complete
+        run: npx --no-install tsx scripts/validate-accessibility-review.ts --require-complete --release-sha "$RELEASE_SHA"
       - name: Fast preview gate (check, one build, publication validators, prepare)
         if: needs.plan.outputs.full-gate != 'true'
         run: |

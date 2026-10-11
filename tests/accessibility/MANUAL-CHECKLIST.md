@@ -1,6 +1,6 @@
 # Manual accessibility checks for a release
 
-The scanner (`npm run test:accessibility:browser`) automates what a script can prove: axe in both schemes, token contrast, keyboard order and focus rings, reflow at 320/768/1280 px and 200% zoom, forced-colors and print emulation, JavaScript off, blocked fonts, theme precedence, and reduced motion. The checks below need a person with a keyboard and a screen reader. Record each result in `releases/<version>/accessibility-review.yml`.
+The scanner (`npm run test:accessibility:browser`) automates what a script can prove: axe in both schemes, token contrast, keyboard order and focus rings, reflow at 320/768/1280 px and 200% zoom, forced-colors and print emulation, JavaScript off, blocked fonts, theme precedence, and reduced motion. The checks below need a person with a keyboard and a screen reader. Record each result in `releases/<version>/accessibility-review.yml`. When you sign it, also record the commit and the https deployment URL you reviewed (`reviewedCommit`, `reviewedDeploymentUrl`): the production release checks that nothing but the review file changed after that commit.
 
 ## Set up
 
