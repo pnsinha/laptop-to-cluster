@@ -244,6 +244,7 @@ export function verbatimExcerptIssues(code: string, sourceLines: readonly string
     next = found + 1;
     skipping = false;
   }
+  if (!issues.length && !skipping && next !== lineEnd) issues.push(`ends at line ${next}, but its label says ${lineEnd}`);
   return issues;
 }
 

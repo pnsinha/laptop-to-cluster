@@ -413,7 +413,9 @@ export async function checkPrintOverflow(browser: Browser, origin: string, path:
     return {
       print: matchMedia('print').matches,
       count: shown.length,
-      clipped: shown.filter((element) => element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight)
+      // Clipped inside the block (it scrolls), or wider than the page so an ancestor cuts it off on paper.
+      clipped: shown.filter((element) => element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight
+        || element.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
         .map((element) => `${label(element)} (${element.scrollWidth}x${element.scrollHeight} in ${element.clientWidth}x${element.clientHeight})`),
     };
   });

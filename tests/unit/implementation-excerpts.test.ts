@@ -60,6 +60,9 @@ describe('implementation reference carries code excerpts only', () => {
     expect(verbatimExcerptIssues('a\nc', source, 1, 5)).toHaveLength(1);
     expect(verbatimExcerptIssues('b\na', source, 1, 5)).toHaveLength(1);
     expect(verbatimExcerptIssues('b\nc edited', source, 2, 4)).toHaveLength(1);
+    // An excerpt must also reach the end line its label names, unless it ends on an elision line.
+    expect(verbatimExcerptIssues('b\nc', source, 2, 4)).toHaveLength(1);
+    expect(verbatimExcerptIssues(`b\n${ELISION_LINE}`, source, 2, 4)).toEqual([]);
     expect(verbatimExcerptIssues('b\nc\nd\ne', source, 2, 4)).toHaveLength(1);
   });
 });
