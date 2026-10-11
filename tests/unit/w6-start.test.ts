@@ -49,7 +49,10 @@ describe('W6 Run the example', () => {
   });
 
   it('checks the input from inside inputs/, matching how the sidecar names its file', () => {
-    expect(section('Check the input')).toContain('(cd inputs && sha256sum -c tasks.json.sha256)');
+    expect(section('Check the input')).toContain('(cd workflows/baseline-slurm-apptainer/inputs && sha256sum -c tasks.json.sha256)');
+    // Each block runs from the repository root, so a reader can follow them in one shell.
+    expect(section('Check the input')).not.toMatch(/^cd workflows\//m);
+    expect(section('Submit the job')).toContain('from the repository root');
     expect(read(workflow('inputs/tasks.json.sha256'))).toMatch(/^[0-9a-f]{64} {2}tasks\.json\n?$/);
   });
 
@@ -110,9 +113,11 @@ describe('W6 Run the example', () => {
   });
 
   it('claims no test result of its own, beyond the one dated limitation about the image build', () => {
-    const buildNote = /On the Apptainer used for the October 2026 test, this script could not build the image without extra privileges, and the test used the earlier build with the same digest\./;
+    const buildNote = /On the Apptainer used for the \[October 2026 test\]\(\/applicability\/m2-baseline-anvil-2026-10\/\), this script could not build the image without extra privileges, and the test used the earlier build with the same digest\./;
     expect(body).toMatch(buildNote);
     expect(body.replace(buildNote, '')).not.toMatch(/Anvil|Expanse|\b20\d\d\b|validated|tested on/i);
-    expect(body).not.toMatch(/Anvil|Expanse|validated|tested on/i);
+    // The visible words never name the system; the link to the record (whose id names it) is the only way there.
+    expect(body.replace(/\]\([^)]*\)/g, ']')).not.toMatch(/Anvil|Expanse|validated|tested on/i);
+    expect(body).toContain('](/applicability/m2-baseline-anvil-2026-10/)');
   });
 });

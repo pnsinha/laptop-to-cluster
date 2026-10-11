@@ -104,7 +104,7 @@ The job writes its run files (`input.json`, `expected.json`, `endpoint.json`, `r
 
 <h2 id="procedure">Procedure</h2>
 
-1. Check the prerequisites listed at the start of this module, then [record your local values](/start/#record-your-local-values).
+1. [Get the code](/start/#get-the-code), check the prerequisites listed at the start of this module, then [record your local values](/start/#record-your-local-values).
 2. [Get the container image](/start/#get-the-container-image) and [check the input](/start/#check-the-input).
 3. Set the adapter values that differ at your center: account, partition, and scratch root.
 4. [Submit the job](/start/#submit-the-job) once, with the exact command on that page. Keep account names, private hosts, and sensitive paths out of logs.

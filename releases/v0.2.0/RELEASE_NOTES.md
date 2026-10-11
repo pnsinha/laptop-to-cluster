@@ -18,9 +18,10 @@
 - The v0.2.0 workflow README now points to the dated validation record instead of describing the workflow as not run.
 - Diagnostic identifiers are consistent between the diagnostics page and the workflow.
 - The test record now lists the deliberate failure run next to the successful run.
+- The README fingerprints shown on the July test record and on the scheduler-as-orchestrator page now match the files at the v0.1.0 tag they link to.
 
 ## Validation boundary
-Every tested claim on the site is rendered from a dated applicability record and links to that record. This release states no test result anywhere else. Statements that are designed but not yet run on a cluster say so.
+Every tested claim on the site links to the dated applicability record it comes from. Statements that are designed but not yet run on a cluster say so.
 
 ## Publication binding
 `npm run publication:prepare` binds the source commit, the immutable `v0.2.0` repository tag, the URL-manifest checksum, the complete-artifact checksum and the per-file-manifest checksum. The Direct Upload job adds the Cloudflare deployment ID and the assigned noncanonical `*.pages.dev` recovery URL; production publication is blocked if either is absent or inconsistent. Preview deployments never produce a release record.

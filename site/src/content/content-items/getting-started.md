@@ -72,22 +72,21 @@ workflows/baseline-slurm-apptainer/container/acquire.sh
 
 The script builds the image from a digest-pinned base into a temporary file, records the image's SHA-256 in `container/baseline.sif.sha256`, and then installs `container/baseline.sif`. It needs Apptainer and network access to the registry, so run it where your center allows image builds. If your center builds images elsewhere, build `container/Apptainer.def` there and create `container/baseline.sif.sha256` with your SHA-256 tool. If a check in the script fails, it prints a `BSSW-PREQ-*` or `BSSW-INTEGRITY-*` ID; look it up in [Troubleshooting](/diagnostics/).
 
-Some centers do not allow an unprivileged `apptainer build`. On the Apptainer used for the October 2026 test, this script could not build the image without extra privileges, and the test used the earlier build with the same digest. If the build fails with an Apptainer error rather than a BSSW ID, build `container/Apptainer.def` where you have privileges (or ask your center’s support), copy the `.sif` file into `container/`, and create `container/baseline.sif.sha256` with your SHA-256 tool.
+Some centers do not allow an unprivileged `apptainer build`. On the Apptainer used for the [October 2026 test](/applicability/m2-baseline-anvil-2026-10/), this script could not build the image without extra privileges, and the test used the earlier build with the same digest. If the build fails with an Apptainer error rather than a BSSW ID, build `container/Apptainer.def` where you have privileges (or ask your center’s support), copy the `.sif` file into `container/`, and create `container/baseline.sif.sha256` with your SHA-256 tool.
 
 ## Check the input
 
 The input has a recorded checksum. Check it from inside the `inputs` folder, because the checksum file names `tasks.json` without a directory:
 
 ```sh
-cd workflows/baseline-slurm-apptainer
-(cd inputs && sha256sum -c tasks.json.sha256)
+(cd workflows/baseline-slurm-apptainer/inputs && sha256sum -c tasks.json.sha256)
 ```
 
 Expect `tasks.json: OK`. If the checksum does not match, stop: the job would stop at the same point with [BSSW-INTEGRITY-INPUT](/diagnostics/#bssw-integrity-input).
 
 ## Submit the job
 
-Submit once, from the workflow directory. Slurm runs a copy of the script from its own spool directory, so pass the file locations as absolute paths instead of relying on the defaults:
+Submit once, from the repository root. Slurm runs a copy of the script from its own spool directory, so pass the file locations as absolute paths instead of relying on the defaults:
 
 ```sh
 cd workflows/baseline-slurm-apptainer

@@ -34,6 +34,7 @@ None in this release.
 - The v0.2.0 workflow README now points to the dated validation record instead of describing the workflow as not run.
 - Diagnostic identifiers are consistent between the diagnostics page and the workflow.
 - The test record now lists the deliberate failure run next to the successful run.
+- The README fingerprints shown on the July test record and on the scheduler-as-orchestrator page now match the files at the v0.1.0 tag they link to.
 
 ### Immutable citation
 Cite [repository release v0.2.0](https://github.com/pnsinha/laptop-to-cluster/releases/tag/v0.2.0).
