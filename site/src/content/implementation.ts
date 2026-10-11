@@ -151,7 +151,7 @@ printf 'BSSW workflow completed: result is in the job-scoped runtime directory.\
     title: 'Readiness is a bounded health contract, not a sleep',
     sourcePath: 'bin/readiness.py',
     lineStart: 17, lineEnd: 38, language: 'python',
-    annotation: 'The probe polls the coordinator /health endpoint on loopback with a hard deadline. It passes only when the coordinator reports the expected schema and task count — so workers never start against a half-initialized service.',
+    annotation: 'The probe polls the coordinator /health endpoint on loopback with a hard deadline. It passes only when the coordinator reports the expected schema and task count—so workers never start against a half-initialized service.',
     code: `deadline = time.monotonic() + args.timeout
 while time.monotonic() < deadline:
     try:
@@ -195,7 +195,7 @@ def claim(self) -> dict:
     title: 'The verifier is the only thing that can write “success”',
     sourcePath: 'bin/verify.py',
     lineStart: 22, lineEnd: 70, language: 'python',
-    annotation: 'The verifier checks that every task produced exactly one result, that results are unique, and that they match the expected outputs. Only then does it atomically write the success marker — the single artifact a completed run is judged by.',
+    annotation: 'The verifier checks that every task produced exactly one result, that results are unique, and that they match the expected outputs. Only then does it atomically write the success marker—the single artifact a completed run is judged by.',
     code: `# Load tasks, actual results, and the expected results.
 tasks = load_tasks(args.input)
 actual = json.load(open(args.results))["results"]
