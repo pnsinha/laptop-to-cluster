@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ACKNOWLEDGMENT_DISCLAIMER, ACKNOWLEDGMENT_STATEMENT } from '../../site/src/content/acknowledgment';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const READMES = ['README.md', 'workflows/baseline-slurm-apptainer/README.md', 'workflows/layered-install-trees/README.md'];
+const READMES = ['README.md', 'evidence/README.md', 'workflows/baseline-slurm-apptainer/README.md', 'workflows/layered-install-trees/README.md'];
 
 describe('READMEs carry the funding acknowledgment, verbatim', () => {
   for (const path of READMES) {

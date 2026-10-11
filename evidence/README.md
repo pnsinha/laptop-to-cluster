@@ -66,3 +66,9 @@ The profile's scheduler and runtime version strings must come from the
 log. Applicability records for layered runs must also declare
 `secondary_runtime` (the second container runtime), which is compared to the
 manifest's `run.secondaryRuntimeVersion`.
+
+## Acknowledgment
+
+This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.
+
+Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.

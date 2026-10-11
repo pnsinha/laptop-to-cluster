@@ -151,6 +151,7 @@ export function scanHistory(root, ref, pattern) {
   return { findings: [...commits].map((sha) => `commit ${sha} ${BOUNDARY_MESSAGE}`), errors: [] };
 }
 
+/** @param {{ root: string, require?: boolean, history?: string, env?: NodeJS.ProcessEnv, pdfToText?: (file: string) => string | null }} options */
 export function runBoundaryScan({ root, require = false, history, env = process.env, pdfToText = defaultPdfToText }) {
   const findings = [];
   const warnings = [];
