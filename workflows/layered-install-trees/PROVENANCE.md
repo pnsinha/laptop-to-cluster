@@ -5,8 +5,13 @@ Imported 2026-09-26 from the Anvil working directory
 `REVISION-RUNS.md` there). Copies below are redacted: Slurm accounts and the
 user scratch root were replaced by `BSSW_*` variables, and each script's
 `#SBATCH --output=` path was changed to a literal relative `logs/...` path
-because Slurm does not expand variables in `#SBATCH` lines; file content is
-otherwise unchanged.
+because Slurm does not expand variables in `#SBATCH` lines.
+
+Later edits: version-capture lines (`BSSW_VERSIONS`, 2026-09-27) were added to
+each sbatch script, and two comments were corrected (the reuse figure and the
+rootfs size). All jobs listed below ran the scripts as they were before these
+edits. The working directory and its `STATUS.md` and `REVISION-RUNS.md` are not
+published in this repository.
 
 | Imported file | Source path | Slurm jobs that used it |
 |---|---|---|

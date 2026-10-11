@@ -1,11 +1,18 @@
 # Representative-environment validation evidence
 
-This directory contains the representative Purdue Anvil run bundles that back release v0.1.0:
+This directory contains the representative Purdue Anvil run bundles behind the test records, in two pairs. Each pair is a successful run and a deliberate negative run.
+
+**October 2026 (current evidence for Module 2).** These back the record `applicability/m2-baseline-anvil-2026-10.yml` (Slurm 26.05.4, Apptainer 1.5.3, the same image digest as July):
+
+- `anvil-baseline-20261007-success/` — the successful baseline run.
+- `anvil-baseline-20261007-readiness-timeout/` — the deliberate negative case.
+
+**July 2026 (release v0.1.0).** These back the earlier record `applicability/m1-baseline-anvil.yml`, which the October record supersedes:
 
 - `anvil-v0-1-0-success-20260725/` — the successful baseline run (submission 19500029, terminal state COMPLETED, exit 0) that supports `applicability/m1-baseline-anvil.yml` at `status: validated`.
 - `anvil-v0-1-0-readiness-timeout-20260725/` — the deliberate negative case: a bounded readiness timeout that exits nonzero with `BSSW-READY-TIMEOUT`, records no worker-start event, and contains no success marker.
 
-Module 2 and release v0.1.0 are therefore `validated` against this representative environment. Deterministic fake-runtime tests remain distinct from these bundles and do not by themselves establish that status.
+Module 2 is `validated` against this representative environment, as recorded in the current record. Deterministic fake-runtime tests remain distinct from these bundles and do not by themselves establish that status.
 
 ## Record an additional run
 
