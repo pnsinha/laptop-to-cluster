@@ -2,6 +2,12 @@
 
 The scanner (`npm run test:accessibility:browser`) automates what a script can prove: axe in both schemes, token contrast, keyboard order and focus rings, reflow at 320/768/1280 px and 200% zoom, forced-colors and print emulation, JavaScript off, blocked fonts, theme precedence, and reduced motion. The checks below need a person with a keyboard and a screen reader. Record each result in `releases/<version>/accessibility-review.yml`. When you sign it, also record the commit and the https deployment URL you reviewed (`reviewedCommit`, `reviewedDeploymentUrl`): the production release checks that nothing but the review file changed after that commit.
 
+When you sign:
+- **Notes:** append your manual findings to the existing notes; do not rewrite them. The release tests pin parts of each note, and they run again on the signing commit after the tag is pushed.
+- **URL:** record the per-deployment `*.pages.dev` URL from the rc run's summary, not the `preview` alias, which the next push to the showcase branch replaces.
+- **Before tagging the release:** on the signing commit, run `npx vitest run tests/unit/accessibility-review-v020.test.ts` and `npx tsx scripts/validate-accessibility-review.ts --require-complete --release-sha HEAD`. Then wait for `ci.yml` to pass on `main` at that commit.
+- **Date:** commit the signature on the day you deploy. The release record takes its date from that commit, and the release notes say the release date.
+
 ## Set up
 
 1. `npm run build`, then `npx astro preview --root site --port 4321`.

@@ -268,6 +268,15 @@ describe('a signed v0.2.0 review is tied to what ships', () => {
     expect(errors).toContain('reviewedDeploymentUrl [A11Y-REVIEW]');
   });
 
+  it('accepts only a per-deployment URL as the reviewed deployment, not a moving alias or the live site', () => {
+    for (const url of ['https://preview.laptop-to-cluster.pages.dev', 'https://laptop-to-cluster.pages.dev', 'https://laptop-to-cluster.org/']) {
+      const aliased = { ...pendingReview(profile), reviewedDeploymentUrl: url };
+      expect(validateAccessibilityReview(aliased, { version: 'v0.2.0', recordId: RECORD }).join('\n'), url).toContain('reviewedDeploymentUrl [A11Y-REVIEW]');
+    }
+    const pinned = { ...pendingReview(profile), reviewedDeploymentUrl: SIGNED_URL };
+    expect(validateAccessibilityReview(pinned, { version: 'v0.2.0', recordId: RECORD }).join('\n')).not.toContain('reviewedDeploymentUrl [A11Y-REVIEW]');
+  });
+
   it('accepts a review of the commit that ships, signed on top of it', () => {
     const { root, reviewed, release } = shipped();
     expect(check(sign(reviewed), root, release)).toBe('');

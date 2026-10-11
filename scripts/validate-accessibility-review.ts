@@ -168,10 +168,12 @@ const isIsoDate = (value: unknown, today: string): boolean => {
   const parsed = new Date(Date.UTC(year, month - 1, day));
   return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day && (value as string) <= today;
 };
-const isHttpsUrl = (value: unknown): boolean => {
+/** The reviewed deployment is one Cloudflare Pages deployment (`https://<8-hex>.<project>.pages.dev`), never a moving alias
+ * such as `preview.` or the live domain, which a later push or release replaces. */
+const isDeploymentUrl = (value: unknown): boolean => {
   try {
     const url = new URL(String(value));
-    return url.protocol === 'https:' && url.hostname.length > 0;
+    return url.protocol === 'https:' && /^[0-9a-f]{8}\.[a-z0-9-]+\.pages\.dev$/.test(url.hostname);
   } catch {
     return false;
   }
@@ -248,7 +250,7 @@ function validateReviewedBuild(record: ReviewRecord, profile: ReviewProfile, opt
     else if (!ok) issue(name, `must be ${expectation}`);
   };
   field('reviewedCommit', COMMIT.test(String(record.reviewedCommit)), 'the 40-character hexadecimal commit that was reviewed');
-  field('reviewedDeploymentUrl', isHttpsUrl(record.reviewedDeploymentUrl), 'the https URL of the deployment that was reviewed');
+  field('reviewedDeploymentUrl', isDeploymentUrl(record.reviewedDeploymentUrl), 'the per-deployment https://<8-hex>.<project>.pages.dev URL of the deployment that was reviewed, not an alias');
   if (!requireComplete) return;
   if (record.reviewedAt !== PLACEHOLDER && !isIsoDate(record.reviewedAt, today)) issue('reviewedAt', `must be a real YYYY-MM-DD date no later than today (${today}, UTC)`);
   else if (record.reviewedAt === PLACEHOLDER) issue('reviewedAt', 'must be a YYYY-MM-DD date no later than today (UTC) before release');
