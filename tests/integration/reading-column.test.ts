@@ -45,7 +45,7 @@ describe('one reading column on content pages', () => {
           if (!title) return ['no h1'];
           const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
           const left = title.getBoundingClientRect().left;
-          const right = left + 42 * rem;
+          const right = left + 40 * rem;
           /* Figures that need width may run past the column: timelines, diagrams, code, the crosswalk. */
           const exempt = '.timeline, .diagram, .technical-figure, pre, .crosswalk, .resource-grid, nav, .table-overflow table';
           const blocks = [...document.querySelectorAll<HTMLElement>('main :is(p, ul, ol, dl, h2, h3, h4, blockquote, .table-overflow, .record-grid, details, .notice)')]
