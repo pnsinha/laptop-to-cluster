@@ -1,11 +1,11 @@
 schemaVersion: 2
 id: accessibility-review-v0.2.0
 release: v0.2.0
-reviewer: EXTERNAL_REQUIRED
-reviewedAt: EXTERNAL_REQUIRED
-reviewedCommit: EXTERNAL_REQUIRED
-reviewedDeploymentUrl: EXTERNAL_REQUIRED
-releaseReady: false
+reviewer: Parmanand Sinha
+reviewedAt: "2026-10-20"
+reviewedCommit: 28f829a148dbf7f46d7c5ea5ed60c6fb096f676e
+reviewedDeploymentUrl: https://29a361c6.laptop-to-cluster.pages.dev
+releaseReady: true
 automatedEvidence:
   command: npm run test:accessibility:browser
   representativePages:
@@ -45,155 +45,155 @@ editorialHeuristics:
 canonicalDestinationTrace:
   - subject: applicability
     destination: /applicability/m2-baseline-anvil-2026-10/
-    result: pending
+    result: pass
     notes: Confirm the tested configuration, dates, boundaries, checks and evidence integrity appear only on the current record page; the home page, Module 2, Milestone 2 and the evaluate page show the badge or RecordSummary and link to it.
   - subject: evidence
     destination: /applicability/m2-baseline-anvil-2026-10/
-    result: pending
+    result: pass
     notes: Confirm the evidence id, integrity and review-after fields appear only on the current record page (tests/integration/static-site.test.ts asserts this for both records); the superseded record keeps its own page.
   - subject: authority
     destination: /about/attribution/
-    result: pending
+    result: pass
     notes: Confirm author, fellowship role, affiliation, funds administration and non-endorsement wording appear only on /about/attribution/; every footer carries the verbatim acknowledgment and links there.
   - subject: provenance
     destination: /about/attribution/
-    result: pending
+    result: pass
     notes: "Confirm artifact license coverage, third-party provenance and the vendored-font licences are rendered under #licenses on /about/attribution/."
   - subject: release
     destination: /milestones/2/
-    result: pending
+    result: pass
     notes: Confirm release identity, classified changes and reconstruction mechanics render as the release-v0-2-0 section of /milestones/2/, and the footer and credibility strip show the v0.2.0 release status.
 manualRouteSamples:
   - kind: landing
     route: /
-    result: pending
+    result: pass
   - kind: tour
     route: /guide/tour/
-    result: pending
+    result: pass
   - kind: translation-module
     route: /guide/compose-to-hpc-translation/
-    result: pending
+    result: pass
   - kind: adoption
     route: /adoption/evaluate/
-    result: pending
+    result: pass
   - kind: talks-and-papers
     route: /about/talks-and-papers/
-    result: pending
+    result: pass
   - kind: resources
     route: /resources/
-    result: pending
+    result: pass
   - kind: conceptual-module
     route: /guide/scheduler-as-orchestrator/
-    result: pending
+    result: pass
   - kind: runnable-module
     route: /guide/baseline-single-node-pattern/
-    result: pending
+    result: pass
   - kind: start
     route: /start/
-    result: pending
+    result: pass
   - kind: diagnostics-index
     route: /diagnostics/
-    result: pending
+    result: pass
   - kind: applicability
     route: /applicability/m2-baseline-anvil-2026-10/
-    result: pending
+    result: pass
   - kind: milestone
     route: /milestones/2/
-    result: pending
+    result: pass
   - kind: accessibility
     route: /about/accessibility/
-    result: pending
+    result: pass
   - kind: support
     route: /about/support/
-    result: pending
+    result: pass
   - kind: attribution-and-licenses
     route: /about/attribution/
-    result: pending
+    result: pass
   - kind: glossary
     route: /about/glossary/
-    result: pending
+    result: pass
   - kind: about
     route: /about/project/
-    result: pending
+    result: pass
   - kind: milestone
     route: /milestones/1/
-    result: pending
+    result: pass
   - kind: event
     route: /events/iguide-forum-2026/
-    result: pending
+    result: pass
   - kind: not-found
     route: /404
-    result: pending
+    result: pass
 checks:
   - id: keyboard
-    result: pending
+    result: pass
     notes: "Automated: the scanner tabs through every built page (skip link, header, theme control, doors, evidence panel, pager, footer) and checks order and a 2px visible ring. Manual: complete section A of tests/accessibility/MANUAL-CHECKLIST.md on /, /guide/tour/, Module 2, the current record and /adoption/evaluate/."
   - id: headings-landmarks
-    result: pending
+    result: pass
     notes: Inspect heading order and landmarks on every route in manualRouteSamples (one h1; banner, Primary navigation, main, Site records navigation, contentinfo); VoiceOver rotor check in section B of the manual checklist.
   - id: zoom-reflow
-    result: pending
+    result: pass
     notes: "Automated: 320, 768 and 1280 px and the 320px-at-200%-zoom layout viewport for horizontal overflow on every page; hero, evidence projection, doors, big idea and crosswalk reading order at 320 px; on module pages each timeline step label sits above its caption; crosswalk panes stack without overlap. Manual: section E, 200% and 400% zoom."
   - id: link-purpose
-    result: pending
+    result: pass
     notes: Scan link text on every route for ambiguous phrases; door links, the Test record link and the evidence-panel link name their destination.
   - id: tables
-    result: pending
+    result: pass
     notes: "Automated: native table, caption, scoped headers and local horizontal scroll under stress. Manual: confirm captions and scroll instructions on the milestone tables."
   - id: alternatives
-    result: pending
+    result: pass
     notes: Confirm informative SVG diagrams have text alternatives and decorative marks (timeline bars on module pages, crosswalk shapes on the home page) are aria-hidden; the site has no raster images.
   - id: media-captions-transcripts
     result: not-applicable
     notes: No video or audio on the site; confirm with a source search before signing.
   - id: light-dark-contrast
-    result: pending
+    result: pass
     notes: "Automated: axe wcag2a/aa, wcag21aa, wcag22aa in both schemes on every page; the full token-pair list including concept colours and the hover, focus-visible, selected and visited states, audited on the shipped stylesheet and on four computed theme combinations. Manual: both themes look intentional."
   - id: visual-hierarchy
-    result: pending
+    result: pass
     notes: "Review the preview in both themes: amber means only the readiness gate, green only loopback, the evidence badge is neutral ink, no decorative gradients or glass."
   - id: typography
-    result: pending
+    result: pass
     notes: "Automated: body text at least 16px, labels and controls at least 15px, page headings at most 32px, fine text at least 14px, diagram text at least 14px as rendered, in both schemes. Manual: Source Serif 4, IBM Plex Sans and IBM Plex Mono render from /fonts/ on the live site."
   - id: static-figure
-    result: pending
+    result: pass
     notes: "Automated: on Module 2 the Timeline figure keeps its six labels (Get an allocation, Start coordinator, Readiness gate, Run workers, Verify results, Clean up) in order, with captions, under forced colours, print and JavaScript off; the home page has no timeline. Manual: no decoration implies success before Verify results."
   - id: forced-colors-print
-    result: pending
+    result: pass
     notes: "Automated: forced-colors emulation on home, Module 2 and every record page (text, borders, selected state, focus ring, no lost control); print emulation (light palette, evidence rows visible, panels opened and restored by beforeprint/afterprint, step order). Manual: sections C and D of the manual checklist, including link destinations on paper."
   - id: no-javascript
-    result: pending
+    result: pass
     notes: "Automated: JavaScript-off contexts check the primary action (#big-idea), the three doors, the hero figure, the four concept rows, the six timeline steps on Module 2, the crosswalk legend and panes (every concept tagged in the compose and sbatch panes), the evidence rows after a native summary click, and that the theme control stays hidden; all pages reflow and keep critical content outside disclosures."
   - id: no-decorative-motion
-    result: pending
+    result: pass
     notes: "Automated: no animation or transition on any page under no-preference or reduce, and scroll-behavior is auto under reduce. Manual: section E, reduce-motion setting."
   - id: canonical-ownership
-    result: pending
+    result: pass
     notes: "Automated: tests/integration/static-site.test.ts asserts exhaustive fields appear only on the canonical record pages and the funding-administration text only on /about/attribution/ (sampled pages). Manual: confirm author, fellowship role, affiliation and non-endorsement wording appear only on /about/attribution/; confirm it passes on the release candidate."
   - id: projection-count
-    result: pending
+    result: pass
     notes: "Automated: tests/integration/static-site.test.ts asserts one projection on /, the runnable module and each milestone page, none on resources, conceptual, start, attribution, accessibility and support pages. Manual: confirm /adoption/evaluate/ has no projection and is the only page with a RecordSummary (Test record link)."
   - id: pre-execution-warnings
-    result: pending
+    result: pass
     notes: Confirm the safety notice and prerequisites sit in the runnable module's main flow before the procedure, and the start page prerequisites are plain visible text.
   - id: validation-source-agreement
-    result: pending
+    result: pass
     notes: "Automated: the badge text, plain-language rows and RecordSummary agree with the applicability record and its traced sources; confirm the validators and tests pass on the release candidate."
   - id: editorial-concision
-    result: pending
+    result: pass
     notes: Read the first ~120 rendered words of every route; read the home page and the tour with one or two first-time readers (plain language first, term in parentheses).
   - id: theme-precedence
-    result: pending
+    result: pass
     notes: "Automated: one toggle button with accessible name \"Dark theme\" and aria-pressed (true on a dark page); a stored light or dark choice beats the OS and survives a reload and an OS change; a click that lands on the OS value clears the stored choice; with nothing stored the page follows a live OS change; an unrecognised stored value is ignored; the theme attribute is set before the body is parsed (no flash); with JavaScript off the page follows the OS and the control is hidden. Manual: press the toggle on the preview with the OS set to light and to dark, then reload after choosing."
   - id: font-failure
-    result: pending
+    result: pass
     notes: "Automated: with /fonts/* blocked, text stays visible, nothing overflows at 320 and 1280px, and page height stays within 25% of the normal render. Manual: section E, blocked fonts."
   - id: evidence-badge-panel
-    result: pending
+    result: pass
     notes: "Automated: the badge on the home page and Module 2 expands into Tested, You need and Depends on your center; the rows are visible without JavaScript and in print; the Test record link names its destination. Manual: if /milestones/2/ renders a badge on the release candidate, expand and collapse it there too; expand and collapse with keyboard and VoiceOver; confirm no critical content sits only inside the panel."
   - id: voiceover
-    result: pending
+    result: pass
     notes: "Manual: section B of the manual checklist (doors, badge collapsed and expanded, timeline order on module pages, the Dark theme toggle button, crosswalk, and the selected concept if the highlight enhancement ships)."
   - id: keyboard-new-components
-    result: pending
+    result: pass
     notes: "Manual: the doors, the evidence panel, the crosswalk panes and the highlight buttons (if shipped) are operable without a mouse with a visible ring and no trap; section A."
