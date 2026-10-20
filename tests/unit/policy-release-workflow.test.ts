@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { currentReleaseVersion } from '../../site/src/content/release';
 import { RELEASE } from './helpers/release-workflow-fixture';
 import { resolveReleaseVersion, tagPatternMatches, tagTriggers, validateDeploymentWorkflow, validateFrozenPublicationWorkflow, validateReleaseWorkflow, workflowTagPatterns } from '../../scripts/publication.mjs';
@@ -109,6 +109,10 @@ describe('validateFrozenPublicationWorkflow', () => {
 });
 
 describe('one release-version rule', () => {
+  // The release job exports RELEASE_VERSION; these cases are about what happens without it, so they clear it.
+  let saved: string | undefined;
+  beforeEach(() => { saved = process.env.RELEASE_VERSION; delete process.env.RELEASE_VERSION; });
+  afterEach(() => { if (saved === undefined) delete process.env.RELEASE_VERSION; else process.env.RELEASE_VERSION = saved; });
   const tree = () => releasesTree({ 'v0.1.0': { version: 'v0.1.0' }, 'v0.2.0': { version: 'v0.2.0' }, 'v0.10.0': { version: 'v0.10.0' }, 'not-a-version': {} });
 
   it('agrees with currentReleaseVersion for the environment, the newest record, and numeric ordering', () => {
