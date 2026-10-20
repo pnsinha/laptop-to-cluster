@@ -11,8 +11,8 @@ keywords: [talks, posters, papers, US-RSE, SC26, I-GUIDE]
 audiences: [HPC learners, scientific software practitioners, HPC center staff]
 milestone: 2
 status: published
-publication_date: "2026-10-15"
-last_updated: "2026-10-15"
+publication_date: "2026-10-20"
+last_updated: "2026-10-20"
 related: [event-iguide-forum-2026]
 authority:
   - { kind: project-decision, citation: "Milestone 2 dissemination plan", scope: "Presentations are listed by link to the venue that hosts them; this site hosts no slides, abstracts or posters, except the I-GUIDE Forum 2026 poster, kept as presented on its event page." }

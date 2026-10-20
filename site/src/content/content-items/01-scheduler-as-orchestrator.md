@@ -6,7 +6,7 @@ description: "How the scheduler allocation, not Compose, starts, orders, and end
 module_number: 1
 topics: [scheduler-as-orchestrator]
 status: published
-last_updated: "2026-10-15"
+last_updated: "2026-10-20"
 summary: "The core reframe: on a shared cluster, a scheduler allocation and one launch script do what Compose does on your laptop."
 artifact_type: learning-module
 keywords: [Compose, HPC, orchestration, scheduler]

@@ -6,7 +6,7 @@ description: "A bounded single-node reference workflow with one coordinating ser
 module_number: 2
 topics: [scheduler-as-orchestrator, service-workers]
 status: published
-last_updated: "2026-10-15"
+last_updated: "2026-10-20"
 summary: "Run the smallest service-and-workers pattern inside one allocation, with readiness before workers and verification before success."
 artifact_type: learning-module
 keywords: [Apptainer, readiness, single-node, Slurm, workers]

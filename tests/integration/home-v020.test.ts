@@ -39,7 +39,7 @@ const panes = [...main.matchAll(/<figure class="crosswalk__pane" data-pane="([a-
   }));
 
 describe('home page, built output', () => {
-  it('keeps the frozen order: hero, projection, doors, concept rows, crosswalk, event band, project records, footer', () => {
+  it('keeps the frozen order: hero, projection, doors, concept rows, crosswalk, event band, visit line, footer', () => {
     const marks = [
       '<section class="hero"',
       '<section class="applicability-projection',
@@ -169,25 +169,15 @@ describe('home page, built output', () => {
     expect(main).not.toContain('Also at I-GUIDE 2026');
   });
 
-  it('renders the project records strip with the funded title and the release notes from the release version', () => {
+  it('ends with the event band and one visit line, with no project records heading or list', () => {
     const strip = sectionFrom('<section class="project-links"');
-    expect(strip).toContain('<h2 id="project-links-title">Project records</h2>');
-    expect.soft([...strip.matchAll(/<li><a href="([^"]+)">([^<]+)<\/a><\/li>/g)].map(([, href, label]) => [href, decode(label)])).toEqual([
-      ['/about/attribution/', 'Bridging the Laptop-to-Cluster Gap: a 2026 Better Scientific Software Fellowship project'],
-      ['/about/talks-and-papers/', 'Talks, posters & papers'],
-      ['/milestones/2/#release-v0-2-0', 'v0.2.0 release notes'],
-      ['/about/attribution/#licenses', 'Code Apache-2.0 · text CC BY 4.0'],
-    ]);
-    expect(strip).toContain('<p>Here from the SC26 poster or the US-RSE’26 talk? <a href="/about/talks-and-papers/">Talk and poster links</a></p>');
+    expect(strip).toBe('<section class="project-links"><p>Here from the SC26 poster or the US-RSE’26 talk? <a href="/about/talks-and-papers/">Talk and poster links</a></p></section>');
+    expect(strip).not.toMatch(/<h\d|<ul|aria-labelledby/);
+    expect(main).not.toContain('Project records');
+    expect(main).not.toContain('project-links-title');
+    expect(strip).not.toMatch(/release notes|\/about\/attribution\//);
+    expect(main.indexOf('<section class="project-links"')).toBeGreaterThan(main.indexOf('<aside class="event-band"'));
     expect(strip).not.toMatch(/ParaTools|Department of Energy|National Science Foundation/);
-  });
-
-  it('labels the release notes with the version in the link fragment', () => {
-    const strip = sectionFrom('<section class="project-links"');
-    const [, href, label] = strip.match(/<li><a href="([^"]*#release-v\d+-\d+-\d+)">([^<]*release notes)<\/a><\/li>/) ?? [];
-    expect(href).toBeDefined();
-    const [, major, minor, patch] = href.match(/#release-v(\d+)-(\d+)-(\d+)$/)!;
-    expect(decode(label)).toBe(`v${major}.${minor}.${patch} release notes`);
   });
 
   it('keeps system names, versions, dates, job IDs and digests inside the projection only', () => {

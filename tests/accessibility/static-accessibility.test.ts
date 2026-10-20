@@ -53,13 +53,18 @@ describe('representative static accessibility coverage', () => {
     }
   });
 
-  it('lists the five frozen navigation items in order, and the footer records links', () => {
+  it('lists the five frozen navigation items in order, and the four footer links', () => {
     for (const page of pages) {
       const primary = page.html.match(/<nav[^>]+aria-label="Primary"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';
       expect(anchorTexts(primary), page.path).toEqual(NAV_ITEMS.map(({ label }) => label));
       const records = page.html.match(/<nav[^>]+aria-label="Site records"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';
-      expect(anchorTexts(records), page.path).toEqual(['Attribution', 'Talks & papers', 'Accessibility', 'Support', 'Licenses', 'GitHub (external)']);
+      expect(anchorTexts(records), page.path).toEqual(['About the project', 'Talks & papers', 'Support', 'GitHub (external)']);
+      expect(records, page.path).not.toMatch(/href="\/about\/(?:attribution|accessibility)\//);
     }
+    // Attribution, accessibility and licenses stay one link away: the footer's About link reaches a page that links them.
+    const about = pages.find(({ path }) => path === '/about/project/');
+    expect(about, '/about/project/').toBeDefined();
+    for (const href of ['/about/attribution/', '/about/accessibility/']) expect(about!.html).toContain(`href="${href}"`);
   });
 
   it('keeps prerequisites, assumptions, warnings, status, scope, and reporting or recovery links outside disclosures', () => {

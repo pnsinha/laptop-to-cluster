@@ -11,8 +11,8 @@ keywords: [adoption, evaluation, assumptions, limits, HPC centers, checklist]
 audiences: [research software engineers, HPC center staff]
 milestone: 2
 status: published
-publication_date: "2026-10-15"
-last_updated: "2026-10-15"
+publication_date: "2026-10-20"
+last_updated: "2026-10-20"
 last_reviewed: "2026-10-15"
 applicable_release: v0.1.0
 schedulers: [slurm]

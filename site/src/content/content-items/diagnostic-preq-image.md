@@ -9,7 +9,7 @@ keywords: [acquire.sh, image, SIF, checksum]
 audiences: [HPC learners]
 milestone: 2
 status: published
-publication_date: "2026-10-15"
+publication_date: "2026-10-20"
 schedulers: [slurm]
 container_runtimes: [apptainer]
 related: [start-guide, module-2-baseline]

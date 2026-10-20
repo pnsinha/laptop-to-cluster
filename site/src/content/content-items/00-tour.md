@@ -11,7 +11,7 @@ audiences: [HPC learners, scientific software practitioners, HPC center staff]
 milestone: 2
 status: published
 publication_date: "2026-09-26"
-last_updated: "2026-10-15"
+last_updated: "2026-10-20"
 applicable_release: v0.1.0
 artifact_type: learning-module
 module_type: conceptual

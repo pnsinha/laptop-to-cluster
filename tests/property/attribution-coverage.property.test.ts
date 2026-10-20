@@ -59,9 +59,10 @@ describe('Property 12: Attribution coverage preserves role and funding scope', (
       const projection = attributionSchema.parse({ ...globalAttribution, contributors });
 
       expect(html).toContain('href="/about/project/"');
-      // Every page carries the verbatim acknowledgment and the attribution link in its footer (F-1).
+      // Every page carries the verbatim acknowledgment and the About link in its footer (F-1). The About page links attribution and licenses.
       const footer = html.slice(html.indexOf('<footer'));
-      expect(footer).toContain('href="/about/attribution/"');
+      expect(footer).toContain('href="/about/project/"');
+      expect(footer).not.toMatch(/href="\/about\/(?:attribution|accessibility)\//);
       const acknowledgment = footer.match(/<p class="acknowledgment"[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? '';
       expect(acknowledgment.replace(/\s+/g, ' ').trim()).toBe(ACKNOWLEDGMENT_TEXT);
       expect(projection.contributors).toEqual(contributors);

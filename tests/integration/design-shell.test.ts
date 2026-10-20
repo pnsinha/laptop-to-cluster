@@ -103,9 +103,10 @@ describe('BaseLayout shell', () => {
     expect(footer).toContain('<nav aria-label="Site records"><ul class="footer-links">');
     const links = [...footer.matchAll(/<li><a href="([^"]+)"[^>]*>([^<]+)<\/a><\/li>/g)].map((match) => [match[2], match[1]]);
     expect(links).toEqual([
-      ['Attribution', '/about/attribution/'], ['Talks &amp; papers', '/about/talks-and-papers/'], ['Accessibility', '/about/accessibility/'],
-      ['Support', '/about/support/'], ['Licenses', '/about/attribution/#licenses'], ['GitHub (external)', 'https://github.com/pnsinha/laptop-to-cluster'],
+      ['About the project', '/about/project/'], ['Talks &amp; papers', '/about/talks-and-papers/'],
+      ['Support', '/about/support/'], ['GitHub (external)', 'https://github.com/pnsinha/laptop-to-cluster'],
     ]);
+    expect(footer).not.toMatch(/href="\/about\/(?:attribution|accessibility)\//);
     expect(footer).toContain(`<p class="release" aria-label="Release status">Release status: ${currentReleaseVersion()}</p>`);
     expect(footer.indexOf('class="release"')).toBeLessThan(footer.indexOf('class="acknowledgment"'));
     expect(sha(footer.match(/<p class="acknowledgment">([^<]+)<\/p>/)![1])).toBe(ACKNOWLEDGMENT_SHA256);
