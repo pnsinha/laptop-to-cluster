@@ -9,7 +9,7 @@ keywords: [release notes, v0.2.0]
 audiences: [adopters, fellowship reviewers]
 milestone: 2
 status: published
-publication_date: "2026-10-15"
+publication_date: "2026-10-20"
 applicability_records: [m2-baseline-anvil-2026-10]
 related: [module-0-orientation, module-2-baseline, milestone-2]
 ---

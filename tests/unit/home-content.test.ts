@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import * as homeModule from '../../site/src/content/home';
 import { CONCEPTS, DOORS, LEARNING_PATH, REQUIRED_FRAGMENTS } from '../../site/src/content/contracts';
 import {
-  BIG_IDEA, CONCEPT_NOTES, DOOR_SUMMARIES, DOORS_SECTION, EVENT_BAND, HERO, HERO_FIGURE, PROJECT_RECORDS,
-  eventBandLead, homeDoors, projectRecordLinks, resolveLearningPath,
+  BIG_IDEA, CONCEPT_NOTES, DOOR_SUMMARIES, DOORS_SECTION, EVENT_BAND, HERO, HERO_FIGURE, VISIT_LINE,
+  eventBandLead, homeDoors, resolveLearningPath,
 } from '../../site/src/content/home';
 import type { ContentItem } from '../../site/src/content/schema';
 
@@ -26,7 +27,7 @@ const allCopy = [
   HERO_FIGURE.cluster.title, HERO_FIGURE.cluster.command, HERO_FIGURE.cluster.allocation, ...HERO_FIGURE.cluster.facts,
   BIG_IDEA.title, BIG_IDEA.proseHtml, BIG_IDEA.composeSide, BIG_IDEA.clusterSide,
   ...Object.values(CONCEPT_NOTES), DOORS_SECTION.title, ...Object.values(DOOR_SUMMARIES),
-  EVENT_BAND.label, EVENT_BAND.linkText, PROJECT_RECORDS.title, PROJECT_RECORDS.visitLead, PROJECT_RECORDS.visitLinkText,
+  EVENT_BAND.label, EVENT_BAND.linkText, VISIT_LINE.lead, VISIT_LINE.linkText,
 ].map(text);
 
 describe('home hero', () => {
@@ -127,7 +128,7 @@ describe('doors and learning path', () => {
   });
 });
 
-describe('event band and project records', () => {
+describe('event band and visit line', () => {
   it('words the featured talk so it stays true after the date', () => {
     expect(eventBandLead({ kind: 'talk', venue: "US-RSE'26", event_date: '2026-10-20', location: 'San Jose, CA' }))
       .toBe('Talk at US-RSE’26 (Tue Oct 20, San Jose)');
@@ -139,20 +140,14 @@ describe('event band and project records', () => {
     for (const value of [EVENT_BAND.label, EVENT_BAND.linkText]) expect(value).not.toMatch(/upcoming|coming|will|join|next|soon/i);
   });
 
-  it('links the project records strip, taking the release notes link from the landing projection', () => {
-    expect(projectRecordLinks({ id: 'release-v0-2-0', href: '/milestones/2/#release-v0-2-0' })).toEqual([
-      { label: 'Bridging the Laptop-to-Cluster Gap: a 2026 Better Scientific Software Fellowship project', href: '/about/attribution/' },
-      { label: 'Talks, posters & papers', href: '/about/talks-and-papers/' },
-      { label: 'v0.2.0 release notes', href: '/milestones/2/#release-v0-2-0' },
-      { label: 'Code Apache-2.0 · text CC BY 4.0', href: '/about/attribution/#licenses' },
-    ]);
-    expect(PROJECT_RECORDS).toEqual({
-      title: 'Project records',
-      visitLead: 'Here from the SC26 poster or the US-RSE’26 talk?',
-      visitLinkText: 'Talk and poster links',
-      visitHref: '/about/talks-and-papers/',
+  it('keeps one short visit line after the event band and no project records list', () => {
+    expect(VISIT_LINE).toEqual({
+      lead: 'Here from the SC26 poster or the US-RSE’26 talk?',
+      linkText: 'Talk and poster links',
+      href: '/about/talks-and-papers/',
     });
-    expect(JSON.stringify([projectRecordLinks({ id: 'release-v0-2-0', href: '/milestones/2/#release-v0-2-0' }), PROJECT_RECORDS])).not.toMatch(/ParaTools|Department of Energy|National Science Foundation/);
+    expect(JSON.stringify(VISIT_LINE)).not.toMatch(/ParaTools|Department of Energy|National Science Foundation|Project records/);
+    for (const gone of ['projectRecordLinks', 'PROJECT_RECORDS', 'releaseVersionFromId']) expect(gone in homeModule, gone).toBe(false);
   });
 });
 
@@ -171,13 +166,5 @@ describe('home copy rules', () => {
       ...Object.values(CONCEPT_NOTES), ...Object.values(DOOR_SUMMARIES),
     ];
     expect(prose.reduce((total, value) => total + words(value), 0)).toBeLessThanOrEqual(600);
-  });
-
-  it('derives the release notes label from the same release item as the link', () => {
-    const notes = (id: string, href: string) => projectRecordLinks({ id, href }).find(({ label }) => label.endsWith('release notes'));
-    expect(notes('release-v0-1-0', '/milestones/1/#release-v0-1-0')).toEqual({ label: 'v0.1.0 release notes', href: '/milestones/1/#release-v0-1-0' });
-    expect(notes('release-v0-2-0', '/milestones/2/#release-v0-2-0')).toEqual({ label: 'v0.2.0 release notes', href: '/milestones/2/#release-v0-2-0' });
-    expect(() => projectRecordLinks({ id: 'release-latest', href: '/x/' })).toThrow(/release-latest/);
-    expect(() => projectRecordLinks({ id: 'release-v0-2', href: '/x/' })).toThrow();
   });
 });

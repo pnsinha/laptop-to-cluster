@@ -10,8 +10,8 @@ keywords: [Compose, HPC, orchestration, scheduler, Apptainer, readiness, transla
 audiences: [HPC learners, scientific software practitioners]
 milestone: 2
 status: published
-publication_date: "2026-10-15"
-last_updated: "2026-10-15"
+publication_date: "2026-10-20"
+last_updated: "2026-10-20"
 last_reviewed: "2026-10-15"
 applicable_release: v0.1.0
 artifact_type: learning-module

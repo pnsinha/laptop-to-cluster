@@ -262,10 +262,11 @@ describe('amendments A1 to A3 hooks', () => {
 });
 
 describe('home bottom', () => {
-  it('draws the event band with an accent rule and the strip under a hairline', () => {
+  it('draws the event band with an accent rule and the visit line under a hairline, with no records list styling left', () => {
     expect(body('.event-band')).toMatch(/border-inline-start:\s*var\(--border-strong\) solid var\(--accent\)/);
     expect(body('.project-links')).toMatch(/border-block-start:\s*var\(--border-thin\) solid var\(--rule\)/);
     expect(body('.project-links a')).toMatch(/padding-block:\s*0\.25rem/);
+    expect(blocks.flatMap((block) => block.selectors).filter((selector) => /\.project-links\s*(?:>\s*h2|ul)/.test(selector))).toEqual([]);
   });
 
   it('keeps the evidence projection close under the hero on the landing profile', () => {

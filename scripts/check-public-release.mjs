@@ -19,7 +19,7 @@ export function publicReleasePlan(version, { preview = false } = {}) {
     version,
     preview,
     rootTitle: 'Bridging the Laptop-to-Cluster Gap',
-    rootTexts: ['Start here', 'Project records', 'Get started', 'GitHub'],
+    rootTexts: ['Start here', 'Talk and poster links', 'Get started', 'GitHub'],
     routes: atLeast(version, 'v0.2.0') ? [...BASE_ROUTES, ...V020_ROUTES] : BASE_ROUTES,
     releaseAnchor: version === 'v0.2.0' ? { route: '/milestones/2/', text: `id="release-${version.replaceAll('.', '-')}"` } : undefined,
     repositoryTagPath: `/releases/tag/${version}`,

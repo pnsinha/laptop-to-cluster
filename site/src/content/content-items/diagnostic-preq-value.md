@@ -9,7 +9,7 @@ keywords: [bounds, WORKER_COUNT, TASK_COUNT, timeout]
 audiences: [HPC learners]
 milestone: 2
 status: published
-publication_date: "2026-10-15"
+publication_date: "2026-10-20"
 schedulers: [slurm]
 related: [start-guide, module-2-baseline]
 ---

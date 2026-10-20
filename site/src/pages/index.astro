@@ -9,8 +9,8 @@ import HeroFigure from '../components/HeroFigure.astro';
 import CrosswalkEnhancement from '../components/CrosswalkEnhancement.astro';
 import { CROSSWALK } from '../content/crosswalk';
 import {
-  DOORS_SECTION, EVENT_BAND, HERO, HOME_DESCRIPTION, HOME_TITLE, PROJECT_RECORDS,
-  eventBandLead, homeDoors, projectRecordLinks,
+  DOORS_SECTION, EVENT_BAND, HERO, HOME_DESCRIPTION, HOME_TITLE, VISIT_LINE,
+  eventBandLead, homeDoors,
 } from '../content/home';
 import { projectLandingPage } from '../content/projections';
 import { RECORD_LINK_TEXT } from '../content/wording';
@@ -22,7 +22,6 @@ const landing = projectLandingPage(content, applicability);
 const recordHref = landing.applicability_projection?.canonicalPath;
 const doors = homeDoors(content);
 const featuredTalk = (await getCollection('talks')).map(({ data }) => data).find(({ featured }) => featured);
-const records = projectRecordLinks(landing.release);
 ---
 <BaseLayout title={HOME_TITLE} description={HOME_DESCRIPTION} canonicalPath="/" profile="landing">
   <section class="hero" aria-labelledby="hero-title">
@@ -60,12 +59,8 @@ const records = projectRecordLinks(landing.release);
     </aside>
   )}
 
-  <section class="project-links" aria-labelledby="project-links-title">
-    <h2 id="project-links-title">{PROJECT_RECORDS.title}</h2>
-    <ul>
-      {records.map(({ label, href }) => <li><a href={href}>{label}</a></li>)}
-    </ul>
-    <p>{PROJECT_RECORDS.visitLead} <a href={PROJECT_RECORDS.visitHref}>{PROJECT_RECORDS.visitLinkText}</a></p>
+  <section class="project-links">
+    <p>{VISIT_LINE.lead} <a href={VISIT_LINE.href}>{VISIT_LINE.linkText}</a></p>
   </section>
   <CrosswalkEnhancement />
 </BaseLayout>

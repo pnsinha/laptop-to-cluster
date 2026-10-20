@@ -10,7 +10,7 @@ keywords: [cheat sheet, printable, Compose, Slurm, Apptainer]
 audiences: [all visitors, research software engineers]
 milestone: 2
 status: published
-publication_date: "2026-10-15"
+publication_date: "2026-10-20"
 ---
 <div class="cheat-sheet">
 

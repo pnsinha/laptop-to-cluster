@@ -85,26 +85,9 @@ export function eventBandLead(talk: Pick<Talk, 'kind' | 'venue' | 'event_date' |
   return `${KIND_LABEL[talk.kind]} at ${venue} (${day}${city ? `, ${city}` : ''})`;
 }
 
-export const PROJECT_RECORDS = {
-  title: 'Project records',
-  visitLead: 'Here from the SC26 poster or the US-RSE’26 talk?',
-  visitLinkText: 'Talk and poster links',
-  visitHref: '/about/talks-and-papers/',
+/** The one line after the event band, for readers who arrive from the SC26 poster or the US-RSE’26 talk. */
+export const VISIT_LINE = {
+  lead: 'Here from the SC26 poster or the US-RSE’26 talk?',
+  linkText: 'Talk and poster links',
+  href: '/about/talks-and-papers/',
 } as const;
-
-/** Version label for a release item id such as `release-v0-2-0`. Throws on any other shape so label and link cannot drift apart. */
-export function releaseVersionFromId(id: string): string {
-  const match = /^release-v(\d+)-(\d+)-(\d+)$/.exec(id);
-  if (!match) throw new Error(`releaseVersionFromId: expected release-vX-Y-Z, got "${id}"`);
-  return `v${match[1]}.${match[2]}.${match[3]}`;
-}
-
-/** Credibility strip links. The release notes label and link both come from one release item (landing.release: id and href) at build time. The footer's version comes from currentReleaseVersion() instead. */
-export function projectRecordLinks(release: { id: string; href: string }): PathStep[] {
-  return [
-    { label: `${HOME_TITLE}: a 2026 Better Scientific Software Fellowship project`, href: '/about/attribution/' },
-    { label: 'Talks, posters & papers', href: '/about/talks-and-papers/' },
-    { label: `${releaseVersionFromId(release.id)} release notes`, href: release.href },
-    { label: 'Code Apache-2.0 · text CC BY 4.0', href: '/about/attribution/#licenses' },
-  ];
-}

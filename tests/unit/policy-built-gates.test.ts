@@ -21,7 +21,7 @@ function dist(files: Record<string, string>) {
   }
   return directory;
 }
-const footer = (text = ACKNOWLEDGMENT_TEXT) => `<footer class="site-footer"><nav aria-label="Site records"><ul class="footer-links"><li><a href="/about/attribution/">Attribution</a></li></ul></nav><p class="release" aria-label="Release status">Release status: v0.2.0</p><p class="acknowledgment">${text}</p></footer>`;
+const footer = (text = ACKNOWLEDGMENT_TEXT) => `<footer class="site-footer"><nav aria-label="Site records"><ul class="footer-links"><li><a href="/about/project/">About the project</a></li></ul></nav><p class="release" aria-label="Release status">Release status: v0.2.0</p><p class="acknowledgment">${text}</p></footer>`;
 const pageOf = (source: string, body = '<h1>T</h1>', head = '') => ({ source, html: `<html><head>${head}</head><body>${body}${footer()}</body></html>` });
 
 describe('ACK-VERBATIM', () => {

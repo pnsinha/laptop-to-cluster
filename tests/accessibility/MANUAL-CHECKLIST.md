@@ -29,7 +29,7 @@ Start each page by clicking the address bar, then press Tab. Tick a box only if 
 - [ ] **Concept rows (home).** Five Tab stops in the big-idea section, in order: the allocation link in the introduction, then one glossary link per row (job step, readiness gate, job-scoped scratch, loopback). No other Tab stops in the section.
 - [ ] **Crosswalk (static).** The legend has no Tab stops. Each code pane that scrolls sideways takes one Tab stop with a visible ring and scrolls with the arrow keys; Tab then leaves it (no keyboard trap). If the highlight enhancement ships: each legend term is a button, Space selects one, a second Space clears it, and the selection is also shown by an outline, not only colour.
 - [ ] **Pager and Sources.** The previous and next links are ordinary links. The Sources disclosure opens and closes with Enter or Space.
-- [ ] **Footer.** Tab visits Attribution, Talks & papers, Accessibility, Support, Licenses, GitHub (external). The acknowledgment text is plain text, not a link.
+- [ ] **Footer.** Tab visits About the project, Talks & papers, Support, GitHub (external). The acknowledgment text is plain text, not a link.
 - [ ] **Order.** On each page, the Tab order follows the reading order top to bottom with no jumps backwards.
 
 ## B. VoiceOver spot check (Safari, VoiceOver on)
