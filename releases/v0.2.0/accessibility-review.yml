@@ -154,7 +154,7 @@ checks:
     notes: "Review the preview in both themes: amber means only the readiness gate, green only loopback, the evidence badge is neutral ink, no decorative gradients or glass."
   - id: typography
     result: pending
-    notes: "Automated: body and controls at least 16px, fine text at least 14px, diagram text at least 14px as rendered, in both schemes. Manual: Source Serif 4, IBM Plex Sans and IBM Plex Mono render from /fonts/ on the live site."
+    notes: "Automated: body text at least 16px, labels and controls at least 15px, page headings at most 32px, fine text at least 14px, diagram text at least 14px as rendered, in both schemes. Manual: Source Serif 4, IBM Plex Sans and IBM Plex Mono render from /fonts/ on the live site."
   - id: static-figure
     result: pending
     notes: "Automated: on Module 2 the Timeline figure keeps its six labels (Get an allocation, Start coordinator, Readiness gate, Run workers, Verify results, Clean up) in order, with captions, under forced colours, print and JavaScript off; the home page has no timeline. Manual: no decoration implies success before Verify results."
