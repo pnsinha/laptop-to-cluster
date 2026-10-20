@@ -112,6 +112,6 @@ describe('cheat sheet: content item', () => {
 
   it('links only to pages this release publishes', () => {
     const links = [...body.matchAll(/\]\((\/[^)]+)\)/g)].map(([, href]) => href);
-    expect(new Set(links)).toEqual(new Set(['/applicability/m2-baseline-anvil-2026-10/', '/diagnostics/', '/about/attribution/#licenses']));
+    expect(new Set(links)).toEqual(new Set(['/applicability/m2-baseline-anvil-2026-10/', '/diagnostics/']));
   });
 });

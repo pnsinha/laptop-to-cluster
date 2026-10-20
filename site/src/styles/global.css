@@ -100,6 +100,27 @@ strong { font-weight: var(--weight-semibold); }
 
 /* ---------- 4. content flow ---------- */
 main { inline-size: min(100%, var(--measure-wide)); margin-inline: auto; padding: var(--space-6) var(--space-4) var(--space-12); }
+/* Content pages centre the 40rem reading column in the 72rem frame, so the space either side of the text is equal.
+   Wide figures break out to the full frame by the same amount. The home grid and the print-first cheat sheet keep their own layouts. */
+@media screen and (min-width: 64rem) {
+  body:not([data-composition-profile="landing"]):not(:has(.cheat-sheet)) main {
+    --reading-bleed: max(0rem, calc((min(100vw, var(--measure-wide)) - var(--measure-prose)) / 2 - var(--space-4)));
+    padding-inline: calc(var(--space-4) + var(--reading-bleed));
+  }
+  body:not([data-composition-profile="landing"]):not(:has(.cheat-sheet)) main :is(.timeline, .diagram, .technical-figure, .implementation-reference, .resource-grid) {
+    max-inline-size: calc(100% + 2 * var(--reading-bleed));
+    margin-inline: calc(-1 * var(--reading-bleed));
+  }
+  /* The timeline graphic uses the full frame; its title, note and key stay on the reading column. */
+  body:not([data-composition-profile="landing"]):not(:has(.cheat-sheet)) main .timeline :is(.timeline__title, .timeline__after, .timeline__key) {
+    margin-inline-start: var(--reading-bleed);
+  }
+  /* A wide block inside another (a code figure in the implementation reference) already has the full frame. */
+  body:not([data-composition-profile="landing"]):not(:has(.cheat-sheet)) main :is(.timeline, .diagram, .technical-figure, .implementation-reference, .resource-grid) :is(.timeline, .diagram, .technical-figure, .implementation-reference, .resource-grid) {
+    max-inline-size: 100%;
+    margin-inline: 0;
+  }
+}
 .layout-prose, .prose, .content-header, .module-content, main > article:not(.card), .resource-group, .project-links, .applicability-record, .section-nav { max-inline-size: var(--measure-wide); }
 p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, .reading-section, .release-notes, .applicability-record) > :where(p, ul, ol, dl, h2, h3, h4, blockquote) { max-inline-size: var(--measure-prose); }
 p.prose, :where(.prose, .module-content, main > article:not(.card), .sources-scope, .start-path, .layout-prose, .module-overview, .reading-section, .release-notes) > :where(p, ul, ol, dl, blockquote) { font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
@@ -249,7 +270,8 @@ body[data-composition-profile="landing"] main > .applicability-projection { marg
   .timeline__steps { --lane-h: 1rem; }
 }
 @container (min-width: 50rem) {
-  .timeline__steps { --overrun: calc(var(--tl-pad) + 2px + 2rem); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  /* The fade line runs 2rem past the last step; keep that 2rem inside the timeline so it never widens the page. */
+  .timeline__steps { --overrun: calc(var(--tl-pad) + 2px + 2rem); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-inline-end: 2rem; }
   .timeline__step { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
   .timeline__bars { grid-column: 1; grid-row: 1; grid-template-columns: none; grid-template-rows: repeat(4, var(--lane-h)); border-block-end: var(--border-thin) solid var(--rule); }
   .timeline__step + .timeline__step .timeline__bars::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; border-inline-start: var(--border-thin) dashed var(--rule); }

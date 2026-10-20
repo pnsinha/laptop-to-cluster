@@ -65,4 +65,35 @@ describe('one reading column on content pages', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('centres the reading column in the page frame on content pages, and no page scrolls sideways', async () => {
+    const all = routes();
+    const offenders: string[] = [];
+    for (const width of [1024, 1100, 1180, 1280, 1440]) {
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      for (const route of all) {
+        await page.goto(`${server.origin}${route}`);
+        const found = await page.evaluate(() => {
+          const issues: string[] = [];
+          const overflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
+          if (overflow > 0) issues.push(`scrolls sideways by ${overflow}px`);
+          const main = document.querySelector('main');
+          const title = document.querySelector('main h1');
+          if (main && title) {
+            const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+            const frame = main.getBoundingClientRect();
+            const left = title.getBoundingClientRect().left - frame.left;
+            const right = frame.right - (title.getBoundingClientRect().left + 40 * rem);
+            if (Math.abs(left - right) > 3) issues.push(`column is off centre: ${Math.round(left)}px left, ${Math.round(right)}px right`);
+          }
+          return issues;
+        });
+        const ownLayout = OWN_LAYOUT.has(route);
+        offenders.push(...found.filter((issue) => !ownLayout || issue.startsWith('scrolls')).map((issue) => `${route} @${width}: ${issue}`));
+      }
+      await page.close();
+    }
+    expect(offenders).toEqual([]);
+  });
 });
+

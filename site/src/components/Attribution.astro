@@ -8,6 +8,7 @@ const { compact = false } = Astro.props;
   <section class="layout-prose" aria-labelledby="attribution-heading">
     <h2 id="attribution-heading">Attribution, roles, and funding</h2>
     <p><strong>Author:</strong> {ATTRIBUTION.author}, {ATTRIBUTION.fellowship}.</p>
+    <p><strong>BSSw Fellowship mentor:</strong> <a href={ATTRIBUTION.mentor.href} rel="external">{ATTRIBUTION.mentor.name}</a>, {ATTRIBUTION.mentor.role}</p>
     <p><strong>Professional affiliation:</strong> {ATTRIBUTION.affiliation}. This affiliation is distinct from the author’s individual fellowship work.</p>
     <p><strong>Funds administration:</strong> {ATTRIBUTION.funds}</p>
     <p><strong>Sponsorship:</strong> {ATTRIBUTION.sponsors}</p>

@@ -8,6 +8,11 @@ export const PROJECT = {
 export const ATTRIBUTION = {
   author: 'Parmanand Sinha',
   fellowship: '2026 BSSw Fellow, working in an individual fellowship capacity',
+  mentor: {
+    name: 'Sameer Shende',
+    href: 'https://www.paratools.com/',
+    role: 'Research Professor and Director of the Performance Research Laboratory, University of Oregon, and President of ParaTools, Inc.',
+  },
   affiliation: 'Computational Scientist, University of Chicago Research Computing Center',
   funds: "Fellowship funds are administered through ParaTools, Inc., under subcontract from Sustainable Horizons Institute; the University of Chicago is the author’s employer and is not the fiscal administrator of this project.",
   sponsors: 'The BSSw Fellowship Program is sponsored by the U.S. Department of Energy and the National Science Foundation.',

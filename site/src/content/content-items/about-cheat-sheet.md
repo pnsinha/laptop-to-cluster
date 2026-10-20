@@ -81,6 +81,4 @@ Done means the last log line begins `BSSW workflow completed` and `result.json` 
 - Treat loopback as private from other users on the same node.
 - Keep anything you need in scratch after the job ends.
 
-Code is Apache-2.0 and text is CC BY 4.0; see [attribution and licenses](/about/attribution/#licenses).
-
 </div>
