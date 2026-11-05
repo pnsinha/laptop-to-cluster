@@ -1,0 +1,19 @@
+---
+/* Starlight's title panel, with the site's page chrome around the h1: the kind line above
+   ("Module 2 · Hands-on · about 30 min"), the lede below, and any status notice. The values
+   come from the `l2c` frontmatter the layouts pass to StarlightPage. The h1 keeps Starlight's
+   `_top` id, which the skip link targets. */
+import { Aside } from '@astrojs/starlight/components';
+import { titleParts } from '../../content/title';
+
+type Notice = { type: 'note' | 'tip' | 'caution' | 'danger'; title: string; text: string };
+const { data } = Astro.locals.starlightRoute.entry;
+const chrome = (data as { l2c?: { kindLine?: string; lede?: string; notices?: Notice[] } }).l2c ?? {};
+const parts = titleParts(data.title);
+---
+<header class="content-header">
+  {chrome.kindLine && <p class="content-header__line">{chrome.kindLine}</p>}
+  <h1 id="_top">{parts.map((part) => (part.compound ? <span class="h-compound">{part.text}</span> : part.text))}</h1>
+  {chrome.lede && <p class="lede">{chrome.lede}</p>}
+  {chrome.notices?.map((notice) => <Aside type={notice.type} title={notice.title}><p>{notice.text}</p></Aside>)}
+</header>

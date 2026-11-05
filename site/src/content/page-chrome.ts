@@ -1,8 +1,9 @@
+import type { MarkdownHeading } from 'astro';
 import { TALKS_LABEL, type StepNumber } from './contracts';
 import { formatDate } from './format';
 import { projectLearningPathNavigation, type ModuleNavigation } from './projections';
 import type { ContentItem, Talk } from './schema';
-import { moduleHeaderLine, MODULE_TYPE_LABELS, type ModuleTypeLabelKey } from './wording';
+import { moduleHeaderLine, MODULE_TYPE_LABELS, PROJECT, type ModuleTypeLabelKey } from './wording';
 
 /* Small pure helpers shared by the page templates (LearningModuleLayout,
    [namespace]/[slug].astro, ModulePager, TalksList). Nothing here renders. */
@@ -83,6 +84,16 @@ export function learningPathNavigation(items: readonly ContentItem[], id: string
   return projectLearningPathNavigation([...items])[id]; // R10: W2's projection is the single source
 }
 
+/** Starlight's previous and next links, pinned to the learning path: a page on the path pages only along it (false ends the path); any other page keeps Starlight's sidebar order. */
+export type PagerLink = { link: string; label: string } | false;
+export function pathPagination(navigation: ModuleNavigation | undefined): { prev: PagerLink; next: PagerLink } | undefined {
+  if (!navigation) return undefined;
+  return {
+    prev: navigation.previous ? { link: navigation.previous.url, label: navigation.previous.title } : false,
+    next: navigation.next ? { link: navigation.next.url, label: navigation.next.title } : false,
+  };
+}
+
 export const TALK_KIND_LABELS: Record<Talk['kind'], string> = { talk: 'Talk', poster: 'Poster', paper: 'Paper' };
 
 export function sortTalks(talks: readonly Talk[]): Talk[] {
@@ -94,3 +105,45 @@ export function talkMeta(talk: Pick<Talk, 'venue' | 'event_date'>): string {
 }
 
 export const isExternalHref = (href: string): boolean => /^https?:\/\//.test(href);
+
+/* ---------- Starlight page chrome: status notices, dates, edit links, table of contents ---------- */
+
+export type PageNotice = { type: 'note' | 'tip' | 'caution' | 'danger'; title: string; text: string };
+
+/** The status notices the title panel shows under the lede: draft, superseded, archived, and a failed or stale validation. */
+export function statusNotices(item: ContentItem): PageNotice[] {
+  const notices: PageNotice[] = [];
+  if (item.status === 'draft') notices.push({ type: 'caution', title: 'Draft', text: 'This page is not yet published guidance.' });
+  if (item.status === 'superseded') notices.push({ type: 'caution', title: 'Superseded', text: 'Use the identified successor for current guidance.' });
+  if (item.status === 'archived') notices.push({ type: 'note', title: 'Archived', text: 'This page is retained for durable reference.' });
+  if (item.artifact_type === 'learning-module' && ['failed', 'unvalidated', 'stale'].includes(item.validation_status ?? '')) {
+    const state = String(item.validation_status).replaceAll('-', ' ');
+    notices.push({ type: 'danger', title: state[0].toUpperCase() + state.slice(1), text: 'The affected runnable guidance must not be treated as currently validated.' });
+  }
+  return notices;
+}
+
+/** The date Starlight shows as "Last updated": the item's last_updated, else its publication date. */
+export function lastUpdatedOf(item: ContentItem): Date | undefined {
+  const iso = (item as { last_updated?: string }).last_updated ?? item.publication_date;
+  return iso ? new Date(`${iso}T00:00:00Z`) : undefined;
+}
+
+/** The GitHub edit URL of a content file, from the path Astro records for the entry (relative to site/). */
+export function editUrlFor(filePath: string | undefined): string | undefined {
+  if (!filePath) return undefined;
+  const path = filePath.startsWith('site/') ? filePath : `site/${filePath}`;
+  return `${PROJECT.repository}/edit/main/${path}`;
+}
+
+const decode = (value: string): string => value.replace(/<[^>]+>/g, '')
+  .replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&#x27;', "'").replace(/\s+/g, ' ').trim();
+
+/** Table-of-contents headings from rendered body HTML, in order, with a slot marker's own heading inserted where the marker sits. */
+export function headingsFromBody(html: string, slotHeadings: Readonly<Record<string, MarkdownHeading>> = {}): MarkdownHeading[] {
+  return splitAtSlots(html).flatMap((segment) => {
+    if (segment.kind === 'slot') return slotHeadings[segment.name] ? [slotHeadings[segment.name]] : [];
+    return [...segment.html.matchAll(/<h([23])\b[^>]*\bid="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/g)]
+      .map((match) => ({ depth: Number(match[1]), slug: match[2], text: decode(match[3]) }));
+  });
+}

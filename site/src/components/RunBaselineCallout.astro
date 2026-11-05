@@ -1,0 +1,12 @@
+---
+/* The "Run the baseline" aside on the start page: the release-pinned script on GitHub and the
+   annotated reference on Module 2. It sits after "Get the code", where the reader has the
+   repository, through the l2c:implementation-callout marker. */
+import { Aside, LinkButton } from '@astrojs/starlight/components';
+import { IMPLEMENTATION_REFERENCE } from '../content/implementation';
+---
+<Aside type="tip" title="Run the baseline">
+  <p>Use the release-pinned implementation rather than reconstructing the launcher from the conceptual overview.</p>
+  <p><LinkButton href={IMPLEMENTATION_REFERENCE.primarySourceUrl} variant="secondary" icon="external" rel="external">Open the {IMPLEMENTATION_REFERENCE.release} sbatch script (external)</LinkButton></p>
+  <p><a href="/guide/baseline-single-node-pattern/#implementation-reference">Read the annotated implementation reference</a></p>
+</Aside>

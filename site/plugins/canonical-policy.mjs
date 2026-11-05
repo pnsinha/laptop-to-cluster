@@ -14,6 +14,11 @@ export default function canonicalPolicy() {
       const content = readFileSync(file, 'utf8');
       if (/\.(?:xml|json)$/.test(file) && forbidden.test(content)) throw new Error(`${file}: noncanonical origin leaked into discovery output`);
       if (/\.html$/.test(file)) {
+        // The not-found page is served as /404.html; its canonical and Open Graph URLs say so.
+        if (/\/404\.html$/.test(file) && content.includes(`${origin}/404/`)) {
+          writeFileSync(file, content.replaceAll(`${origin}/404/`, `${origin}/404.html`));
+          continue;
+        }
         const discovery = content.match(/<(?:link[^>]+rel="canonical"|meta[^>]+property="og:url")[^>]*>/g) ?? [];
         if (discovery.some((tag) => forbidden.test(tag) || !tag.includes(origin))) throw new Error(`${file}: canonical or Open Graph URL is not apex-only`);
         // Replace Shiki's github-dark comment color inline so axe-core sees an

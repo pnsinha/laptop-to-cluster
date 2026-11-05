@@ -1,42 +1,50 @@
 ---
 import { getCollection, render } from 'astro:content';
+import type { MarkdownHeading } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ContentHeader from '../../components/ContentHeader.astro';
-import ModulePager from '../../components/ModulePager.astro';
+import BodySegments from '../../components/BodySegments.astro';
+import RunBaselineCallout from '../../components/RunBaselineCallout.astro';
 import SourcesAndScope from '../../components/SourcesAndScope.astro';
-import { IMPLEMENTATION_REFERENCE } from '../../content/implementation';
 import { currentReleaseVersion, RELEASE_REF_TOKEN, resolveReleaseRefs } from '../../content/release';
-import { learningPathNavigation } from '../../content/page-chrome';
+import { editUrlFor, headingsFromBody, lastUpdatedOf, learningPathNavigation, pathPagination, slotNames, statusNotices } from '../../content/page-chrome';
 import { assertCompositionProfile, currentBaselineRecord } from '../../content/projections';
 const entries = await getCollection('contentItems');
 const entry = entries.find(({ data }) => data.route_namespace === 'start');
 if (!entry) throw new Error('Missing published getting-started content item');
-const { Content } = await render(entry);
+const { Content, headings: renderedHeadings } = await render(entry);
 /* The clone command names the release with the @release token, resolved here as it is on the other pages. */
 const bodyHtml = entry.rendered?.html === undefined ? undefined : resolveReleaseRefs(entry.rendered.html, currentReleaseVersion());
 if (bodyHtml === undefined && entry.body?.includes(RELEASE_REF_TOKEN)) throw new Error(`${entry.id}: the release token needs rendered HTML to resolve`);
 const item = entry.data;
 assertCompositionProfile(item, 'start');
-const navigation = learningPathNavigation(entries.map(({ data }) => data), item.id) ?? {};
 const record = currentBaselineRecord((await getCollection('applicability')).map(({ data }) => data));
+const markers = new Set(bodyHtml ? slotNames(bodyHtml) : []);
+const headings: MarkdownHeading[] = [
+  ...(bodyHtml ? headingsFromBody(bodyHtml) : renderedHeadings),
+  ...(record ? [{ depth: 2, slug: 'how-we-know-heading', text: 'How we know this works' }] : []),
+  ...(item.authority.length > 0 ? [{ depth: 2, slug: 'sources-scope-heading', text: 'Sources and scope' }] : []),
+];
+const frontmatter = {
+  lastUpdated: lastUpdatedOf(item),
+  editUrl: editUrlFor(entry.filePath),
+  ...pathPagination(learningPathNavigation(entries.map(({ data }) => data), item.id)),
+  l2c: { lede: item.summary, notices: statusNotices(item) },
+};
 ---
-<BaseLayout title={item.title} description={item.summary} profile="start">
-  <ContentHeader {item} />
-  <aside class="implementation-callout" aria-labelledby="implementation-callout-heading">
-    <h2 id="implementation-callout-heading">Run the baseline</h2>
-    <p>Use the release-pinned implementation rather than reconstructing the launcher from the conceptual overview.</p>
-    <ul>
-      <li><a class="action action--secondary" href={IMPLEMENTATION_REFERENCE.primarySourceUrl} rel="external">Open the v0.1.0 sbatch script (external)</a></li>
-      <li><a href="/guide/baseline-single-node-pattern/#implementation-reference">Read the annotated implementation reference</a></li>
-    </ul>
-  </aside>
-  <article class="start-path" aria-label="Running the example, step by step">{bodyHtml === undefined ? <Content /> : <Fragment set:html={bodyHtml} />}</article>
+<BaseLayout title={item.title} description={item.summary} profile="start" {headings} {frontmatter}>
+  <article class="start-path" aria-label="Running the example, step by step">
+    {bodyHtml === undefined ? <Content /> : (
+      <BodySegments html={bodyHtml}>
+        <Fragment slot="implementation-callout"><RunBaselineCallout /></Fragment>
+      </BodySegments>
+    )}
+  </article>
+  {!markers.has('implementation-callout') && <RunBaselineCallout />}
   {record && (
     <section class="reading-section" aria-labelledby="how-we-know-heading">
       <h2 id="how-we-know-heading">How we know this works</h2>
       <p>The example workflow has a published test record: what ran, where it ran, and what it checked. <a href={`/applicability/${record.id}/`}>Read the full test record</a>.</p>
     </section>
   )}
-  <ModulePager {navigation} />
   <SourcesAndScope references={item.authority} />
 </BaseLayout>

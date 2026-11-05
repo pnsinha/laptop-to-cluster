@@ -1,7 +1,8 @@
 import { PROJECT } from './wording';
 
 export const DESIGNED_NOT_RUN = 'Designed, not run' as const;
-export const THEME_STORAGE_KEY = 'l2c-theme' as const;
+/* Starlight's key: 'light' or 'dark' for a choice, an empty string for auto. */
+export const THEME_STORAGE_KEY = 'starlight-theme' as const;
 export type ThemeChoice = 'system' | 'light' | 'dark';
 
 export const NAV_ITEMS = [

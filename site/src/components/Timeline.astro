@@ -26,7 +26,7 @@ const LANES: Record<StepNumber, Partial<Record<Lane, Span>>> = {
 };
 const MARKS: Partial<Record<StepNumber, 'gate' | 'verify'>> = { 3: 'gate', 5: 'verify' };
 ---
-<figure class="timeline" aria-labelledby="timeline-title">
+<div class="not-content"><figure class="timeline" aria-labelledby="timeline-title">
   <figcaption id="timeline-title" class="timeline__title">{title ?? 'One allocation, start to finish'}</figcaption>
   <ol class="timeline__steps">
     {TIMELINE_STEPS.map(({ n, label }) => (
@@ -38,4 +38,4 @@ const MARKS: Partial<Record<StepNumber, 'gate' | 'verify'>> = { 3: 'gate', 5: 'v
     <div><dt>Gate</dt><dd>Is the coordinator answering yet? This belongs to the pattern: keep it, and change only what “ready” means for your service.</dd></div>
     <div><dt>Verify</dt><dd>Are the results right? Only your science can say: replace this check with your own.</dd></div>
   </dl>
-</figure>
+</figure></div>

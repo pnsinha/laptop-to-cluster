@@ -1,9 +1,10 @@
 import { DOORS, type ConceptKey, type Door, type DoorId } from './contracts';
 import { projectLearningPath } from './projections';
 import type { ContentItem, Talk } from './schema';
+import { ATTRIBUTION } from './wording';
 
 /* All home page copy. Fields ending in "Html" are trusted, hand-authored markup
-   rendered with set:html. They carry only <code> and glossary links; the
+   rendered with set:html. They carry only <code>, <p> and glossary links; the
    concept colour and shape come from ConceptMap.astro via CONCEPTS. No tested
    claim lives here: tested claims come from the applicability record through
    the projection. */
@@ -13,14 +14,25 @@ export const HOME_DESCRIPTION = 'Translate a multi-service Docker Compose stack 
 
 const doorHref = (id: DoorId): string => DOORS.find((door) => door.id === id)!.href;
 
+/* The hero: what this is and who it is for (the kicker), the reader's situation (the title),
+   the problem and the promise (two sentences), one filled action and one plain link. */
 export const HERO = {
   kicker: 'A free, open-source learning guide for Docker Compose users',
   title: 'Your Compose stack, on a shared cluster',
-  ledeHtml: 'On your laptop, <code>docker compose up</code> starts the stack on demand. A shared research cluster has no Docker daemon and gives you no root access (administrator rights). Instead, you request a scheduler allocation (a block of computer time on the cluster), wait your turn, and launch the services with a batch script. This guide shows how to make that translation.',
-  primary: { label: 'Start with the big idea', href: '#big-idea' },
+  ledeHtml: 'A shared research cluster has no Docker daemon and gives you no root access, so <code>docker compose up</code> cannot run there. This guide shows how to start the same services inside one scheduler allocation, with a batch-script pattern that has been run on a real cluster.',
+  primary: { label: 'Take the five-minute tour', href: doorHref('understand') },
   secondary: { label: 'Already have a Compose file? Translate it', href: doorHref('translate') },
-  quiet: { lead: 'Support researchers or run a cluster?', label: 'See what this assumes, and when not to use it', href: doorHref('evaluate') },
 } as const;
+
+/** The hero tagline as Starlight renders it: the kicker line, then the lede. */
+export function heroTaglineHtml(): string {
+  return `<p class="kicker">${HERO.kicker}</p><p>${HERO.ledeHtml}</p>`;
+}
+
+/** The one line of site facts under the evidence badge. Free text; the tested claim stays in the badge. */
+export function siteFacts(release: string): string {
+  return `Release ${release} · A 2026 BSSw Fellowship project · Free to read, open source`;
+}
 
 export const BIG_IDEA = {
   title: 'The big idea',
@@ -69,13 +81,30 @@ export function homeDoors(items: readonly ContentItem[]): HomeDoor[] {
     : { ...door, summary: DOOR_SUMMARIES[door.id] }));
 }
 
-/* The band names the event and its date, never "upcoming", so the static page
+/* The crosswalk's code panes sit behind one disclosure; the legend stays visible. */
+export const CROSSWALK_DISCLOSURE = { summary: 'Show the Compose file beside the batch script' } as const;
+
+/* The closing block: the two most common next steps, once more, at the end of the page. */
+export const CLOSING = {
+  title: 'Ready to start?',
+  lead: 'Most readers begin with the tour. If you already have a Compose file, go straight to the translation guide.',
+  primary: { label: 'Take the five-minute tour', href: doorHref('understand') },
+  secondary: { label: 'Translate your Compose file', href: doorHref('translate') },
+} as const;
+
+/* Who made this, in one sentence, before the footer. The full attribution lives on its own page. */
+export const CREDIT = {
+  text: `Written by ${ATTRIBUTION.author}, ${ATTRIBUTION.affiliation}, as a 2026 BSSw Fellow in an individual capacity.`,
+  link: { label: 'About the project', href: '/about/project/' },
+} as const;
+
+/* The band names each event and its date, never "upcoming", so the static page
    stays true after the date. */
-export const EVENT_BAND = { label: 'Featured talk', linkText: 'talk and poster links', href: '/about/talks-and-papers/' } as const;
+export const EVENT_BAND = { label: 'Presented at', linkText: 'Talks and posters', href: '/about/talks-and-papers/' } as const;
 
 const KIND_LABEL: Record<Talk['kind'], string> = { talk: 'Talk', poster: 'Poster', paper: 'Paper' };
 
-/** "Talk at US-RSE’26 (Tue Oct 20, San Jose)", built from the featured talks.yml entry. */
+/** "Talk at US-RSE’26 (Tue Oct 20, San Jose)", built from one talks.yml entry. */
 export function eventBandLead(talk: Pick<Talk, 'kind' | 'venue' | 'event_date' | 'location'>): string {
   const date = new Date(`${talk.event_date}T00:00:00Z`);
   const part = (options: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-US', { ...options, timeZone: 'UTC' });
@@ -85,9 +114,16 @@ export function eventBandLead(talk: Pick<Talk, 'kind' | 'venue' | 'event_date' |
   return `${KIND_LABEL[talk.kind]} at ${venue} (${day}${city ? `, ${city}` : ''})`;
 }
 
-/** The one line after the event band, for readers who arrive from the SC26 poster or the US-RSE’26 talk. */
-export const VISIT_LINE = {
-  lead: 'Here from the SC26 poster or the US-RSE’26 talk?',
-  linkText: 'Talk and poster links',
-  href: '/about/talks-and-papers/',
-} as const;
+/** "Presented at I-GUIDE Forum 2026 (Aug 5), US-RSE’26 (Oct 20, San Jose) and SC26 (Nov 17, Chicago)", from every talk and poster in date order. */
+export function presentedAtLead(talks: readonly Pick<Talk, 'kind' | 'venue' | 'event_date' | 'location'>[]): string {
+  const events = [...talks].filter(({ kind }) => kind !== 'paper').sort((a, b) => a.event_date.localeCompare(b.event_date)).map((talk) => {
+    const date = new Date(`${talk.event_date}T00:00:00Z`);
+    const day = `${date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })} ${date.getUTCDate()}`;
+    const venue = talk.venue.replace(/\s?['’](\d{2})\b/, '’$1');
+    const city = talk.location?.split(',')[0]?.trim();
+    return `${venue} (${day}${city ? `, ${city}` : ''})`;
+  });
+  if (events.length === 0) return '';
+  const list = events.length === 1 ? events[0] : `${events.slice(0, -1).join(', ')} and ${events.at(-1)}`;
+  return `${EVENT_BAND.label} ${list}`;
+}

@@ -4,7 +4,7 @@ import type { Talk } from '../content/schema';
 
 const { talks } = Astro.props as { talks: Talk[] };
 ---
-<ul class="talks" role="list">
+<ul class="talks not-content" role="list">
   {talks.map((talk) => (
     <li class="talk" id={talk.id}>
       <p class="talk__kind">{TALK_KIND_LABELS[talk.kind]}</p>

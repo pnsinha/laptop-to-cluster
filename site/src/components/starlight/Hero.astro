@@ -1,0 +1,31 @@
+---
+/* Starlight's hero with the copy first in the document: the title, the tagline and the actions,
+   then the custom figure. Starlight's own Hero puts the image before the title, so a screen
+   reader meets the figure first; here the reading order and the stacked order on a phone agree.
+   The class names are Starlight's, so the hero rules in starlight-theme.css draw the layout. */
+import { LinkButton } from '@astrojs/starlight/components';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, image, actions = [] } = data.hero || {};
+/* Only custom markup is used for the figure; see site/src/content/hero-figure.ts. */
+const figure = image && 'html' in image ? image.html : undefined;
+---
+<div class="hero">
+  <div class="sl-flex stack">
+    <div class="sl-flex copy">
+      <h1 id="_top" data-page-title set:html={title} />
+      {tagline && <div class="tagline" set:html={tagline} />}
+    </div>
+    {actions.length > 0 && (
+      <div class="sl-flex actions">
+        {actions.map(({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
+          <LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+            {text}
+            {icon?.html && <Fragment set:html={icon.html} />}
+          </LinkButton>
+        ))}
+      </div>
+    )}
+  </div>
+  {figure && <div class="hero-html sl-flex" set:html={figure} />}
+</div>

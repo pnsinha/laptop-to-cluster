@@ -117,16 +117,6 @@ The example workflow is Tested. The badge on [Module 2](/guide/baseline-single-n
 
 To read: nothing. To run the example: an account on a cluster that uses Slurm and lets you request one node, Apptainer on its compute nodes, and a private folder you can write to for job scratch. [Run the example](/start/) shows how to check each.
 
-### How to progress
-
-Read this tour first. Then follow the path in order, or jump to the page that matches your goal.
-
-- [Module 1](/guide/scheduler-as-orchestrator/) explains the model in depth.
-- [Run the example](/start/) checks your cluster and submits the job.
-- [Module 2](/guide/baseline-single-node-pattern/) walks through the baseline workflow.
-- [Translate a Compose file](/guide/compose-to-hpc-translation/) adapts it to your stack.
-- [Evaluate and adopt](/adoption/evaluate/) helps you decide whether the pattern fits your center.
-
 ## Key points
 
 - A cluster scheduler, not Docker, decides what runs. You ask for an allocation, and a script starts your services inside it.

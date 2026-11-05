@@ -1,8 +1,12 @@
 /*
- * laptop-to-cluster.org design tokens: the v0.2.0 visual system.
+ * laptop-to-cluster.org design tokens: the visual system on Starlight.
  * Light is the base palette. Without a stored choice the page follows
- * prefers-color-scheme; one icon toggle (light or dark) sets data-theme on
- * <html>. Dark tokens are screen-only, so print always starts
+ * prefers-color-scheme; Starlight's theme select stores a choice and its
+ * head script sets data-theme on <html>. Starlight also serves
+ * data-theme="dark" in the HTML, so the dark choice counts only on a page
+ * whose script has run (data-l2c-js, set by the head script in
+ * astro.config.mjs); without JavaScript the page keeps following the
+ * operating system. Dark tokens are screen-only, so print always starts
  * from the light base and then applies the print overrides.
  * Every text/background pair used by the specimen is checked by
  * contrast_check.py (WCAG 2.2 AA in both modes).
@@ -175,7 +179,7 @@
 }
 
 @media screen {
-  :root[data-theme="dark"] {
+  :root[data-l2c-js][data-theme="dark"] {
     color-scheme: dark;
     /* Surfaces */
     --canvas: #131a29;

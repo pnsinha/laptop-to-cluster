@@ -1,22 +1,30 @@
 ---
+/* The annotated source excerpts of the baseline, one disclosure each. The intro and the two
+   package links stay visible; a reader opens only the excerpt they are adapting. The section
+   keeps the id the start page links to. */
+import { LinkButton } from '@astrojs/starlight/components';
 import type { ImplementationReference as ImplementationReferenceData } from '../content/implementation';
 
 const { reference } = Astro.props as { reference: ImplementationReferenceData };
 const lineRange = (start: number, end: number) => `Lines ${start}–${end}`;
 ---
-<section class="implementation-reference" id="implementation-reference" aria-labelledby="implementation-reference-heading">
+<section class="implementation-reference not-content" id="implementation-reference" aria-labelledby="implementation-reference-heading">
   <header class="implementation-reference__intro">
     <h2 id="implementation-reference-heading">Implementation reference</h2>
     <p>The <code>baseline.sbatch</code> excerpts below are lines from the script itself, in order; a <code># …</code> line marks lines left out. The Python excerpts are shortened. Each excerpt links to its release-pinned line range in the real <code>{reference.release}</code> source on GitHub. Use the complete package when adapting and submitting the workflow.</p>
-    <p><a class="action action--secondary" href={reference.packageUrl} rel="external">Open the complete workflow package (external)</a></p>
-    <p><a class="action action--secondary" href={reference.readmeUrl} rel="external">Read the package README (external)</a></p>
+    <p class="implementation-reference__actions">
+      <LinkButton href={reference.packageUrl} variant="secondary" icon="external" rel="external">Open the complete workflow package (external)</LinkButton>
+      <LinkButton href={reference.readmeUrl} variant="minimal" rel="external">Read the package README (external)</LinkButton>
+    </p>
   </header>
-  {reference.excerpts.map((excerpt) => <figure class="technical-figure source-excerpt">
-    <figcaption>
-      <span class="source-excerpt__title">{excerpt.title}</span>
-      <span class="source-excerpt__meta"><a href={excerpt.sourceUrl} rel="external"><code>{excerpt.sourcePath}</code> ({lineRange(excerpt.lineStart, excerpt.lineEnd)}) (external)</a></span>
-    </figcaption>
-    <p class="source-excerpt__annotation">{excerpt.annotation}</p>
-    <pre tabindex="0" aria-label={`${excerpt.title} source code`}><code>{excerpt.code}</code></pre>
-  </figure>)}
+  {reference.excerpts.map((excerpt) => <details class="source-excerpt__disclosure">
+    <summary>{excerpt.title}</summary>
+    <figure class="technical-figure source-excerpt">
+      <figcaption>
+        <span class="source-excerpt__meta"><a href={excerpt.sourceUrl} rel="external"><code>{excerpt.sourcePath}</code> ({lineRange(excerpt.lineStart, excerpt.lineEnd)}) (external)</a></span>
+      </figcaption>
+      <p class="source-excerpt__annotation">{excerpt.annotation}</p>
+      <pre tabindex="0" aria-label={`${excerpt.title} source code`}><code>{excerpt.code}</code></pre>
+    </figure>
+  </details>)}
 </section>

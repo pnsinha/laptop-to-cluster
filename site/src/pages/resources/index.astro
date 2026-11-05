@@ -1,65 +1,71 @@
 ---
 import { getCollection } from 'astro:content';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { canonicalPath } from '../../content/registry';
 import { TALKS_LABEL } from '../../content/contracts';
 import { currentBaselineRecord } from '../../content/projections';
 import { RECORD_LINK_TEXT } from '../../content/wording';
-interface Tile { href: string; title: string; summary: string; tag: string }
+interface Tile { href: string; title: string; summary: string }
 const published = (await getCollection('contentItems', ({ data }) => data.status === 'published')).map(({ data }) => data);
 const byId = new Map(published.map((item) => [item.id, item]));
 const record = currentBaselineRecord((await getCollection('applicability')).map(({ data }) => data));
-const fromItem = (id: string, tag: string): Tile[] => {
+const fromItem = (id: string, title?: string): Tile[] => {
   const item = byId.get(id);
-  return item ? [{ href: canonicalPath(item), title: item.title, summary: item.summary, tag }] : [];
+  return item ? [{ href: canonicalPath(item), title: title ?? item.title, summary: item.summary }] : [];
 };
+/* Four groups in reading order. The first three are the learner's questions; the fourth is the
+   project's own record, kept separate so it never competes with the learning path. */
 const groups = [
   {
     id: 'understand', title: 'Understand', question: 'What changes when a Compose stack moves to a shared cluster?',
     tiles: [
-      ...fromItem('module-0-orientation', 'Tour'),
-      ...fromItem('module-1-scheduler-orchestrator', 'Concept module'),
-      ...fromItem('glossary', 'Reference'),
+      ...fromItem('module-0-orientation'),
+      ...fromItem('module-1-scheduler-orchestrator'),
+      ...fromItem('glossary'),
     ],
   },
   {
     id: 'translate', title: 'Translate', question: 'How do I turn my own Compose file into a cluster job?',
     tiles: [
-      ...fromItem('module-3-compose-to-hpc-translation', 'Translate guide'),
-      ...fromItem('start-guide', 'Hands-on'),
-      ...fromItem('module-2-baseline', 'Hands-on module'),
-      { href: '/diagnostics/', title: 'Troubleshooting', summary: 'Find a failure by the ID it prints, with recovery steps.', tag: 'Recovery guide' },
+      ...fromItem('module-3-compose-to-hpc-translation'),
+      ...fromItem('start-guide'),
+      ...fromItem('module-2-baseline'),
+      { href: '/diagnostics/', title: 'Troubleshooting', summary: 'Find a failure by the ID it prints, with recovery steps.' },
+      ...fromItem('cheat-sheet', 'Cheat sheet'),
     ],
   },
   {
     id: 'evaluate', title: 'Evaluate and adopt', question: 'What was tested, what was not, and is this the right fit for my center?',
     tiles: [
-      ...fromItem('adoption-evaluate', 'Evaluation guide'),
-      ...(record ? [{ href: `/applicability/${record.id}/`, title: RECORD_LINK_TEXT, summary: 'What ran, where it ran, and what it checked.', tag: 'Evidence' }] : []),
-      ...fromItem('milestone-1', 'Milestone'),
-      ...fromItem('milestone-2', 'Milestone'),
+      ...fromItem('adoption-evaluate'),
+      ...(record ? [{ href: `/applicability/${record.id}/`, title: RECORD_LINK_TEXT, summary: 'What ran, where it ran, and what it checked.' }] : []),
+    ],
+  },
+  {
+    id: 'project', title: 'Project records', question: 'What has the fellowship published so far, and where was it presented?',
+    tiles: [
+      ...fromItem('milestone-1'),
+      ...fromItem('milestone-2'),
       ...fromItem('talks-and-papers', TALKS_LABEL),
     ],
   },
 ].filter(({ tiles }) => tiles.length);
+const headings = groups.map((group) => ({ depth: 2, slug: `resource-${group.id}`, text: group.title }));
+const lede = 'Start with the idea, translate your own Compose file, then check what was tested and whether it fits your center.';
 ---
-<BaseLayout title="Guide" description="A guided path through the Laptop-to-Cluster guide: understand the model, translate your own Compose file, then check what was tested." profile="resources">
-  <header class="content-header"><h1>Guide</h1><p class="lede">Start with the idea, translate your own Compose file, then check what was tested and whether it fits your center.</p></header>
+<BaseLayout title="Guide" description="A guided path through the Laptop-to-Cluster guide: understand the model, translate your own Compose file, then check what was tested." profile="resources" {headings} frontmatter={{ l2c: { lede } }}>
   {groups.map((group) => (
     <section class="resource-section" aria-labelledby={`resource-${group.id}`}>
       <div class="resource-section__header">
         <h2 id={`resource-${group.id}`}>{group.title}</h2>
         <p class="resource-section__question">{group.question}</p>
       </div>
-      <ul class="resource-grid">
-        {group.tiles.map((tile) => (
-          <li><a class="resource-tile" href={tile.href}>
-            <h3>{tile.title}</h3>
-            <p>{tile.summary}</p>
-            <span class="resource-tile__tag">{tile.tag}</span>
-          </a></li>
-        ))}
-      </ul>
+      <div class="not-content">
+        <CardGrid>
+          {group.tiles.map((tile) => <LinkCard href={tile.href} title={tile.title} description={tile.summary} />)}
+        </CardGrid>
+      </div>
     </section>
   ))}
 </BaseLayout>

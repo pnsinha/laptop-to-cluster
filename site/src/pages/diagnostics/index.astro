@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import type { MarkdownHeading } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DiagnosticApplicabilityContextView from '../../components/DiagnosticApplicabilityContext.astro';
 import { diagnosticAliasAnchors, diagnosticAnchor, printedDiagnosticId } from '../../content/diagnostics';
@@ -12,9 +13,11 @@ const applicability = (await getCollection('applicability')).map(({ data }) => d
    release still resolve. Content-item ids keep their historical spelling. */
 /* Astro gives every rendered Markdown heading a slug id, and all 15 entries share the same
    five section names, so each fragment's ids are scoped to its entry anchor; duplicate ids
-   are an axe failure, not just a lint nit. */
+   are an axe failure, not just a lint nit. The entry title is the h2 of its section, so the
+   five section headings inside each entry render one level down, as h3. */
 const scoped = (html: string, anchor: string): string =>
   html
+    .replace(/<h2\b/g, '<h3').replace(/<\/h2>/g, '</h3>')
     .replace(/\bid="([^"]+)"/g, (_, id: string) => `id="${anchor}--${id}"`)
     .replace(/\bhref="#([^"]+)"/g, (_, frag: string) => `href="#${anchor}--${frag}"`);
 const sections = entries.map((entry) => {
@@ -29,22 +32,19 @@ const sections = entries.map((entry) => {
     context: entry.data.artifact_type === 'diagnostic' ? projectDiagnosticApplicabilityContext(entry.data, applicability) : undefined,
   };
 });
+const headings: MarkdownHeading[] = sections.map(({ entry, printed, anchor }) => ({ depth: 2, slug: `${anchor}-heading`, text: `${printed}: ${entry.data.title}` }));
+const lede = 'When a run fails, the job output names an ID that starts with BSSW-. Find that ID below, or choose the symptom you see.';
 ---
-<BaseLayout title="Diagnostic registry" description="Short reader codes, stable workflow identifiers, and recovery guidance for every documented baseline failure mode." profile="diagnostic">
-<header class="content-header">
-  <span class="eyebrow">Troubleshooting</span>
-  <h1>Find a failure by the ID it prints</h1>
-  <p class="lede">When a run fails, the job output names an ID that starts with <code>BSSW-</code>. Find that ID below, or choose the symptom you see.</p>
-</header>
-<nav aria-label="Diagnostics on this page">
-  <ul class="diagnostic-index">{sections.map(({ entry, printed }) => <li><a href={`#${entry.data.stable_slug}`}>{entry.data.title}</a><span><strong>Code:</strong> <code>{printed}</code><br />{entry.data.summary}</span></li>)}</ul>
+<BaseLayout title="Find a failure by the ID it prints" description="Short reader codes, stable workflow identifiers, and recovery guidance for every documented baseline failure mode." profile="diagnostic" {headings} frontmatter={{ l2c: { kindLine: 'Troubleshooting', lede } }}>
+<nav aria-label="Diagnostics on this page" class="not-content">
+  <ul class="diagnostic-index">{sections.map(({ entry, printed }) => <li><a href={`#${entry.data.stable_slug}`}>{entry.data.title}</a><code>{printed}</code></li>)}</ul>
 </nav>
-{sections.map(({ entry, printed, anchor, aliases, body, context }) => <section class="prose" id={anchor} aria-labelledby={`${anchor}-heading`}>
+{sections.map(({ entry, printed, anchor, aliases, body, context }) => <section class="diagnostic-entry" id={anchor} aria-labelledby={`${anchor}-heading`}>
   {aliases.map((alias) => <span id={alias}></span>)}
   <h2 id={`${anchor}-heading`}>{printed}: {entry.data.title}</h2>
   <p class="diagnostic-code"><strong>Code:</strong> <code>{printed}</code>{entry.data.id !== printed && <> <span class="diagnostic-stable-id">Earlier name: <code>{entry.data.id}</code></span></>}</p>
   <Fragment set:html={body} />
   {context && <DiagnosticApplicabilityContextView context={context} />}
 </section>)}
-<p class="prose">If execution is blocked, you can still use the conceptual modules and local adaptation guidance. If no symptom matches, <a href="/about/support/">report a missing diagnostic</a> with sanitized reproduction details.</p>
+<p>If execution is blocked, you can still use the conceptual modules and local adaptation guidance. If no symptom matches, <a href="/about/support/">report a missing diagnostic</a> with sanitized reproduction details.</p>
 </BaseLayout>

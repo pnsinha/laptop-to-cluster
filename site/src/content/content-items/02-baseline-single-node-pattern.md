@@ -20,7 +20,7 @@ prerequisites:
   - { id: BSSW-PREREQ-SLURM, check: "Run `command -v sbatch` and confirm an allocation/account is available", diagnostic_id: BSSW-PREREQ-SLURM }
   - { id: BSSW-PREREQ-APPTAINER, check: "Run `command -v apptainer` and record `apptainer --version`", diagnostic_id: BSSW-PREREQ-APPTAINER }
 section_kinds: [concept, procedure, expected-result, limitations, next-steps]
-required_resources: ["One Slurm compute node", "Apptainer available on compute nodes", "A center-approved writable job-scoped directory", "The immutable v0.1.0 workflow bundle"]
+required_resources: ["A center-approved writable job-scoped directory, set as BSSW_SCRATCH_ROOT", "The v0.1.0 workflow package: see Get the code on Run the example"]
 estimated_minutes: 30
 completion_check: { kind: result, text: "Complete only when the job exits zero and the verifier reports the documented task count, unique results, and a success result artifact." }
 validation_status: validated
@@ -80,8 +80,6 @@ The script moves through six steps. The table says what each step does and where
 The [readiness gate](/about/glossary/#readiness-gate) proves the coordinator can serve. By default it polls for up to 30 seconds and passes only on the exact expected answer. It does not prove that any result is right. That is [verification](/about/glossary/#verification), and it runs inside the job, as step 5 of the same script (`baseline.sbatch` lines 245–251), not as a separate command afterward. A running process is not yet a successful result.
 
 <!-- l2c:diagram-single-node-architecture -->
-
-<!-- l2c:implementation-reference -->
 
 ## Files the workflow reads and writes
 
@@ -170,6 +168,8 @@ Two checks guard a run, and they adapt differently:
 To run your own application, expect to edit **12 files** and to set up to **14 adapter variables**. The files are `slurm/baseline.sbatch` (directive values and launch lines), `inputs/tasks.json`, `inputs/tasks.json.sha256`, `expected/results.json` (or delete it), `bin/coordinator.py`, `bin/worker.py`, `bin/verify.py`, `bin/validate_input.py`, `bin/readiness.py`, `bin/common.py`, `container/Apptainer.def`, and `container/image-lock.json`. These stay as they are: `container/acquire.sh`, `diagnostics.json`, and `README.md`. The 14 adapter variables are the ones in the package README's adapter table: `WORKER_COUNT`, `TASK_COUNT`, `READINESS_TIMEOUT`, `CLEANUP_TIMEOUT`, `IMAGE_PATH`, `IMAGE_SHA256_FILE`, `INPUT_PATH`, `INPUT_SHA256_FILE`, `EXPECTED_PATH`, `BSSW_SCRATCH_ROOT`, `BSSW_APPTAINER_CMD`, `BSSW_SRUN_CMD`, `BSSW_SLURM_VERSION_CMD`, and `BSSW_SHA256_CMD`.
 
 For a step-by-step translation of your own Compose file, use [Compose-to-HPC translation](/guide/compose-to-hpc-translation/).
+
+<!-- l2c:implementation-reference -->
 
 ## Safety and scope limitations
 
