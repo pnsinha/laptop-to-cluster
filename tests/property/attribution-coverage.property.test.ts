@@ -1,13 +1,11 @@
 import fc from 'fast-check';
-import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { beforeAll, describe, expect, it } from 'vitest';
-import BaseLayout from '../../site/src/layouts/BaseLayout.astro';
+import { describe, expect, it } from 'vitest';
 import { attributionSchema } from '../../site/src/content/schema.js';
-import { COMPOSITION_PROFILES } from '../../site/src/content/projections.js';
-import { ACKNOWLEDGMENT_TEXT } from '../../site/src/content/acknowledgment.js';
 
-let container: AstroContainer;
-beforeAll(async () => { container = await AstroContainer.create(); });
+/* Pages are Starlight pages, which Astro's test container cannot render, and this suite runs
+   before the build. The page half of the invariant (every page carries the verbatim
+   acknowledgment and links the About, attribution and accessibility pages) is checked on every
+   built page in tests/integration/starlight-shell.test.ts. */
 
 // The attribution schema rejects placeholder wording (tbd, todo, placeholder,
 // etc.) via superRefine. The word generator must avoid producing those tokens,
@@ -19,12 +17,6 @@ const word = fc.array(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789')
 }).map((characters) => characters.join(''))
   .filter((value) => !PLACEHOLDER_WORDS.includes(value));
 const phrase = fc.array(word, { minLength: 1, maxLength: 4 }).map((words) => words.join(' '));
-const publicPage = fc.record({
-  title: phrase,
-  description: phrase,
-  canonicalPath: word.map((slug) => `/guide/${slug}/`),
-  profile: fc.constantFrom(...COMPOSITION_PROFILES),
-});
 const contributorRecord = fc.record({
   name: phrase,
   role: phrase,
@@ -50,21 +42,10 @@ const globalAttribution = {
   licenses: [{ scope: 'artifact', license: 'CC-BY-4.0' }],
 };
 
-describe('Property 12: Attribution coverage preserves role and funding scope', () => {
-  it('links every public page to global attribution and preserves artifact acknowledgments', async () => {
-    // Feature: bssw-fellowship-resource-site, Property 12: Attribution coverage preserves role and funding scope
-    // **Validates: Requirements 8.1, 8.7**
-    await fc.assert(fc.asyncProperty(publicPage, artifactAttribution, async (page, contributors) => {
-      const html = await container.renderToString(BaseLayout, { props: page });
+describe('Attribution coverage preserves role and funding scope', () => {
+  it('preserves every artifact acknowledgment, its role and its funding scope', () => {
+    fc.assert(fc.property(artifactAttribution, (contributors) => {
       const projection = attributionSchema.parse({ ...globalAttribution, contributors });
-
-      expect(html).toContain('href="/about/project/"');
-      // Every page carries the verbatim acknowledgment and the About link in its footer (F-1). The About page links attribution and licenses.
-      const footer = html.slice(html.indexOf('<footer'));
-      expect(footer).toContain('href="/about/project/"');
-      expect(footer).not.toMatch(/href="\/about\/(?:attribution|accessibility)\//);
-      const acknowledgment = footer.match(/<p class="acknowledgment"[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? '';
-      expect(acknowledgment.replace(/\s+/g, ' ').trim()).toBe(ACKNOWLEDGMENT_TEXT);
       expect(projection.contributors).toEqual(contributors);
       for (const contributor of contributors) {
         expect(projection.contributors).toContainEqual(contributor);

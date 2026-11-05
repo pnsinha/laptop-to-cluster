@@ -43,6 +43,13 @@ describe('sidebar', () => {
     expect(sidebar).toMatch(/<details class="[^"]*"><summary[^>]*><span class="group-label[^"]*"><span class="large[^"]*">Project/);
   });
 
+  it('links the About page from every page, so attribution is one step away', () => {
+    for (const { route, html } of pages) {
+      const sidebar = html.match(/<nav class="sidebar[^"]*"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';
+      expect(sidebar, route).toContain('href="/about/project/"');
+    }
+  });
+
   it('marks the current page, and only the current page, on every page it lists', () => {
     for (const { route, html } of pages) {
       const sidebar = html.match(/<nav class="sidebar[^"]*"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';
