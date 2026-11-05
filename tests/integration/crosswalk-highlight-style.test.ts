@@ -57,7 +57,7 @@ const select = async (page: Page, key: ConceptKey) => {
   await page.locator(`.crosswalk__term[data-concept="${key}"] button`).focus();
   await page.keyboard.press('Enter');
 };
-/* Lean variant (R13): the selected lines are found by their computed outline, not by a class. */
+/* Lean variant: the selected lines are found by their computed outline, not by a class. */
 const evaluateIn = <T,>(page: Page, fn: string) => page.evaluate(`(${fn})()` as never) as Promise<T>;
 const parse = (value: string): [number, number, number] => {
   const match = value.match(/rgba?\((\d+)[ ,]+(\d+)[ ,]+(\d+)/);

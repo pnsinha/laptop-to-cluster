@@ -54,7 +54,7 @@ describe('validateReleaseWorkflow', () => {
     expect(validateDeploymentWorkflow(RELEASE, 'release.yml')).toEqual([]);
   });
 
-  it('accepts A11 literal inline tag list and a block branch list', () => {
+  it('accepts a literal inline tag list and a block branch list', () => {
     const block = "\n    tags:\n      - 'v[0-9]+.[0-9]+.[0-9]+'\n      - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'\n      - '!v0.1.0'";
     expect(RELEASE).toContain(block);
     const inline = RELEASE.replace(block, "\n    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+', '!v0.1.0']");

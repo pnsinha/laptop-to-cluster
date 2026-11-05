@@ -69,7 +69,7 @@ describe('boundary pattern source', () => {
     expect(compileBoundaryPattern('(alphaterm')).toBeUndefined();
   });
 
-  it('falls back to the main worktree pattern file from a linked worktree (A10)', () => {
+  it('falls back to the main worktree pattern file from a linked worktree', () => {
     const main = repo({ 'README.md': 'clean\n' });
     mkdirSync(join(main, '.kiro'));
     writeFileSync(join(main, '.kiro/boundary-pattern.txt'), `${TOKEN}\n`);

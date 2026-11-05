@@ -40,10 +40,8 @@ function contentRecord(index: number, slug: string, status: 'published' | 'super
   };
 }
 
-describe('Property 11: Stable route history remains resolvable', () => {
+describe('Stable route history remains resolvable', () => {
   it('keeps every generated canonical and former route resolvable without loops', () => {
-    // Feature: bssw-fellowship-resource-site, Property 11: Stable route history remains resolvable
-    // **Validates: Requirements 7.1, 7.2, 7.3**
     fc.assert(fc.property(routeHistory, redirectHostname, (entries, hostname) => {
       const successorId = idFor(entries.length - 1, entries.at(-1)!.slug);
       const content = entries.map(({ slug, status }, index) =>

@@ -32,7 +32,7 @@ function htmlFiles(directory: string): string[] {
 const pages = htmlFiles(dist).map((file) => ({ file, html: readFileSync(file, 'utf8'), route: relative(dist, file).split(sep).join('/').replace(/index\.html$/, '') })).filter(({ route }) => route !== '404.html');
 const generatedCss = readdirSync(resolve(dist, '_astro')).filter((file) => file.endsWith('.css')).map((file) => readFileSync(resolve(dist, '_astro', file), 'utf8')).join('\n');
 const projectionCount = (page: string) => page.match(/data-projection-id=/g)?.length ?? 0;
-// One projection block, validated or escalated; the opening pattern is the shared export (C4).
+// One projection block, validated or escalated; the opening pattern is the shared export.
 const projectionBlocks = new RegExp(`${PROJECTION_SECTION.source}[\\s\\S]*?</section>`, 'g');
 const escaped = (text: string) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 
@@ -153,7 +153,7 @@ describe('reader-choice landing and resources', () => {
     expect(figure).not.toBe('');
     expect([...figure.matchAll(/<strong>([^<]+)<\/strong>/g)].map((match) => match[1]))
       .toEqual(TIMELINE_STEPS.map(({ label }) => label));
-    // K7: decorative arrows and `<i>` are gone; the A2 lane spans and the ◆ gate mark are allowed.
+    // Decorative arrows and `<i>` are gone; the timeline lane spans and the ◆ gate mark are allowed.
     expect(figure).not.toMatch(/↓|→|<i\b/);
     expect(figure.indexOf('<strong>Verify results</strong>')).toBeGreaterThan(figure.indexOf('<strong>Run workers</strong>'));
     expect(figure.indexOf('<strong>Verify results</strong>')).toBeLessThan(figure.indexOf('<strong>Clean up</strong>'));
@@ -265,7 +265,7 @@ describe('static accessibility, metadata, and dependency gates', () => {
     expect(generatedCss).toMatch(/system-ui/);
     expect(generatedCss).toMatch(/ui-monospace/);
     expect(generatedCss).not.toMatch(/@import url|fonts\.google|use\.typekit|linear-gradient|radial-gradient/);
-    // Same-origin rule (full budget lives in font-budget.test.ts and W3's REMOTE-FONT): no font URL leaves the site.
+    // Same-origin rule (full budget lives in font-budget.test.ts and the REMOTE-FONT rule in publication.mjs): no font URL leaves the site.
     expect(generatedCss).not.toMatch(/url\(["']?(?:https?:)?\/\//);
     // Starlight's two short transitions ride under the reduced-motion reset; keyframe animation and parallax stay out.
     expect(generatedCss).not.toMatch(/@keyframes|animation-name:(?!\s*none(?![\w-]))|animation:(?!\s*none(?![\w-]))|scroll-timeline|parallax/);
@@ -307,12 +307,12 @@ describe('v0.2.0 routes, timeline placement and evidence summaries', () => {
     }
   });
 
-  it('does not report any applicability record page as duplicating its own summaries (D3)', () => {
+  it('does not report any applicability record page as duplicating its own summaries', () => {
     const errors = validateBuiltOutput(dist).filter((error) => /SOURCE-DUPLICATION/.test(error) && /applicability\//.test(error));
     expect(errors).toEqual([]);
   });
 
-  it('places the timeline per D13: unlit on tour and Module 1, step 3 lit on Module 2, nowhere else', () => {
+  it('places the timeline: unlit on tour and Module 1, step 3 lit on Module 2, nowhere else', () => {
     const lit: Record<string, number[]> = {
       'guide/tour/': [], 'guide/scheduler-as-orchestrator/': [], 'guide/baseline-single-node-pattern/': [3],
     };
@@ -327,7 +327,7 @@ describe('v0.2.0 routes, timeline placement and evidence summaries', () => {
     }
   });
 
-  it('renders the A2 lane markup, the aria-hidden bars and the scratch-tail sentence inside the timeline', () => {
+  it('renders the timeline lane markup, the aria-hidden bars and the scratch-tail sentence inside the timeline', () => {
     const figure = html.runnable.match(/<figure class="timeline"[^>]*>([\s\S]*?)<\/figure>/)?.[1] ?? '';
     const lanes = [...figure.matchAll(/<span class="timeline__lane"[^>]*data-lane="([a-z]+)"/g)].map((match) => match[1]);
     expect(lanes).toEqual(TIMELINE_STEPS.flatMap(() => ['scratch', 'coord', 'workers', 'checks']));
@@ -336,7 +336,7 @@ describe('v0.2.0 routes, timeline placement and evidence summaries', () => {
     expect(figure.indexOf('<p class="timeline__after">')).toBeLessThan(figure.indexOf('<dl class="timeline__key">'));
   });
 
-  it('renders the A1 screen-reader text on tagged crosswalk lines only, and the A3 subtitle', () => {
+  it('renders the screen-reader text on tagged crosswalk lines only, and the crosswalk subtitle', () => {
     const crosswalk = html.home.match(/<section class="crosswalk not-content"[\s\S]*?<\/section>/)?.[0] ?? '';
     expect(crosswalk).toContain('<p class="crosswalk__subtitle">');
     expect(crosswalk).not.toContain('data-concepts=""');

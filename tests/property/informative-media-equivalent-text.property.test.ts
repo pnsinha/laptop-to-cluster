@@ -86,10 +86,8 @@ const mediaCase: fc.Arbitrary<MediaCase> = fc.oneof(
   prerecordedVideo,
 );
 
-describe('Property 13: Informative media has equivalent text', () => {
+describe('Informative media has equivalent text', () => {
   it('accepts media exactly when its purpose and equivalent text are explicit', () => {
-    // Feature: bssw-fellowship-resource-site, Property 13: Informative media has equivalent text
-    // **Validates: Requirements 9.3, 9.4**
     fc.assert(fc.property(mediaCase, ({ record, accepted }) => {
       const result = publicationMediaSchema.safeParse(record);
       expect(result.success).toBe(accepted);

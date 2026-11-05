@@ -7,7 +7,7 @@ import { ACKNOWLEDGMENT_TEXT, ACKNOWLEDGMENT_SHA256, ACKNOWLEDGMENT_STATEMENT, A
 import { NAV_ITEMS, TIMELINE_STEPS, DOORS, EVIDENCE_ROW_LABELS, LEARNING_PATH, CONCEPTS, DESIGNED_NOT_RUN, TALKS_LABEL } from '../../site/src/content/contracts';
 import { applicabilityRecordSchema, genericContentItemSchema, talkSchema } from '../../site/src/content/schema';
 
-describe('C0 contracts', () => {
+describe('frozen contracts', () => {
   it('pins the acknowledgment by hash and keeps the footer identical', () => {
     expect(ACKNOWLEDGMENT_TEXT).toBe(`${ACKNOWLEDGMENT_STATEMENT} ${ACKNOWLEDGMENT_DISCLAIMER}`);
     expect(ACKNOWLEDGMENT_TEXT.length).toBe(605);

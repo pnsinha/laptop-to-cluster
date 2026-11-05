@@ -68,7 +68,7 @@ export const DOOR_SUMMARIES: Record<DoorId, string> = {
 export interface PathStep { label: string; href: string }
 export type HomeDoor = Door & { summary: string; path?: PathStep[] };
 
-/** LEARNING_PATH resolved to titles and canonical URLs, in learning order. A thin wrapper over W2's projectLearningPath (R10). */
+/** LEARNING_PATH resolved to titles and canonical URLs, in learning order. A thin wrapper over projectLearningPath in projections.ts. */
 export function resolveLearningPath(items: readonly ContentItem[]): PathStep[] {
   return projectLearningPath([...items]).map(({ title, url }) => ({ label: title, href: url }));
 }

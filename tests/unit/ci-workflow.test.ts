@@ -46,7 +46,7 @@ describe('ci.yml: version-parametrised blocking validation', () => {
   it('maps the boundary pattern on the publication gate step only', () => {
     expect(text.match(/secrets\.L2C_BOUNDARY_PATTERN/g)).toHaveLength(1);
     expect(workflow.env).toBeUndefined();
-    /* R23/A14: there is no L2C_BOUNDARY_FORK_PR; fork PRs are detected from GITHUB_EVENT_NAME/GITHUB_EVENT_PATH. */
+    /* There is no L2C_BOUNDARY_FORK_PR; fork PRs are detected from GITHUB_EVENT_NAME/GITHUB_EVENT_PATH. */
     expect(text).not.toContain('L2C_BOUNDARY_FORK_PR');
     const gate = steps.find((step) => step.run === 'npm run publication:validate');
     expect(gate.env).toEqual({ L2C_BOUNDARY_PATTERN: '${{ secrets.L2C_BOUNDARY_PATTERN }}' });

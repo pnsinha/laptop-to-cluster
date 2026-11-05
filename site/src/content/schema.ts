@@ -110,7 +110,7 @@ const genericArtifactType = z.enum([
 export const genericContentItemSchema = z.object({
   ...commonFields,
   artifact_type: genericArtifactType,
-  /* Renders the full acknowledgment beside a hosted download (event pages; spec D9). */
+  /* Renders the full acknowledgment beside a hosted download (event pages). */
   acknowledgment_beside_download: z.boolean().optional(),
 }).strict();
 

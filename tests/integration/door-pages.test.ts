@@ -127,7 +127,7 @@ describe('The five-minute tour', () => {
 
   it('builds at the tour route with the conceptual shell and the header line', () => {
     expect(html).toContain('data-composition-profile="learning-conceptual"');
-    /* R10: conceptual modules read "Reading", not "Concepts". */
+    /* Conceptual modules read "Reading", not "Concepts". */
     expect(html).toContain('<p class="content-header__line">Module 0 · Reading · about 5 min</p>');
     expect(html).toContain('>In this module</h2>');
     expect(html).not.toContain('Workflow package');
@@ -178,7 +178,7 @@ describe('links from the four new pages', () => {
     }
   });
 
-  it('resolve every fragment that targets a page this workstream owns', () => {
+  it('resolve every fragment that targets a learning-path page', () => {
     const owned = ['/adoption/evaluate/', '/guide/tour/', '/guide/compose-to-hpc-translation/', '/about/talks-and-papers/'];
     for (const route of pages) {
       for (const { path, fragment } of hrefs(page(route))) {

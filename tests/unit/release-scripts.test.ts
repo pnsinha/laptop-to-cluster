@@ -49,7 +49,7 @@ describe('validate-repository', () => {
 });
 
 describe('validate-release workflow gating', () => {
-  it('warns before W8 and fails under CI, and accepts the real shape', () => {
+  it('warns locally and fails under CI, and accepts the real shape', () => {
     const none = tree({ '.github/workflows/publication.yml': FROZEN });
     expect(releaseWorkflowIssues(none, false).errors).toEqual([]);
     expect(releaseWorkflowIssues(none, false).warnings.join('\n')).toMatch(/release workflow is missing/);

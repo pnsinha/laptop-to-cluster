@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /*
- * W1's proof of the design.md §8.2 budgets, measured on the built site/dist.
- * W3 implements the BUDGET rule in scripts/publication.mjs separately. This file is the workstream-local check:
- * it counts every font face the CSS references (W3 counts only faces whose unicode-range occurs in the page).
+ * The font, preload, script and origin budgets, measured on the built site/dist.
+ * The BUDGET rule in scripts/publication.mjs checks the same budgets separately. This file is stricter:
+ * it counts every font face the CSS references (the rule counts only faces whose unicode-range occurs in the page).
  */
 /* Starlight's theme provider, sidebar state, table of contents and search loader total about 12 KB a page; the budget leaves room for the site's own scripts. */
 const BUDGET = { fontBytes: 140_000, fontPreloads: 2, scriptBytes: 32_768 } as const;
@@ -96,7 +96,7 @@ const measured = htmlFiles(dist).map((file) => {
   return { route, html, css, fonts: fontUrlsIn(css) };
 });
 
-describe('built site: font, preload, script and origin budgets (design.md §8.2)', () => {
+describe('built site: font, preload, script and origin budgets', () => {
   it('covers the whole built site, home page included', () => {
     expect(measured.length).toBeGreaterThanOrEqual(10);
     expect(measured.map((page) => page.route)).toContain('/');

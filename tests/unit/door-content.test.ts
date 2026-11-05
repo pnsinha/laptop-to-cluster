@@ -21,14 +21,14 @@ const h2s = (body: string) => [...body.matchAll(/^## (.+)$/gm)].map((match) => m
 const section = (body: string, start: string) => body.split(/^## /m).find((part) => part.startsWith(start)) ?? '';
 
 /* Instructional prose is checked for concepts and links, never frozen verbatim. System names, versions, dates
-   and job IDs belong to the test record only (spec section 2.3). */
+   and job IDs belong to the test record only. */
 const SYSTEM_OR_DATE = /\b(?:Purdue|Anvil|Expanse)\b|\b\d{4}-\d{2}-\d{2}\b|\b(?:Slurm|Apptainer)\s+v?\d|\bjob\s*(?:ID\s*)?\d{5,}\b/i;
 const KNOWN_ROUTES = new Set([
   '/', '/start/', '/diagnostics/', '/resources/', '/guide/tour/', '/guide/scheduler-as-orchestrator/',
   '/guide/baseline-single-node-pattern/', '/guide/compose-to-hpc-translation/', '/adoption/evaluate/',
   '/about/glossary/', '/about/support/', '/about/project/', '/about/attribution/', '/about/talks-and-papers/', '/milestones/2/',
 ]);
-// W9's cheat sheet is a sanctioned tour link, but only while its content item exists.
+// The cheat sheet is a sanctioned tour link, but only while its content item exists.
 if (existsSync(resolve(items, 'about-cheat-sheet.md'))) KNOWN_ROUTES.add('/about/cheat-sheet/');
 const FRAGMENTS: Record<string, readonly string[]> = {
   '/about/glossary/': REQUIRED_FRAGMENTS.glossary,

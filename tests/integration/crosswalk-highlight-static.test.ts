@@ -6,8 +6,8 @@ import { CONCEPTS } from '../../site/src/content/contracts';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const dist = resolve(root, 'site/dist');
-/* Gate G2. The page total is the BUDGET rule's limit (Starlight's theme, sidebar, table of contents and
-   search loader are about 12 KB). The highlight script's own cap is R13's 840 B lean variant. */
+/* The page total is the BUDGET rule's limit (Starlight's theme, sidebar, table of contents and
+   search loader are about 12 KB). The highlight script's own cap is 840 B, the lean variant's size. */
 const PAGE_JS_BUDGET = 32768;
 const HIGHLIGHT_JS_CAP = 840;
 

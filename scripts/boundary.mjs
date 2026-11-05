@@ -22,7 +22,7 @@ export function loadBoundaryPattern(root, env = process.env) {
   if (fromEnv) return { pattern: fromEnv, source: 'env' };
   const fromFile = readPatternFile(join(root, BOUNDARY_PATTERN_FILE));
   if (fromFile) return { pattern: fromFile, source: 'file' };
-  // A10: inside a linked worktree, fall back to the main worktree's untracked file.
+  // Inside a linked worktree, fall back to the main worktree's untracked file.
   try {
     const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
     const fromMain = common ? readPatternFile(join(common, '..', BOUNDARY_PATTERN_FILE)) : undefined;

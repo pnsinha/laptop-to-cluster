@@ -45,8 +45,7 @@ const applicability = {
   review_after: '2026-10-31',
 };
 
-describe('Property 9: Executable failures resolve to durable diagnostics', () => {
-  /** Validates: Requirements 5.5, 5.6 */
+describe('Executable failures resolve to durable diagnostics', () => {
   it('assigns every executable failure a stable diagnostic ID and canonical URL', () => {
     fc.assert(fc.property(fc.uniqueArray(diagnosticId, { minLength: 1, maxLength: 8 }), (ids) => {
       const registry = validateRegistry({

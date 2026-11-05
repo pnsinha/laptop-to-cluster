@@ -35,7 +35,7 @@ describe('badge text', () => {
     expect(formatMonthYear('July 2026')).toBeUndefined();
   });
 
-  it('builds the C1 text for each status', () => {
+  it('builds the badge text for each status', () => {
     expect(evidenceBadgeText('validated', 'Purdue Anvil', '2026-07-25')).toBe('Tested on Purdue Anvil · Jul 2026');
     expect(evidenceBadgeText('stale', 'Purdue Anvil', '2026-07-25')).toBe('Review due: last tested on Purdue Anvil · Jul 2026');
     expect(evidenceBadgeText('failed', 'Purdue Anvil', '2026-07-25')).toBe('Last run failed: see the test record');
@@ -43,7 +43,7 @@ describe('badge text', () => {
     expect(evidenceBadgeText('validated', '', '2026-07-25')).toBeUndefined();
   });
 
-  it('builds the pill label and caption for each status (A17)', () => {
+  it('builds the pill label and caption for each status', () => {
     expect(evidenceBadgeParts('validated', 'Purdue Anvil', '2026-07-25')).toEqual({ label: 'Tested', context: 'Purdue Anvil · Jul 2026' });
     expect(evidenceBadgeParts('stale', 'Purdue Anvil', '2026-07-25')).toEqual({ label: 'Review due', context: 'Last tested on Purdue Anvil · Jul 2026' });
     expect(evidenceBadgeParts('failed', 'Purdue Anvil', '2026-07-25')).toEqual({ label: 'Last run failed' });

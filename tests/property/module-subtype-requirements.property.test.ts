@@ -32,10 +32,8 @@ const makeCheck = (kind: CheckKind | undefined, outcome: string) => kind === und
 
 const isConceptualCheck = (kind: CheckKind | undefined) => kind !== undefined && kind !== 'result';
 
-describe('Property 2: Module subtype requirements follow module type', () => {
+describe('Module subtype requirements follow module type', () => {
   it('accepts each module exactly when its subtype-specific requirements are complete', () => {
-    // Feature: bssw-fellowship-resource-site, Property 2: Module subtype requirements follow module type
-    // **Validates: Requirements 3.2, 3.4, 3.5**
     fc.assert(fc.property(moduleCase, (candidate) => {
       const sectionKinds = ['concept', 'next-steps'];
       if (candidate.hasLimitations) sectionKinds.push('limitations');

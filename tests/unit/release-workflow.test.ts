@@ -172,7 +172,7 @@ describe('release workflow: deployment', () => {
     expect(validateDeploymentWorkflow(text)).toEqual([]);
   });
 
-  it('passes the A11/A18 release-workflow policy', () => {
+  it('passes the release-workflow policy', () => {
     expect(validateReleaseWorkflow(text)).toEqual([]);
   });
 

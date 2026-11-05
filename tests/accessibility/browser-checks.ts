@@ -9,7 +9,7 @@ export const issue = (scope: string, code: string, message: string): Issue => ({
 /* tsx compiles this file with esbuild keepNames, so named inner functions inside
    evaluate callbacks are emitted wrapped in __name(fn, "name"). The page defines no
    __name, so install an identity shim before any callback that declares one.
-   (Task 7 pitfall note; the wrapping only happens under tsx, not under vitest.) */
+   (The wrapping only happens under tsx, not under vitest.) */
 const shim = (page: Page) => page.evaluate(() => {
   const globals = window as typeof window & { __name?: <T>(fn: T) => T };
   globals.__name ??= (fn) => fn;
@@ -74,7 +74,7 @@ const readSelect = (page: Page) => page.evaluate((selector) => {
   };
 }, SELECT);
 
-/** §10 Theme: a stored choice beats the OS, auto follows the OS, no wrong-theme flash, the theme-color meta follows the page, the select is named, reachable and keyboard-operable, and no-JS follows the OS with the select hidden. */
+/** Theme: a stored choice beats the OS, auto follows the OS, no wrong-theme flash, the theme-color meta follows the page, the select is named, reachable and keyboard-operable, and no-JS follows the OS with the select hidden. */
 export async function checkThemePrecedence(browser: Browser, origin: string, path: string, themes: ThemeTokens): Promise<Issue[]> {
   const issues: Issue[] = [];
   const url = new URL(path, origin).href;
@@ -219,10 +219,10 @@ export async function checkThemePrecedence(browser: Browser, origin: string, pat
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Part 2: forced colours and print (spec §10, §4.1, D15)
+   Part 2: forced colours and print
 --------------------------------------------------------------------------------------------- */
 
-/** What a route must still show under an emulated medium. Selectors come from the C2 markup contracts. */
+/** What a route must still show under an emulated medium. Selectors come from the component markup. */
 export interface PageExpectation {
   ordered?: ReadonlyArray<{ selector: string; texts: readonly string[] }>;
   present?: readonly string[];
@@ -260,7 +260,7 @@ async function checkExpectation(page: Page, scope: string, code: string, expecta
 
 const BOUNDARY_SELECTORS = '.notice, #doors .card, .evidence-badge, .crosswalk__pane pre';
 
-/** §10 Forced colours: no lost text, controls, warning boundaries or selected state; keyboard focus stays visible. */
+/** Forced colours: no lost text, controls, warning boundaries or selected state; keyboard focus stays visible. */
 export async function checkForcedColors(browser: Browser, origin: string, path: string, expectation: PageExpectation = {}): Promise<Issue[]> {
   const scope = `${path}:forced-colors`;
   const url = new URL(path, origin).href;
@@ -338,7 +338,7 @@ export async function checkForcedColors(browser: Browser, origin: string, path: 
   return issues;
 }
 
-/** §10 Print and D15: light palette, evidence panel content visible without JS, opened and restored by beforeprint/afterprint, step order kept. */
+/** Print: light palette, evidence panel content visible without JS, opened and restored by beforeprint/afterprint, step order kept. */
 export async function checkPrint(browser: Browser, origin: string, path: string, expectation: PageExpectation = {}): Promise<Issue[]> {
   const scope = `${path}:print`;
   const issues: Issue[] = [];
@@ -412,7 +412,7 @@ export async function checkPrintOverflow(browser: Browser, origin: string, path:
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Part 3: JS off, primary action, font failure, crosswalk layout, motion (spec §10, §8.3, D13-D15)
+   Part 3: JS off, hero action, font failure, crosswalk layout, motion
 --------------------------------------------------------------------------------------------- */
 
 /** JS off: the home doors and crosswalk legend and panes, the module timeline, and the evidence panel rows are all in the HTML, in contract order. The timeline assertions apply only to learning-module pages ('module'). */
@@ -494,7 +494,7 @@ export async function checkHeroAction(browser: Browser, origin: string, path: st
   return issues;
 }
 
-/** §10 Font failure: with /fonts/* blocked, text stays visible, nothing overflows, and the page height stays within 25% of the normal render. */
+/** Font failure: with /fonts/* blocked, text stays visible, nothing overflows, and the page height stays within 25% of the normal render. */
 const FONT_PROBE_SELECTORS = ['h1', '.lede', '.sidebar a', 'main p', '.timeline__step strong', '.door__title'];
 
 export async function checkFontBlocking(browser: Browser, origin: string, path: string): Promise<Issue[]> {

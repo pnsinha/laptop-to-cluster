@@ -44,7 +44,7 @@ export function slotNames(html: string): string[] {
   return splitAtSlots(html).flatMap((segment) => (segment.kind === 'slot' ? [segment.name] : []));
 }
 
-/* D13: the six-step timeline appears on the tour, Module 1 (both unlit) and Module 2 (step 3 lit), nowhere else. */
+/* The six-step timeline appears on the tour, Module 1 (both unlit) and Module 2 (step 3 lit), nowhere else. */
 export const TIMELINE_BY_ITEM: Readonly<Record<string, { highlight?: StepNumber }>> = {
   'module-0-orientation': {},
   'module-1-scheduler-orchestrator': {},
@@ -79,9 +79,9 @@ export function recordDateLine(
   return undefined;
 }
 
-/** Thin wrapper (R10). Previous and next published page along LEARNING_PATH (D16); undefined when the page is not on the path. */
+/** Thin wrapper over projectLearningPathNavigation. Previous and next published page along LEARNING_PATH; undefined when the page is not on the path. */
 export function learningPathNavigation(items: readonly ContentItem[], id: string): ModuleNavigation | undefined {
-  return projectLearningPathNavigation([...items])[id]; // R10: W2's projection is the single source
+  return projectLearningPathNavigation([...items])[id]; // projections.ts is the single source
 }
 
 /** Starlight's previous and next links, pinned to the learning path: a page on the path pages only along it (false ends the path); any other page keeps Starlight's sidebar order. */

@@ -134,10 +134,8 @@ const normalizeChange = (change: {
   material: change.material,
 });
 
-describe('Property 16: Technical status and release projections are traceable', () => {
+describe('Technical status and release projections are traceable', () => {
   it('preserves technical status/applicability and classifies each release change exactly once', () => {
-    // Feature: bssw-fellowship-resource-site, Property 16: Technical status and release projections are traceable
-    // **Validates: Requirements 12.1, 12.2, 12.3, 13.7**
     fc.assert(fc.property(technicalCases, releaseCases, (technical, releases) => {
       for (const { item, applicability } of technical) {
         expect(item).toMatchObject({

@@ -56,7 +56,7 @@ describe('publication.mjs boundary subcommand', () => {
     expect(cli([repo, '--history']).status).toBe(2);
   });
 
-  it('wires the gate first in the publication chain with the exact C4 scripts', () => {
+  it('wires the gate first in the publication chain with the exact npm scripts', () => {
     const scripts = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts;
     expect(scripts['validate:boundary']).toBe('node scripts/publication.mjs boundary . --require --history HEAD');
     expect(scripts['publication:validate']).toBe('npm run validate:boundary && npm run validate:built && npm run validate:policy && npm run validate:accessibility-review && npm run validate:evidence && npm run validate:repository && npm run validate:release');

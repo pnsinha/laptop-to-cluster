@@ -11,7 +11,7 @@ const tagged = git('rev-parse', '--verify', '--quiet', 'v0.1.0^{commit}').status
    That is a fact about the repository, so it is checked against git rather than pinned as text. */
 describe('the run page’s claim that the example workflow is unchanged since v0.1.0', () => {
   it('is stated on the page', () => {
-    expect(readFileSync(`${root}/site/src/content/content-items/getting-started.md`, 'utf8'))
+    expect(readFileSync(`${root}/site/src/content/content-items/start-run-the-example.md`, 'utf8'))
       .toContain('is identical to the tested v0.1.0 revision; only its README changed.');
   });
 

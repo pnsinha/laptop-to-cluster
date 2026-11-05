@@ -32,7 +32,7 @@ async function home(): Promise<Page> {
   return page;
 }
 const termButton = (page: Page, key: ConceptKey) => page.locator(`.crosswalk__term[data-concept="${key}"] button`);
-/* Lean variant (R13): the script sets data-selected on the section and CSS lights the
+/* Lean variant: the script sets data-selected on the section and CSS lights the
    matching lines, so "lit" is read from the computed outline, not from a class. */
 const snapshot = (page: Page) => page.evaluate(() => {
   const section = document.querySelector<HTMLElement>('.crosswalk')!;
