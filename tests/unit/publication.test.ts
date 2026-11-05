@@ -132,8 +132,8 @@ describe('composition and source-agreement publication gates', () => {
   it('blocks new integration dependencies, remote fonts, client frameworks, and decorative motion', () => {
     const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
     const config = readFileSync(join(root, 'site/astro.config.mjs'), 'utf8');
-    const css = readFileSync(join(root, 'site/src/styles/global.css'), 'utf8');
-    expect(validateFrontendPolicy(manifest, config, [{ path: 'global.css', text: css }])).toEqual([]);
+    const css = readFileSync(join(root, 'site/src/styles/components.css'), 'utf8');
+    expect(validateFrontendPolicy(manifest, config, [{ path: 'components.css', text: css }])).toEqual([]);
     expect(validateFrontendPolicy({ ...manifest, dependencies: { ...manifest.dependencies, react: '19.0.0' } }, config).join('\n')).toMatch(/DEPENDENCY-EXCLUSION/);
     expect(validateFrontendPolicy(manifest, config.replace('canonicalPolicy()', 'canonicalPolicy(), react()')).join('\n')).toMatch(/INTEGRATION-EXCLUSION/);
     expect(validateFrontendPolicy(manifest, config, [{ path: 'bad.css', text: '@font-face{} .x { animation: pulse 1s; }' }]).join('\n')).toMatch(/REMOTE-FONT|TECHNOLOGY-EXCLUSION/);

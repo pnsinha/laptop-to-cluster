@@ -23,7 +23,9 @@ describe('technology exclusion: motion that is switched off', () => {
     expect(check('@keyframes spin {}')).toMatch(/TECHNOLOGY-EXCLUSION/);
     expect(check('a{animation-name: spin;}')).toMatch(/TECHNOLOGY-EXCLUSION/);
   });
-  it('accepts the real global stylesheet', () => {
-    expect(check(readFileSync(join(root, 'site/src/styles/global.css'), 'utf8'))).toBe('');
+  it('accepts the real site stylesheets', () => {
+    for (const file of ['layers.css', 'tokens.css', 'fonts.css', 'starlight-theme.css', 'components.css', 'enhancements.css']) {
+      expect(check(readFileSync(join(root, 'site/src/styles', file), 'utf8')), file).toBe('');
+    }
   });
 });

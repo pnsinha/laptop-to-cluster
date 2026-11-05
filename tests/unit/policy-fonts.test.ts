@@ -43,8 +43,8 @@ describe('fontFaceIssues (REMOTE-FONT)', () => {
 });
 
 describe('validateFrontendPolicy font and motion scan', () => {
-  const manifest = { dependencies: { '@astrojs/sitemap': '3.7.3', astro: '7.1.3' } };
-  const config = "export default { site: 'https://laptop-to-cluster.org', output: 'static', integrations: [sitemap(), canonicalPolicy()] };";
+  const manifest = { dependencies: { '@astrojs/sitemap': '3.7.4', '@astrojs/starlight': '0.42.9', astro: '7.4.5' } };
+  const config = "export default { site: 'https://laptop-to-cluster.org', output: 'static', integrations: [starlight({ customCss: ['./a.css'] }), sitemap(), canonicalPolicy(), accessibleTables()] };";
   it('accepts fonts.css, reduced-motion resets, and rejects remote faces and real motion', () => {
     expect(validateFrontendPolicy(manifest, config, [{ path: 'site/src/styles/fonts.css', text: FONTS }])).toEqual([]);
     expect(validateFrontendPolicy(manifest, config, [{ path: 'a.css', text: '@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}' }])).toEqual([]);
@@ -102,10 +102,12 @@ describe('validateStylesheets on a built tree', () => {
     expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS, ...fontFiles }))).toEqual([]);
   });
 
-  it('reports a missing font file, a second token-less stylesheet, gradients and motion', () => {
+  it('reports a missing font file, a second token stylesheet, gradients and motion without the reduced-motion reset', () => {
     const { 'fonts/l2c-marks/L2CMarks-Regular.woff2': _removed, ...missing } = fontFiles;
     expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS, ...missing })).join('\n')).toMatch(/INTERNAL-LINK.*L2CMarks-Regular\.woff2/);
-    expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS, '_astro/page.css': '.x{color:red}', ...fontFiles })).join('\n')).toMatch(/STYLESHEET-SPLIT/);
+    expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS, '_astro/page.css': '.x{color:red}', ...fontFiles }))).toEqual([]);
+    expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS, '_astro/page.css': TOKENS, ...fontFiles })).join('\n')).toMatch(/STYLESHEET-SPLIT/);
+    expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS + 'a{transition:color .1s}@media (prefers-reduced-motion:reduce){*{transition:none!important}}', 'pagefind/pagefind-ui.css': 'a{transition:all 1s}', ...fontFiles }))).toEqual([]);
     expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS + 'a{background:linear-gradient(red,blue)}', ...fontFiles })).join('\n')).toMatch(/VISUAL-DEPENDENCY/);
     expect(validateStylesheets(dist({ '_astro/site.css': FONTS + TOKENS + 'a{transition:color .1s}', ...fontFiles })).join('\n')).toMatch(/MOTION-EXCLUSION/);
     expect(validateStylesheets(dist({ '_astro/site.css': TOKENS + '@font-face{font-family:Inter;src:url(/x.woff2)}' })).join('\n')).toMatch(/VISUAL-DEPENDENCY/);

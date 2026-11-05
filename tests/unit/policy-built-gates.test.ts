@@ -21,7 +21,7 @@ function dist(files: Record<string, string>) {
   }
   return directory;
 }
-const footer = (text = ACKNOWLEDGMENT_TEXT) => `<footer class="site-footer"><nav aria-label="Site records"><ul class="footer-links"><li><a href="/about/project/">About the project</a></li></ul></nav><p class="release" aria-label="Release status">Release status: v0.2.0</p><p class="acknowledgment">${text}</p></footer>`;
+const footer = (text = ACKNOWLEDGMENT_TEXT) => `<footer class="l2c-footer"><nav aria-label="Site records"><ul class="footer-links"><li><a href="/about/project/">About the project</a></li></ul></nav><p class="release" aria-label="Release status">Release status: v0.2.0</p><p class="acknowledgment">${text}</p></footer>`;
 const pageOf = (source: string, body = '<h1>T</h1>', head = '') => ({ source, html: `<html><head>${head}</head><body>${body}${footer()}</body></html>` });
 
 describe('ACK-VERBATIM', () => {
@@ -41,7 +41,7 @@ describe('ACK-VERBATIM', () => {
     const root = dist({});
     const first = ACKNOWLEDGMENT_TEXT.split('. ')[0] + '.';
     const bad = [
-      { source: '/a/', html: '<body><footer class="site-footer"></footer></body>' },
+      { source: '/a/', html: '<body><footer class="l2c-footer"></footer></body>' },
       { source: '/b/', html: pageOf('/b/').html.replace(ACKNOWLEDGMENT_TEXT, first) },
       { source: '/c/', html: pageOf('/c/').html.replace('DE-AC52-07NA27344', 'DE-AC05-00OR22725') },
       { source: '/d/', html: pageOf('/d/').html.replace('</footer>', `<p class="acknowledgment">${ACKNOWLEDGMENT_TEXT}</p></footer>`) },
@@ -67,7 +67,7 @@ describe('ACK-VERBATIM', () => {
   });
 
   describe('hosted PDFs', () => {
-    const siteFooter = `<footer class="site-footer"><p class="acknowledgment">${ACKNOWLEDGMENT_TEXT}</p></footer>`;
+    const siteFooter = `<footer class="l2c-footer"><p class="acknowledgment">${ACKNOWLEDGMENT_TEXT}</p></footer>`;
     const withFooter = { source: '/', html: `<html>${siteFooter}</html>` };
     const eventPage = { source: '/events/iguide-forum-2026/', html: `<html><a href="/iguide-forum-2026-poster.pdf">PDF</a><section class="event-acknowledgment"><h2>x</h2><p>${ACKNOWLEDGMENT_TEXT}</p></section>${siteFooter}</html>` };
     const stub = (text: string | null) => ({ pdfToText: () => text, strict: true });
@@ -111,17 +111,17 @@ describe('BUDGET', () => {
     const root = dist({ '_astro/site.css': sheet(face('a.woff2') + face('b.woff2')), 'fonts/p/a.woff2': kb(60), 'fonts/p/b.woff2': kb(70) });
     const html = `<head>${link}<link rel="preload" href="/fonts/p/a.woff2" as="font" type="font/woff2" crossorigin><script type="application/ld+json">${kb(5)}</script></head><body><script>${'a'.repeat(800)}</script></body>`;
     expect(validateBudgets(root, [{ source: '/', html }])).toEqual([]);
-    expect(BUDGETS).toEqual({ fontBytes: 140000, fontPreloads: 2, scriptBytes: 2048 });
+    expect(BUDGETS).toEqual({ fontBytes: 140000, fontPreloads: 2, scriptBytes: 32768 });
   });
 
-  it('reports fonts over the limit, a third preload, scripts over 2 KiB, and counts external scripts', () => {
-    const root = dist({ '_astro/site.css': face('a.woff2') + face('b.woff2') + face('c.woff2'), 'fonts/p/a.woff2': kb(60), 'fonts/p/b.woff2': kb(60), 'fonts/p/c.woff2': kb(30), '_astro/app.js': 'y'.repeat(1500) });
+  it('reports fonts over the limit, a third preload, scripts over 32 KiB, and counts external scripts', () => {
+    const root = dist({ '_astro/site.css': face('a.woff2') + face('b.woff2') + face('c.woff2'), 'fonts/p/a.woff2': kb(60), 'fonts/p/b.woff2': kb(60), 'fonts/p/c.woff2': kb(30), '_astro/app.js': 'y'.repeat(32000) });
     const pre = (n: number) => `<link rel="preload" href="/fonts/p/${n}.woff2" as="font" type="font/woff2" crossorigin>`;
-    const html = `<head>${link}${pre(1)}${pre(2)}${pre(3)}<script type="module" src="/_astro/app.js"></script></head><body><script>${'a'.repeat(600)}</script></body>`;
+    const html = `<head>${link}${pre(1)}${pre(2)}${pre(3)}<script type="module" src="/_astro/app.js"></script></head><body><script>${'a'.repeat(1000)}</script></body>`;
     const text = validateBudgets(root, [{ source: '/', html }]).join('\n');
     expect(text).toMatch(/fonts total 153600 bytes; the limit is 140000/);
     expect(text).toMatch(/3 font preloads; the limit is 2/);
-    expect(text).toMatch(/client JavaScript totals 2100 bytes; the limit is 2048/);
+    expect(text).toMatch(/client JavaScript totals 33000 bytes; the limit is 32768/);
   });
 
   it('reports every kind of third-party request but not a plain outbound link', () => {
