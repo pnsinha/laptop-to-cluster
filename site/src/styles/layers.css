@@ -1,0 +1,8 @@
+/* Cascade layer order for the whole site. Listed first in Starlight's customCss so it runs
+   before Starlight's own layer declaration. The names are flat on purpose: a dotted name such
+   as l2c.theme would nest under a parent layer "l2c", and that parent, declared before
+   "starlight", would place every site layer below Starlight's. l2c-base holds tokens and fonts.
+   l2c-theme maps the tokens onto Starlight's --sl-* properties and sets typography.
+   l2c-components holds the site's own components (timeline, crosswalk, doors, evidence).
+   l2c-utilities holds one-off helpers and the print, forced-colour and reduced-motion rules. */
+@layer l2c-base, starlight, l2c-theme, l2c-components, l2c-utilities;

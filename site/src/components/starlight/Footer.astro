@@ -1,0 +1,41 @@
+---
+/* The page footer: Starlight's edit link, last updated and previous/next links, then the site
+   information block and the funding acknowledgment, all inside one footer element. The
+   acknowledgment paragraph is verbatim text from one constant; the publication validator checks
+   it on every page. */
+import { getCollection } from 'astro:content';
+import EditLink from '@astrojs/starlight/components/EditLink.astro';
+import LastUpdated from '@astrojs/starlight/components/LastUpdated.astro';
+import Pagination from '@astrojs/starlight/components/Pagination.astro';
+import { ACKNOWLEDGMENT_TEXT } from '../../content/acknowledgment';
+import { releaseNotesHref } from '../../content/registry';
+import { currentReleaseVersion } from '../../content/release';
+import { PROJECT } from '../../content/wording';
+
+const release = currentReleaseVersion();
+const items = (await getCollection('contentItems')).map(({ data }) => data);
+/* The release notes live on the milestone page (or their own page); the registry knows which. */
+const releaseItem = items.find((item) => item.artifact_type === 'release' && item.status === 'published' && item.id === `release-${release.replace(/\./g, '-')}`);
+const links = [
+  { label: `Release ${release}`, href: releaseItem ? releaseNotesHref(releaseItem) : '/milestones/2/' },
+  { label: 'Report a problem', href: '/about/support/' },
+  { label: 'Accessibility', href: '/about/accessibility/' },
+  { label: 'Attribution and licenses', href: '/about/attribution/' },
+  { label: 'GitHub repository (external)', href: PROJECT.repository, external: true },
+];
+---
+<footer class="l2c-footer not-content">
+  <div class="l2c-footer__meta">
+    <EditLink />
+    <LastUpdated />
+  </div>
+  <Pagination />
+  <div class="l2c-site-info">
+    <nav aria-label="Site information">
+      <ul class="l2c-site-info__links">
+        {links.map((link) => <li><a href={link.href} rel={link.external ? 'external' : undefined}>{link.label}</a></li>)}
+      </ul>
+    </nav>
+    <p class="acknowledgment">{ACKNOWLEDGMENT_TEXT}</p>
+  </div>
+</footer>

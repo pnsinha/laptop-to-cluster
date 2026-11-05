@@ -1,18 +1,20 @@
 ---
 import { getCollection } from 'astro:content';
+import { LinkButton } from '@astrojs/starlight/components';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ApplicabilityProjectionView from '../components/ApplicabilityProjection.astro';
 import ConceptMap from '../components/ConceptMap.astro';
 import Crosswalk from '../components/Crosswalk.astro';
 import Doors from '../components/Doors.astro';
-import HeroFigure from '../components/HeroFigure.astro';
 import CrosswalkEnhancement from '../components/CrosswalkEnhancement.astro';
 import { CROSSWALK } from '../content/crosswalk';
+import { heroFigureHtml } from '../content/hero-figure';
 import {
-  DOORS_SECTION, EVENT_BAND, HERO, HOME_DESCRIPTION, HOME_TITLE, VISIT_LINE,
-  eventBandLead, homeDoors,
+  CLOSING, CREDIT, DOORS_SECTION, EVENT_BAND, HERO, HOME_DESCRIPTION, HOME_TITLE,
+  heroTaglineHtml, homeDoors, presentedAtLead, siteFacts,
 } from '../content/home';
 import { projectLandingPage } from '../content/projections';
+import { currentReleaseVersion } from '../content/release';
 import { RECORD_LINK_TEXT } from '../content/wording';
 
 const content = (await getCollection('contentItems')).map(({ data }) => data);
@@ -21,28 +23,29 @@ const applicability = (await getCollection('applicability')).map(({ data }) => d
 const landing = projectLandingPage(content, applicability);
 const recordHref = landing.applicability_projection?.canonicalPath;
 const doors = homeDoors(content);
-const featuredTalk = (await getCollection('talks')).map(({ data }) => data).find(({ featured }) => featured);
----
-<BaseLayout title={HOME_TITLE} description={HOME_DESCRIPTION} canonicalPath="/" profile="landing">
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="hero__copy">
-      <p class="kicker">{HERO.kicker}</p>
-      <h1 id="hero-title">{HERO.title}</h1>
-      <p class="lede" set:html={HERO.ledeHtml} />
-      <div class="hero__actions">
-        <a class="action action--primary" href={HERO.primary.href}>{HERO.primary.label}</a>
-        <a class="hero__secondary-link" href={HERO.secondary.href}>{HERO.secondary.label}</a>
-      </div>
-      <p class="hero__quiet">{HERO.quiet.lead} <a href={HERO.quiet.href}>{HERO.quiet.label}</a></p>
-    </div>
-    <HeroFigure />
-  </section>
+const talks = (await getCollection('talks')).map(({ data }) => data);
+const presentedAt = presentedAtLead(talks);
+const release = currentReleaseVersion();
 
+/* Starlight's hero: the title, the kicker and lede as the tagline, the two-environment figure as
+   custom markup, one filled action and one plain link. */
+const hero = {
+  title: HERO.title,
+  tagline: heroTaglineHtml(),
+  image: { html: heroFigureHtml() },
+  actions: [
+    { text: HERO.primary.label, link: HERO.primary.href, variant: 'primary' },
+    { text: HERO.secondary.label, link: HERO.secondary.href, variant: 'minimal' },
+  ],
+};
+---
+<BaseLayout title={HOME_TITLE} description={HOME_DESCRIPTION} profile="landing" hasSidebar={true} frontmatter={{ template: 'splash', hero, tableOfContents: false, prev: false, next: false }}>
   {landing.applicability_projection ? <ApplicabilityProjectionView projection={landing.applicability_projection} /> : <p class="notice notice--info">{landing.validation_unavailable_reason}</p>}
+  <p class="site-facts">{siteFacts(release)}</p>
 
   <section class="home-doors" aria-labelledby="doors-title">
     <h2 id="doors-title">{DOORS_SECTION.title}</h2>
-    <Doors doors={doors} compact />
+    <Doors doors={doors} />
   </section>
 
   <ConceptMap />
@@ -53,14 +56,21 @@ const featuredTalk = (await getCollection('talks')).map(({ data }) => data).find
     <Crosswalk data={CROSSWALK} />
   )}
 
-  {featuredTalk && (
-    <aside class="event-band" aria-label={EVENT_BAND.label}>
-      <p>{eventBandLead(featuredTalk)}: <a href={EVENT_BAND.href}>{EVENT_BAND.linkText}</a></p>
+  <section class="home-close not-content" aria-labelledby="close-title">
+    <h2 id="close-title">{CLOSING.title}</h2>
+    <p>{CLOSING.lead}</p>
+    <div class="home-close__actions">
+      <LinkButton href={CLOSING.primary.href} variant="secondary">{CLOSING.primary.label}</LinkButton>
+      <LinkButton href={CLOSING.secondary.href} variant="minimal">{CLOSING.secondary.label}</LinkButton>
+    </div>
+  </section>
+
+  <p class="home-credit">{CREDIT.text} <a href={CREDIT.link.href}>{CREDIT.link.label}</a>.</p>
+
+  {presentedAt && (
+    <aside class="event-band not-content" aria-label={EVENT_BAND.label}>
+      <p>{presentedAt}: <a href={EVENT_BAND.href}>{EVENT_BAND.linkText}</a></p>
     </aside>
   )}
-
-  <section class="project-links">
-    <p>{VISIT_LINE.lead} <a href={VISIT_LINE.href}>{VISIT_LINE.linkText}</a></p>
-  </section>
   <CrosswalkEnhancement />
 </BaseLayout>

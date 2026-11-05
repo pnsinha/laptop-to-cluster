@@ -1,25 +1,28 @@
 ---
-import type { Door } from '../content/contracts';
+/* The three doors as Starlight cards. The card title is the audience line, so a reader
+   self-selects first; the door's name is a heading inside the card, then the summary and the
+   one link that is the target. */
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import type { Door, DoorId } from '../content/contracts';
 
 interface Props {
   doors: (Door & { summary: string; path?: { label: string; href: string }[] })[];
-  compact?: boolean;
 }
 
-const { doors, compact = false } = Astro.props;
+const { doors } = Astro.props;
+const ICONS: Record<DoorId, 'open-book' | 'random' | 'setting'> = { understand: 'open-book', translate: 'random', evaluate: 'setting' };
+const escape = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
 ---
-<ul class="doors" role="list" id="doors">
-  {doors.map(({ id, eyebrow, title, summary, path, href, linkText }) => (
-    <li class="door" id={`door-${id}`}>
-      <p class="door__who">{eyebrow}</p>
-      <h3 class="door__title">{title}</h3>
-      <p class="door__summary">{summary}</p>
-      {!compact && path && path.length > 0 && (
-        <ol class="door__path">
-          {path.map((step) => <li><a href={step.href}>{step.label}</a></li>)}
-        </ol>
-      )}
-      <p class="door__go"><a class="door__link" href={href}>{linkText}</a></p>
-    </li>
-  ))}
-</ul>
+<div class="doors not-content" id="doors">
+  <CardGrid>
+    {doors.map(({ id, eyebrow, title, summary, href, linkText }) => (
+      <Card title={escape(eyebrow)} icon={ICONS[id]}>
+        <div class="door" id={`door-${id}`}>
+          <h3 class="door__title">{title}</h3>
+          <p class="door__summary">{summary}</p>
+          <p class="door__go"><a class="door__link" href={href}>{linkText}</a></p>
+        </div>
+      </Card>
+    ))}
+  </CardGrid>
+</div>

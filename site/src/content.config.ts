@@ -1,5 +1,7 @@
-import { defineCollection } from 'astro:content';
+import { defineCollection, z } from 'astro:content';
 import { file, glob } from 'astro/loaders';
+import { docsLoader } from '@astrojs/starlight/loaders';
+import { docsSchema } from '@astrojs/starlight/schema';
 import {
   applicabilityRecordSchema,
   attributionSchema,
@@ -14,7 +16,25 @@ import {
 
 const structured = (base: string) => glob({ pattern: '**/*.{json,yaml,yml}', base });
 
+/* Page chrome the layouts hand to Starlight's title panel: a kind line above the title
+   ("Module 2 · Hands-on · about 30 min"), the one-sentence lede below it, and any status
+   notice. Pages set these through StarlightPage frontmatter; authors never write them. */
+const pageChromeSchema = z.object({
+  l2c: z.object({
+    kindLine: z.string().optional(),
+    lede: z.string().optional(),
+    notices: z.array(z.object({
+      type: z.enum(['note', 'tip', 'caution', 'danger']),
+      title: z.string(),
+      text: z.string(),
+    })).optional(),
+  }).optional(),
+});
+
 export const collections = {
+  /* Starlight's own collection. The site renders its pages from contentItems through
+     StarlightPage, so this collection stays empty; Starlight still requires it. */
+  docs: defineCollection({ loader: docsLoader(), schema: docsSchema({ extend: pageChromeSchema }) }),
   contentItems: defineCollection({
     loader: glob({ pattern: '**/*.{md,mdx,json,yaml,yml}', base: './src/content/content-items' }),
     schema: contentItemSchema,

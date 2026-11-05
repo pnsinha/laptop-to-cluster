@@ -1,6 +1,7 @@
 ---
 import { CONCEPTS, type ConceptKey } from '../content/contracts';
 import type { CrosswalkData } from '../content/crosswalk';
+import { CROSSWALK_DISCLOSURE } from '../content/home';
 
 interface Props {
   data: CrosswalkData;
@@ -19,7 +20,7 @@ const NEWLINE = '\n';
    beside the script pane's revision label. The label itself never claims a test. */
 const recordLink = Astro.slots.has('record') ? await Astro.slots.render('record') : '';
 ---
-<section class="crosswalk" id="crosswalk" aria-labelledby="crosswalk-title">
+<section class="crosswalk not-content" id="crosswalk" aria-labelledby="crosswalk-title">
   <h2 id="crosswalk-title">{data.title}</h2>
   <p class="crosswalk__subtitle">{data.subtitle}</p>
   <dl class="crosswalk__legend">
@@ -27,12 +28,15 @@ const recordLink = Astro.slots.has('record') ? await Astro.slots.render('record'
       <div class="crosswalk__term" data-concept={key}><dt><span class="crosswalk__mark" aria-hidden="true">{mark}</span> {label}</dt><dd>was {was}</dd></div>
     ))}
   </dl>
-  <div class="crosswalk__panes">
-    {data.panes.map((pane) => (
-      <figure class="crosswalk__pane" data-pane={pane.id}>
-        <figcaption>{pane.file} · {pane.note}{pane.id === 'sbatch' && recordLink && <Fragment set:html={` · ${recordLink}`} />}</figcaption>
-        <pre><code>{pane.lines.map((line) => (<span class="crosswalk__line" data-concepts={line.concepts.length > 0 ? line.concepts.join(' ') : undefined}><span class="crosswalk__mark" aria-hidden="true">{marks(line.concepts)}</span>{line.concepts.length > 0 && <span class="crosswalk__sr">{spoken(line.concepts)}</span>}{line.n !== undefined && <span class="crosswalk__n">{line.n}</span>}{line.text}{NEWLINE}</span>))}</code></pre>
-      </figure>
-    ))}
-  </div>
+  <details class="crosswalk__disclosure">
+    <summary>{CROSSWALK_DISCLOSURE.summary}</summary>
+    <div class="crosswalk__panes">
+      {data.panes.map((pane) => (
+        <figure class="crosswalk__pane" data-pane={pane.id}>
+          <figcaption>{pane.file} · {pane.note}{pane.id === 'sbatch' && recordLink && <Fragment set:html={` · ${recordLink}`} />}</figcaption>
+          <pre><code>{pane.lines.map((line) => (<span class="crosswalk__line" data-concepts={line.concepts.length > 0 ? line.concepts.join(' ') : undefined}><span class="crosswalk__mark" aria-hidden="true">{marks(line.concepts)}</span>{line.concepts.length > 0 && <span class="crosswalk__sr">{spoken(line.concepts)}</span>}{line.n !== undefined && <span class="crosswalk__n">{line.n}</span>}{line.text}{NEWLINE}</span>))}</code></pre>
+        </figure>
+      ))}
+    </div>
+  </details>
 </section>

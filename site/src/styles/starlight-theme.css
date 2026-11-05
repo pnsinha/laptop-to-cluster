@@ -1,0 +1,211 @@
+/* laptop-to-cluster.org on Starlight: the site's tokens (tokens.css) mapped onto Starlight's
+   --sl-* properties, plus the typography and layout choices that make Starlight read as this
+   guide. Starlight declares its colours for dark mode on :root and light mode under
+   [data-theme='light']; the tokens here already switch by theme, so one mapping serves both.
+   This file sits in the l2c-theme layer, after Starlight's own layers, so it wins without
+   specificity games. */
+@layer l2c-theme {
+  :root,
+  ::backdrop {
+    /* Ink and surfaces */
+    --sl-color-white: var(--primary);
+    --sl-color-gray-1: var(--text);
+    --sl-color-gray-2: var(--text);
+    --sl-color-gray-3: var(--muted);
+    --sl-color-gray-4: var(--border);
+    --sl-color-gray-5: var(--rule);
+    --sl-color-gray-6: var(--surface);
+    --sl-color-gray-7: var(--raised);
+    --sl-color-black: var(--canvas);
+    --sl-color-text: var(--text);
+    --sl-color-bg: var(--canvas);
+    --sl-color-bg-nav: var(--canvas);
+    --sl-color-bg-sidebar: var(--surface);
+    --sl-color-bg-inline-code: var(--surface);
+    --sl-color-hairline-light: var(--rule);
+    --sl-color-hairline: var(--rule);
+    --sl-color-hairline-shade: var(--surface);
+    /* Accent: the primary ink fills buttons and the current sidebar item */
+    --sl-color-accent-low: var(--surface);
+    --sl-color-accent: var(--accent);
+    --sl-color-accent-high: var(--primary);
+    --sl-color-text-accent: var(--primary);
+    --sl-color-text-invert: var(--on-primary);
+    --sl-color-bg-accent: var(--primary);
+    /* Aside hues on the status and concept tokens */
+    --sl-color-orange-low: var(--warning-surface);
+    --sl-color-orange: var(--warning);
+    --sl-color-orange-high: var(--warning);
+    --sl-color-red-low: var(--danger-surface);
+    --sl-color-red: var(--danger);
+    --sl-color-red-high: var(--danger);
+    --sl-color-green-low: var(--success-surface);
+    --sl-color-green: var(--success);
+    --sl-color-green-high: var(--success);
+    --sl-color-blue-low: var(--c-step-bg);
+    --sl-color-blue: var(--c-step);
+    --sl-color-blue-high: var(--c-step);
+    --sl-color-purple-low: var(--c-scratch-bg);
+    --sl-color-purple: var(--c-scratch);
+    --sl-color-purple-high: var(--c-scratch);
+    /* No shadows: the visual policy draws edges with hairlines */
+    --sl-shadow-sm: none;
+    --sl-shadow-md: none;
+    --sl-shadow-lg: none;
+    /* Type: Plex Sans for the interface, the display serif for headings (below), Plex Mono for code */
+    --sl-font: var(--font-body);
+    --sl-font-mono: var(--font-technical);
+    --sl-text-xs: var(--text-fine);
+    --sl-text-sm: var(--text-label);
+    --sl-text-code: var(--text-code);
+    --sl-text-code-sm: var(--text-fine);
+    --sl-text-h1: var(--text-display);
+    --sl-text-h2: var(--text-h2);
+    --sl-text-h3: var(--text-h3);
+    --sl-text-h4: var(--text-base);
+    --sl-text-h5: var(--text-base);
+    --sl-line-height: 1.6;
+    --sl-line-height-headings: var(--leading-heading);
+    /* Reading column: 42rem of 16px serif stays under 95 characters a line */
+    --sl-content-width: 42rem;
+  }
+  /* Pages with a hero (the home page) use the full frame, sidebar or not */
+  [data-has-hero] {
+    --sl-content-width: 72rem;
+  }
+
+  /* Headings in the display serif, running prose in the reading serif, interface in the sans */
+  h1,
+  .hero h1,
+  .sl-markdown-content :is(h2, h3):not(:where(.not-content *)),
+  .site-title {
+    font-family: var(--font-display);
+    font-weight: var(--weight-semibold);
+    letter-spacing: normal;
+    hyphens: none;
+    text-wrap: balance;
+  }
+  .sl-markdown-content :is(p, li, dd, dt, blockquote):not(:where(.not-content *, table *)) {
+    font-family: var(--font-reading);
+  }
+  .content-header .lede,
+  .hero .tagline {
+    font-family: var(--font-reading);
+    font-size: var(--text-lede);
+    line-height: var(--leading-lede);
+  }
+  .content-header .lede {
+    max-inline-size: var(--measure-lede);
+    margin-block-start: 0.75rem;
+    color: var(--text);
+  }
+  .content-header__line {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font-size: var(--text-fine);
+  }
+  @media (min-width: 30rem) {
+    .h-compound { white-space: nowrap; }
+  }
+  /* Every link in the main pane carries a cue that is not colour: an underline, or the border
+     of a filled button or a pager link. Starlight removes the underline from link cards, link
+     buttons and the edit link; the card title and the quiet button get it back. */
+  main a:not(:where(.sl-link-button, .pagination-links a)),
+  .sl-link-button.minimal {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+  main a:hover:not(:where(.sl-link-button, .pagination-links a)) {
+    text-decoration-thickness: 2px;
+  }
+
+  /* One focus ring everywhere: Starlight leaves the browser default, which is thinner than 2px */
+  :focus-visible {
+    outline: var(--focus-width) solid var(--focus);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* The theme select works only once its script has defined the element; until then, and
+     without JavaScript, the page follows the operating system and shows no dead control */
+  starlight-theme-select:not(:defined) { display: none; }
+  .sl-markdown-content :is(h1, h2, h3, h4) code { font-size: 0.875em; }
+
+  /* Tables stay native tables inside the scroll region the build adds around each one */
+  .sl-markdown-content .table-overflow > table:not(:where(.not-content *)) {
+    display: table;
+    inline-size: 100%;
+    overflow: visible;
+  }
+
+  /* Hero (the home page). The override in components/starlight/Hero.astro puts the copy first
+     and the two-environment figure after it, so this draws the layout Starlight's hero would
+     have drawn: one column on a phone, copy left and figure right from 50rem. */
+  .hero {
+    display: grid;
+    grid-template-columns: 100%;
+    align-items: center;
+    gap: var(--space-6);
+    padding-block-end: var(--space-4);
+  }
+  .hero .stack { flex-direction: column; gap: clamp(1.5rem, 1.5rem + 1vw, 2rem); }
+  .hero .copy { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .hero .actions { flex-wrap: wrap; gap: 1rem 2rem; }
+  .hero > .hero-html {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+  .hero h1 {
+    color: var(--primary);
+    font-size: clamp(1.75rem, 1.25rem + 1.6vw, 2.25rem);
+    line-height: 1.15;
+  }
+  .hero .tagline {
+    max-inline-size: 36rem;
+  }
+  .hero .tagline p + p { margin-block-start: 0.75rem; }
+  .hero .tagline .kicker {
+    display: block;
+    margin-block-end: 0.5rem;
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: var(--text-fine);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-fine);
+  }
+  @media (min-width: 50rem) {
+    .hero {
+      grid-template-columns: minmax(0, 11fr) minmax(0, 10fr);
+      gap: 4%;
+      padding-block: clamp(2rem, 1rem + 4vmin, 4rem) var(--space-6);
+    }
+  }
+
+  /* Wide figures may use the whole main pane on content pages: the content panel is the size
+     container, and the breakout rule sits in the utilities layer of components.css so that it
+     wins over each figure's own width. */
+  .content-panel {
+    container-type: inline-size;
+  }
+
+  /* The "On this page" column needs room beside the reading column and the wide figures, so it
+     waits for 90rem; until then the dropdown under the header serves, as it does on a phone. With
+     the column shown, the main pane keeps everything the sidebar and the column leave, and the
+     reading column sits in its middle. */
+  @media (min-width: 72rem) and (max-width: 89.99rem) {
+    .right-sidebar-container { display: none; }
+    [data-has-sidebar][data-has-toc] .main-pane { --sl-content-margin-inline: auto; width: 100%; }
+    .lg\:sl-hidden { display: block; }
+  }
+  @media (min-width: 90rem) {
+    .right-sidebar-container { width: var(--sl-sidebar-width); }
+    [data-has-sidebar][data-has-toc] .main-pane { --sl-content-margin-inline: auto; width: calc(100% - var(--sl-sidebar-width)); }
+  }
+
+  /* No motion: the sidebar group caret turns without a transition */
+  .sidebar .caret { transition: none; }
+
+  /* Site title and sidebar labels in the display serif */
+  .site-title { font-size: 1.125rem; }
+}

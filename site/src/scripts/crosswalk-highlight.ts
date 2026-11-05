@@ -9,16 +9,20 @@ if (section && legend) {
   legend.insertAdjacentHTML('afterend', '<p class=crosswalk__status role=status>Select a term to highlight its lines.</p><button class=crosswalk__clear hidden>Show all</button>');
   const status = legend.nextElementSibling!;
   const clear = status.nextElementSibling as HTMLButtonElement;
+  // The code panes sit behind a disclosure; a selection opens it so the lit lines are visible.
+  const panes = section.querySelector('details');
+  let pressed: HTMLElement | null = null;
   section.addEventListener('click', ({ target }) => {
     const button = (target as Element).closest('button');
     if (!button) return;
-    const was = legend.querySelector<HTMLElement>('[aria-pressed=true]');
-    const key = button === clear || button === was ? '' : button.closest<HTMLElement>('[data-concept]')!.dataset.concept!;
+    const key = button === clear || button === pressed ? '' : button.closest<HTMLElement>('[data-concept]')!.dataset.concept!;
     section.dataset.selected = key;
-    was?.setAttribute('aria-pressed', 'false');
+    if (key && panes) panes.open = true;
+    pressed?.setAttribute('aria-pressed', 'false');
     if (key) button.setAttribute('aria-pressed', 'true');
-    if (button === clear) was?.focus();
+    if (button === clear) pressed?.focus();
     clear.hidden = !key;
     status.textContent = `Showing: ${key ? button.lastChild!.textContent!.trim() : 'all lines'}`;
+    pressed = key ? button : null;
   });
 }

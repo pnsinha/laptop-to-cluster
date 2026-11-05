@@ -39,6 +39,8 @@ git clone --branch @release https://github.com/pnsinha/laptop-to-cluster.git && 
 
 The code of the example workflow (`workflows/baseline-slurm-apptainer`) in this release is identical to the tested v0.1.0 revision; only its README changed.
 
+<!-- l2c:implementation-callout -->
+
 ## Check the prerequisites
 
 1. Run `command -v sbatch` and confirm your center's account and partition syntax. If either fails, use [BSSW-PREQ-SLURM](/diagnostics/#bssw-preq-slurm).

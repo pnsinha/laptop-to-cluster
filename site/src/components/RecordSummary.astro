@@ -6,8 +6,8 @@ const { record } = Astro.props as { record: ApplicabilityRecord };
 const summary = summarizeRecord(record);
 const traces = new Map(projectEvidencePanel(record).rows[0].items.map(({ text, from }) => [text, from.join(' ')]));
 ---
-<section class="record-summary" data-source-id={record.id} aria-label="What was tested">
+<div class="not-content"><section class="record-summary" data-source-id={record.id} aria-label="What was tested">
   <p class="record-summary__tested">{summary.tested}</p>
   <ul class="record-summary__scope">{summary.scope.map((value) => <li data-from={traces.get(value)}>{value}</li>)}</ul>
   <p><a href={`/applicability/${record.id}/`}>{RECORD_LINK_TEXT}</a></p>
-</section>
+</section></div>

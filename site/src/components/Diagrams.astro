@@ -2,7 +2,7 @@
 const { name } = Astro.props as { name: string };
 ---
 {name === 'compose-to-hpc' && (
-  <figure class="diagram" role="img" aria-label="Compose-to-HPC concept mapping diagram. Each Docker Compose concept on the left maps to its scheduler-managed form on the right: a service becomes an srun job step, an image becomes a prebuilt Apptainer image file, depends_on becomes the readiness gate, a volume becomes job-scoped scratch, a published port becomes loopback, and a device request becomes a gres request that is designed, not run.">
+  <figure class="diagram not-content" role="img" aria-label="Compose-to-HPC concept mapping diagram. Each Docker Compose concept on the left maps to its scheduler-managed form on the right: a service becomes an srun job step, an image becomes a prebuilt Apptainer image file, depends_on becomes the readiness gate, a volume becomes job-scoped scratch, a published port becomes loopback, and a device request becomes a gres request that is designed, not run.">
     <svg viewBox="0 0 720 450" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
       <text x="110" y="24" class="hdr hdr--primary" text-anchor="middle">Docker Compose</text>
       <text x="580" y="24" class="hdr hdr--primary" text-anchor="middle">Slurm + Apptainer</text>
@@ -39,7 +39,7 @@ const { name } = Astro.props as { name: string };
 )}
 
 {name === 'single-node-architecture' && (
-  <figure class="diagram" role="img" aria-label="Single-node architecture diagram. Inside one scheduler allocation on one node: the coordinator starts first as an srun job step listening on loopback; the readiness gate polls until the coordinator gives the exact expected answer; worker job steps launch only after the gate passes; then the verifier, which runs inside the same job while the coordinator is still running, checks the results and writes result.json. All steps share one job-scoped scratch directory bound at /work.">
+  <figure class="diagram not-content" role="img" aria-label="Single-node architecture diagram. Inside one scheduler allocation on one node: the coordinator starts first as an srun job step listening on loopback; the readiness gate polls until the coordinator gives the exact expected answer; worker job steps launch only after the gate passes; then the verifier, which runs inside the same job while the coordinator is still running, checks the results and writes result.json. All steps share one job-scoped scratch directory bound at /work.">
     <svg viewBox="0 0 720 500" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
       <rect x="20" y="60" width="680" height="430" class="alloc-border"/>
       <text x="360" y="44" class="hdr" text-anchor="middle">SCHEDULER ALLOCATION (1 node)</text>
@@ -103,7 +103,7 @@ const { name } = Astro.props as { name: string };
 )}
 
 {name === 'readiness-sequence' && (
-  <figure class="diagram" role="img" aria-label="Readiness gate sequence diagram showing how the coordinator starts first, the readiness gate polls until the coordinator gives the exact expected answer, and only then do workers launch.">
+  <figure class="diagram not-content" role="img" aria-label="Readiness gate sequence diagram showing how the coordinator starts first, the readiness gate polls until the coordinator gives the exact expected answer, and only then do workers launch.">
     <svg viewBox="0 0 720 440" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
       <line x1="10" y1="30" x2="710" y2="30" class="tl"/>
       <text x="10" y="20" class="note">TIME</text>

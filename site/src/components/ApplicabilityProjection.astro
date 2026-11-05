@@ -5,7 +5,7 @@ const { projection } = Astro.props as { projection: ApplicabilityProjection };
 const { panel } = projection;
 ---
 {panel.collapsible ? (
-  <section class="applicability-projection" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
+  <section class="applicability-projection not-content" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
     <p class="evidence-badge">{panel.badgeLabel}</p>
     <p class="evidence-link">{panel.badgeContext ? `${panel.badgeContext} · ` : ''}<a href={panel.canonicalPath}>{RECORD_LINK_TEXT}</a></p>
     <details class="evidence-panel">
@@ -19,7 +19,7 @@ const { panel } = projection;
     </details>
   </section>
 ) : (
-  <section class="applicability-projection applicability-projection--escalated" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
+  <section class="applicability-projection applicability-projection--escalated not-content" data-projection-id={projection.projectionId} data-source-id={projection.recordId} aria-label="Tested workflow scope">
     <p class="evidence-badge evidence-badge--warning"><strong>Warning:</strong> {panel.badgeLabel}</p>
     <p class="evidence-link">{panel.badgeContext ? `${panel.badgeContext} · ` : ''}<a href={panel.canonicalPath}>{RECORD_LINK_TEXT}</a></p>
     <dl class="evidence-rows">

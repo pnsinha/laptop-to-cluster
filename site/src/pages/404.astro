@@ -1,14 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
-<BaseLayout title="Page not found" description="The requested page does not exist or may have moved." canonicalPath="/404.html" profile="not-found">
-  <h1>Page not found</h1>
-  <p class="lede">The page you requested does not exist, or it may have moved to a new address.</p>
+<BaseLayout title="Page not found" description="The requested page does not exist or may have moved." profile="not-found" frontmatter={{ l2c: { lede: 'The page you requested does not exist, or it may have moved to a new address.' }, pagefind: false, prev: false, next: false, tableOfContents: false }}>
   <p>If you followed a link from within this site, <a href="https://github.com/pnsinha/laptop-to-cluster/issues">please report it</a> so we can fix the reference.</p>
   <nav aria-label="Suggested pages">
     <ul>
       <li><a href="/">Home</a></li>
-      <li><a href="/resources/">Resources</a></li>
+      <li><a href="/resources/">Guide</a></li>
     </ul>
   </nav>
 </BaseLayout>
