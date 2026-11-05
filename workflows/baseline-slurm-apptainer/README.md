@@ -31,7 +31,6 @@ predeclared because local Apptainer conversion can vary; the generated sidecar i
 the immutable input to a submitted run. Alternatively build the checked-in
 `container/Apptainer.def`, then create `baseline.sif.sha256` with your SHA-256 tool.
 The pinned OCI record is documented at [Docker Hub](https://hub.docker.com/layers/library/python/3.12.10-slim-bookworm/images/sha256-90aa7f84f25a90382d75026a82010016d9ae811865bdda851ce48e5d14469b53).
-Content from that source was rephrased for licensing compliance.
 
 ## Validate and submit
 
