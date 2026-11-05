@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "milestone-1-publication-candidate",
+  "milestone": 1,
+  "dueDate": "2026-07-31",
+  "status": "publication-candidate",
+  "release": "v0.1.0",
+  "repositoryTag": "v0.1.0",
+  "deliverables": [
+    { "id": "module-1-scheduler-orchestrator", "url": "https://laptop-to-cluster.org/guide/scheduler-as-orchestrator/" },
+    { "id": "module-2-baseline", "url": "https://laptop-to-cluster.org/guide/baseline-single-node-pattern/" },
+    { "id": "baseline-slurm-apptainer-workflow", "repositoryPath": "workflows/baseline-slurm-apptainer/" },
+    { "id": "getting-started", "url": "https://laptop-to-cluster.org/start/" },
+    { "id": "diagnostics", "url": "https://laptop-to-cluster.org/diagnostics/" },
+    { "id": "licenses", "url": "https://laptop-to-cluster.org/about/licenses/" },
+    { "id": "attribution", "url": "https://laptop-to-cluster.org/about/attribution/" },
+    { "id": "accessibility", "url": "https://laptop-to-cluster.org/about/accessibility/" },
+    { "id": "public-repository", "url": "https://github.com/pnsinha/laptop-to-cluster" }
+  ],
+  "initialCompletionEvidence": {
+    "releaseCandidate": "releases/v0.1.0/release-candidate.json",
+    "accessibilityReview": "evidence/releases/v0.1.0/accessibility-review.yml"
+  },
+  "revisions": [],
+  "externalInputsRequired": [
+    "representativeEnvironmentEvidence",
+    "completedAccessibilityReview",
+    "cloudflareDeploymentId",
+    "pagesDevFallbackUrl",
+    "activeCloudflareReadinessRecord"
+  ]
+}
