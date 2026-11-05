@@ -20,8 +20,8 @@ beforeAll(async () => {
 describe('W6 diagrams', () => {
   it('renders one labelled figure per name with the svg hidden from assistive technology', () => {
     for (const name of NAMES) {
-      expect(html[name].match(/<figure class="diagram"/g)).toHaveLength(1);
-      expect(html[name]).toMatch(/<figure class="diagram" role="img" aria-label="[^"]{80,}"/);
+      expect(html[name].match(/<figure class="diagram not-content"/g)).toHaveLength(1);
+      expect(html[name]).toMatch(/<figure class="diagram not-content" role="img" aria-label="[^"]{80,}"/);
       expect(html[name]).toMatch(/<svg[^>]*aria-hidden="true"/);
     }
   });

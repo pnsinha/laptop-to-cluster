@@ -3,7 +3,7 @@ import { relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { PROJECTION_SECTION, validateBuiltOutput } from '../../scripts/publication.mjs';
+import { PROJECTION_SECTION, topLevelCalls, validateBuiltOutput } from '../../scripts/publication.mjs';
 import { TIMELINE_STEPS } from '../../site/src/content/contracts.js';
 import { formatMonthYear } from '../../site/src/content/projections.js';
 
@@ -125,16 +125,18 @@ describe('artifact-aware static composition', () => {
     expect(html.start).toContain('Open the v0.1.0 sbatch script (external)');
     expect(html.start).toContain('workflows/baseline-slurm-apptainer/slurm/baseline.sbatch');
     expect(html.start).toContain('implementation-reference');
-    const disclosures = html.runnable.match(/<details.*?<\/details>/g) ?? [];
+    // Content disclosures only: Starlight's sidebar groups and mobile table of contents are navigation.
+    const content = html.runnable.replace(/<nav\b[\s\S]*?<\/nav>/g, '');
+    const disclosures = content.match(/<details[\s\S]*?<\/details>/g) ?? [];
     for (const disclosure of disclosures) expect(disclosure).not.toMatch(/Prerequisites|Tested workflow scope|Unvalidated content/);
-    expect(html.runnable).not.toMatch(/<(?:section|aside|article)[^>]*(?:hidden|aria-hidden="true")[^>]*>.*?(?:Prerequisites|applicability-projection)/);
+    expect(html.runnable).not.toMatch(/<(?:section|aside|article)[^>]*\s(?:hidden|aria-hidden="true")[^>]*>[^<]*(?:Prerequisites|applicability-projection)/);
   });
 
   it('places sources after substantive content and suppresses healthy support panels', () => {
     for (const key of ['conceptual', 'runnable'] as const) {
       const keyPoints = html[key].indexOf('id="key-points"');
       expect(keyPoints, `${key}: key points heading`).toBeGreaterThan(-1);
-      expect(html[key].indexOf('Sources and scope'), key).toBeGreaterThan(keyPoints);
+      expect(html[key].indexOf('id="sources-scope-heading"'), key).toBeGreaterThan(keyPoints);
     }
     expect(html.support).not.toContain('Public artifact status: available');
     expect(html.support).not.toContain('class="support-state');
@@ -157,7 +159,7 @@ describe('reader-choice landing and resources', () => {
     expect(figure.indexOf('<strong>Verify results</strong>')).toBeLessThan(figure.indexOf('<strong>Clean up</strong>'));
     const projection = html.home.indexOf('<section class="applicability-projection');
     expect(projection).toBeGreaterThan(-1);
-    expect(projection).toBeLessThan(html.home.indexOf('<section class="concepts" id="big-idea"'));
+    expect(projection).toBeLessThan(html.home.indexOf('<section class="concepts not-content" id="big-idea"'));
     expect(html.home).not.toMatch(/validation dashboard|from module metadata|No account is required/i);
   });
 
@@ -168,18 +170,18 @@ describe('reader-choice landing and resources', () => {
     expect(html.resources).toContain('href="/guide/baseline-single-node-pattern/"');
     expect(html.resources).not.toContain('Planned for a later milestone');
 
-    const cards = html.resources.match(/<a class="resource-tile"[^>]*>.*?<\/a>/g) ?? [];
-    expect(cards).toHaveLength(12);
-    const tileHrefs = cards.map((card) => card.match(/href="([^"]+)"/)?.[1] ?? '');
+    const cards = html.resources.match(/<div class="sl-link-card[^"]*"[\s\S]*?<\/div>/g) ?? [];
+    expect(cards).toHaveLength(13);
+    const tileHrefs = cards.map((card) => card.match(/<a href="([^"]+)"/)?.[1] ?? '');
     expect(new Set(tileHrefs).size).toBe(tileHrefs.length);
     expect([...tileHrefs].sort()).toEqual([
       '/guide/tour/', '/guide/scheduler-as-orchestrator/', '/about/glossary/',
-      '/guide/compose-to-hpc-translation/', '/start/', '/guide/baseline-single-node-pattern/', '/diagnostics/',
+      '/guide/compose-to-hpc-translation/', '/start/', '/guide/baseline-single-node-pattern/', '/diagnostics/', '/about/cheat-sheet/',
       '/adoption/evaluate/', `/${route.applicability}/`, '/milestones/1/', '/milestones/2/', '/about/talks-and-papers/',
     ].sort());
     for (const card of cards) {
       expect(card).not.toMatch(/resource-card__metadata|<strong>(?:Keywords|Status|Milestone|Environment|Version):/i);
-      expect(card.match(/class="resource-tile__tag"/g)?.length ?? 0).toBeLessThanOrEqual(1);
+      expect(card.match(/<a\s/g)).toHaveLength(1);
     }
   });
 });
@@ -190,7 +192,7 @@ describe('finalized presentation regression gates', () => {
   });
 
   it('renders at most one filled hero action on the landing page', () => {
-    const primaryActions = html.home.match(/class="action action--primary"/g) ?? [];
+    const primaryActions = html.home.match(/class="sl-link-button[^"]*\bprimary\b/g) ?? [];
     expect(primaryActions.length).toBeLessThanOrEqual(1);
   });
 
@@ -210,9 +212,10 @@ describe('finalized presentation regression gates', () => {
   });
 
   it('does not imply clickability on unlinked containers (no cursor:pointer on non-interactive elements)', () => {
-    // Resource tiles must themselves be links (not standalone clickable containers)
-    const resourceCards = html.resources.match(/<a class="resource-tile"[^>]*>.*?<\/a>/gs) ?? [];
+    // Guide cards carry one real link each (not standalone clickable containers)
+    const resourceCards = html.resources.match(/<div class="sl-link-card[^"]*"[\s\S]*?<\/div>/g) ?? [];
     expect(resourceCards.length).toBeGreaterThan(0);
+    for (const card of resourceCards) expect(card).toMatch(/<a href="\/[^"]*"/);
   });
 
   it('does not restore per-step boxes or connector/arrow SVGs in the workflow', () => {
@@ -248,10 +251,10 @@ describe('static accessibility, metadata, and dependency gates', () => {
     expect(pages.length).toBeGreaterThan(10);
     for (const page of pages) {
       expect(page.html.match(/<h1(?:\s|>)/g), page.route).toHaveLength(1);
-      for (const marker of ['<header class="site-header">', '<main id="main" tabindex="-1">', '<footer class="site-footer">']) expect(page.html, page.route).toContain(marker);
+      for (const marker of ['<header class="header', '<main', '<footer class="l2c-footer']) expect(page.html, page.route).toContain(marker);
       const canonical = `https://laptop-to-cluster.org/${page.route}`;
-      expect(page.html).toContain(`<link rel="canonical" href="${canonical}">`);
-      expect(page.html).toContain(`<meta property="og:url" content="${canonical}">`);
+      expect(page.html).toContain(`<link rel="canonical" href="${canonical}"/>`);
+      expect(page.html).toContain(`<meta property="og:url" content="${canonical}"/>`);
       expect(page.html).not.toMatch(/\.pages\.dev|www\.laptop-to-cluster\.org|laptoptocluster\.org/);
     }
   });
@@ -261,20 +264,21 @@ describe('static accessibility, metadata, and dependency gates', () => {
     expect(generatedCss).toMatch(/--font-display:\s*"Source Serif 4"/);
     expect(generatedCss).toMatch(/system-ui/);
     expect(generatedCss).toMatch(/ui-monospace/);
-    expect(generatedCss).not.toMatch(/@import url|fonts\.google|use\.typekit|linear-gradient|radial-gradient|backdrop-filter/);
+    expect(generatedCss).not.toMatch(/@import url|fonts\.google|use\.typekit|linear-gradient|radial-gradient/);
     // Same-origin rule (full budget lives in font-budget.test.ts and W3's REMOTE-FONT): no font URL leaves the site.
     expect(generatedCss).not.toMatch(/url\(["']?(?:https?:)?\/\//);
-    // The reduced-motion override (`transition:none!important;animation:none!important`) is allowed, as in the MOTION rule.
-    expect(generatedCss).not.toMatch(/@keyframes|animation-name:(?!\s*none(?![\w-]))|animation:(?!\s*none(?![\w-]))|transition:(?!\s*none(?![\w-]))|scroll-timeline|parallax/);
+    // Starlight's two short transitions ride under the reduced-motion reset; keyframe animation and parallax stay out.
+    expect(generatedCss).not.toMatch(/@keyframes|animation-name:(?!\s*none(?![\w-]))|animation:(?!\s*none(?![\w-]))|scroll-timeline|parallax/);
+    expect(generatedCss).toMatch(/prefers-reduced-motion:reduce\)\{[\s\S]{0,300}?transition:none!important/);
     expect(generatedCss).not.toMatch(/table\{[^}]*display:block/);
     expect(generatedCss).toMatch(/\.table-overflow\{[^}]*overflow-x:auto/);
     // Progressive-enhancement policy: scripts and islands are permitted; canvas,
     // autoplay, marquee, and remote fonts remain forbidden.
     for (const page of pages) expect(page.html, page.route).not.toMatch(/<canvas\b|autoplay|<marquee\b|fonts\.(?:googleapis|gstatic)|use\.typekit/i);
     const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
-    expect(pkg.dependencies).toEqual({ '@astrojs/sitemap': '3.7.3', astro: '7.1.3' });
+    expect(pkg.dependencies).toEqual({ '@astrojs/sitemap': '3.7.4', '@astrojs/starlight': '0.42.9', astro: '7.4.5' });
     const config = readFileSync(resolve(root, 'site/astro.config.mjs'), 'utf8');
-    expect(config.match(/integrations:\s*\[([^\]]+)\]/)?.[1].replace(/\s/g, '')).toBe('sitemap(),canonicalPolicy(),accessibleTables()');
+    expect(topLevelCalls(config.slice(config.search(/integrations\s*:\s*\[/)))).toEqual(['starlight', 'sitemap', 'canonicalPolicy', 'accessibleTables']);
     expect(config).not.toMatch(/ViewTransitions|adapter|server\s*:|session|auth/i);
   });
 
@@ -333,7 +337,7 @@ describe('v0.2.0 routes, timeline placement and evidence summaries', () => {
   });
 
   it('renders the A1 screen-reader text on tagged crosswalk lines only, and the A3 subtitle', () => {
-    const crosswalk = html.home.match(/<section class="crosswalk"[\s\S]*?<\/section>/)?.[0] ?? '';
+    const crosswalk = html.home.match(/<section class="crosswalk not-content"[\s\S]*?<\/section>/)?.[0] ?? '';
     expect(crosswalk).toContain('<p class="crosswalk__subtitle">');
     expect(crosswalk).not.toContain('data-concepts=""');
     const tagged = crosswalk.match(/ data-concepts="[^"]+"/g)?.length ?? 0;

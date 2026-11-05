@@ -17,7 +17,7 @@ const talks = [
 describe('TalksList', () => {
   it('renders the C2 markup: a role=list of li.talk with id, kind, h3, meta and links', async () => {
     const html = await container.renderToString(TalksList, { props: { talks } });
-    expect(html).toContain('<ul class="talks" role="list">');
+    expect(html).toContain('<ul class="talks not-content" role="list">');
     expect(html.match(/<li class="talk" id="[a-z0-9-]+">/g)).toHaveLength(2);
     expect(html).toContain('<li class="talk" id="usrse26-talk">');
     expect(html).toContain('<p class="talk__kind">Talk</p>');

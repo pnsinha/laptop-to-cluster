@@ -15,7 +15,8 @@ const shim = (page: Page) => page.evaluate(() => {
   globals.__name ??= (fn) => fn;
 });
 
-/** Static look at the raw HTML: one blocking inline script in <head>, at most 300 bytes, that reads the stored choice. */
+/** Static look at the raw HTML: one blocking inline script in <head> that reads the stored choice (Starlight's theme provider), within the size budget. */
+export const THEME_SCRIPT_LIMIT = 1024;
 export function inspectThemeScript(html: string, scope: string): Issue[] {
   const head = html.match(/<head[\s\S]*?<\/head>/i)?.[0] ?? '';
   const scripts = [...head.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
@@ -25,70 +26,59 @@ export function inspectThemeScript(html: string, scope: string): Issue[] {
   const issues: Issue[] = [];
   if (/\btype\s*=\s*["']?module|\bdefer\b|\basync\b/i.test(attributes)) issues.push(issue(scope, 'A11Y-THEME-SCRIPT', 'the theme script must be a classic blocking script, or the first paint can show the wrong theme'));
   const bytes = Buffer.byteLength(code.trim());
-  if (bytes > 300) issues.push(issue(scope, 'A11Y-THEME-SCRIPT', `the theme script is ${bytes} bytes; the limit is 300`));
+  if (bytes > THEME_SCRIPT_LIMIT) issues.push(issue(scope, 'A11Y-THEME-SCRIPT', `the theme script is ${bytes} bytes; the limit is ${THEME_SCRIPT_LIMIT}`));
   return issues;
 }
 
+/* Starlight's theme model: the head script sets data-theme to light or dark from the stored choice
+   or the operating system; the select offers dark, light and auto; auto stores nothing (an empty
+   string) and follows the operating system. An unrecognised stored value counts as auto. */
 const THEME_CASES = [
-  { id: 'stored dark, OS light', stored: 'dark', os: 'light', attr: 'dark', canvas: 'dark', scheme: 'dark' },
-  { id: 'stored light, OS dark', stored: 'light', os: 'dark', attr: 'light', canvas: 'light', scheme: 'light' },
-  { id: 'nothing stored, OS dark', stored: null, os: 'dark', attr: null, canvas: 'dark', scheme: 'dark' },
-  { id: 'nothing stored, OS light', stored: null, os: 'light', attr: null, canvas: 'light', scheme: 'light dark' },
-  { id: 'unrecognised value, OS dark', stored: 'purple', os: 'dark', attr: null, canvas: 'dark', scheme: 'dark' },
+  { id: 'stored dark, OS light', stored: 'dark', os: 'light', attr: 'dark' },
+  { id: 'stored light, OS dark', stored: 'light', os: 'dark', attr: 'light' },
+  { id: 'nothing stored, OS dark', stored: null, os: 'dark', attr: 'dark' },
+  { id: 'nothing stored, OS light', stored: null, os: 'light', attr: 'light' },
+  { id: 'unrecognised value, OS dark', stored: 'purple', os: 'dark', attr: 'dark' },
 ] as const;
+const THEME_OPTIONS = ['dark', 'light', 'auto'];
+const SELECT = 'starlight-theme-select select';
 
 const readTheme = (page: Page) => page.evaluate((key) => {
   const root = document.documentElement;
   const meta = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].find((element) => !element.media || window.matchMedia(element.media).matches);
+  const stored = (() => { try { return localStorage.getItem(key); } catch { return null; } })();
   return {
     attr: root.getAttribute('data-theme'),
-    stored: (() => { try { return localStorage.getItem(key); } catch { return null; } })(),
+    stored: stored || null,
     canvas: getComputedStyle(root).getPropertyValue('--canvas').trim().toLowerCase(),
     scheme: getComputedStyle(root).colorScheme,
     themeColor: meta?.content.trim().toLowerCase() ?? null,
     canvasValue: getComputedStyle(root).getPropertyValue('--canvas').trim().toLowerCase(),
-    controlShown: (() => { const control = document.querySelector<HTMLElement>('[data-theme-control]'); return Boolean(control && !control.hidden && control.getClientRects().length); })(),
+    selectShown: [...document.querySelectorAll<HTMLElement>('starlight-theme-select')].some((element) => getComputedStyle(element).display !== 'none' && element.getClientRects().length > 0),
     log: (window as unknown as { __themeLog?: { attr: number; body: number } }).__themeLog ?? null,
   };
 }, THEME_STORAGE_KEY);
 
-/** The one sun/moon toggle: state, icons (computed), size, and the text a sighted user can actually see in the header. No named inner functions: this runs under tsx keepNames. */
-const readToggle = (page: Page) => page.evaluate(() => {
-  const toggle = document.querySelector<HTMLElement>('[data-theme-toggle]');
-  const moon = toggle?.querySelector('.theme-control__icon--moon') ?? null;
-  const sun = toggle?.querySelector('.theme-control__icon--sun') ?? null;
-  const rect = toggle?.getBoundingClientRect();
-  const scope = document.querySelector('header') ?? document.querySelector('[data-theme-control]');
-  const seen: string[] = [];
-  if (scope) {
-    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      const parent = node.parentElement;
-      const text = node.textContent?.trim();
-      if (!parent || !text || parent.closest('.vh, svg')) continue;
-      const style = getComputedStyle(parent);
-      if (style.display === 'none' || style.visibility === 'hidden' || !parent.getClientRects().length) continue;
-      seen.push(text);
-    }
-  }
+/** The theme select a sighted user sees: Starlight renders one in the header and one in the narrow menu, and the shown one counts. No named inner functions: this runs under tsx keepNames. */
+const readSelect = (page: Page) => page.evaluate((selector) => {
+  const selects = [...document.querySelectorAll<HTMLSelectElement>(selector)];
+  const shown = selects.filter((select) => select.getClientRects().length > 0 && getComputedStyle(select).visibility !== 'hidden');
+  const select = shown[0] ?? null;
+  const rect = select?.getBoundingClientRect();
   return {
-    present: toggle !== null,
-    buttons: document.querySelectorAll('[data-theme-control] button').length,
-    pressed: toggle?.getAttribute('aria-pressed') ?? null,
-    rendered: (toggle?.getClientRects().length ?? 0) > 0,
-    moon: moon ? getComputedStyle(moon).display : null,
-    sun: sun ? getComputedStyle(sun).display : null,
-    strokeMatchesText: toggle && moon && sun ? getComputedStyle(moon).stroke === getComputedStyle(toggle).color && getComputedStyle(sun).stroke === getComputedStyle(toggle).color : false,
+    shown: shown.length,
+    value: select?.value ?? null,
+    options: select ? [...select.options].map((option) => option.value) : [],
     width: rect?.width ?? 0,
     height: rect?.height ?? 0,
-    visibleText: seen.join(' '),
   };
-});
+}, SELECT);
 
-/** §10 Theme: a manual choice beats the OS, the one sun/moon toggle falls back to the OS, no wrong-theme flash, no-JS follows the OS. */
+/** §10 Theme: a stored choice beats the OS, auto follows the OS, no wrong-theme flash, the theme-color meta follows the page, the select is named, reachable and keyboard-operable, and no-JS follows the OS with the select hidden. */
 export async function checkThemePrecedence(browser: Browser, origin: string, path: string, themes: ThemeTokens): Promise<Issue[]> {
   const issues: Issue[] = [];
   const url = new URL(path, origin).href;
+  const canvasOf = (theme: 'light' | 'dark') => themes[theme].canvas.toLowerCase();
   const themeColors: Record<string, string | null> = {};
   for (const testCase of THEME_CASES) {
     const scope = `${path}:theme:${testCase.id}`;
@@ -109,10 +99,9 @@ export async function checkThemePrecedence(browser: Browser, origin: string, pat
     await page.goto(url, { waitUntil: 'load' });
     const state = await readTheme(page);
     if (state.attr !== testCase.attr) issues.push(issue(scope, 'A11Y-THEME-PRECEDENCE', `data-theme is ${JSON.stringify(state.attr)}, expected ${JSON.stringify(testCase.attr)}`));
-    const expectedCanvas = themes[testCase.canvas].canvas.toLowerCase();
-    if (state.canvas !== expectedCanvas) issues.push(issue(scope, 'A11Y-THEME-PRECEDENCE', `--canvas resolves to ${state.canvas}, expected the ${testCase.canvas} value ${expectedCanvas}`));
-    if (state.scheme !== testCase.scheme) issues.push(issue(scope, 'A11Y-COLOR-SCHEME', `color-scheme resolves to "${state.scheme}", expected "${testCase.scheme}"`));
-    if (testCase.attr !== null && !(state.log && state.log.attr > 0 && state.log.attr < state.log.body)) {
+    if (state.canvas !== canvasOf(testCase.attr)) issues.push(issue(scope, 'A11Y-THEME-PRECEDENCE', `--canvas resolves to ${state.canvas}, expected the ${testCase.attr} value ${canvasOf(testCase.attr)}`));
+    if (state.scheme !== testCase.attr) issues.push(issue(scope, 'A11Y-COLOR-SCHEME', `color-scheme resolves to "${state.scheme}", expected "${testCase.attr}"`));
+    if (!(state.log && state.log.attr > 0 && state.log.attr < state.log.body)) {
       issues.push(issue(scope, 'A11Y-THEME-FLASH', 'data-theme must be set before the <body> element is parsed, or the first paint can show the wrong theme'));
     }
     if (testCase.stored === 'dark' || testCase.stored === 'light') {
@@ -124,13 +113,12 @@ export async function checkThemePrecedence(browser: Browser, origin: string, pat
     await context.close();
   }
   if (!themeColors.dark || !themeColors.light || themeColors.dark === themeColors.light) {
-    issues.push(issue(`${path}:theme`, 'A11Y-THEME-COLOR', 'the head script must update theme-color so the theme-color meta in effect (first with no media or a matching media) matches the stored light or dark canvas and differs between them'));
+    issues.push(issue(`${path}:theme`, 'A11Y-THEME-COLOR', 'the theme-color meta in effect (the first with no media or a matching media) must follow the stored choice, not only the OS, and differ between light and dark'));
   }
 
-  const TOGGLE = '[data-theme-toggle]';
-  const NAME = 'Dark theme';
-  const nameCount = (page: Page, pressed: boolean) => page.locator('[data-theme-control]').getByRole('button', { name: NAME, exact: true, pressed }).count();
-  const canvasOf = (theme: 'light' | 'dark') => themes[theme].canvas.toLowerCase();
+  const NAME = 'Select theme';
+  const same = (a: readonly unknown[], b: readonly unknown[]) => JSON.stringify(a) === JSON.stringify(b);
+  const choose = (page: Page, value: string) => page.locator(`${SELECT}:visible`).first().selectOption(value);
   /* Flip the emulated OS scheme and wait until the page's own change listeners have run: a listener added last fires last, and a bounded race stops a missing event from hanging the run. */
   const flipOs = async (page: Page, scheme: 'light' | 'dark') => {
     await page.evaluate(() => {
@@ -145,91 +133,88 @@ export async function checkThemePrecedence(browser: Browser, origin: string, pat
   };
   for (const os of ['light', 'dark'] as const) {
     const other = os === 'light' ? 'dark' : 'light';
-    const scope = `${path}:theme-toggle:OS ${os}`;
+    const scope = `${path}:theme-select:OS ${os}`;
     const note = (message: string) => issues.push(issue(scope, 'A11Y-THEME-CONTROL', message));
     const context = await browser.newContext({ colorScheme: os });
     const page = await context.newPage();
     await page.goto(url, { waitUntil: 'load' });
     let state = await readTheme(page);
-    let toggle = await readToggle(page);
-    const shows = (value: typeof toggle, theme: 'light' | 'dark') => (theme === 'light' ? value.moon !== 'none' && value.moon !== null && value.sun === 'none' : value.sun !== 'none' && value.sun !== null && value.moon === 'none');
-    if (!state.controlShown || !toggle.present || toggle.buttons !== 1) note('the control must be shown by script and hold exactly one button (the sun/moon toggle)');
-    if (state.attr !== null || state.stored !== null) note(`with nothing stored the page must not carry data-theme or a stored choice (data-theme ${JSON.stringify(state.attr)}, stored ${JSON.stringify(state.stored)})`);
-    if (toggle.pressed !== String(os === 'dark')) note(`with the OS on ${os} and nothing stored, aria-pressed must be "${os === 'dark'}", got ${JSON.stringify(toggle.pressed)}`);
-    if (!shows(toggle, os)) note(`with the page ${os} the icon must be the ${os === 'light' ? 'moon' : 'sun'} and the other icon display: none (moon ${toggle.moon}, sun ${toggle.sun})`);
-    if (!toggle.strokeMatchesText) note('both icons must be stroked in currentColor, so they take the header text colour');
-    if ((await nameCount(page, os === 'dark')) !== 1) note(`the accessible name must be exactly "${NAME}", exposed as a toggle button that is ${os === 'dark' ? '' : 'not '}pressed`);
-    if (/\b(System|Light|Dark)\b/.test(toggle.visibleText)) note(`the header must show no visible text "System", "Light" or "Dark" (found ${JSON.stringify(toggle.visibleText)})`);
-    if (toggle.width < 24 || toggle.height < 24) note(`the toggle is ${toggle.width}x${toggle.height} CSS px; it must be at least 24x24`);
-
-    await page.click(TOGGLE);
-    state = await readTheme(page);
-    toggle = await readToggle(page);
-    if (state.attr !== other || state.stored !== other || state.canvas !== canvasOf(other) || toggle.pressed !== String(other === 'dark') || !shows(toggle, other)) {
-      note(`one click must switch to ${other}: set data-theme, store the choice, switch the tokens, press the toggle to "${other === 'dark'}" and swap the icon`);
+    let select = await readSelect(page);
+    if (select.shown !== 1 || !same(select.options, THEME_OPTIONS)) {
+      note(`the header must show one theme select offering dark, light and auto (shown ${select.shown}, options ${select.options.join(', ') || 'none'})`);
+      await context.close();
+      continue;
     }
-    if ((await nameCount(page, other === 'dark')) !== 1) note(`after one click the toggle must still be named exactly "${NAME}" and expose its ${other === 'dark' ? '' : 'not '}pressed state`);
+    if (state.attr !== os || state.stored !== null || select.value !== 'auto') note(`with nothing stored the page must follow the OS (${os}) and the select must read auto (data-theme ${JSON.stringify(state.attr)}, stored ${JSON.stringify(state.stored)}, select ${JSON.stringify(select.value)})`);
+    if ((await page.getByRole('combobox', { name: NAME, exact: true }).filter({ visible: true }).count()) !== 1) note(`the shown select must be named exactly "${NAME}"`);
+    if (select.width < 24 || select.height < 24) note(`the select is ${select.width}x${select.height} CSS px; it must be at least 24x24`);
+
+    await choose(page, other);
+    state = await readTheme(page);
+    select = await readSelect(page);
+    if (state.attr !== other || state.stored !== other || state.canvas !== canvasOf(other) || select.value !== other) {
+      note(`choosing ${other} must set data-theme, store the choice, switch the tokens and leave the select on ${other}`);
+    }
     await page.reload({ waitUntil: 'load' });
     state = await readTheme(page);
-    toggle = await readToggle(page);
-    if (state.attr !== other || state.stored !== other || toggle.pressed !== String(other === 'dark')) note('a stored choice must survive a reload, with the toggle in the matching state');
+    select = await readSelect(page);
+    if (state.attr !== other || state.stored !== other || select.value !== other) note('a stored choice must survive a reload, with the select in the matching state');
     await flipOs(page, other);
     await flipOs(page, os);
     state = await readTheme(page);
-    toggle = await readToggle(page);
-    if (state.attr !== other || state.stored !== other || toggle.pressed !== String(other === 'dark')) note('an OS change must leave a stored choice alone: data-theme, the stored value and aria-pressed must not move');
-    await page.click(TOGGLE);
+    select = await readSelect(page);
+    if (state.attr !== other || state.stored !== other || select.value !== other) note('an OS change must leave a stored choice alone: data-theme, the stored value and the select must not move');
+    await choose(page, 'auto');
     state = await readTheme(page);
-    toggle = await readToggle(page);
-    if (state.attr !== null || state.stored !== null || state.canvas !== canvasOf(os) || toggle.pressed !== String(os === 'dark') || !shows(toggle, os)) {
-      note(`a second click lands on the OS value (${os}), so it must clear the stored choice and data-theme and go back to following the OS`);
+    select = await readSelect(page);
+    if (state.attr !== os || state.stored !== null || state.canvas !== canvasOf(os) || select.value !== 'auto') {
+      note(`choosing auto must clear the stored choice and go back to following the OS (${os})`);
     }
     await flipOs(page, other);
     state = await readTheme(page);
-    toggle = await readToggle(page);
-    if (state.attr !== null || state.stored !== null || state.canvas !== canvasOf(other) || toggle.pressed !== String(other === 'dark') || !shows(toggle, other)) {
-      note(`with nothing stored the page and toggle must follow a live OS change to ${other}: tokens, aria-pressed and icon`);
-    }
+    if (state.attr !== other || state.stored !== null || state.canvas !== canvasOf(other)) note(`on auto the page must follow a live OS change to ${other}: data-theme and the tokens`);
     await context.close();
   }
 
   const keyboard = await browser.newContext({ colorScheme: 'light' });
   const keyPage = await keyboard.newPage();
   await keyPage.goto(url, { waitUntil: 'load' });
-  const keyScope = `${path}:theme-toggle:keyboard`;
+  const keyScope = `${path}:theme-select:keyboard`;
   let reached = false;
   for (let presses = 0; presses < 60 && !reached; presses += 1) {
     await keyPage.keyboard.press('Tab');
-    reached = await keyPage.evaluate(() => document.activeElement?.matches('[data-theme-toggle]') ?? false);
+    reached = await keyPage.evaluate((selector) => document.activeElement?.matches(selector) ?? false, SELECT);
   }
   if (!reached) {
-    issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'Tab never reaches the theme toggle'));
+    issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'Tab never reaches the theme select'));
   } else {
     const ring = await keyPage.locator(':focus').evaluate((element) => {
       const style = getComputedStyle(element);
       return element.matches(':focus-visible') && style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
     });
-    if (!ring) issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'the focused theme toggle must show a visible focus ring (an outline of at least 2px)'));
-    await keyPage.keyboard.press('Space');
+    if (!ring) issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'the focused theme select must show a visible focus ring (an outline of at least 2px)'));
+    /* The options read dark, light, auto: from auto, Up lands on light and Down returns to auto. */
+    await keyPage.keyboard.press('ArrowUp');
     let state = await readTheme(keyPage);
-    let toggle = await readToggle(keyPage);
-    if (state.attr !== 'dark' || toggle.pressed !== 'true') issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'Space on the focused toggle must switch the page to the other theme'));
-    await keyPage.keyboard.press('Enter');
+    if (state.attr !== 'light' || state.stored !== 'light') issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'the arrow keys on the focused select must change the theme and store the choice'));
+    await keyPage.keyboard.press('ArrowDown');
     state = await readTheme(keyPage);
-    toggle = await readToggle(keyPage);
-    if (state.attr !== null || state.stored !== null || toggle.pressed !== 'false') issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'Enter on the focused toggle must switch back, and follow the OS again'));
+    if (state.attr !== 'light' || state.stored !== null) issues.push(issue(keyScope, 'A11Y-THEME-CONTROL', 'returning to auto by keyboard must clear the stored choice and follow the OS again'));
   }
   await keyboard.close();
 
-  const noScript = await browser.newContext({ colorScheme: 'dark', javaScriptEnabled: false });
-  const plain = await noScript.newPage();
-  await plain.goto(url, { waitUntil: 'load' });
-  const plainState = await readTheme(plain);
-  const plainToggle = await readToggle(plain);
-  if (plainState.attr !== null || plainState.canvas !== themes.dark.canvas.toLowerCase() || plainState.controlShown || plainToggle.rendered) {
-    issues.push(issue(`${path}:theme-no-script`, 'A11Y-THEME-NOJS', 'without JavaScript the page must follow the OS scheme and keep the theme control, and its toggle, hidden'));
+  /* Starlight serves data-theme="dark" in the HTML; without JavaScript the tokens must still follow the OS (a light OS proves it) and the select must stay hidden. */
+  for (const os of ['light', 'dark'] as const) {
+    const noScript = await browser.newContext({ colorScheme: os, javaScriptEnabled: false });
+    const plain = await noScript.newPage();
+    await plain.goto(url, { waitUntil: 'load' });
+    const plainState = await readTheme(plain);
+    /* With no choice the base declares "light dark" and the OS picks; a dark OS narrows it to dark. */
+    if (plainState.canvas !== canvasOf(os) || !(plainState.scheme === os || plainState.scheme === 'light dark') || plainState.selectShown) {
+      issues.push(issue(`${path}:theme-no-script:OS ${os}`, 'A11Y-THEME-NOJS', `without JavaScript the page must follow the OS scheme (${os}) and keep the theme select hidden (canvas ${plainState.canvas}, color-scheme ${plainState.scheme}, select ${plainState.selectShown ? 'shown' : 'hidden'})`));
+    }
+    await noScript.close();
   }
-  await noScript.close();
   return issues;
 }
 
@@ -273,7 +258,7 @@ async function checkExpectation(page: Page, scope: string, code: string, expecta
   return issues;
 }
 
-const BOUNDARY_SELECTORS = '.notice, .door, .evidence-badge, .crosswalk__pane pre, .theme-control__toggle';
+const BOUNDARY_SELECTORS = '.notice, #doors .card, .evidence-badge, .crosswalk__pane pre';
 
 /** §10 Forced colours: no lost text, controls, warning boundaries or selected state; keyboard focus stays visible. */
 export async function checkForcedColors(browser: Browser, origin: string, path: string, expectation: PageExpectation = {}): Promise<Issue[]> {
@@ -442,7 +427,7 @@ export async function checkJsOff(browser: Browser, origin: string, path: string,
     const texts = (selector: string) => [...document.querySelectorAll(selector)].map((element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim());
     const panes = [...document.querySelectorAll<HTMLElement>('.crosswalk__pane')];
     return {
-      doors: { hrefs: [...document.querySelectorAll('#doors .door__link')].map((link) => link.getAttribute('href')), titles: texts('#doors .door__title'), who: texts('#doors .door__who') },
+      doors: { hrefs: [...document.querySelectorAll('#doors .door__link')].map((link) => link.getAttribute('href')), titles: texts('#doors .door__title'), who: texts('#doors .card .title') },
       timeline: { figures: document.querySelectorAll('figure.timeline').length, labels: texts('.timeline__step strong'), captions: texts('.timeline__caption') },
       crosswalk: {
         terms: [...document.querySelectorAll<HTMLElement>('.crosswalk__term')].map((term) => term.dataset.concept),
@@ -450,7 +435,7 @@ export async function checkJsOff(browser: Browser, origin: string, path: string,
         panes: panes.map((pane) => pane.dataset.pane),
         tagged: Object.fromEntries(panes.map((pane) => [pane.dataset.pane, [...new Set([...pane.querySelectorAll<HTMLElement>('[data-concepts]')].flatMap((line) => (line.dataset.concepts ?? '').split(/\s+/)))]])),
       },
-      themeControlHidden: document.querySelector('[data-theme-control]')?.hasAttribute('hidden') ?? true,
+      themeControlHidden: [...document.querySelectorAll<HTMLElement>('starlight-theme-select')].every((element) => getComputedStyle(element).display === 'none'),
       panelCount: document.querySelectorAll('details.evidence-panel').length,
     };
   });
@@ -461,7 +446,7 @@ export async function checkJsOff(browser: Browser, origin: string, path: string,
       issues.push(issue(scope, 'A11Y-NOJS', 'the timeline must carry the six step labels in order, each with a caption, without JavaScript'));
     }
   }
-  if (!read.themeControlHidden) issues.push(issue(scope, 'A11Y-NOJS', 'the theme control must stay hidden without JavaScript'));
+  if (!read.themeControlHidden) issues.push(issue(scope, 'A11Y-NOJS', 'the theme select must stay hidden without JavaScript'));
   if (kind === 'home') {
     if (!same(read.doors.hrefs, DOORS.map(({ href }) => href)) || !same(read.doors.titles, DOORS.map(({ title }) => title)) || !same(read.doors.who, DOORS.map(({ eyebrow }) => eyebrow))) {
       issues.push(issue(scope, 'A11Y-NOJS', 'the three doors must appear with their frozen eyebrow, title and destination'));
@@ -493,35 +478,24 @@ export async function checkJsOff(browser: Browser, origin: string, path: string,
   return issues;
 }
 
-/** The primary action is an in-page link: it must work without JS, land on the target, and move the keyboard position there. */
-export async function checkPrimaryAction(browser: Browser, origin: string, path: string, linkName: string, fragment: string): Promise<Issue[]> {
-  const scope = `${path}:primary-action`;
+/** The hero's primary action is an ordinary page link: it must carry the frozen destination and navigate without JS. */
+export async function checkHeroAction(browser: Browser, origin: string, path: string, linkName: string, href: string): Promise<Issue[]> {
+  const scope = `${path}:hero-action`;
   const issues: Issue[] = [];
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 320, height: 800 } });
   const page = await context.newPage();
   await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
-  const link = page.getByRole('link', { name: linkName, exact: true });
-  if (await link.getAttribute('href') !== `#${fragment}`) { issues.push(issue(scope, 'A11Y-NOJS', `"${linkName}" must be a normal in-page link to #${fragment}`)); await context.close(); return issues; }
+  const link = page.getByRole('link', { name: linkName, exact: true }).first();
+  if (await link.count() === 0 || await link.getAttribute('href') !== href) { issues.push(issue(scope, 'A11Y-NOJS', `"${linkName}" must be a normal link to ${href}`)); await context.close(); return issues; }
   await link.click();
-  const after = await page.evaluate((id) => {
-    const target = document.getElementById(id);
-    const rect = target?.getBoundingClientRect();
-    return { exists: Boolean(target), hash: location.hash, matches: document.querySelector(':target')?.id === id, inView: Boolean(rect && rect.top >= -1 && rect.top < innerHeight) };
-  }, fragment);
-  if (!after.exists || after.hash !== `#${fragment}` || !after.matches || !after.inView) issues.push(issue(scope, 'A11Y-NOJS', `following "${linkName}" must scroll #${fragment} into view and make it :target`));
-  await page.keyboard.press('Tab');
-  const next = await page.evaluate((id) => {
-    const target = document.getElementById(id)!;
-    const active = document.activeElement;
-    return Boolean(active && active !== document.body && (target.contains(active) || (target.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING)));
-  }, fragment);
-  if (!next) issues.push(issue(scope, 'A11Y-NOJS', `after following "${linkName}", the next Tab stop must be at or after #${fragment}`));
+  await page.waitForLoadState('load');
+  if (new URL(page.url()).pathname !== href) issues.push(issue(scope, 'A11Y-NOJS', `following "${linkName}" must open ${href} without JavaScript`));
   await context.close();
   return issues;
 }
 
 /** §10 Font failure: with /fonts/* blocked, text stays visible, nothing overflows, and the page height stays within 25% of the normal render. */
-const FONT_PROBE_SELECTORS = ['h1', '.lede', '.site-nav a', 'main p', '.timeline__step strong', '.door__title'];
+const FONT_PROBE_SELECTORS = ['h1', '.lede', '.sidebar a', 'main p', '.timeline__step strong', '.door__title'];
 
 export async function checkFontBlocking(browser: Browser, origin: string, path: string): Promise<Issue[]> {
   const scope = `${path}:font-failure`;
@@ -575,6 +549,8 @@ export async function checkCrosswalkLayout(browser: Browser, origin: string, pat
     const context = await browser.newContext({ viewport: { width, height: 900 } });
     const page = await context.newPage();
     await page.goto(new URL(path, origin).href, { waitUntil: 'load' });
+    /* The panes sit behind a disclosure on the home page; open it before measuring. */
+    await page.evaluate(() => { for (const details of document.querySelectorAll<HTMLDetailsElement>('.crosswalk details')) details.open = true; });
     const boxes = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll<HTMLElement>('.crosswalk__pane')].map((pane) => {
       const rect = pane.getBoundingClientRect();
       return [pane.dataset.pane, { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }];
@@ -609,7 +585,7 @@ export async function checkComponentGeometry(browser: Browser, origin: string, p
         const vertical = height > parseFloat(style.width);
         return { vertical, bottom: lane.getBoundingClientRect().top + parseFloat(style.top) + height };
       });
-      return { bars: tops('.timeline__bars'), doors: tops('.door'), after, tails };
+      return { bars: tops('.timeline__bars'), doors: tops('#doors .card'), after, tails };
     });
     const sameRow = (values: number[]) => values.every((value) => Math.abs(value - values[0]) < 1);
     if (width === 1280) {
@@ -643,7 +619,7 @@ export async function checkComponentGeometry(browser: Browser, origin: string, p
   return issues;
 }
 
-/** Guide cards at 1280 px: tiles that share a row are equally tall, the title is underlined, and the summary and tag are not. */
+/** Guide cards at 1280 px: link cards that share a row are equally tall, the title is underlined, and the description is not. */
 export async function checkGuideCards(browser: Browser, origin: string, path: string): Promise<Issue[]> {
   const scope = `${path}:guide-cards:1280px`;
   const code = 'A11Y-COMPONENT-GEOMETRY';
@@ -659,19 +635,19 @@ export async function checkGuideCards(browser: Browser, origin: string, path: st
         for (let node = element; node; node = node.parentElement) if (getComputedStyle(node).textDecorationLine.includes('underline')) return true;
         return false;
       };
-      return [...document.querySelectorAll<HTMLElement>('.resource-tile')].map((tile) => {
+      return [...document.querySelectorAll<HTMLElement>('.sl-link-card')].map((tile) => {
         const box = tile.getBoundingClientRect();
-        const title = tile.querySelector('h3');
+        const title = tile.querySelector('.title');
         return {
           name: (title?.textContent ?? tile.textContent ?? '').trim().slice(0, 40),
           top: box.top,
           height: box.height,
           title: title ? underlined(title) : null,
-          others: [...tile.querySelectorAll('p, .resource-tile__tag')].filter((element) => underlined(element)).map((element) => element.tagName === 'P' ? 'summary' : 'tag'),
+          description: [...tile.querySelectorAll('.description')].some((element) => underlined(element)),
         };
       });
     });
-    if (tiles.length === 0) return [issue(scope, code, 'no .resource-tile elements found, so the guide cards cannot be checked')];
+    if (tiles.length === 0) return [issue(scope, code, 'no .sl-link-card elements found, so the guide cards cannot be checked')];
     const rows: Array<typeof tiles> = [];
     for (const tile of [...tiles].sort((a, b) => a.top - b.top)) {
       const row = rows.find((candidate) => Math.abs(candidate[0].top - tile.top) <= 1);
@@ -687,7 +663,7 @@ export async function checkGuideCards(browser: Browser, origin: string, path: st
     }
     for (const tile of tiles) {
       if (tile.title !== true) issues.push(issue(scope, code, `the title must be underlined in tile "${tile.name}"`));
-      if (tile.others.length > 0) issues.push(issue(scope, code, `the summary and tag must not be underlined, but the ${tile.others.join(' and ')} of tile "${tile.name}" ${tile.others.length > 1 ? 'are' : 'is'}`));
+      if (tile.description) issues.push(issue(scope, code, `the description must not be underlined in tile "${tile.name}"`));
     }
   } finally {
     await context.close();

@@ -3,10 +3,11 @@ import { createReadStream, existsSync, readdirSync, readFileSync, statSync } fro
 import { extname, join, normalize, resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { chromium, type Page } from 'playwright';
-import { CONCEPTS, DOORS, NAV_ITEMS, TIMELINE_STEPS } from '../site/src/content/contracts';
+import { CONCEPTS, DOORS, THEME_STORAGE_KEY, TIMELINE_STEPS } from '../site/src/content/contracts';
+import { HERO } from '../site/src/content/home';
 import { HOME_PATH, MODULE_2_PATH, accessibilityPages, recordPaths } from '../tests/accessibility/browser-fixtures';
 import {
-  checkComponentGeometry, checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkGuideCards, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkThemePrecedence,
+  checkComponentGeometry, checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkGuideCards, checkHeroAction, checkJsOff, checkMotion, checkPrint, checkThemePrecedence,
   inspectThemeScript, type Issue, type PageExpectation,
 } from '../tests/accessibility/browser-checks';
 import { auditTokenMap, auditTokens, declaredColorSchemes, pairTokenNames, parseThemeBlocks } from '../tests/accessibility/token-pairs';
@@ -164,19 +165,20 @@ const assertSemanticContrast = async (page: Page, path: string, scheme: string) 
   for (const message of auditTokenMap(await readTokens(page), label)) fail(label, message.includes('restraint band') ? 'A11Y-BORDER-RESTRAINT' : 'A11Y-CONTRAST', message);
 };
 
-// The cascade, once: OS light/dark with no choice, and a stored choice that disagrees with the OS, in both directions.
+// The cascade, once: OS light/dark with no choice, and a stored choice that disagrees with the OS, in both directions. The choice is stored the way the theme select stores it, then the page reloads, so the head script applies it.
 const assertThemeMatrix = async (page: Page, path: string) => {
-  for (const [os, attribute] of [['light', null], ['dark', null], ['light', 'dark'], ['dark', 'light']] as const) {
+  for (const [os, choice] of [['light', null], ['dark', null], ['light', 'dark'], ['dark', 'light']] as const) {
     await page.emulateMedia({ colorScheme: os });
-    await page.evaluate((value) => { if (value) document.documentElement.setAttribute('data-theme', value); else document.documentElement.removeAttribute('data-theme'); }, attribute);
-    const label = `${path}:os-${os}${attribute ? `+choice-${attribute}` : ''}`;
+    await page.evaluate(([key, value]) => { if (value) localStorage.setItem(key, value); else localStorage.removeItem(key); }, [THEME_STORAGE_KEY, choice] as const);
+    await page.reload({ waitUntil: 'load' });
+    const label = `${path}:os-${os}${choice ? `+choice-${choice}` : ''}`;
     const tokens = await readTokens(page);
     for (const message of auditTokenMap(tokens, label)) fail(label, message.includes('restraint band') ? 'A11Y-BORDER-RESTRAINT' : 'A11Y-CONTRAST', message);
-    const effective = attribute ?? os;
+    const effective = choice ?? os;
     const expected = (effective === 'dark' ? themeBlocks.dark.canvas : themeBlocks.light.canvas)?.toLowerCase();
     if (tokens.canvas !== expected) fail(label, 'A11Y-THEME-PRECEDENCE', `--canvas is ${tokens.canvas}, expected the ${effective} value ${expected}`);
   }
-  await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+  await page.evaluate((key) => localStorage.removeItem(key), THEME_STORAGE_KEY);
 };
 
 const verifyNativeDisclosure = async (page: Page, detailsSelector: string, name: string, scope: string) => {
@@ -203,6 +205,29 @@ const verifyNativeDisclosure = async (page: Page, detailsSelector: string, name:
   }
 };
 
+/* Starlight's narrow navigation: one menu button opens the sidebar as a native popover, so it works
+   without JavaScript; the next Tab enters the menu and Escape closes it. */
+const verifyMobileMenu = async (page: Page, scope: string) => {
+  const button = page.locator('.sl-menu-button');
+  const menu = page.locator('#starlight__sidebar');
+  if (await button.count() !== 1 || !(await button.isVisible())) { fail(scope, 'A11Y-KEYBOARD', 'the narrow layout must show one menu button'); return; }
+  const name = ((await button.textContent()) ?? '').trim() || (await button.getAttribute('aria-label'));
+  if (!name) fail(scope, 'A11Y-KEYBOARD', 'the menu button must have an accessible name');
+  const isOpen = () => menu.evaluate((element) => element.matches(':popover-open'));
+  if (await isOpen()) fail(scope, 'A11Y-DISCLOSURE', 'the menu must begin closed');
+  await button.focus();
+  await page.keyboard.press('Enter');
+  if (!(await isOpen())) fail(scope, 'A11Y-DISCLOSURE', 'Enter on the menu button must open the menu');
+  if (!(await button.evaluate((element) => element === document.activeElement)) || !(await hasVisibleFocus(page))) fail(scope, 'A11Y-FOCUS', 'menu button focus must remain visible after opening');
+  await page.keyboard.press('Tab');
+  const firstLink = await menu.locator('a[href]').first().getAttribute('href');
+  const focused = await page.evaluate(() => document.activeElement?.getAttribute('href') ?? null);
+  if (!firstLink || focused !== firstLink) fail(scope, 'A11Y-KEYBOARD', `the first Tab inside the open menu must land on its first link (${firstLink}), found ${JSON.stringify(focused)}`);
+  await page.keyboard.press('Escape');
+  if (await isOpen()) fail(scope, 'A11Y-KEYBOARD', 'Escape must close the menu');
+  if (await hasPageOverflow(page)) fail(scope, 'A11Y-OVERFLOW', 'the narrow layout must not scroll sideways with the menu closed');
+};
+
 try {
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -214,15 +239,21 @@ try {
   for (const path of paths) {
     if (!(await open(page, path))) continue;
     await page.keyboard.press('Tab');
-    if (await page.locator(':focus').getAttribute('href') !== '#main') {
-      fail(`${path}:keyboard`, 'A11Y-KEYBOARD', 'first focus must be the skip link');
+    const first = await page.evaluate(() => document.activeElement?.getAttribute('href') ?? null);
+    if (first !== '#_top') {
+      fail(`${path}:keyboard`, 'A11Y-KEYBOARD', `first focus must be the skip link to #_top, found ${JSON.stringify(first)}`);
     } else if (!(await hasVisibleFocus(page))) {
       fail(`${path}:focus`, 'A11Y-FOCUS', 'skip-link focus indicator must be visible and unobscured');
     }
+    // Starlight's skip link targets the page title, so the browser moves the keyboard position there: the next Tab lands in the content.
     await page.keyboard.press('Enter');
-    if (await page.locator(':focus').getAttribute('id') !== 'main') {
-      fail(`${path}:keyboard`, 'A11Y-KEYBOARD', 'skip link must focus the main landmark');
-    }
+    await page.keyboard.press('Tab');
+    const landed = await page.evaluate(() => {
+      const top = document.getElementById('_top');
+      const active = document.activeElement;
+      return location.hash === '#_top' && Boolean(top && active && active !== document.body && (top.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING));
+    });
+    if (!landed) fail(`${path}:keyboard`, 'A11Y-KEYBOARD', 'the skip link must move the keyboard position to the page title, so the next Tab lands in the content');
     if (await hasPageOverflow(page)) fail(`${path}:layout`, 'A11Y-OVERFLOW', 'page has unintended horizontal overflow');
     if (await open(page, path)) {
       await assertLandmarkFocusOrder(page, path);
@@ -240,7 +271,7 @@ try {
       const sizing = await page.evaluate(() => {
         const visible = [...document.querySelectorAll<HTMLElement>('body *')].filter((element) => {
           const style = getComputedStyle(element);
-          return style.display !== 'none' && style.visibility !== 'hidden' && Boolean(element.textContent?.trim());
+          return style.display !== 'none' && style.visibility !== 'hidden' && element.getClientRects().length > 0 && Boolean(element.textContent?.trim());
         });
         const controls = visible.filter((element) => element.matches('a, button, summary, input, select, textarea'));
         const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source, .door__who, .evidence-badge, .evidence-link, .timeline__caption, .crosswalk__legend, .crosswalk__legend dt, .crosswalk__legend dd, .crosswalk figcaption, .kicker, .talk__kind, .talk__meta'));
@@ -253,19 +284,18 @@ try {
           controls: Math.min(...controls.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 15),
           technical: Math.min(...technical.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 14),
           svgText: Math.min(...svgText, 14),
-          linksHaveNonColorCue: mainLinks.every((element) => {
+          bareLinks: mainLinks.filter((element) => {
             const style = getComputedStyle(element);
-            return style.textDecorationLine.includes('underline')
+            return !(style.textDecorationLine.includes('underline')
               || Number.parseFloat(style.borderTopWidth) >= 1
-              || Number.parseFloat(style.borderBottomWidth) >= 1;
-          }),
-          statusNamed: /Release status:/.test(document.querySelector('.release')?.textContent ?? ''),
+              || Number.parseFloat(style.borderBottomWidth) >= 1);
+          }).map((element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40)),
         };
       });
       if (sizing.body < 16 || sizing.controls < 15) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'body text must remain at least 16 CSS pixels and control text at least 15 (the label size, one step below the body)');
       if (sizing.technical < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'supporting and technical text must remain at least 14 CSS pixels');
       if (sizing.svgText < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', `diagram text renders at ${sizing.svgText.toFixed(1)} CSS pixels; the floor is 14`);
-      if (!sizing.linksHaveNonColorCue || !sizing.statusNamed) fail(`${path}:${colorScheme}`, 'A11Y-COLOR-MEANING', 'links and status must include non-color cues');
+      if (sizing.bareLinks.length) fail(`${path}:${colorScheme}`, 'A11Y-COLOR-MEANING', `links in the content must carry a cue that is not colour (an underline or a border): ${sizing.bareLinks.slice(0, 5).join(', ')}`);
     }
   }
   if (await open(page, HOME_PATH)) await assertThemeMatrix(page, HOME_PATH);
@@ -279,7 +309,7 @@ try {
     if (path === HOME_PATH) {
       const hero = await page.evaluate(() => {
         const heroElement = document.querySelector<HTMLElement>('.hero')!;
-        const copy = document.querySelector<HTMLElement>('.hero__copy');
+        const copy = document.querySelector<HTMLElement>('.hero .copy');
         const figure = document.querySelector<HTMLElement>('.hero .hero__figure');
         const envPair = document.querySelector<HTMLElement>('.hero .env-pair');
         const order = ['.hero', '.applicability-projection', '#doors', '#big-idea', '#crosswalk'].map((selector) => document.querySelector(selector));
@@ -315,22 +345,7 @@ try {
   }
 
   await open(page, '/resources/');
-  await verifyNativeDisclosure(page, '.site-nav--compact', 'Navigation', '/resources/:navigation');
-  const summary = page.locator('.site-nav--compact > summary');
-  if (!(await summary.evaluate((element) => element === document.activeElement)) || !(await hasVisibleFocus(page))) {
-    fail('/resources/:navigation', 'A11Y-FOCUS', 'disclosure focus must remain visible after opening');
-  }
-  await page.keyboard.press('Tab');
-  if (await page.locator(':focus').getAttribute('href') !== NAV_ITEMS[0].href) {
-    fail('/resources/:navigation', 'A11Y-KEYBOARD', `first disclosed navigation link must be ${NAV_ITEMS[0].href}, following the summary in keyboard order`);
-  }
-  const menuLabels = (await page.locator('.site-nav--compact a').allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
-  if (menuLabels.join('|') !== NAV_ITEMS.map(({ label }) => label).join('|')) fail('/resources/:navigation', 'A11Y-KEYBOARD', `navigation must read ${NAV_ITEMS.map(({ label }) => label).join(' | ')}, found ${menuLabels.join(' | ')}`);
-  await page.keyboard.press('Shift+Tab');
-  await page.keyboard.press('Enter');
-  if (await page.locator('.site-nav--compact').evaluate((element) => (element as HTMLDetailsElement).open)) {
-    fail('/resources/:navigation', 'A11Y-KEYBOARD', 'Enter must close the native narrow navigation disclosure');
-  }
+  await verifyMobileMenu(page, '/resources/:navigation');
 
   await page.setViewportSize({ width: 1024, height: 900 });
   await open(page, '/guide/scheduler-as-orchestrator/');
@@ -441,7 +456,7 @@ try {
   };
   const timelineOrder = { selector: '.timeline__step strong', texts: TIMELINE_STEPS.map(({ label }) => label) };
   const expectations: Record<string, PageExpectation> = {
-    [HOME_PATH]: { ordered: [{ selector: '.concept__term', texts: CONCEPTS.map(({ label }) => label) }, { selector: '.door__title', texts: DOORS.map(({ title }) => title) }], present: ['h1', '.evidence-badge', '.hero__figure', '.crosswalk__legend', '.crosswalk__pane'] },
+    [HOME_PATH]: { ordered: [{ selector: '.concept__term', texts: CONCEPTS.map(({ label }) => label) }, { selector: '.door__title', texts: DOORS.map(({ title }) => title) }], present: ['h1', '.evidence-badge', '.hero__figure', '.crosswalk__legend', '.crosswalk__disclosure > summary'] },
     [MODULE_2_PATH]: { ordered: [timelineOrder], present: ['h1', '.evidence-badge'] },
   };
   for (const record of recordPaths) expectations[record] = { present: ['h1', '.applicability-record'] };
@@ -462,14 +477,14 @@ try {
   for (const path of paths) await gate(`${path}:motion`, () => checkMotion(browser, origin, path));
   await gate('/:no-script', () => checkJsOff(browser, origin, HOME_PATH, 'home', { panel: true }));
   await gate(`${MODULE_2_PATH}:no-script`, () => checkJsOff(browser, origin, MODULE_2_PATH, 'module', { panel: true }));
-  await gate('/:primary-action', () => checkPrimaryAction(browser, origin, HOME_PATH, 'Start with the big idea', 'big-idea'));
+  await gate('/:hero-action', () => checkHeroAction(browser, origin, HOME_PATH, HERO.primary.label, HERO.primary.href));
 
   const noScript = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 320, height: 800 } });
   const noScriptRequests: Array<{ url: string; type: string }> = [];
   noScript.on('request', (request) => noScriptRequests.push({ url: request.url(), type: request.resourceType() }));
   const noScriptPage = await noScript.newPage();
   if (await open(noScriptPage, '/resources/')) {
-    await verifyNativeDisclosure(noScriptPage, '.site-nav--compact', 'Navigation', '/resources/:no-script');
+    await verifyMobileMenu(noScriptPage, '/resources/:no-script');
     const moduleLink = noScriptPage.getByRole('link', { name: 'Baseline Pattern: Single-Node Service + Workers' }).first();
     if (await moduleLink.getAttribute('href') !== '/guide/baseline-single-node-pattern/') {
       fail('/resources/:no-script', 'A11Y-NOJS', 'grouped resource entries must remain ordinary links');

@@ -9,8 +9,9 @@ const walk = (dir: string): string[] =>
     const path = `${dir}/${name}`;
     return statSync(path).isDirectory() ? walk(path) : [path];
   });
-/* Properties declared in the stylesheets: tokens.css plus the few component-local ones in global.css. */
-const declared = walk(`${src}/styles`).filter((path) => path.endsWith('.css')).map((path) => readFileSync(path, 'utf8')).join('\n');
+/* Properties declared in the stylesheets: tokens.css, the component sheets, and Starlight's own --sl-* properties, which the theme layer reads and overrides. */
+const starlightProps = readFileSync(`${root}/node_modules/@astrojs/starlight/dist/style/props.css`, 'utf8');
+const declared = [...walk(`${src}/styles`).filter((path) => path.endsWith('.css')).map((path) => readFileSync(path, 'utf8')), starlightProps].join('\n');
 const defined = new Set([...declared.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1]));
 /* Shiki writes these two on every highlighted span. */
 const supplied = new Set(['--shiki-light', '--shiki-dark']);

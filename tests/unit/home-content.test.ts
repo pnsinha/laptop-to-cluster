@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import * as homeModule from '../../site/src/content/home';
 import { CONCEPTS, DOORS, LEARNING_PATH, REQUIRED_FRAGMENTS } from '../../site/src/content/contracts';
 import {
-  BIG_IDEA, CONCEPT_NOTES, DOOR_SUMMARIES, DOORS_SECTION, EVENT_BAND, HERO, HERO_FIGURE, VISIT_LINE,
-  eventBandLead, homeDoors, resolveLearningPath,
+  BIG_IDEA, CLOSING, CONCEPT_NOTES, CREDIT, CROSSWALK_DISCLOSURE, DOOR_SUMMARIES, DOORS_SECTION, EVENT_BAND, HERO, HERO_FIGURE,
+  eventBandLead, heroTaglineHtml, homeDoors, presentedAtLead, resolveLearningPath, siteFacts,
 } from '../../site/src/content/home';
+import { heroFigureHtml } from '../../site/src/content/hero-figure';
 import type { ContentItem } from '../../site/src/content/schema';
 
 const text = (html: string) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -21,38 +22,65 @@ const pathItems = [
   item('module-1-scheduler-orchestrator', { artifact_type: 'learning-module', stable_slug: 'scheduler-as-orchestrator' }),
 ];
 const allCopy = [
-  HERO.kicker, HERO.title, HERO.ledeHtml, HERO.primary.label, HERO.secondary.label, HERO.quiet.lead, HERO.quiet.label,
+  HERO.kicker, HERO.title, HERO.ledeHtml, HERO.primary.label, HERO.secondary.label,
   HERO_FIGURE.caption, ...HERO_FIGURE.services,
   HERO_FIGURE.laptop.title, HERO_FIGURE.laptop.command, ...HERO_FIGURE.laptop.facts,
   HERO_FIGURE.cluster.title, HERO_FIGURE.cluster.command, HERO_FIGURE.cluster.allocation, ...HERO_FIGURE.cluster.facts,
   BIG_IDEA.title, BIG_IDEA.proseHtml, BIG_IDEA.composeSide, BIG_IDEA.clusterSide,
   ...Object.values(CONCEPT_NOTES), DOORS_SECTION.title, ...Object.values(DOOR_SUMMARIES),
-  EVENT_BAND.label, EVENT_BAND.linkText, VISIT_LINE.lead, VISIT_LINE.linkText,
+  CLOSING.title, CLOSING.lead, CLOSING.primary.label, CLOSING.secondary.label, CREDIT.text, CREDIT.link.label,
+  CROSSWALK_DISCLOSURE.summary, EVENT_BAND.label, EVENT_BAND.linkText,
 ].map(text);
 
 describe('home hero', () => {
-  it('pins the required hero routes and keeps every label non-empty', () => {
-    expect(HERO.primary.href).toBe('#big-idea');
+  it('sends the primary action to the first step of the learning path and the secondary to the translate door', () => {
+    expect(HERO.primary.href).toBe('/guide/tour/');
     expect(HERO.secondary.href).toBe('/guide/compose-to-hpc-translation/');
-    expect(HERO.quiet.href).toBe('/adoption/evaluate/');
-    for (const label of [HERO.kicker, HERO.title, HERO.primary.label, HERO.secondary.label, HERO.quiet.lead, HERO.quiet.label]) {
+    for (const label of [HERO.kicker, HERO.title, HERO.primary.label, HERO.secondary.label]) {
       expect(label.trim().length).toBeGreaterThan(0);
     }
+    expect(HERO.primary.label).toMatch(/tour/);
+    expect(HERO.primary.label).not.toMatch(/get started|learn more|click here|submit/i);
   });
 
-  it('explains in the lede why Compose stops working and what replaces it', () => {
+  it('states the problem and the promise in two sentences, naming the Compose command', () => {
     expect(HERO.ledeHtml).toContain('<code>docker compose up</code>');
     const lede = text(HERO.ledeHtml);
-    for (const idea of [/docker compose up/, /no Docker daemon/, /no root access \(administrator rights\)/, /scheduler/, /wait your turn/, /batch script/]) {
-      expect(lede).toMatch(idea);
-    }
-    expect(lede).toContain('you request a scheduler allocation (a block of computer time on the cluster), wait your turn');
+    expect(lede.split(/(?<=\.)\s+/)).toHaveLength(2);
+    for (const idea of [/no Docker daemon/, /no root access/, /scheduler allocation/, /batch-script pattern/, /real cluster/]) expect(lede).toMatch(idea);
+    expect(words(HERO.ledeHtml)).toBeLessThanOrEqual(50);
+  });
+
+  it('renders the tagline as the kicker line followed by the lede', () => {
+    const tagline = heroTaglineHtml();
+    expect(tagline.startsWith(`<p class="kicker">${HERO.kicker}</p>`)).toBe(true);
+    expect(tagline.endsWith(`<p>${HERO.ledeHtml}</p>`)).toBe(true);
+  });
+
+  it('names the release and the fellowship in the facts line, with no tested claim', () => {
+    const facts = siteFacts('v0.2.0');
+    expect(facts).toContain('Release v0.2.0');
+    expect(facts).toContain('2026 BSSw Fellowship');
+    expect(facts).not.toMatch(/tested|anvil|validated/i);
   });
 });
 
 describe('hero figure', () => {
   it('shows the batch script at its path in the workflow layout, as the crosswalk does', () => {
     expect(HERO_FIGURE.cluster.command).toBe('sbatch slurm/baseline.sbatch');
+  });
+
+  it('renders as escaped plain HTML with a labelled figure, two environments and the caption', () => {
+    const html = heroFigureHtml();
+    expect(html.startsWith('<figure class="hero__figure not-content" aria-labelledby="hero-figure-caption">')).toBe(true);
+    expect(html).toContain('<p class="env__title">Your laptop</p>');
+    expect(html).toContain('<p class="env__title">A shared cluster</p>');
+    expect(html).toContain('<code>sbatch slurm/baseline.sbatch</code>');
+    expect(html.match(/<li class="env__box">/g)).toHaveLength(6);
+    expect(html).toContain(`<figcaption id="hero-figure-caption">${HERO_FIGURE.caption}</figcaption>`);
+    expect(html).not.toMatch(/<svg|<img|<script/);
+    const escaped = heroFigureHtml({ ...HERO_FIGURE, caption: 'a < b & "c"' } as typeof HERO_FIGURE);
+    expect(escaped).toContain('a &lt; b &amp; &quot;c&quot;');
   });
 });
 
@@ -126,9 +154,21 @@ describe('doors and learning path', () => {
     expect(DOOR_SUMMARIES.evaluate).toMatch(/assumes/);
     expect(DOOR_SUMMARIES.evaluate).toMatch(/your center already runs/);
   });
+
+  it('repeats the two most common next steps once more at the end of the page', () => {
+    expect(CLOSING.primary.href).toBe(HERO.primary.href);
+    expect(CLOSING.secondary.href).toBe(HERO.secondary.href);
+    expect(CLOSING.primary.label).toBe(HERO.primary.label);
+  });
 });
 
-describe('event band and visit line', () => {
+describe('credit, event band and disclosure', () => {
+  it('credits the author and the fellowship in one sentence that links to the project page', () => {
+    expect(CREDIT.text).toMatch(/^Written by Parmanand Sinha, Computational Scientist, University of Chicago Research Computing Center, as a 2026 BSSw Fellow/);
+    expect(CREDIT.link).toEqual({ label: 'About the project', href: '/about/project/' });
+    expect(CREDIT.text).not.toMatch(/ParaTools|Department of Energy|National Science Foundation|Sustainable Horizons/);
+  });
+
   it('words the featured talk so it stays true after the date', () => {
     expect(eventBandLead({ kind: 'talk', venue: "US-RSE'26", event_date: '2026-10-20', location: 'San Jose, CA' }))
       .toBe('Talk at US-RSE’26 (Tue Oct 20, San Jose)');
@@ -136,18 +176,25 @@ describe('event band and visit line', () => {
       .toBe('Poster at SC26 (Tue Nov 17, Chicago)');
     expect(eventBandLead({ kind: 'talk', venue: "US-RSE '26", event_date: '2026-10-20' }))
       .toBe('Talk at US-RSE’26 (Tue Oct 20)');
-    expect(EVENT_BAND).toEqual({ label: 'Featured talk', linkText: 'talk and poster links', href: '/about/talks-and-papers/' });
-    for (const value of [EVENT_BAND.label, EVENT_BAND.linkText]) expect(value).not.toMatch(/upcoming|coming|will|join|next|soon/i);
   });
 
-  it('keeps one short visit line after the event band and no project records list', () => {
-    expect(VISIT_LINE).toEqual({
-      lead: 'Here from the SC26 poster or the US-RSE’26 talk?',
-      linkText: 'Talk and poster links',
-      href: '/about/talks-and-papers/',
-    });
-    expect(JSON.stringify(VISIT_LINE)).not.toMatch(/ParaTools|Department of Energy|National Science Foundation|Project records/);
-    for (const gone of ['projectRecordLinks', 'PROJECT_RECORDS', 'releaseVersionFromId']) expect(gone in homeModule, gone).toBe(false);
+  it('lists every talk and poster as "Presented at", in date order, never as upcoming', () => {
+    const talks = [
+      { kind: 'poster' as const, venue: 'SC26', event_date: '2026-11-17', location: 'Chicago, IL' },
+      { kind: 'talk' as const, venue: "US-RSE'26", event_date: '2026-10-20', location: 'San Jose, CA' },
+      { kind: 'paper' as const, venue: 'A journal', event_date: '2026-12-01' },
+      { kind: 'poster' as const, venue: 'I-GUIDE Forum 2026', event_date: '2026-08-05' },
+    ];
+    expect(presentedAtLead(talks)).toBe('Presented at I-GUIDE Forum 2026 (Aug 5), US-RSE’26 (Oct 20, San Jose) and SC26 (Nov 17, Chicago)');
+    expect(presentedAtLead([talks[1]])).toBe('Presented at US-RSE’26 (Oct 20, San Jose)');
+    expect(presentedAtLead([])).toBe('');
+    expect(EVENT_BAND).toEqual({ label: 'Presented at', linkText: 'Talks and posters', href: '/about/talks-and-papers/' });
+    for (const value of [EVENT_BAND.label, EVENT_BAND.linkText]) expect(value).not.toMatch(/upcoming|coming|will|join|next|soon/i);
+    for (const gone of ['VISIT_LINE', 'projectRecordLinks', 'PROJECT_RECORDS', 'releaseVersionFromId']) expect(gone in homeModule, gone).toBe(false);
+  });
+
+  it('names what the crosswalk disclosure opens', () => {
+    expect(CROSSWALK_DISCLOSURE.summary).toBe('Show the Compose file beside the batch script');
   });
 });
 
@@ -163,7 +210,7 @@ describe('home copy rules', () => {
   it('stays near the ≈600-word home budget', () => {
     const prose = [
       HERO.ledeHtml, HERO_FIGURE.caption, BIG_IDEA.proseHtml,
-      ...Object.values(CONCEPT_NOTES), ...Object.values(DOOR_SUMMARIES),
+      ...Object.values(CONCEPT_NOTES), ...Object.values(DOOR_SUMMARIES), CLOSING.lead, CREDIT.text,
     ];
     expect(prose.reduce((total, value) => total + words(value), 0)).toBeLessThanOrEqual(600);
   });

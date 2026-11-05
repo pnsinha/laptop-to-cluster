@@ -20,9 +20,9 @@ const talks = parse(readFileSync(resolve(root, 'site/src/content/talks.yml'), 'u
 describe('Talks and papers page', () => {
   const html = page('about/talks-and-papers');
 
-  it('is an About page with the section nav on its own entry', () => {
+  it('is an About page, current in the sidebar on its own entry', () => {
     expect(html).toContain('data-composition-profile="about"');
-    expect(html).toMatch(new RegExp(`href="/about/talks-and-papers/"[^>]*aria-current="page"[^>]*>${escaped(TALKS_LABEL)}<`));
+    expect(html).toMatch(new RegExp(`href="/about/talks-and-papers/"[^>]*aria-current="page"[^>]*>(?:<span[^>]*>)?${escaped(TALKS_LABEL)}<`));
     expect(html).toMatch(new RegExp(`<h1[^>]*>\\s*${escaped(TALKS_LABEL)}\\s*</h1>`));
   });
 
@@ -70,7 +70,7 @@ describe('Translate page', () => {
   });
 
   it('sits after Module 2 on the learning path and closes with Sources after the article', () => {
-    expect(html).toContain('<a rel="prev" href="/guide/baseline-single-node-pattern/">');
+    expect(html).toMatch(/<a href="\/guide\/baseline-single-node-pattern\/" rel="prev"/);
     expect(at(html, 'class="sources-scope"')).toBeGreaterThan(html.lastIndexOf('</article>'));
   });
 });
@@ -108,7 +108,7 @@ describe('Evaluate and adopt page', () => {
   });
 
   it('sits last on the learning path, with Sources after the article', () => {
-    expect(html).toContain('<a rel="prev" href="/guide/compose-to-hpc-translation/">');
+    expect(html).toMatch(/<a href="\/guide\/compose-to-hpc-translation\/" rel="prev"/);
     expect(html).not.toContain('rel="next"');
     expect(at(html, 'class="sources-scope"')).toBeGreaterThan(html.lastIndexOf('</article>'));
   });
@@ -156,7 +156,7 @@ describe('The five-minute tour', () => {
 
   it('is first on the learning path, and the old Module 0 route is gone', () => {
     expect(html).not.toContain('rel="prev"');
-    expect(html).toContain('<a rel="next" href="/guide/scheduler-as-orchestrator/">');
+    expect(html).toMatch(/<a href="\/guide\/scheduler-as-orchestrator\/" rel="next"/);
     expect(existsSync(resolve(dist, 'guide/how-to-use-this-guide'))).toBe(false);
   });
 

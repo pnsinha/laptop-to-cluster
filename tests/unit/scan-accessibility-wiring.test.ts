@@ -28,7 +28,7 @@ describe('scanner wiring: gates, routes, requests', () => {
     expect(scanner).toContain("from '../tests/accessibility/browser-checks'");
     for (const call of [
       'checkThemePrecedence(', 'inspectThemeScript(', 'checkForcedColors(', 'checkPrint(', 'checkJsOff(',
-      'checkPrimaryAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkComponentGeometry(', 'checkGuideCards(', 'checkMotion(',
+      'checkHeroAction(', 'checkFontBlocking(', 'checkCrosswalkLayout(', 'checkComponentGeometry(', 'checkGuideCards(', 'checkMotion(',
     ]) expect(scanner, call).toContain(call);
   });
 
@@ -39,12 +39,14 @@ describe('scanner wiring: gates, routes, requests', () => {
     expect(readFileSync(fileURLToPath(new URL('../accessibility/browser-checks.ts', import.meta.url)), 'utf8')).toContain("const code = 'A11Y-COMPONENT-GEOMETRY'");
   });
 
-  it('drops the v0.1.0 workflow figure, Module 0 slug, and old primary action', () => {
-    for (const stale of ['workflow-figure', 'how-to-use-this-guide', 'Start with Module 0', 'One allocation, five ordered responsibilities', "!== '/start/'"]) {
+  it('drops the v0.1.0 workflow figure, Module 0 slug, the old header navigation and the old in-page primary action', () => {
+    for (const stale of ['workflow-figure', 'how-to-use-this-guide', 'Start with Module 0', 'One allocation, five ordered responsibilities', "!== '/start/'", 'NAV_ITEMS', 'site-nav--compact', "'Start with the big idea'", "'#main'"]) {
       expect(scanner, stale).not.toContain(stale);
     }
-    expect(scanner).toContain('NAV_ITEMS[0].href');
-    expect(scanner).toContain("'Start with the big idea', 'big-idea'");
+    expect(scanner).toContain('checkHeroAction(browser, origin, HOME_PATH, HERO.primary.label, HERO.primary.href)');
+    expect(scanner).toContain("await verifyMobileMenu(page, '/resources/:navigation');");
+    expect(scanner).toContain("await verifyMobileMenu(noScriptPage, '/resources/:no-script');");
+    expect(scanner).toContain("'#_top'");
   });
 
   it('checks at 320px that each timeline step label sits above its caption, on every module page with a timeline', () => {

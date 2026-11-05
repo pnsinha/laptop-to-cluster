@@ -26,10 +26,10 @@ describe('milestone date label', () => {
   });
 });
 
-describe('About section navigation', () => {
+describe('Project group in the sidebar', () => {
   it('lists the Talks label on every About page', () => {
     for (const route of ['about/project', 'about/attribution', 'about/glossary', 'about/support', 'about/accessibility']) {
-      const nav = page(route).match(/<nav class="section-nav" aria-label="About sections">[\s\S]*?<\/nav>/)?.[0] ?? '';
+      const nav = page(route).match(/<nav class="sidebar[^"]*"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
       expect(nav, route).toContain('href="/about/talks-and-papers/"');
       expect(nav, route).toContain(`>${TALKS_LABEL.replace(/&/g, '&amp;')}<`);
     }

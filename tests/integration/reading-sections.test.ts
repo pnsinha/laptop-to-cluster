@@ -6,9 +6,10 @@ import { describe, expect, it } from 'vitest';
 const dist = resolve(fileURLToPath(new URL('../..', import.meta.url)), 'site/dist');
 const htmlFiles = (directory: string): string[] => readdirSync(directory, { withFileTypes: true })
   .flatMap((entry) => (entry.isDirectory() ? htmlFiles(resolve(directory, entry.name)) : entry.name.endsWith('.html') ? [resolve(directory, entry.name)] : []));
-const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'use', 'stop']);
+/* HTML void elements only: SVG children are either self-closed or closed explicitly in the built output. */
+const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 
-/** Every <section> that is a direct child of <main>, with the class attribute it was rendered with (null when it has none). */
+/** Every <section> that is a direct child of the page content wrapper (div.l2c-page inside <main>), with the class attribute it was rendered with (null when it has none). */
 const mainSections = (html: string): Array<string | null> => {
   const found: Array<string | null> = [];
   const stack: string[] = [];
@@ -18,12 +19,13 @@ const mainSections = (html: string): Array<string | null> => {
     if (!name) continue;
     const tag = name.toLowerCase();
     if (closing) {
-      const index = stack.lastIndexOf(tag);
-      if (index >= 0) stack.length = index;
+      const index = stack.lastIndexOf(tag) >= 0 ? stack.lastIndexOf(tag) : stack.lastIndexOf('div.l2c-page');
+      if (tag === 'div' && stack.lastIndexOf('div.l2c-page') > stack.lastIndexOf('div')) stack.length = stack.lastIndexOf('div.l2c-page');
+      else if (index >= 0) stack.length = index;
       continue;
     }
-    if (tag === 'section' && stack[stack.length - 1] === 'main') found.push(/\sclass\s*=\s*"([^"]*)"/.exec(attributes)?.[1] ?? null);
-    if (!VOID.has(tag) && !/\/\s*$/.test(attributes)) stack.push(tag);
+    if (tag === 'section' && stack[stack.length - 1] === 'div.l2c-page') found.push(/\sclass\s*=\s*"([^"]*)"/.exec(attributes)?.[1] ?? null);
+    if (!VOID.has(tag) && !/\/\s*$/.test(attributes)) stack.push(tag === 'div' && /\sclass="[^"]*\bl2c-page\b/.test(attributes) ? 'div.l2c-page' : tag);
   }
   return found;
 };
@@ -31,7 +33,7 @@ const mainSections = (html: string): Array<string | null> => {
 describe('reading sections in the built pages', () => {
   const pages = htmlFiles(dist).map((file) => ({ route: `/${relative(dist, file).replace(/index\.html$/, '')}`, sections: mainSections(readFileSync(file, 'utf8')) }));
 
-  it('finds the built pages, with sections directly in <main>', () => {
+  it('finds the built pages, with sections directly in the page content', () => {
     expect(pages.length).toBeGreaterThan(20);
     expect(pages.reduce((count, page) => count + page.sections.length, 0)).toBeGreaterThan(40);
   });

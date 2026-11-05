@@ -317,7 +317,8 @@ describe('The five-minute tour (Module 0)', () => {
 
   it('answers who it is for, what to know and what access is needed, and where to start', () => {
     const audience = section(body, 'Who this guide is for');
-    for (const heading of ['What you should already know', 'What you need access to', 'How to progress']) expect(audience, heading).toContain(`### ${heading}`);
+    for (const heading of ['What you should already know', 'What you need access to']) expect(audience, heading).toContain(`### ${heading}`);
+    expect(audience).not.toContain('### How to progress');
     expect(audience).toMatch(/submitted at least one batch job/);
     expect(audience).toMatch(/To read: nothing/);
     expect(audience).toContain('/start/');

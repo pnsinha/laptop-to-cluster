@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import { parse } from 'yaml';
 import { ACKNOWLEDGMENT_TEXT, ACKNOWLEDGMENT_SHA256, ACKNOWLEDGMENT_STATEMENT, ACKNOWLEDGMENT_DISCLAIMER } from '../../site/src/content/acknowledgment';
 import { NAV_ITEMS, TIMELINE_STEPS, DOORS, EVIDENCE_ROW_LABELS, LEARNING_PATH, CONCEPTS, DESIGNED_NOT_RUN, TALKS_LABEL } from '../../site/src/content/contracts';
-import { storedChoice, themeAttribute, effectiveTheme } from '../../site/src/content/theme';
 import { applicabilityRecordSchema, genericContentItemSchema, talkSchema } from '../../site/src/content/schema';
 
 describe('C0 contracts', () => {
@@ -13,12 +12,11 @@ describe('C0 contracts', () => {
     expect(ACKNOWLEDGMENT_TEXT).toBe(`${ACKNOWLEDGMENT_STATEMENT} ${ACKNOWLEDGMENT_DISCLAIMER}`);
     expect(ACKNOWLEDGMENT_TEXT.length).toBe(605);
     expect(createHash('sha256').update(ACKNOWLEDGMENT_TEXT).digest('hex')).toBe(ACKNOWLEDGMENT_SHA256);
-    const layout = readFileSync('site/src/layouts/BaseLayout.astro', 'utf8');
-    expect(layout).toMatch(/import Acknowledgment from/);
-    expect(layout).toContain('<Acknowledgment variant="footer"');
+    const footer = readFileSync('site/src/components/starlight/Footer.astro', 'utf8');
+    expect(footer).toMatch(/import \{ ACKNOWLEDGMENT_TEXT \} from '..\/..\/content\/acknowledgment'/);
+    expect(footer).toContain('<p class="acknowledgment">{ACKNOWLEDGMENT_TEXT}</p>');
     const component = readFileSync('site/src/components/Acknowledgment.astro', 'utf8');
     expect(component).toMatch(/import \{ ACKNOWLEDGMENT_TEXT \} from '..\/content\/acknowledgment'/);
-    expect(component).toContain('<p class="acknowledgment">{ACKNOWLEDGMENT_TEXT}</p>');
     expect(component).toContain('<section class="event-acknowledgment"');
     const skip = /\.(woff2|png|jpe?g|gif|webp|svg|ico|pdf)$/i;
     const walk = (dir: string): string[] =>
@@ -48,15 +46,6 @@ describe('C0 contracts', () => {
     expect(() => flag.parse('yes')).toThrow();
   });
 
-  it('resolves theme precedence: stored choice beats the OS, otherwise follow the OS', () => {
-    expect(storedChoice(null)).toBe('system');
-    expect(storedChoice('bogus')).toBe('system');
-    expect(themeAttribute('dark')).toBe('dark');
-    expect(themeAttribute(null)).toBeNull();
-    expect(effectiveTheme('light', true)).toBe('light');
-    expect(effectiveTheme(null, true)).toBe('dark');
-    expect(effectiveTheme(null, false)).toBe('light');
-  });
 
   it('accepts the record and validates talks.yml', () => {
     const record = parse(readFileSync('site/src/content/applicability/m1-baseline-anvil.yml', 'utf8'));

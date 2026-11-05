@@ -18,30 +18,32 @@ When you sign:
 
 Start each page by clicking the address bar, then press Tab. Tick a box only if the behaviour is exactly as described.
 
-- [ ] **Skip link.** First Tab shows "Skip to content" with a visible ring. Enter moves focus into `main`; the next Tab lands on the first control inside the page content, not back in the header.
-- [ ] **Header navigation, wide.** Tab visits Get started, Guide, Troubleshooting, About, GitHub (external), in that order, then the theme control. The current page's link has a mark that is not only colour. Enter follows the link.
-- [ ] **Header navigation, narrow.** Resize the window to 320 px wide. Tab to "Navigation", press Enter or Space: the menu opens, focus stays on "Navigation", the next Tab lands on Get started. Shift+Tab then Enter closes it. No horizontal scrollbar at any point.
-- [ ] **Theme control.** Tab to the one round sun/moon button, after the navigation links. Press Space or Enter: the page switches to the other theme at once and the icon changes (a moon on a light page, a sun on a dark one). Press it again: the page returns to the operating-system setting and nothing is remembered. Reload after choosing a theme that differs from the system: the choice is kept and the page does not flash the other theme. The ring is visible in both themes, and no text such as System, Light or Dark shows in the header.
-- [ ] **Hero actions (home).** The filled primary action, the Compose link and the quiet evaluation link are each one Tab stop with a visible ring. Enter on "Start with the big idea" moves the view to the big-idea section and the next Tab continues from there. The hero figure has no Tab stops.
+- [ ] **Skip link.** First Tab shows "Skip to content" with a visible ring. Enter moves the view to the page title; the next Tab lands on the first control inside the page content, not back in the header or the sidebar.
+- [ ] **Header.** Tab visits the site title, the search button, the GitHub link (external) and the theme select, in that order. Enter on the search button opens the search dialog; Escape closes it and returns focus to the button.
+- [ ] **Sidebar navigation, wide.** Tab visits Guide, then the groups Learning path, While you run it, Evidence and Project, with each group's links in order (Learning path: The five-minute tour, Scheduler as Orchestrator, Run the example, Baseline Pattern, Translate a Compose file, Evaluate and adopt). Each group label is a disclosure that Enter or Space opens and closes; Project starts closed. The current page's link has a mark that is not only colour. Enter follows a link.
+- [ ] **Sidebar navigation, narrow.** Resize the window to 320 px wide. Tab to the round "Menu" button, press Enter: the menu opens over the page, focus stays on the button, the next Tab lands on Guide. Escape closes the menu. No horizontal scrollbar at any point.
+- [ ] **Theme control.** Tab to the theme select in the header (named "Select theme"; it reads Auto until you choose). Arrow keys or the dropdown choose Dark, Light or Auto: the page switches at once. Reload after choosing a theme that differs from the system: the choice is kept and the page does not flash the other theme. Auto follows the operating system again and nothing is remembered. The ring is visible in both themes.
+- [ ] **Hero actions (home).** The filled "Take the five-minute tour" button and the underlined Compose link are each one Tab stop with a visible ring. Enter on the tour button opens the tour. The hero figure has no Tab stops.
 - [ ] **Evidence badge and panel.** Tab to "What this means for you". Enter or Space opens it; the three rows (Tested, You need, Depends on your center) appear; "What hasn’t been tested yet" is the next Tab stop. Enter or Space on the summary closes it again; focus stays on the summary.
 - [ ] **Timeline (modules).** On learning-module pages there is no Tab stop inside the timeline. The six steps read in order when you scroll.
 - [ ] **Doors (home).** Exactly three Tab stops, one link per door, in the order Understand, Translate, Evaluate and adopt. Enter on each goes to its page. There is no hover-only content.
 - [ ] **Concept rows (home).** Five Tab stops in the big-idea section, in order: the allocation link in the introduction, then one glossary link per row (job step, readiness gate, job-scoped scratch, loopback). No other Tab stops in the section.
-- [ ] **Crosswalk (static).** The legend has no Tab stops. Each code pane that scrolls sideways takes one Tab stop with a visible ring and scrolls with the arrow keys; Tab then leaves it (no keyboard trap). If the highlight enhancement ships: each legend term is a button, Space selects one, a second Space clears it, and the selection is also shown by an outline, not only colour.
-- [ ] **Pager and Sources.** The previous and next links are ordinary links. The Sources disclosure opens and closes with Enter or Space.
-- [ ] **Footer.** Tab visits About the project, Talks & papers, Support, GitHub (external). The acknowledgment text is plain text, not a link.
+- [ ] **Crosswalk.** The legend terms are buttons: Space selects one, a second Space clears it, and the selection is also shown by an outline, not only colour; selecting a term opens the code panes. "Show the Compose file beside the batch script" is one Tab stop that opens and closes the panes. Each code pane that scrolls sideways takes one Tab stop with a visible ring and scrolls with the arrow keys; Tab then leaves it (no keyboard trap).
+- [ ] **On this page.** On a window wider than 1440 px the "On this page" list sits beside the content; its links are Tab stops after the content. Narrower, it is a dropdown under the header that Enter or Space opens.
+- [ ] **Pager and Sources.** The previous and next links are ordinary links at the end of the content, learning-path pages only. The Sources disclosure opens and closes with Enter or Space.
+- [ ] **Footer.** Tab visits "Edit page" (content pages), then the pager, then Release, Report a problem, Accessibility, Attribution and licenses, GitHub repository (external). The acknowledgment text is plain text, not a link.
 - [ ] **Order.** On each page, the Tab order follows the reading order top to bottom with no jumps backwards.
 
 ## B. VoiceOver spot check (Safari, VoiceOver on)
 
 Use VO+Right to move item by item and VO+U for the rotor (Headings, Landmarks, Links).
 
-- [ ] **Landmarks.** Rotor, Landmarks: banner, navigation "Primary", main, navigation "Site records", contentinfo. Pages with a trail also list navigation "Breadcrumb". Learning modules also list navigation "Learning module navigation" and the regions "Tested workflow scope" or "What was tested". One heading level 1 per page.
+- [ ] **Landmarks.** Rotor, Landmarks: banner, navigation "Main", main, navigation "Site information", and on content pages the region "On this page". Learning modules also list the regions "Tested workflow scope" or "What was tested". One heading level 1 per page.
 - [ ] **Doors.** Move through the doors region. Each door is read as its eyebrow (for example "New to clusters? Start here"), the title as a heading level 3, a one-sentence summary, then a single link whose text says where it goes ("Take the five-minute tour"). The door is not announced as clickable text, and no arrow is spoken.
 - [ ] **Badge, collapsed and expanded.** Move to "What this means for you". VoiceOver says it is a disclosure (button) and "collapsed". VO+Space opens it and VoiceOver says "expanded"; the next VO+Right reads the Tested row, then You need, then Depends on your center. A stale or failed badge is read as ordinary text starting "Warning:", not as a disclosure.
 - [ ] **Timeline order (modules).** On a learning-module page, VO+Right through the figure: it is announced as a figure with the caption, then a list of 6 items. Each item reads "Step n", the label, then its caption, in order: Get an allocation, Start coordinator, Readiness gate, Run workers, Verify results, Clean up. On Module 2 the lit step is announced as the current step. The decorative bars are not read.
-- [ ] **Theme control.** The button is read as "Dark theme, toggle button" (or "Dark theme, toggle button, pressed / not pressed"; wording varies by macOS version). It says "not pressed" on a light page and "pressed" on a dark one, and the state changes after VO+Space. The icons are not read.
-- [ ] **Crosswalk.** The legend reads as a list of four terms, each with "was ...". The shape marks (square, diamond, triangle, circle) are not spoken. Each pane's caption names the file. If the highlight enhancement ships: the selected term is announced as pressed; the page also tells the reader which lines it affects.
+- [ ] **Theme control.** The select is read as "Select theme, pop-up button" with the current value (Auto, Light or Dark). VO+Space opens the list, and choosing a value changes the page at once. The icons are not read.
+- [ ] **Crosswalk.** The legend reads as a list of four terms, each with "was ...". The shape marks (square, diamond, triangle, circle) are not spoken. Each pane's caption names the file. The selected term is announced as pressed; the page also tells the reader which lines it affects.
 - [ ] **Record page.** The current record is reachable from every badge by a link named "Test record". Its table or list reads label then value.
 
 ## C. Real forced colours (Windows, if available)
@@ -49,20 +51,21 @@ Use VO+Right to move item by item and VO+U for the rotor (Headings, Landmarks, L
 On Windows 11: Settings, Accessibility, Contrast themes, choose Aquatic, then Night sky. In Edge or Chrome open `/`, a module and the current record.
 
 - [ ] All body text, links and buttons stay readable; no text disappears against its background.
-- [ ] Warning notices and the evidence badge keep a visible border.
-- [ ] The pressed theme button and the current navigation link are distinguishable from their neighbours without colour.
+- [ ] Warning notices, the doors and the evidence badge keep a visible border.
+- [ ] The current sidebar link and a selected crosswalk term are distinguishable from their neighbours without colour.
 - [ ] The focus ring is visible on every control.
 
 ## D. Print (Chrome, Cmd+P, "Background graphics" off)
 
-- [ ] The page prints dark text on white. The evidence panel is open and shows the Tested, You need and Depends on your center rows.
+- [ ] The page prints dark text on white, without the header, the sidebar or the "On this page" list. The evidence panel is open and shows the Tested, You need and Depends on your center rows.
 - [ ] On learning-module pages the six timeline steps print in order. The concept shapes (square, diamond, triangle, circle) print and carry the meaning in black and white. On home, the hero figure prints as two labelled panels and the four concept rows stay together.
 - [ ] Link destinations: external links in the content are identifiable on paper (the URL is printed or the link text names the destination). Record any page where they are not.
 - [ ] Closing the print preview leaves the evidence panel in the state it had before.
+- [ ] The cheat sheet (`/about/cheat-sheet/`) prints on one Letter page and one A4 page.
 
 ## E. Quick extras
 
 - [ ] Reduce motion: macOS Settings, Accessibility, Display, Reduce motion on. Nothing moves in either state; in-page jumps do not animate.
 - [ ] Blocked fonts: Chrome DevTools, Network, "Block request URL", pattern `*/fonts/*`, reload. Text stays visible and readable on the fallback fonts and no line overlaps another.
 - [ ] 200% zoom: Cmd+Plus until 200%, then 400% on a 1280 px window. No horizontal scrolling for text content; code panes and tables scroll inside their own region.
-- [ ] JavaScript off (DevTools, Command menu, "Disable JavaScript"): home shows the hero and its two-environment figure, three doors, the four concept rows, the crosswalk and the closed evidence panel (openable). The theme control is hidden and the page follows the operating-system theme.
+- [ ] JavaScript off (DevTools, Command menu, "Disable JavaScript"): home shows the hero and its two-environment figure, three doors, the four concept rows, the crosswalk and the closed evidence panel (openable). The narrow menu still opens and closes. The theme select is hidden and the page follows the operating-system theme. Search is unavailable and says nothing misleading.

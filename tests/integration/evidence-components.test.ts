@@ -40,7 +40,7 @@ const labels = (html: string) => [...html.matchAll(/<dt>([^<]+)<\/dt>/g)].map(([
 describe('ApplicabilityProjection (validated)', () => {
   it('renders the badge, the visible record link, and a collapsed three-row panel with the untested link', async () => {
     const html = decode(await render(projectApplicability(record({ plain_language: plain }), 'runnable-module')));
-    expect(html).toMatch(/^<section class="applicability-projection" data-projection-id="runnable-module:fixture-run" data-source-id="fixture-run" aria-label="Tested workflow scope">/);
+    expect(html).toMatch(/^<section class="applicability-projection not-content" data-projection-id="runnable-module:fixture-run" data-source-id="fixture-run" aria-label="Tested workflow scope">/);
     expect(html).toContain('<p class="evidence-badge">Tested</p><p class="evidence-link">Purdue Anvil · Jul 2026 · <a href="/applicability/fixture-run/">Test record</a></p>');
     expect(html).toContain('<details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows">');
     expect(html).toContain('<p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn’t been tested yet</a></p></details></section>');
@@ -81,7 +81,7 @@ describe('ApplicabilityProjection (escalated)', () => {
     ] as const;
     for (const [escalated, badge, caption] of cases) {
       const html = await render(projectApplicability(escalated, 'runnable-module'));
-      expect(html, escalated.status).toMatch(/^<section class="applicability-projection applicability-projection--escalated" data-projection-id="runnable-module:fixture-run"/);
+      expect(html, escalated.status).toMatch(/^<section class="applicability-projection applicability-projection--escalated not-content" data-projection-id="runnable-module:fixture-run"/);
       expect(html, escalated.status).toContain(`<p class="evidence-badge evidence-badge--warning"><strong>Warning:</strong> ${badge}</p>`);
       expect(html, escalated.status).toContain(`<p class="evidence-link">${caption}<a href="/applicability/fixture-run/">Test record</a></p>`);
       expect(html, escalated.status).not.toContain('<details');
@@ -97,9 +97,9 @@ describe('RecordSummary', () => {
     const html = await container.renderToString(RecordSummary, { props: { record: summarized } });
     const summary = summarizeRecord(summarized);
     const traces = new Map(projectEvidencePanel(summarized).rows[0].items.map(({ text, from }) => [text, from.join(' ')]));
-    expect(html).toMatch(/^<section class="record-summary" data-source-id="fixture-run" aria-label="What was tested">/);
+    expect(html).toMatch(/^<div class="not-content"><section class="record-summary" data-source-id="fixture-run" aria-label="What was tested">/);
     expect(html).toContain(`<p class="record-summary__tested">${summary.tested}</p>`);
     expect(decode(html)).toContain(`<ul class="record-summary__scope">${summary.scope.map((value) => (traces.has(value) ? `<li data-from="${traces.get(value)}">${value}</li>` : `<li>${value}</li>`)).join('')}</ul>`);
-    expect(html).toContain('<p><a href="/applicability/fixture-run/">Test record</a></p></section>');
+    expect(html).toContain('<p><a href="/applicability/fixture-run/">Test record</a></p></section></div>');
   });
 });

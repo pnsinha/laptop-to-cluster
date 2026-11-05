@@ -20,6 +20,8 @@ describe('ImplementationReference component', () => {
 
   it('gives the section the id that the start guide links to', async () => {
     const html = await container.renderToString(ImplementationReferenceView, { props: { reference: IMPLEMENTATION_REFERENCE } });
-    expect(html).toContain('<section class="implementation-reference" id="implementation-reference" aria-labelledby="implementation-reference-heading">');
+    expect(html).toContain('<section class="implementation-reference not-content" id="implementation-reference" aria-labelledby="implementation-reference-heading">');
+    expect(html.match(/<details class="source-excerpt__disclosure"><summary>[^<]+<\/summary>/g)).toHaveLength(IMPLEMENTATION_REFERENCE.excerpts.length);
+    expect(html).not.toMatch(/<details[^>]*\sopen/);
   });
 });
