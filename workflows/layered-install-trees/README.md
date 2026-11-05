@@ -1,5 +1,7 @@
 # Layered install trees (provider + specialized)
 
+This workflow backs the planned Module 5, "Reuse one CPU software layer across GPU variants". The module is not on the site yet; until it is, this README and [`PROVENANCE.md`](PROVENANCE.md) are its only documentation.
+
 This package builds a shared CPU “provider” Spack install tree once and a thin
 per-GPU-architecture “specialized” tree on top of it via Spack upstream
 chaining, then composes both trees at runtime under Apptainer. A Charliecloud

@@ -14,6 +14,11 @@ This directory contains the representative Purdue Anvil run bundles behind the t
 
 Module 2 is `validated` against this representative environment, as recorded in the current record. Deterministic fake-runtime tests remain distinct from these bundles and do not by themselves establish that status.
 
+## Other files here
+
+- `templates/` holds the metadata templates you copy before recording a run, one per kind of run.
+- `recording-inputs/` holds the completed metadata that recorded the July 2026 bundles, named after the bundle each one produced. They are kept so the recording can be repeated; the bundles themselves are the evidence.
+
 ## Record an additional run
 
 Use this procedure to add a new bundle — a later release, a new center, or a re-validation. After running a tagged workflow on Purdue Anvil, copy and complete the applicable metadata template without adding secrets. If Anvil allocation is unavailable, use SDSC Expanse, set `fallback: true`, and record `primaryUnavailableReason`. Capture the scheduler terminal state and exit code from the center scheduler, not from a mock.
@@ -32,7 +37,7 @@ Before changing an applicability record to `validated`, review every redaction, 
 ## Layered install trees profile
 
 Bundles whose manifest declares `profile: "layered-install-trees"` record the
-multi-job Module 5 pipeline rather than a single service-plus-workers run. The
+multi-job pipeline behind the planned Module 5 (not yet on the site) rather than a single service-plus-workers run. The
 profile supports `success` evidence only. `run.submissionId` is the primary job
 (the Apptainer GPU compose); `run.submissions` lists every contributing Slurm
 job with role (`provider-build`, `specialized-build`, `apptainer-compose-gpu`,
