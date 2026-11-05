@@ -31,8 +31,9 @@
     "validate": "npm run check && npm run test:unit && npm run test:property && npm run build && npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser && npm run publication:validate && npm run publication:prepare"
   },
   "dependencies": {
-    "@astrojs/sitemap": "3.7.3",
-    "astro": "7.1.3"
+    "@astrojs/sitemap": "3.7.4",
+    "@astrojs/starlight": "0.42.9",
+    "astro": "7.4.5"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",

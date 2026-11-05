@@ -14,7 +14,7 @@ categories:
   - id: configuration
     description: Build and package configuration
     license: Apache-2.0
-    paths: [.gitignore, package.json, package-lock.json, tsconfig.json, vitest.config.ts, vitest.integration.config.ts, vitest.property.config.ts, site/astro.config.mjs, site/tsconfig.json, infrastructure/**]
+    paths: [.gitignore, .claude/settings.json, package.json, package-lock.json, tsconfig.json, vitest.config.ts, vitest.integration.config.ts, vitest.property.config.ts, site/astro.config.mjs, site/tsconfig.json, infrastructure/**]
   - id: ci-automation
     description: Continuous-integration workflows
     license: Apache-2.0
@@ -26,7 +26,7 @@ categories:
   - id: project-governance
     description: Contribution, support, security, and issue-process documents
     license: CC-BY-4.0
-    paths: [CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, MAINTENANCE.md, SUPPORT.md, RECOVERY.md, .github/ISSUE_TEMPLATE/**]
+    paths: [CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, MAINTENANCE.md, SUPPORT.md, RECOVERY.md, CLAUDE.md, DESIGN.md, .github/ISSUE_TEMPLATE/**]
   - id: documentation-training-evidence
     description: Original documentation, training sources, static public text, and evidence
     license: CC-BY-4.0
