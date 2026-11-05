@@ -6,11 +6,7 @@ import {
   applicabilityRecordSchema,
   attributionSchema,
   contentItemSchema,
-  evidenceManifestReferenceSchema,
-  feedbackRecordSchema,
   milestoneRecordSchema,
-  redirectRecordSchema,
-  releaseRecordSchema,
   talkSchema,
 } from './content/schema.js';
 
@@ -31,6 +27,9 @@ const pageChromeSchema = z.object({
   }).optional(),
 });
 
+/* Release, redirect, feedback and evidence-reference records have schemas in schema.ts and are
+   validated by the registry when they exist, but none is published as content yet. Add a
+   collection here, with its folder under src/content/, when the first record is written. */
 export const collections = {
   /* Starlight's own collection. The site renders its pages from contentItems through
      StarlightPage, so this collection stays empty; Starlight still requires it. */
@@ -40,11 +39,7 @@ export const collections = {
     schema: contentItemSchema,
   }),
   applicability: defineCollection({ loader: structured('./src/content/applicability'), schema: applicabilityRecordSchema }),
-  releases: defineCollection({ loader: structured('./src/content/releases'), schema: releaseRecordSchema }),
-  redirects: defineCollection({ loader: structured('./src/content/redirects'), schema: redirectRecordSchema }),
   milestones: defineCollection({ loader: structured('./src/content/milestones'), schema: milestoneRecordSchema }),
-  feedback: defineCollection({ loader: structured('./src/content/feedback'), schema: feedbackRecordSchema }),
   attribution: defineCollection({ loader: structured('./src/content/attribution'), schema: attributionSchema }),
-  evidenceReferences: defineCollection({ loader: structured('./src/content/evidence-references'), schema: evidenceManifestReferenceSchema }),
   talks: defineCollection({ loader: file('./src/content/talks.yml'), schema: talkSchema }),
 };
