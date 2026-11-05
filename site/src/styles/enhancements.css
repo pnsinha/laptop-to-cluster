@@ -53,7 +53,7 @@
   color: var(--muted);
 }
 .crosswalk .crosswalk__clear[hidden] { display: none; }
-/* Lean variant (R13): no per-line class; the section's data-selected attribute
+/* Lean variant: no per-line class; the section's data-selected attribute
    drives selection through these attribute selectors, and --pick carries the concept. */
 .crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
 .crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],

@@ -36,7 +36,7 @@ const dateLine = recordDateLine(item, dueDates);
 const recordStatus = item.status[0].toUpperCase() + item.status.slice(1);
 const editUrl = editUrlFor(entry.filePath);
 
-/* Adoption pages show a summary of the current test record (D3); no other profile may. */
+/* Adoption pages show a summary of the current test record; no other profile may. */
 const isAdoption = item.artifact_type === 'checklist' && item.route_namespace === 'adoption';
 const record = isAdoption ? currentBaselineRecord(applicability) : undefined;
 if (isAdoption && !record) throw new Error(`${item.id}: the adoption page needs a current applicability record`);
@@ -44,13 +44,13 @@ if (isAdoption && !record) throw new Error(`${item.id}: the adoption page needs 
 const contentItems = (await getCollection('contentItems')).map(({ data }) => data);
 const pagination = pathPagination(learningPathNavigation(contentItems, item.id));
 
-/* Talks and papers reads the talks collection (§5.4); event pages may ask for the acknowledgment beside the PDF (D9). */
+/* Talks and papers reads the talks collection; event pages may ask for the acknowledgment beside the PDF. */
 const talks = item.id === 'talks-and-papers' ? sortTalks((await getCollection('talks')).map(({ data }) => data)) : [];
 const showAcknowledgment = item.artifact_type === 'event-assets'
   && 'acknowledgment_beside_download' in item && item.acknowledgment_beside_download === true;
 const markers = new Set(bodyHtml ? slotNames(bodyHtml) : []);
 
-/* D10: a release item that owns no page renders as a section of its milestone page. v0.1.0's notes are inline in milestone-1.md, so that item is excluded. */
+/* A release item that owns no page renders as a section of its milestone page. v0.1.0's notes are inline in milestone-1.md, so that item is excluded. */
 const consolidatedReleases = item.artifact_type === 'milestone'
   ? await Promise.all((await getCollection('contentItems', ({ data }) =>
       data.artifact_type === 'release' && hasNoStandalonePage(data) && data.milestone === item.milestone

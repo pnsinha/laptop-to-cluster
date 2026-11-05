@@ -7,7 +7,7 @@ import {
   validateFrozenPublicationWorkflow, validateHostnamePolicy, validateReleaseWorkflow,
 } from './publication.mjs';
 
-/** The release workflow and the frozen publication workflow. Errors when strict (CI), warnings before W8's workflows exist. */
+/** The release workflow and the frozen publication workflow. Errors when strict (CI), warnings otherwise. */
 export function releaseWorkflowIssues(root: string, strict: boolean): { errors: string[]; warnings: string[] } {
   const releasePath = join(root, '.github/workflows/release.yml');
   const issues = [

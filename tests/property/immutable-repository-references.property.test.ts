@@ -32,9 +32,8 @@ const lineAnchor = fc.option(
 );
 const releasedContext = fc.constantFrom('learning-module' as const, 'release' as const);
 
-describe('Property 3: Released repository references are immutable', () => {
+describe('Released repository references are immutable', () => {
   it('accepts only public immutable revisions while preserving repository paths', () => {
-    // **Validates: Requirements 3.3, 7.5**
     fc.assert(fc.property(
       repository, immutableRelease, mutableRelease, path, integrity, lineAnchor, releasedContext,
       (repositoryUrl, release, branch, repositoryPath, digest, anchor, artifactType) => {

@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { read, root } from './w6-content-helpers';
+import { read, root } from './content-helpers';
 
 const dir = 'workflows/layered-install-trees/orchestrations';
 const scripts = readdirSync(join(root, dir)).filter((name) => name.endsWith('.sbatch'));

@@ -209,7 +209,7 @@ describe('print overflow check', () => {
   }, 120_000);
 });
 
-describe('print link destinations (G6)', () => {
+describe('print link destinations', () => {
   const external = (extra: string) => mediumPage({ extraCss: extra }).replace('<div class="doors" id="doors">', '<p><a class="ext" href="https://example.org/x">Example</a></p><div class="doors" id="doors">');
   it('passes when external link URLs print after the link and reports them when missing', async () => {
     const server = await serveFixtures({

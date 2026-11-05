@@ -1,3 +1,3 @@
 # Property tests
 
-Property tests are added only by the numbered property subtasks in the implementation plan. Task 1.4 (license and provenance coverage) is intentionally optional and is not implemented by Task 1; the configured command succeeds with no property files until a property subtask is selected.
+Property tests check invariants over generated inputs with [fast-check](https://fast-check.dev): attribution coverage, stable routes, immutable repository references, release projections, module subtype rules, diagnostics and media alternatives. Run them with `npm run test:property`; CI runs them with the unit tests.

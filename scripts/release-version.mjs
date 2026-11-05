@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveReleaseVersion } from './publication.mjs';
 
-/* Script-side release version entry point. The rule itself lives in publication.mjs (A12/R9) and is kept
+/* Script-side release version entry point. The rule itself lives in publication.mjs and is kept
    identical to site/src/content/release.ts by tests/unit/release-version.test.ts.
    Rule: RELEASE_VERSION env, else the newest releases/<v>/release-candidate.json. Never defaults to v0.1.0. */
 export { resolveReleaseVersion };

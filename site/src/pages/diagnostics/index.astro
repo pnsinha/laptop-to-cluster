@@ -8,7 +8,7 @@ import { projectDiagnosticApplicabilityContext } from '../../content/projections
 const entries = (await getCollection('contentItems', ({ data }) => data.artifact_type === 'diagnostic' && data.status === 'published'))
   .sort((a, b) => a.data.title.localeCompare(b.data.title));
 const applicability = (await getCollection('applicability')).map(({ data }) => data);
-/* R10: anchors come from W2's helpers. The ID the workflow prints (BSSW-PREQ-SLURM) is the
+/* Anchors come from the shared helpers in projections.ts. The ID the workflow prints (BSSW-PREQ-SLURM) is the
    primary anchor; older canonical anchors stay as aliases so links published before this
    release still resolve. Content-item ids keep their historical spelling. */
 /* Astro gives every rendered Markdown heading a slug id, and all 15 entries share the same

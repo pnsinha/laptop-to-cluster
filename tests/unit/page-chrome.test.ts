@@ -24,7 +24,7 @@ describe('pageHeaderLine', () => {
     expect(pageHeaderLine(path[4])).toBe('Module 3 · Reading · about 25 min');
     expect(pageHeaderLine(path[1])).toBe('Module 1 · Reading');
   });
-  it('agrees with the shared wording helper (R10)', () => {
+  it('agrees with the shared wording helper', () => {
     expect(pageHeaderLine(path[3])).toBe(moduleHeaderLine({ module_number: 2, module_type: 'runnable', estimated_minutes: 30 }));
   });
   it('renders no line for a partial module record without a type or number', () => {
@@ -51,7 +51,7 @@ describe('slot markers', () => {
 });
 
 describe('per-item placement tables', () => {
-  it('shows the timeline unlit on the tour and Module 1 and with step 3 lit on Module 2 (D13)', () => {
+  it('shows the timeline unlit on the tour and Module 1 and with step 3 lit on Module 2', () => {
     expect(TIMELINE_BY_ITEM['module-0-orientation']).toEqual({});
     expect(TIMELINE_BY_ITEM['module-1-scheduler-orchestrator']).toEqual({});
     expect(TIMELINE_BY_ITEM['module-2-baseline']).toEqual({ highlight: 3 });
@@ -64,7 +64,7 @@ describe('per-item placement tables', () => {
 });
 
 describe('About navigation', () => {
-  it('gains the talks entry (TALKS_LABEL, R19) and keeps every route unique and trailing-slashed', () => {
+  it('gains the talks entry (TALKS_LABEL) and keeps every route unique and trailing-slashed', () => {
     expect(ABOUT_NAV_ITEMS.map(({ label }) => label)).toContain(TALKS_LABEL);
     expect(ABOUT_NAV_ITEMS.find(({ label }) => label === TALKS_LABEL)?.href).toBe('/about/talks-and-papers/');
     expect(new Set(ABOUT_NAV_ITEMS.map(({ href }) => href)).size).toBe(ABOUT_NAV_ITEMS.length);
@@ -103,7 +103,7 @@ describe('learningPathNavigation', () => {
     expect(learningPathNavigation(path, 'adoption-evaluate')?.next).toBeUndefined();
     expect(learningPathNavigation(path, 'adoption-evaluate')?.previous?.url).toBe('/guide/compose-to-hpc-translation/');
   });
-  it('agrees with projectLearningPathNavigation for every path item (R10 parity)', () => {
+  it('agrees with projectLearningPathNavigation for every path item', () => {
     const shared = projectLearningPathNavigation(path);
     for (const id of LEARNING_PATH) expect(learningPathNavigation(path, id)).toEqual(shared[id]);
   });

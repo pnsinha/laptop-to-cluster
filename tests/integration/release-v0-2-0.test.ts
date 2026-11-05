@@ -2,9 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-/* POST-MERGE GATE. The integration owner runs this after W1, W2, W5 and W6 have merged
-   (merge order puts W8 after them). In a W8 worktree on its own it is expected to fail on the
-   assertions that depend on those workstreams. Needs a built site: `npm run build` first. */
+/* The v0.2.0 release as built: what the release promised is on the pages. Needs a built site:
+   `npm run build` first. */
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const dist = `${root}/site/dist`;
 const candidate = JSON.parse(readFileSync(`${root}/releases/v0.2.0/release-candidate.json`, 'utf8'));

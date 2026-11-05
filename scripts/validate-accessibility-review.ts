@@ -13,7 +13,7 @@ const REQUIRED_CHECKS = [
   'validation-source-agreement', 'editorial-concision',
 ] as const;
 
-// Checks added for the v0.2.0 visual-system release (spec section 10: theme, font failure, badge and panel).
+// Checks added for the v0.2.0 visual-system release (theme, font failure, badge and panel).
 const V020_EXTRA_CHECKS = ['theme-precedence', 'font-failure', 'evidence-badge-panel', 'voiceover', 'keyboard-new-components'] as const;
 
 // v0.1.0 is frozen: its review record is validated against exactly these constants.

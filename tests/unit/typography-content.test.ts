@@ -6,7 +6,7 @@ import {
 } from '../../site/src/content/wording.js';
 import { escapeHtml, inlineCodeHtml } from '../../site/src/content/inline-code.js';
 import { eventBandLead } from '../../site/src/content/home.js';
-import { read, readItem } from './w6-content-helpers';
+import { read, readItem } from './content-helpers';
 
 /* A straight apostrophe between two letters is a contraction or possessive typed
    without Markdown's smart quotes: it must be written as U+2019 in strings that

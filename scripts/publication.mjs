@@ -118,9 +118,9 @@ export function projectionShapeIssues(block) {
   return issues;
 }
 
-/** Required labels (frozen model, spec §15.3), in order. Captions are never pinned. */
+/** Required labels (the frozen model in contracts.ts), in order. Captions are never pinned. */
 export const TIMELINE_LABELS = Object.freeze(['Get an allocation', 'Start coordinator', 'Readiness gate', 'Run workers', 'Verify results', 'Clean up']);
-/** TIMELINE: at most one six-step figure per page, labelled, with the six strong labels in order (C2 `Timeline.astro`). */
+/** TIMELINE: at most one six-step figure per page, labelled, with the six strong labels in order (see `Timeline.astro`). */
 export function timelineIssues(html) {
   const issues = [];
   const figures = html.match(/<figure class="timeline"[^>]*>[\s\S]*?<\/figure>/g) ?? [];
@@ -264,7 +264,7 @@ export function formatMonthYear(isoDate) {
   const month = Number(match?.[2]);
   return match && month >= 1 && month <= 12 ? `${MONTHS[month - 1]} ${match[1]}` : undefined;
 }
-/** The C1 badge text for a record status; undefined when a needed value is missing. */
+/** The evidence badge text for a record status; undefined when a needed value is missing. */
 export function evidenceBadgeText(status, environment, validationDate) {
   const when = formatMonthYear(validationDate);
   if (status === 'validated') return environment && when ? `Tested on ${environment} · ${when}` : undefined;
@@ -275,7 +275,7 @@ export function evidenceBadgeText(status, environment, validationDate) {
 }
 /** Mirrors `RECORD_LINK_TEXT` in site/src/content/wording.ts. */
 export const RECORD_LINK_TEXT = 'Test record';
-/** The C1 badge pill label and caption for a record status (A19); mirrors `evidenceBadgeLabel` and `evidenceBadgeContext` in wording.ts. Undefined when a needed value is missing. */
+/** The evidence badge pill label and caption for a record status; mirrors `evidenceBadgeLabel` and `evidenceBadgeContext` in wording.ts. Undefined when a needed value is missing. */
 export function evidenceBadgeParts(status, environment, validationDate) {
   const when = formatMonthYear(validationDate);
   if (status === 'validated') return environment && when ? { label: 'Tested', context: `${environment} · ${when}` } : undefined;
@@ -287,7 +287,7 @@ export function evidenceBadgeParts(status, environment, validationDate) {
 export const RELATED_EVIDENCE_HEADING = 'Related evidence';
 const ROW_SOURCE = Object.freeze({ Tested: 'result.checks', 'You need': 'assumptions', 'Depends on your center': 'portability_boundaries' });
 const TRACE_REF = /^(assumptions|portability_boundaries|limitations|result\.checks|related_evidence)(?:\.(\d+))?$/;
-/** Items of the canonical page's related-evidence list (A7: `ul.related-evidence`, or the list under `#related-evidence`); never read from an h2. */
+/** Items of the canonical page's related-evidence list (`ul.related-evidence`, or the list under `#related-evidence`); never read from an h2. */
 const relatedEvidenceItems = (html) => {
   const list = html.match(/<ul[^>]*class="[^"]*\brelated-evidence\b[^"]*"[^>]*>([\s\S]*?)<\/ul>/i)?.[1]
     ?? html.match(/id="related-evidence"[^>]*>[\s\S]*?<ul[^>]*>([\s\S]*?)<\/ul>/i)?.[1] ?? '';
@@ -677,7 +677,7 @@ export function validateBuiltOutput(dist) {
 export function validateTokenStylesheet(cssPath, css) {
   const errors = [];
   if (!/color-scheme\s*:\s*light dark/.test(css)) errors.push(diagnostic(cssPath, 'css', 'COLOR-SCHEME', 'color-scheme must advertise light and dark support'));
-  // Literal aliases (--shell, --shell-text, --text-base, --text-supporting) are defined in every theme block (D5).
+  // Literal aliases (--shell, --shell-text, --text-base, --text-supporting) are defined in every theme block.
   for (const token of ['canvas', 'surface', 'raised', 'text', 'muted', 'primary', 'accent', 'shell', 'shell-text', 'border', 'warning']) {
     if (!new RegExp(`--${token}\\s*:`).test(css)) errors.push(diagnostic(cssPath, `--${token}`, 'SEMANTIC-TOKENS', 'semantic role must be defined'));
   }
@@ -714,7 +714,7 @@ export function validateStylesheets(dist) {
     }
   }
   for (const page of filesUnder(dist).filter((candidate) => candidate.endsWith('.html'))) {
-    if (/<style\b/i.test(readFileSync(page, 'utf8'))) errors.push(diagnostic(relative(dist, page), 'html', 'STYLESHEET-SPLIT', 'inline <style> blocks are forbidden; component styles go in global.css (C3)'));
+    if (/<style\b/i.test(readFileSync(page, 'utf8'))) errors.push(diagnostic(relative(dist, page), 'html', 'STYLESHEET-SPLIT', 'inline <style> blocks are forbidden; component styles go in the stylesheets under site/src/styles'));
   }
   if (files.length && tokenSheets.length !== 1) {
     errors.push(diagnostic('site/dist', 'css', 'STYLESHEET-SPLIT', `exactly one stylesheet that defines the :root tokens is required; found ${files.length} stylesheet(s), ${tokenSheets.length} with tokens`));
@@ -758,7 +758,7 @@ export function validateAcknowledgments(dist, builtPages, { pdfToText = defaultP
   return errors;
 }
 
-/** ACK-VERBATIM for hosted PDFs (F-1: the verbatim text belongs in any hosted PDF). In CI, a missing pdftotext is an error, not a skip. */
+/** ACK-VERBATIM for hosted PDFs (the verbatim text belongs in any hosted PDF). In CI, a missing pdftotext is an error, not a skip. */
 function validateHostedPdfAcknowledgments(dist, builtPages, pdfToText, strict) {
   const errors = [];
   const pdfs = filesUnder(dist).filter((candidate) => /\.pdf$/i.test(candidate));
@@ -787,7 +787,7 @@ function validateHostedPdfAcknowledgments(dist, builtPages, pdfToText, strict) {
   return errors;
 }
 
-/* BUDGET (spec S6): fonts <= 140 KiB per page, <= 2 font preloads, inline + external JS <= 2 KiB, no third-party requests. */
+/* BUDGET: fonts <= 140 KiB per page, <= 2 font preloads, inline + external JS <= 2 KiB, no third-party requests. */
 export const BUDGETS = Object.freeze({ fontBytes: 140000, fontPreloads: 2, scriptBytes: 32768 });
 const unicodeRanges = (value) => value.split(',').map((range) => range.trim()).filter(Boolean).map((range) => {
   const match = /^U\+([0-9A-F?]+)(?:-([0-9A-F]+))?$/i.exec(range);
@@ -850,7 +850,7 @@ export function validateBudgets(dist, builtPages) {
   return errors;
 }
 
-/* FRAGMENT-LINK (D11). Duplicated from contracts.ts REQUIRED_FRAGMENTS, keyed by route; a unit test keeps them in step. */
+/* FRAGMENT-LINK. Duplicated from contracts.ts REQUIRED_FRAGMENTS, keyed by route; a unit test keeps them in step. */
 export const REQUIRED_FRAGMENTS = Object.freeze({
   '/': ['big-idea', 'doors', 'crosswalk'],
   '/milestones/2/': ['release-v0-2-0'],
@@ -978,7 +978,7 @@ export function validateDeploymentWorkflow(workflowText, file = '.github/workflo
   return errors;
 }
 
-/** The one release-version rule (A12): RELEASE_VERSION, else the newest releases/<v>/release-candidate.json. Never defaults to v0.1.0. Kept in step with site/src/content/release.ts by a unit test. */
+/** The one release-version rule: RELEASE_VERSION, else the newest releases/<v>/release-candidate.json. Never defaults to v0.1.0. Kept in step with site/src/content/release.ts by a unit test. */
 export function resolveReleaseVersion(root = '.', env = process.env) {
   const fromEnv = env.RELEASE_VERSION?.trim();
   if (fromEnv) return fromEnv;
@@ -1039,7 +1039,7 @@ function jobGate(block) {
 }
 const artifactName = (output) => new RegExp(`^\\$\\{\\{\\s*needs\\.plan\\.outputs\\.${output}\\s*\\}\\}$`);
 
-/** The v0.2.0 release workflow (written by W8): the properties of contract A11 that the policy gate requires. */
+/** The release workflow: the properties the policy gate requires of it. */
 export function validateReleaseWorkflow(text, file = '.github/workflows/release.yml') {
   const errors = [];
   const fail = (field, check, message) => errors.push(diagnostic(file, field, check, message));

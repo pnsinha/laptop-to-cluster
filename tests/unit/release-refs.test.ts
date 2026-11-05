@@ -17,7 +17,7 @@ describe('release-pinned learner links', () => {
   });
 
   it('uses the token for the clone command on the run page', () => {
-    const start = readFileSync('site/src/content/content-items/getting-started.md', 'utf8');
+    const start = readFileSync('site/src/content/content-items/start-run-the-example.md', 'utf8');
     expect(start).toContain('git clone --branch @release https://github.com/pnsinha/laptop-to-cluster.git && cd laptop-to-cluster');
     expect(start).not.toMatch(/--branch v\d/);
   });

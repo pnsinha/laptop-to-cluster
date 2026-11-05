@@ -1,4 +1,4 @@
-// Shared fixture: a minimal .github/workflows/release.yml that satisfies the A11 contract.
+// Shared fixture: a minimal .github/workflows/release.yml that satisfies the release workflow policy.
 const gh = (text: string) => text.replaceAll('@{{', '${{');
 export const RELEASE = gh(`name: release
 on:
