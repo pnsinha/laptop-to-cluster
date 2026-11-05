@@ -28,9 +28,9 @@ describe('accessibility page fixtures', () => {
     for (const kind of requiredKinds) expect(kinds.has(kind), kind).toBe(true);
   });
 
-  it('starts every keyboard landmark list with the skip link and keeps the home order of the C2 markup', () => {
-    for (const page of accessibilityPages) if (page.focusLandmarks) expect(page.focusLandmarks[0], page.path).toBe('.skip');
-    expect(accessibilityPages.find(({ path }) => path === '/')!.focusLandmarks).toEqual(['.skip', '.site-nav--wide a', '.hero__actions a', '.applicability-projection a', '.doors a', '.project-links a']);
+  it('starts every keyboard landmark list with the skip link, then the sidebar, and keeps the home order of the Starlight markup', () => {
+    for (const page of accessibilityPages) if (page.focusLandmarks) expect(page.focusLandmarks.slice(0, 2), page.path).toEqual(['.sl-skip-link', '.sidebar a']);
+    expect(accessibilityPages.find(({ path }) => path === '/')!.focusLandmarks).toEqual(['.sl-skip-link', '.sidebar a', '.hero .sl-link-button', '.applicability-projection a', '.doors a', '.home-close a', '.l2c-site-info a']);
   });
 
   it('keeps the old tour slug out of the fixtures', () => {

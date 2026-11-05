@@ -2,16 +2,11 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { beforeAll, describe, expect, it } from 'vitest';
 import ApplicabilityProjectionView from '../../site/src/components/ApplicabilityProjection.astro';
 import Attribution from '../../site/src/components/Attribution.astro';
-import Breadcrumbs from '../../site/src/components/Breadcrumbs.astro';
-import ContentHeader from '../../site/src/components/ContentHeader.astro';
 import DiagnosticApplicabilityContextView from '../../site/src/components/DiagnosticApplicabilityContext.astro';
-import ModulePager from '../../site/src/components/ModulePager.astro';
-import SiteHeader from '../../site/src/components/SiteHeader.astro';
 import SourcesAndScope from '../../site/src/components/SourcesAndScope.astro';
 import SupportState from '../../site/src/components/SupportState.astro';
 import UnvalidatedNotice from '../../site/src/components/UnvalidatedNotice.astro';
 import { EVIDENCE_ROW_LABELS } from '../../site/src/content/contracts.js';
-import { currentReleaseVersion } from '../../site/src/content/release.js';
 
 let container: AstroContainer;
 
@@ -56,38 +51,16 @@ describe('Astro semantic components', () => {
 });
 
 describe('Astro status components', () => {
-  it('renders only title, summary, and actionable warning states', async () => {
-    const fixture = {
-      artifact_type: 'learning-module', milestone: 1, title: 'Fixture module',
-      summary: 'A component fixture.', applicable_release: 'v0.1.0', last_reviewed: '2026-07-25',
-      validation_date: '2026-07-25',
-    };
-    const published = await render(ContentHeader, { item: { ...fixture, status: 'published', validation_status: 'validated' } });
-    expect(published).toContain('<h1>Fixture module</h1>');
-    expect(published).toContain('<p class="lede">A component fixture.</p>');
-    expect(published).not.toMatch(/<aside|Applicable release|Last reviewed|<dt>Status|Milestone 1/);
-
-    for (const [status, label] of [['draft', 'Draft:'], ['superseded', 'Superseded:'], ['archived', 'Archived:']] as const) {
-      const html = await render(ContentHeader, { item: { ...fixture, status, validation_status: 'validated' } });
-      expect(html, status).toContain(`<strong>${label}</strong>`);
-      expect(html.match(/<aside class="notice" role="note">/g), status).toHaveLength(1);
-    }
-    for (const validationStatus of ['failed', 'unvalidated', 'stale'] as const) {
-      const html = await render(ContentHeader, { item: { ...fixture, status: 'published', validation_status: validationStatus } });
-      expect(html, validationStatus).toContain(`<strong>${validationStatus}:</strong>`);
-      expect(html, validationStatus).not.toMatch(/Applicable release|Last reviewed|<dt>Status|Milestone 1/);
-    }
-  });
-
-  it('identifies each unvalidated scope beside a link to the affected content', async () => {
+  it('identifies each unvalidated scope beside a link to the affected content, as a visible caution aside', async () => {
     const html = await render(UnvalidatedNotice, {
       scopes: [{ anchor: 'procedure', reason: 'Representative execution is pending.' }],
     });
 
-    expect(html).toContain('role="note"');
-    expect(html).toContain('aria-labelledby="unvalidated-heading"');
-    expect(html).toContain('<h2 id="unvalidated-heading">Unvalidated content</h2>');
+    expect(html).toMatch(/<aside aria-label="Unvalidated content" class="starlight-aside starlight-aside--caution"/);
+    expect(html).toContain('Unvalidated content</p>');
     expect(html).toContain('<a href="#procedure">procedure</a>: Representative execution is pending.');
+    expect(html).not.toContain('<details');
+    expect((await render(UnvalidatedNotice, { scopes: [] })).trim()).toBe('');
   });
 
   it('suppresses healthy support state and renders active degradation details', async () => {
@@ -109,105 +82,11 @@ describe('Astro status components', () => {
       expect(html).toContain('email the maintainer');
     }
   });
-});
 
-describe('Astro navigation components', () => {
-  it('derives the active primary link and provides native narrow navigation', async () => {
-    const html = await render(SiteHeader, { currentPath: '/resources/' });
-
-    expect(html).toContain('Laptop');
-    expect(html).toContain('laptop-to-cluster');
-    expect(html).toContain('Cluster');
-    expect(html).toContain('<details class="site-nav--compact">');
-    expect(html).toContain('<summary>Navigation</summary>');
-    expect(html.match(/href="\/resources\/" aria-current="page"/g)).toHaveLength(2);
-    expect(html).toContain('GitHub<span class="external-label"> (external)</span>');
-    // Progressive-enhancement policy: scripts are permitted; inline handlers are not.
-    expect(html).not.toMatch(/onclick=/i);
-  });
-
-  it('renders sequence-projected previous and next module links as ordinary links', async () => {
-    const html = await render(ModulePager, {
-      navigation: {
-        previous: { id: 'module-1', title: 'Understand the model', url: '/guide/model/' },
-        next: { id: 'module-3', title: 'Adapt the workflow', url: '/guide/adaptation/' },
-      },
-    });
-
-    expect(html).toContain('<nav class="module-pager" aria-label="Learning module navigation">');
-    expect(html).toContain('<a rel="prev" href="/guide/model/">');
-    expect(html).toContain('<span>Understand the model</span>');
-    expect(html).toContain('<a rel="next" href="/guide/adaptation/">');
-    expect(html).toContain('<span>Adapt the workflow</span>');
-    expect(html).not.toMatch(/<button\b|onclick=/i);
-  });
-
-  it('renders a labelled ordered breadcrumb trail with a current text item', async () => {
-    const html = await render(Breadcrumbs, {
-      currentPath: '/guide/scheduler-as-orchestrator/',
-      currentTitle: 'Scheduler as Orchestrator',
-    });
-
-    expect(html).toContain('<nav class="breadcrumbs" aria-label="Breadcrumb">');
-    expect(html).toContain('<ol>');
-    expect(html).toContain('<li><a href="/">Home</a></li>');
-    expect(html).toContain('<li><a href="/resources/">Guide</a></li>');
-    expect(html).toContain('<li aria-current="page"><span>Scheduler as Orchestrator</span></li>');
-  });
-});
-
-
-describe('finalized presentation: header identity, nav, release, support, SectionNav, and 404', () => {
-  it('renders the exact two-line site identity: "laptop-to-cluster" and "multi-service stacks under the scheduler"', async () => {
-    const html = await render(SiteHeader, { currentPath: '/' });
-    expect(html).toContain('<span class="site-identity__line1">laptop-to-cluster</span>');
-    expect(html).toContain('<span class="site-identity__line2">multi-service stacks under the scheduler</span>');
-  });
-
-  it('includes the "Troubleshooting" nav label linking to /diagnostics/', async () => {
-    const html = await render(SiteHeader, { currentPath: '/' });
-    expect(html).toMatch(/href="\/diagnostics\/"[^>]*>Troubleshooting/);
-  });
-
-  it('shows only the current release as the footer release identifier with no "publication candidate" language', async () => {
-    const header = await render(SiteHeader, { currentPath: '/' });
-    expect(header).not.toContain('v0.1.0');
-    expect(header).not.toContain(currentReleaseVersion());
-    const BaseLayout = (await import('../../site/src/layouts/BaseLayout.astro')).default;
-    const page = await container.renderToString(BaseLayout, {
-      props: { title: 'Test', description: 'Test page', profile: 'landing' },
-      slots: { default: '<p>Body</p>' },
-    });
-    const footer = page.slice(page.indexOf('<footer'));
-    expect(footer).toContain('Release status');
-    expect(footer).toContain(currentReleaseVersion());
-    expect(footer.toLowerCase()).not.toContain('publication candidate');
-    expect(footer.toLowerCase()).not.toContain('release candidate');
-  });
-
-  it('renders the healthy support action "Found a problem? Open an issue." without a status panel', async () => {
+  it('renders the healthy support action without a status panel', async () => {
     const healthy = await render(SupportState);
     expect(healthy).not.toContain('support-state');
     expect(healthy).not.toContain('Public artifact status');
-  });
-
-  it('renders SectionNav as text-only links with aria-current="page" and ▸ prefix for active', async () => {
-    const SectionNav = (await import('../../site/src/components/SectionNav.astro')).default;
-    const html = await render(SectionNav, {
-      items: [
-        { label: 'Project', href: '/about/project/' },
-        { label: 'Support', href: '/about/support/' },
-        { label: 'Accessibility', href: '/about/accessibility/' },
-      ],
-      currentPath: '/about/support/',
-      label: 'About sections',
-    });
-    expect(html).toContain('aria-label="About sections"');
-    expect(html).toContain('aria-current="page"');
-    expect(html).toContain('section-nav__link--active');
-    // Text-only links (no images, no icons beyond CSS)
-    expect(html).not.toMatch(/<img\b/);
-    expect(html).not.toMatch(/<svg\b/);
   });
 });
 

@@ -32,7 +32,7 @@ const panes = (html: string) => [...html.matchAll(/<figure class="crosswalk__pan
 describe('Crosswalk', () => {
   it('opens with the heading, subtitle and a four-term legend naming the old Compose form', async () => {
     const html = await render();
-    expect(html).toContain('<section class="crosswalk" id="crosswalk" aria-labelledby="crosswalk-title"><h2 id="crosswalk-title">Four ideas that change meaning</h2><p class="crosswalk__subtitle">Same idea, same color and shape, on every page of this site.</p><dl class="crosswalk__legend">');
+    expect(html).toContain('<section class="crosswalk not-content" id="crosswalk" aria-labelledby="crosswalk-title"><h2 id="crosswalk-title">Four ideas that change meaning</h2><p class="crosswalk__subtitle">Same idea, same color and shape, on every page of this site.</p><dl class="crosswalk__legend">');
     for (const { key, label, was, mark } of CONCEPTS) {
       expect(html).toContain(`<div class="crosswalk__term" data-concept="${key}"><dt><span class="crosswalk__mark" aria-hidden="true">${mark}</span> ${label}</dt><dd>was ${was}</dd></div>`);
     }

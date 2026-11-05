@@ -75,10 +75,10 @@ describe('cheat sheet: print output', () => {
 
   it('hides the site chrome and keeps only the title, the sheet and the acknowledgment', async () => {
     const page = await printed(ROUTE);
-    const visible = await page.evaluate(() => ['.skip', '.site-header', '.breadcrumbs', '.section-nav', '.sources-scope', '.table-overflow__instruction', '.site-footer nav', '.site-footer .release', '.content-header .lede']
+    const visible = await page.evaluate(() => ['.sl-skip-link', '.header', '.sidebar', '.right-sidebar', '.sources-scope', '.table-overflow__instruction', '.pagination-links', '.l2c-footer__meta', '.l2c-site-info nav', '.content-header .lede']
       .filter((selector) => [...document.querySelectorAll<HTMLElement>(selector)].some((el) => getComputedStyle(el).display !== 'none')));
     expect(visible).toEqual([]);
-    const shown = await page.evaluate(() => ['h1', '.cheat-sheet table', '.cheat-sheet pre', '.site-footer .acknowledgment']
+    const shown = await page.evaluate(() => ['h1', '.cheat-sheet table', '.cheat-sheet pre', '.l2c-site-info .acknowledgment']
       .map((selector) => [selector, document.querySelector<HTMLElement>(selector)!.offsetHeight > 0]));
     expect(shown.every(([, ok]) => ok), JSON.stringify(shown)).toBe(true);
     await page.close();
@@ -86,7 +86,7 @@ describe('cheat sheet: print output', () => {
 
   it('prints the verbatim acknowledgment and disclaimer', async () => {
     const page = await printed(ROUTE);
-    const text = await page.locator('.site-footer .acknowledgment').innerText();
+    const text = await page.locator('.l2c-site-info .acknowledgment').innerText();
     expect(normalize(text)).toBe(normalize(ACKNOWLEDGMENT_TEXT));
     await page.close();
   });
@@ -95,7 +95,7 @@ describe('cheat sheet: print output', () => {
     const page = await printed(ROUTE);
     const sizes = await page.evaluate(() => {
       const px = (selector: string) => parseFloat(getComputedStyle(document.querySelector(selector)!).fontSize);
-      return { body: px('.cheat-sheet p'), cell: px('.cheat-sheet td'), code: px('.cheat-sheet pre'), ack: px('.site-footer .acknowledgment') };
+      return { body: px('.cheat-sheet p'), cell: px('.cheat-sheet td'), code: px('.cheat-sheet pre'), ack: px('.l2c-site-info .acknowledgment') };
     });
     const pt = (value: number) => Math.round(value * 0.75 * 100) / 100;
     expect(pt(sizes.body)).toBeGreaterThanOrEqual(8.5);
@@ -107,7 +107,7 @@ describe('cheat sheet: print output', () => {
 
   it('leaves other pages printing as before', async () => {
     const page = await printed('/about/project/');
-    const display = await page.evaluate(() => getComputedStyle(document.querySelector('.site-header')!).display);
+    const display = await page.evaluate(() => getComputedStyle(document.querySelector('.header')!).display);
     expect(display).not.toBe('none');
     await page.close();
   });

@@ -30,7 +30,7 @@ describe('release v0.2.0 as built', () => {
     }
   });
 
-  it('shows the candidate version in the footer when RELEASE_VERSION is unset or equal', () => {
-    expect(read('index.html')).toContain(`Release status: ${candidate.version}`);
+  it('links the candidate version from the footer when RELEASE_VERSION is unset or equal', () => {
+    expect(read('index.html')).toMatch(new RegExp(`<a href="/milestones/2/#release-v0-2-0">Release ${candidate.version.replace(/\\./g, '\\\\.')}</a>`));
   });
 });

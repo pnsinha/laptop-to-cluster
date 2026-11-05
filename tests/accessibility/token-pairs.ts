@@ -55,7 +55,8 @@ export function parseThemeBlocks(css: string): ThemeBlocks {
         else if (/\[data-theme=("?)dark\1\]/.test(selector)) Object.assign(blocks.dark, decl);
         else if (/prefers-color-scheme:\s*dark/.test(media) && /:not\(\[data-theme=("?)light\1\]\)/.test(selector)) Object.assign(blocks.darkMedia, decl);
         else if (selector === ':root' && !/@media/.test(media)) Object.assign(blocks.light, decl);
-        else if (/\[data-theme=("?)light\1\]/.test(selector) && !/@media/.test(media)) blocks.light['color-scheme:light'] = decl['color-scheme'] ?? '';
+        /* Starlight's own [data-theme=light] blocks carry no color-scheme; only a block that declares one counts. */
+        else if (/\[data-theme=("?)light\1\]/.test(selector) && !/@media/.test(media) && decl['color-scheme']) blocks.light['color-scheme:light'] = decl['color-scheme'];
       }
     }
   };

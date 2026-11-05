@@ -18,7 +18,7 @@ const module2 = page('guide/baseline-single-node-pattern');
 describe('learning module shell', () => {
   it('orders header line, h1, evidence badge, goals and prerequisites on a runnable module', () => {
     const header = at(module2, '<header class="content-header">');
-    expect(at(module2, 'class="content-header__line"', header)).toBeLessThan(at(module2, '<h1>', header));
+    expect(at(module2, 'class="content-header__line"', header)).toBeLessThan(at(module2, '<h1 id="_top">', header));
     const headerEnd = at(module2, '</header>', header);
     const projection = at(module2, '<section class="applicability-projection', headerEnd);
     const overview = at(module2, 'id="module-overview-heading"', projection);
@@ -55,17 +55,19 @@ describe('learning module shell', () => {
     }
   });
 
-  it('keeps Sources as a closed disclosure after the article, with the pager before it', () => {
+  it('keeps Sources as a closed disclosure after the article, with the pager in the footer after it', () => {
     for (const html of [module1, module2]) {
-      expect(at(html, '<nav class="module-pager"')).toBeLessThan(at(html, 'class="sources-scope"'));
       expect(at(html, 'class="sources-scope"')).toBeGreaterThan(html.lastIndexOf('</article>'));
-      expect(html).not.toMatch(/<details[^>]*\sopen/);
+      expect(at(html, 'class="sources-scope"')).toBeLessThan(at(html, 'class="pagination-links'));
+      const content = html.slice(html.indexOf('<main'), html.indexOf('</main>')).replace(/<nav\b[\s\S]*?<\/nav>/g, '');
+      expect(content).not.toMatch(/<details[^>]*\sopen/);
     }
   });
 
   it('builds the pager from LEARNING_PATH: Module 2 follows the start guide', () => {
-    const nav = module2.match(/<nav class="module-pager"[\s\S]*?<\/nav>/)?.[0] ?? '';
-    expect(nav).toContain('<a rel="prev" href="/start/">');
+    const nav = module2.match(/<div class="pagination-links[\s\S]*?<\/div>/)?.[0] ?? '';
+    expect(nav).toMatch(/<a href="\/start\/" rel="prev"/);
+    expect(nav).toMatch(/<a href="\/guide\/compose-to-hpc-translation\/" rel="next"/);
     expect(nav).not.toMatch(/[←→]/);
   });
 

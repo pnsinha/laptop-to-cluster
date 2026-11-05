@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, type Browser } from 'playwright';
-import { checkComponentGeometry, checkCrosswalkLayout, checkGuideCards, checkFontBlocking, checkForcedColors, checkJsOff, checkMotion, checkPrimaryAction, checkPrint, checkPrintOverflow, checkThemePrecedence, inspectThemeScript } from './browser-checks';
+import { THEME_SCRIPT_LIMIT, checkComponentGeometry, checkCrosswalkLayout, checkGuideCards, checkFontBlocking, checkForcedColors, checkHeroAction, checkJsOff, checkMotion, checkPrint, checkPrintOverflow, checkThemePrecedence, inspectThemeScript } from './browser-checks';
 import { serveFixtures } from './fixture-server';
 
 let browser: Browser;
@@ -8,42 +8,36 @@ beforeAll(async () => { browser = await chromium.launch({ headless: true }); }, 
 afterAll(async () => { await browser?.close(); });
 
 const THEMES = { light: { canvas: '#fbf9f4' }, dark: { canvas: '#131a29' } };
-const HEAD_SCRIPT = "try{var v=localStorage.getItem('l2c-theme'),c={dark:'#131a29',light:'#fbf9f4'};if(c[v]){document.documentElement.dataset.theme=v;var m=document.createElement('meta');m.name='theme-color';m.content=c[v];document.head.append(m)}}catch(e){}";
-const ICONS = '<svg class="theme-control__icon theme-control__icon--moon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="theme-control__icon theme-control__icon--sun" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
-const toggleButton = (extra = '', name = 'Dark theme') => `<button type="button" class="theme-control__toggle" data-theme-toggle aria-pressed="false"${extra}>${ICONS}<span class="vh">${name}</span></button>`;
-/* The fixture enhancer reads the page state from data-theme (like a real toggle that trusts the head script), so a page that ignores the stored choice is still reported. */
-const enhancer = (broken: string[] = []) => `(function(){var k='l2c-theme',r=document.documentElement,w=document.querySelector('[data-theme-control]'),t=w.querySelector('[data-theme-toggle]'),q=matchMedia('(prefers-color-scheme: dark)');function os(){return q.matches?'dark':'light'}function cur(){return r.dataset.theme||null}function m(){var e=document.querySelector('meta[name=theme-color]:not([media])');if(!e){e=document.createElement('meta');e.name='theme-color';document.head.append(e)}e.content=getComputedStyle(r).getPropertyValue('--canvas').trim()}function p(){t.setAttribute('aria-pressed',String((cur()||os())==='dark'))}t.addEventListener('click',function(){var n=(cur()||os())==='dark'?'light':'dark';${broken.includes('no-clear') ? "r.dataset.theme=n;localStorage.setItem(k,n);" : "if(n===os()){delete r.dataset.theme;localStorage.removeItem(k)}else{r.dataset.theme=n;localStorage.setItem(k,n)}"}p();m()});${broken.includes('no-os-sync') ? '' : broken.includes('os-clears-stored') ? "q.addEventListener('change',function(){delete r.dataset.theme;localStorage.removeItem(k);p()});" : "q.addEventListener('change',function(){if(!localStorage.getItem(k))p()});"}w.hidden=false;p()})();`;
-const ENHANCER = enhancer();
-const CONTROL = `<div class="theme-control" data-theme-control hidden>${toggleButton()}</div>`;
-const CSS = ':root{color-scheme:light dark;--canvas:#fbf9f4}:root[data-theme=light]{color-scheme:light}@media screen and (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--canvas:#131a29}}:root[data-theme=dark]{color-scheme:dark;--canvas:#131a29}body{background:var(--canvas)}'
-  + '.vh{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.theme-control[hidden]{display:none}'
-  + '.theme-control__toggle{display:inline-flex;align-items:center;justify-content:center;inline-size:2rem;block-size:2rem;padding:0;color:inherit;background:transparent;border:1px solid #999;border-radius:999px}.theme-control__icon{inline-size:1.25rem;block-size:1.25rem}'
-  + '.theme-control__toggle[aria-pressed=true] .theme-control__icon--moon,.theme-control__toggle[aria-pressed=false] .theme-control__icon--sun{display:none}.theme-control__toggle:focus-visible{outline:2px solid #1a4fd6;outline-offset:2px}';
-const MEDIA_METAS = '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbf9f4"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131a29">';
-const MEDIA_SCRIPT_ATTR = "try{var v=localStorage.getItem('l2c-theme');if(v=='dark'||v=='light')document.documentElement.dataset.theme=v}catch(e){}";
-const MEDIA_SCRIPT_FULL = "try{var v=localStorage.getItem('l2c-theme');if(v=='dark'||v=='light'){document.documentElement.dataset.theme=v;document.querySelectorAll('meta[name=theme-color]').forEach(function(m){m.content=v=='dark'?'#131a29':'#fbf9f4'})}}catch(e){}";
-type ToggleBreak = 'name' | 'small' | 'no-clear' | 'no-os-sync' | 'os-clears-stored' | 'visible-text' | 'unfocusable' | 'no-ring' | 'icons-stay' | 'always-visible';
-const themePage = (variant: 'good' | 'late-script' | 'ignores-stored' | 'media-metas' | 'media-metas-untouched', broken: ToggleBreak[] = []) => {
-  const css = CSS
-    + (broken.includes('small') ? '.theme-control__toggle{inline-size:20px;block-size:20px}' : '')
-    + (broken.includes('no-ring') ? '.theme-control__toggle:focus-visible{outline:none}' : '')
-    + (broken.includes('icons-stay') ? '.theme-control__toggle .theme-control__icon--moon,.theme-control__toggle .theme-control__icon--sun{display:inline !important}' : '')
-    + (broken.includes('always-visible') ? '.theme-control[hidden]{display:inline-flex}' : '');
-  const button = toggleButton(broken.includes('unfocusable') ? ' tabindex="-1"' : '', broken.includes('name') ? 'Theme' : 'Dark theme');
-  const control = `<div class="theme-control" data-theme-control hidden>${broken.includes('visible-text') ? '<span>System</span>' : ''}${button}</div>`;
-  const header = `<header><nav aria-label="Primary"><a href="/a">Get started</a></nav>${control}</header>`;
-  const script = enhancer(broken);
-  if (variant === 'media-metas' || variant === 'media-metas-untouched') {
-    const head = variant === 'media-metas' ? MEDIA_SCRIPT_FULL : MEDIA_SCRIPT_ATTR;
-    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title>${MEDIA_METAS}<script>${head}</script><style>${css}</style></head><body>${header}<main><p>Body</p></main><script>${script}</script></body></html>`;
-  }
-  const headScript = variant === 'good' ? `<script>${HEAD_SCRIPT}</script>` : '';
-  const late = variant === 'late-script' ? `<script>${HEAD_SCRIPT}</script>` : '';
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title>${headScript}<style>${css}</style></head><body>${header}<main><p>Body</p></main>${late}<script>${script}</script></body></html>`;
+/* A page built the way Starlight builds one: the provider script in the head sets data-theme from the stored choice or the OS, the sync script keeps the theme-color meta in effect on the page canvas, the header holds one labelled select, and a module script wires it the way Starlight's ThemeSelect does. */
+const PROVIDER = "window.StarlightThemeProvider=(()=>{const s=typeof localStorage!=='undefined'&&localStorage.getItem('starlight-theme');const t=s||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t==='light'?'light':'dark';return{updatePickers(t=s||'auto'){document.querySelectorAll('starlight-theme-select select').forEach((e)=>{e.value=t})}}})()";
+const OS_ONLY_PROVIDER = "window.StarlightThemeProvider=(()=>{document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';return{updatePickers(){}}})()";
+const SYNC = "(()=>{const r=document.documentElement;r.dataset.l2cJs='';const f=()=>{const t=r.dataset.theme;if(!t)return;document.querySelectorAll('meta[name=theme-color][media]').forEach((e)=>{e.dataset.media||(e.dataset.media=e.media);e.media=e.dataset.media.includes(t)?'all':'not all'})};f();new MutationObserver(f).observe(r,{attributes:true,attributeFilter:['data-theme']})})()";
+const METAS = '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbf9f4"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131a29">';
+const SELECT_MARKUP = (options: { name?: string; extra?: string; noAuto?: boolean } = {}) => `<starlight-theme-select><label><span class="sr-only">${options.name ?? 'Select theme'}</span><select autocomplete="off"${options.extra ?? ''}><option value="dark">Dark</option><option value="light">Light</option>${options.noAuto ? '' : '<option value="auto" selected>Auto</option>'}</select></label></starlight-theme-select>`;
+type SelectBreak = 'name' | 'small' | 'no-store' | 'no-os-sync' | 'unfocusable' | 'no-ring' | 'always-visible' | 'no-auto' | 'os-only';
+const selectScript = (broken: SelectBreak[] = []) => `const k='starlight-theme';const p=(t)=>t==='auto'||t==='dark'||t==='light'?t:'auto';const load=()=>${broken.includes('os-only') ? "'auto'" : "p(typeof localStorage!=='undefined'&&localStorage.getItem(k))"};`
+  + `const store=(t)=>{${broken.includes('no-store') ? '' : "localStorage.setItem(k,t==='light'||t==='dark'?t:'')"}};const os=()=>matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';`
+  + `const on=(t)=>{StarlightThemeProvider.updatePickers(t);document.documentElement.dataset.theme=t==='auto'?os():t;store(t)};`
+  + `${broken.includes('no-os-sync') ? '' : "matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{if(load()==='auto')on('auto')});"}`
+  + `class S extends HTMLElement{constructor(){super();on(load());this.querySelector('select')?.addEventListener('change',(e)=>on(p(e.currentTarget.value)))}}customElements.define('starlight-theme-select',S)`;
+const THEME_CSS = ':root{color-scheme:light dark;--canvas:#fbf9f4}@media (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--canvas:#131a29}}:root[data-theme=dark]{color-scheme:dark;--canvas:#131a29}:root[data-theme=light]{color-scheme:light;--canvas:#fbf9f4}body{background:var(--canvas)}'
+  + '.sr-only{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}select{min-inline-size:6rem;min-block-size:2rem}select:focus-visible{outline:2px solid #1a4fd6;outline-offset:2px}';
+const themePage = (variant: 'good' | 'late-script' | 'ignores-stored' | 'no-sync', broken: SelectBreak[] = []) => {
+  const css = THEME_CSS
+    + (broken.includes('always-visible') ? '' : 'starlight-theme-select:not(:defined){display:none}')
+    + (broken.includes('small') ? 'select{min-inline-size:16px;min-block-size:16px;inline-size:16px;block-size:16px;font-size:8px;padding:0}' : '')
+    + (broken.includes('no-ring') ? 'select:focus-visible{outline:none}' : '');
+  const provider = variant === 'ignores-stored' ? OS_ONLY_PROVIDER : PROVIDER;
+  const head = `<meta charset="utf-8"><title>t</title>${METAS}${variant === 'late-script' ? '' : `<script>${provider}</script>`}${variant === 'no-sync' ? '' : `<script>${SYNC}</script>`}<style>${css}</style>`;
+  const select = SELECT_MARKUP({ name: broken.includes('name') ? 'Theme' : undefined, extra: broken.includes('unfocusable') ? ' tabindex="-1"' : '', noAuto: broken.includes('no-auto') });
+  const header = `<header><nav aria-label="Main"><a href="/a">Guide</a></nav>${select}</header>`;
+  const late = variant === 'late-script' ? `<script>${provider}</script>` : '';
+  const wiring = variant === 'ignores-stored' ? [...broken, 'os-only' as const] : broken;
+  return `<!doctype html><html lang="en"><head>${head}</head><body>${header}<main><h1 id="_top">Title</h1><p>Body</p></main>${late}<script type="module">${selectScript(wiring)}</script></body></html>`;
 };
 
 describe('theme precedence check', () => {
-  it('passes a page whose head script applies the stored choice before the body is parsed', async () => {
+  it('passes a page whose head script applies the stored choice before the body is parsed, with the theme-color following', async () => {
     const server = await serveFixtures({ '/good/': { body: themePage('good') } });
     try {
       expect(await checkThemePrecedence(browser, server.origin, '/good/', THEMES)).toEqual([]);
@@ -59,88 +53,60 @@ describe('theme precedence check', () => {
     } finally { await server.close(); }
   }, 90_000);
 
-  it('reports a stored choice that never reaches the page', async () => {
-    const server = await serveFixtures({ '/ignored/': { body: themePage('ignores-stored') } });
+  it('reports a stored choice that never reaches the page, and a theme-color that stays on the OS value', async () => {
+    const server = await serveFixtures({ '/ignored/': { body: themePage('ignores-stored') }, '/no-sync/': { body: themePage('no-sync') } });
     try {
-      const codes = (await checkThemePrecedence(browser, server.origin, '/ignored/', THEMES)).map((entry) => entry.code);
-      expect(codes).toContain('A11Y-THEME-PRECEDENCE');
+      expect((await checkThemePrecedence(browser, server.origin, '/ignored/', THEMES)).map((entry) => entry.code)).toContain('A11Y-THEME-PRECEDENCE');
+      const codes = (await checkThemePrecedence(browser, server.origin, '/no-sync/', THEMES)).map((entry) => entry.code);
       expect(codes).toContain('A11Y-THEME-COLOR');
+      expect(codes).not.toContain('A11Y-THEME-PRECEDENCE');
     } finally { await server.close(); }
-  }, 90_000);
+  }, 120_000);
 });
 
-describe('theme toggle check', () => {
-  const run = async (broken: ToggleBreak[]) => {
+describe('theme select check', () => {
+  const run = async (broken: SelectBreak[]) => {
     const server = await serveFixtures({ '/t/': { body: themePage('good', broken) } });
     try { return await checkThemePrecedence(browser, server.origin, '/t/', THEMES); } finally { await server.close(); }
   };
   const messages = (issues: Awaited<ReturnType<typeof run>>) => issues.filter((entry) => entry.code === 'A11Y-THEME-CONTROL').map((entry) => entry.message).join('\n');
 
-  it('passes the one-button toggle on both OS schemes: pressed from the effective theme, icon swap, two clicks back to the OS, keyboard, name, size, no text, no JavaScript', async () => {
-    expect(await run([])).toEqual([]);
+  it('reports an accessible name other than "Select theme", and a select without the auto option', async () => {
+    expect(messages(await run(['name']))).toMatch(/named exactly/);
+    expect(messages(await run(['no-auto']))).toMatch(/dark, light and auto/);
   }, 120_000);
 
-  it('reports an accessible name other than "Dark theme"', async () => {
-    expect(messages(await run(['name']))).toMatch(/accessible name/);
-  }, 120_000);
-
-  it('reports a toggle smaller than 24 by 24 CSS pixels', async () => {
+  it('reports a select smaller than 24 by 24 CSS pixels', async () => {
     expect(messages(await run(['small']))).toMatch(/24/);
   }, 120_000);
 
-  it('reports a second click that stores the OS value instead of clearing the choice', async () => {
-    expect(messages(await run(['no-clear']))).toMatch(/following the OS|clear/);
-  }, 120_000);
-
-  it('reports a toggle that ignores a live OS change while nothing is stored, and one that wipes a stored choice on an OS change', async () => {
+  it('reports a choice that is not stored, and a select that ignores a live OS change on auto', async () => {
+    expect(messages(await run(['no-store']))).toMatch(/survive a reload|store the choice/);
     expect(messages(await run(['no-os-sync']))).toMatch(/follow a live OS change/);
-    expect(messages(await run(['os-clears-stored']))).toMatch(/leave a stored choice alone/);
   }, 120_000);
 
-  it('reports visible System, Light or Dark text in the header', async () => {
-    expect(messages(await run(['visible-text']))).toMatch(/visible text/);
-  }, 120_000);
-
-  it('reports a toggle that Tab does not reach, and one with no visible focus ring', async () => {
+  it('reports a select that Tab does not reach, and one with no visible focus ring', async () => {
     expect(messages(await run(['unfocusable']))).toMatch(/Tab/);
     expect(messages(await run(['no-ring']))).toMatch(/focus/);
   }, 120_000);
 
-  it('reports both icons showing at once, and a control that shows without JavaScript', async () => {
-    expect(messages(await run(['icons-stay']))).toMatch(/icon/);
+  it('reports a select that shows without JavaScript', async () => {
     const noScript = (await run(['always-visible'])).filter((entry) => entry.code === 'A11Y-THEME-NOJS');
-    expect(noScript).toHaveLength(1);
+    expect(noScript.length).toBeGreaterThanOrEqual(1);
+    expect(noScript[0].message).toMatch(/select hidden/);
   }, 120_000);
 });
 
-describe('theme-color with media-scoped metas', () => {
-  it('passes when the head script rewrites every theme-color meta to the stored canvas', async () => {
-    const server = await serveFixtures({ '/media/': { body: themePage('media-metas') } });
-    try {
-      const codes = (await checkThemePrecedence(browser, server.origin, '/media/', THEMES)).map((entry) => entry.code);
-      expect(codes).not.toContain('A11Y-THEME-COLOR');
-    } finally { await server.close(); }
-  }, 90_000);
-
-  it('reports a head script that sets data-theme but leaves theme-color alone', async () => {
-    const server = await serveFixtures({ '/media-untouched/': { body: themePage('media-metas-untouched') } });
-    try {
-      const codes = (await checkThemePrecedence(browser, server.origin, '/media-untouched/', THEMES)).map((entry) => entry.code);
-      expect(codes).toContain('A11Y-THEME-COLOR');
-    } finally { await server.close(); }
-  }, 90_000);
-});
-
 describe('theme script inspection', () => {
-  it('accepts one small blocking inline script in the head', () => {
+  it('accepts one blocking inline script in the head within the limit', () => {
     expect(inspectThemeScript(themePage('good'), '/')).toEqual([]);
   });
 
   it('rejects a deferred, module, oversized, missing or body-level script', () => {
     const good = themePage('good');
-    expect(inspectThemeScript(good.replace('<script>', '<script defer>'), '/')[0].message).toMatch(/blocking/);
-    expect(inspectThemeScript(good.replace('<script>', '<script type="module">'), '/')[0].message).toMatch(/blocking/);
-    expect(inspectThemeScript(good.replace('try{', `var pad="${'x'.repeat(300)}";try{`), '/')[0].message).toMatch(/limit is 300/);
+    expect(inspectThemeScript(good.replace('<script>window', '<script defer>window'), '/')[0].message).toMatch(/blocking/);
+    expect(inspectThemeScript(good.replace('<script>window', '<script type="module">window'), '/')[0].message).toMatch(/blocking/);
+    expect(inspectThemeScript(good.replace('<script>window', `<script>var pad="${'x'.repeat(THEME_SCRIPT_LIMIT)}";window`), '/')[0].message).toMatch(new RegExp(`limit is ${THEME_SCRIPT_LIMIT}`));
     expect(inspectThemeScript(themePage('ignores-stored'), '/')[0].message).toMatch(/found 0/);
     expect(inspectThemeScript(themePage('late-script'), '/')[0].message).toMatch(/found 0/);
   });
@@ -152,9 +118,9 @@ const EXPECT = {
   present: ['.evidence-badge', 'h1'],
 };
 const GOOD_CSS = `
-.notice{border:3px double CanvasText;padding:4px}.door{border:1px solid CanvasText;padding:4px}.evidence-badge{border:1px solid CanvasText;display:inline-block}
-[role=group] button[aria-pressed=true]{outline:2px solid CanvasText;font-weight:700}.theme-control__toggle{border:1px solid CanvasText}.theme-control__icon{inline-size:20px;block-size:20px}.theme-control__toggle[aria-pressed=false] .theme-control__icon--sun{display:none}
-a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid CanvasText;outline-offset:2px}
+.notice{border:3px double CanvasText;padding:4px}.card{border:1px solid CanvasText;padding:4px}.evidence-badge{border:1px solid CanvasText;display:inline-block}
+[role=group] button[aria-pressed=true]{outline:2px solid CanvasText;font-weight:700}
+a:focus-visible,button:focus-visible,summary:focus-visible,select:focus-visible{outline:2px solid CanvasText;outline-offset:2px}
 .evidence-panel::details-content{content-visibility:visible;display:block}`;
 const printScript = (restore: boolean) => `var o=[];addEventListener('beforeprint',function(){o=[].filter.call(document.querySelectorAll('details.evidence-panel:not([open])'),function(d){return 1});o.forEach(function(d){d.open=true})});addEventListener('afterprint',function(){${restore ? 'o.forEach(function(d){d.open=false})' : ''}})`;
 function mediumPage(options: { css?: string; print?: string; script?: string; extraCss?: string } = {}) {
@@ -162,8 +128,7 @@ function mediumPage(options: { css?: string; print?: string; script?: string; ex
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title><style>${options.css ?? GOOD_CSS}${options.extraCss ?? ''}@media print{${options.print ?? ''}}</style></head><body><main>
 <h1>Title</h1><p class="notice" role="note"><strong>Warning:</strong> text</p><p class="evidence-badge">Tested</p>
 <details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows"><div class="evidence-row"><dt>Tested</dt><dd><ul><li>a</li></ul></dd></div></dl></details>
-<ul class="doors"><li class="door"><h3 class="door__title">Understand the model</h3><a class="door__link" href="/t">Take the tour</a></li><li class="door"><h3 class="door__title">Translate it</h3><a class="door__link" href="/c">Open the map</a></li></ul>
-<div class="theme-control">${toggleButton()}</div>
+<div class="doors" id="doors"><article class="card"><p class="title"><span>New to clusters?</span></p><div class="door"><h3 class="door__title">Understand the model</h3><a class="door__link" href="/t">Take the tour</a></div></article><article class="card"><p class="title"><span>Have a Compose file?</span></p><div class="door"><h3 class="door__title">Translate it</h3><a class="door__link" href="/c">Open the map</a></div></article></div>
 <div role="group" aria-label="Sample options"><button type="button" aria-pressed="true">One</button><button type="button" aria-pressed="false">Two</button></div>
 <ol class="timeline__steps">${steps}</ol></main><script>${options.script ?? printScript(true)}</script></body></html>`;
 }
@@ -176,17 +141,15 @@ describe('forced colours check', () => {
 
   it('reports lost text, lost boundaries, a colour-only selected state, and a lost control', async () => {
     const lostText = mediumPage({ extraCss: '*{forced-color-adjust:none}body{background:#fff;color:#fff}.notice,.door,.evidence-badge{color:#fff}' });
-    const lostBoundary = mediumPage({ extraCss: '.notice,.door,.evidence-badge{border:0}' });
+    const lostBoundary = mediumPage({ extraCss: '.notice,.card,.evidence-badge{border:0}' });
     const colourOnly = mediumPage({ css: GOOD_CSS.replace('[role=group] button[aria-pressed=true]{outline:2px solid CanvasText;font-weight:700}', '[role=group] button[aria-pressed=true]{background:#123456}') });
     const lostControl = mediumPage({ extraCss: '@media (forced-colors:active){.door__link{display:none}}' });
     const server = await serveFixtures({
       '/text/': { body: lostText }, '/boundary/': { body: lostBoundary }, '/selected/': { body: colourOnly }, '/control/': { body: lostControl },
       '/nav/': { body: mediumPage({ extraCss: 'nav a[aria-current=page]{color:#123456}' }).replace('<main>', '<nav aria-label="s"><ul><li><a href="/a" aria-current="page">A</a></li><li><a href="/b">B</a></li></ul></nav><main>') },
       '/fc-order/': { body: mediumPage({ extraCss: '@media (forced-colors:active){.timeline__step strong{display:none}}' }) },
-      '/toggle-boundary/': { body: mediumPage({ extraCss: '.theme-control__toggle{border:0}' }) },
     });
     try {
-      expect((await checkForcedColors(browser, server.origin, '/toggle-boundary/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/boundary lost.*theme-control__toggle/);
       expect((await checkForcedColors(browser, server.origin, '/text/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/text is lost/);
       expect((await checkForcedColors(browser, server.origin, '/boundary/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/boundary lost/);
       expect((await checkForcedColors(browser, server.origin, '/selected/', EXPECT)).map((entry) => entry.message).join('\n')).toMatch(/colour only/);
@@ -247,7 +210,7 @@ describe('print overflow check', () => {
 });
 
 describe('print link destinations (G6)', () => {
-  const external = (extra: string) => mediumPage({ extraCss: extra }).replace('<ul class="doors">', '<p><a class="ext" href="https://example.org/x">Example</a></p><ul class="doors">');
+  const external = (extra: string) => mediumPage({ extraCss: extra }).replace('<div class="doors" id="doors">', '<p><a class="ext" href="https://example.org/x">Example</a></p><div class="doors" id="doors">');
   it('passes when external link URLs print after the link and reports them when missing', async () => {
     const server = await serveFixtures({
       '/shown/': { body: external('@media print{a[href^="http"]::after{content:" (" attr(href) ")"}}') },
@@ -269,14 +232,14 @@ const DOOR_ROWS = [
 ];
 function homeFixture(options: { badHref?: boolean; untaggedSbatch?: boolean; noRows?: boolean; stackOverlap?: boolean; foit?: boolean; localFallback?: boolean; hiddenNav?: boolean } = {}) {
   const steps = LABELS.map((label, index) => `<li class="timeline__step" data-step="${index + 1}"><strong>${label}</strong> <span class="timeline__caption">Caption ${index + 1}</span></li>`).join('');
-  const doors = DOOR_ROWS.map(([who, title, href], index) => `<li class="door" id="door-${index}"><p class="door__who">${who}</p><h3 class="door__title">${title}</h3><p class="door__summary">s</p><p class="door__go"><a class="door__link" href="${options.badHref && index === 1 ? '/wrong/' : href}">Go ${index}</a></p></li>`).join('');
+  const doors = DOOR_ROWS.map(([who, title, href], index) => `<article class="card"><p class="title"><span>${who}</span></p><div class="body"><div class="door" id="door-${index}"><h3 class="door__title">${title}</h3><p class="door__summary">s</p><p class="door__go"><a class="door__link" href="${options.badHref && index === 1 ? '/wrong/' : href}">Go ${index}</a></p></div></div></article>`).join('');
   const terms = CONCEPT_KEYS.map((key, index) => `<div class="crosswalk__term" data-concept="${key}"><dt><span class="crosswalk__mark" aria-hidden="true">m</span> ${key}</dt><dd>was ${WAS[index]}</dd></div>`).join('');
   const line = (concepts: string[]) => `<span class="crosswalk__line" data-concepts="${concepts.join(' ')}">line\n</span>`;
   const pane = (id: string, concepts: string[][]) => `<figure class="crosswalk__pane" data-pane="${id}"><figcaption>${id}</figcaption><pre><code>${concepts.map(line).join('')}</code></pre></figure>`;
   const all = CONCEPT_KEYS.map((key) => [key]);
   const panes = pane('compose', all) + pane('sbatch', options.untaggedSbatch ? all.slice(0, 3) : all) + pane('coordinator', [['gate']]);
   const rows = options.noRows ? '' : ['Tested', 'You need', 'Depends on your center'].map((label) => `<div class="evidence-row"><dt>${label}</dt><dd><ul><li>item</li></ul></dd></div>`).join('');
-  const css = `body{margin:0;font-family:${options.foit ? 'Missing' : 'serif'}}.gap{height:1500px}
+  const css = `body{margin:0;font-family:${options.foit ? 'Missing' : 'serif'}}.gap{height:1500px}starlight-theme-select:not(:defined){display:none}
 .crosswalk__panes{display:grid;gap:8px}.crosswalk__pane{margin:0}
 @media (min-width:48rem){.crosswalk__panes{grid-template-columns:1fr 1fr}.crosswalk__pane[data-pane=compose]{grid-row:1/3}}
 ${options.stackOverlap ? '.crosswalk__pane{position:absolute;top:0;left:0;width:90%}' : ''}
@@ -284,13 +247,12 @@ ${options.localFallback ? '@font-face{font-family:"Source Serif 4 Fallback";src:
 ${options.hiddenNav ? '.dup-nav{display:none}' : ''}
 ${options.foit ? '@font-face{font-family:Missing;src:url(/fonts/missing.woff2) format("woff2");font-display:block}h1{visibility:hidden}' : '@font-face{font-family:Missing;src:url(/fonts/missing.woff2) format("woff2");font-display:swap}h1{font-family:Missing,serif}'}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title><style>${css}</style></head><body>
-<header>${options.hiddenNav ? '<nav class="site-nav dup-nav"><a href="/dup">Hidden duplicate</a></nav>' : ''}<nav class="site-nav"><a href="/a">Get started</a></nav></header>${options.foit ? '<script>fetch("/fonts/probe.txt").then(()=>{document.querySelector("h1").style.visibility="visible"}).catch(()=>{})</script>' : ''}<main><h1>Title</h1><p class="lede">Lede text</p><p>Intro</p>
-<a class="action action--primary" href="#big-idea">Start with the big idea</a><div class="gap"></div>
+<header>${options.hiddenNav ? '<nav class="sidebar dup-nav"><a href="/dup">Hidden duplicate</a></nav>' : ''}<nav class="sidebar"><a href="/a">Guide</a></nav>${SELECT_MARKUP()}</header>${options.foit ? '<script>fetch("/fonts/probe.txt").then(()=>{document.querySelector("h1").style.visibility="visible"}).catch(()=>{})</script>' : ''}<main><h1>Title</h1><p class="lede">Lede text</p><p>Intro</p>
+<a class="sl-link-button primary" href="/guide/tour/">Take the five-minute tour</a><div class="gap"></div>
 <section id="big-idea"><h2>Big idea</h2><figure class="timeline" aria-labelledby="tt"><figcaption id="tt">One allocation</figcaption><ol class="timeline__steps">${steps}</ol></figure><a href="/after">after</a></section>
-<section><ul class="doors" id="doors">${doors}</ul></section>
+<section><div class="doors" id="doors">${doors}</div></section>
 <section class="crosswalk" id="crosswalk"><dl class="crosswalk__legend">${terms}</dl><div class="crosswalk__panes">${panes}</div></section>
-<details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows">${rows}</dl></details>
-<div data-theme-control hidden><button type="button" data-theme-toggle aria-pressed="false"><span class="vh">Dark theme</span></button></div></main></body></html>`;
+<details class="evidence-panel"><summary>What this means for you</summary><dl class="evidence-rows">${rows}</dl></details></main></body></html>`;
 }
 
 describe('JS-off completeness check', () => {
@@ -311,12 +273,13 @@ describe('JS-off completeness check', () => {
   }, 90_000);
 });
 
-describe('primary action check', () => {
-  it('follows an in-page link to its target and moves the keyboard position there', async () => {
-    const server = await serveFixtures({ '/': { body: homeFixture() } });
+describe('hero action check', () => {
+  const tour = '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>t</title></head><body><main><h1>Tour</h1></main></body></html>';
+  it('follows the hero link to its page without JavaScript and reports a wrong destination', async () => {
+    const server = await serveFixtures({ '/': { body: homeFixture() }, '/guide/tour/': { body: tour } });
     try {
-      expect(await checkPrimaryAction(browser, server.origin, '/', 'Start with the big idea', 'big-idea')).toEqual([]);
-      expect((await checkPrimaryAction(browser, server.origin, '/', 'Start with the big idea', 'missing'))[0].message).toMatch(/normal in-page link to #missing/);
+      expect(await checkHeroAction(browser, server.origin, '/', 'Take the five-minute tour', '/guide/tour/')).toEqual([]);
+      expect((await checkHeroAction(browser, server.origin, '/', 'Take the five-minute tour', '/missing/'))[0].message).toMatch(/normal link to \/missing\//);
     } finally { await server.close(); }
   }, 60_000);
 });
@@ -367,10 +330,10 @@ describe('crosswalk layout and motion checks', () => {
 });
 
 describe('component geometry check', () => {
-  const page = (extra: string) => `<!doctype html><html lang="en"><head><title>t</title><style>body{margin:0}.timeline{display:flex}.timeline__bars{inline-size:40px;block-size:40px}.doors{display:flex}.door{inline-size:100px;block-size:40px}${extra}</style></head><body><main><div class="timeline"><div class="timeline__bars"></div><div class="timeline__bars"></div></div><div class="doors"><div class="door"></div><div class="door"></div></div></main></body></html>`;
+  const page = (extra: string) => `<!doctype html><html lang="en"><head><title>t</title><style>body{margin:0}.timeline{display:flex}.timeline__bars{inline-size:40px;block-size:40px}.doors{display:flex}.card{inline-size:100px;block-size:40px}${extra}</style></head><body><main><div class="timeline"><div class="timeline__bars"></div><div class="timeline__bars"></div></div><div class="doors" id="doors"><div class="card"></div><div class="card"></div></div></main></body></html>`;
 
   it('accepts aligned lanes and doors and flags a stray margin on later items', async () => {
-    const server = await serveFixtures({ '/good/': { body: page('') }, '/shifted/': { body: page('.timeline__bars+.timeline__bars{margin-top:8px}.door+.door{margin-top:8px}') } });
+    const server = await serveFixtures({ '/good/': { body: page('') }, '/shifted/': { body: page('.timeline__bars+.timeline__bars{margin-top:8px}.card+.card{margin-top:8px}') } });
     try {
       expect(await checkComponentGeometry(browser, server.origin, '/good/')).toEqual([]);
       const messages = (await checkComponentGeometry(browser, server.origin, '/shifted/')).map((entry) => entry.message).join('\n');
@@ -387,47 +350,47 @@ describe('component geometry check', () => {
 });
 
 describe('guide cards check', () => {
-  const tile = (title: string, summary: string) => `<li><a class="resource-tile" href="/x/"><h3>${title}</h3><p>${summary}</p><span class="resource-tile__tag">Tag</span></a></li>`;
+  const tile = (title: string, summary: string) => `<div class="sl-link-card"><span class="stack"><a href="/x/"><span class="title">${title}</span></a><span class="description">${summary}</span></span></div>`;
   const LONG = 'A much longer summary that wraps over several lines inside a narrow tile so that this tile is taller than its neighbour. '.repeat(3);
   const tiles = [tile('One', LONG), tile('Two', 'Short.'), tile('Three', 'Short.'), tile('Four', LONG)].join('');
-  const BASE = 'body{margin:0}.resource-grid{display:grid;grid-template-columns:repeat(2,220px);gap:8px;margin:0;padding:0;list-style:none}.resource-tile{display:flex;flex-direction:column;color:inherit;text-decoration:none}.resource-tile h3{margin:0;text-decoration-line:underline}';
-  const EQUAL = '.resource-grid{align-items:stretch}.resource-grid>li{display:flex}.resource-tile{flex:1}';
-  const page = (css: string, items = tiles) => `<!doctype html><html lang="en"><head><title>t</title><style>${BASE}${css}</style></head><body><main><ul class="resource-grid">${items}</ul></main></body></html>`;
+  const BASE = 'body{margin:0}.card-grid{display:grid;grid-template-columns:repeat(2,220px);gap:8px}.sl-link-card{display:grid;border:1px solid #999;padding:8px}.sl-link-card a{text-decoration:none}.sl-link-card .title{text-decoration-line:underline}.stack{display:flex;flex-direction:column}';
+  const EQUAL = '.card-grid{align-items:stretch}';
+  const page = (css: string, items = tiles) => `<!doctype html><html lang="en"><head><title>t</title><style>${BASE}${css}</style></head><body><main><div class="card-grid">${items}</div></main></body></html>`;
   const messages = async (origin: string, path: string) => (await checkGuideCards(browser, origin, path)).map((entry) => `${entry.code}: ${entry.message}`).join('\n');
 
-  it('accepts equal-height tiles with only the title underlined', async () => {
+  it('accepts equal-height cards with only the title underlined', async () => {
     const server = await serveFixtures({ '/good/': { body: page(EQUAL) } });
     try { expect(await checkGuideCards(browser, server.origin, '/good/')).toEqual([]); } finally { await server.close(); }
   }, 60_000);
 
-  it('flags tiles in one row that differ in height', async () => {
-    const server = await serveFixtures({ '/uneven/': { body: page('.resource-grid{align-items:start}') } });
+  it('flags cards in one row that differ in height', async () => {
+    const server = await serveFixtures({ '/uneven/': { body: page('.card-grid{align-items:start}') } });
     try {
       const found = await messages(server.origin, '/uneven/');
       expect(found).toMatch(/A11Y-COMPONENT-GEOMETRY: .*tiles that share a row must be equally tall/);
     } finally { await server.close(); }
   }, 60_000);
 
-  it('flags a tile title that is not underlined', async () => {
-    const server = await serveFixtures({ '/plain-title/': { body: page(`${EQUAL}.resource-tile h3{text-decoration-line:none}`) } });
+  it('flags a card title that is not underlined', async () => {
+    const server = await serveFixtures({ '/plain-title/': { body: page(`${EQUAL}.sl-link-card .title{text-decoration-line:none}`) } });
     try { expect(await messages(server.origin, '/plain-title/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*title must be underlined/); } finally { await server.close(); }
   }, 60_000);
 
-  it('flags a summary or tag that is underlined, whether by its own rule or by the whole tile', async () => {
+  it('flags a description that is underlined, whether by its own rule or by the whole card', async () => {
     const server = await serveFixtures({
-      '/own/': { body: page(`${EQUAL}.resource-tile p{text-decoration-line:underline}`) },
-      '/whole/': { body: page(`${EQUAL}.resource-tile{text-decoration-line:underline}`) },
+      '/own/': { body: page(`${EQUAL}.sl-link-card .description{text-decoration-line:underline}`) },
+      '/whole/': { body: page(`${EQUAL}.sl-link-card{text-decoration-line:underline}`) },
     });
     try {
-      expect(await messages(server.origin, '/own/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*summary and tag must not be underlined/);
-      expect(await messages(server.origin, '/whole/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*summary and tag must not be underlined/);
+      expect(await messages(server.origin, '/own/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*description must not be underlined/);
+      expect(await messages(server.origin, '/whole/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*description must not be underlined/);
     } finally { await server.close(); }
   }, 60_000);
 
-  it('flags a page with no tiles, and a page where no two tiles share a row, since neither can show equal heights', async () => {
-    const server = await serveFixtures({ '/empty/': { body: page('', '') }, '/column/': { body: page(`${EQUAL}.resource-grid{grid-template-columns:220px}`) } });
+  it('flags a page with no cards, and a page where no two cards share a row, since neither can show equal heights', async () => {
+    const server = await serveFixtures({ '/empty/': { body: page('', '') }, '/column/': { body: page(`${EQUAL}.card-grid{grid-template-columns:220px}`) } });
     try {
-      expect(await messages(server.origin, '/empty/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*no \.resource-tile/);
+      expect(await messages(server.origin, '/empty/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*no \.sl-link-card/);
       expect(await messages(server.origin, '/column/')).toMatch(/A11Y-COMPONENT-GEOMETRY: .*no two tiles share a row/);
     } finally { await server.close(); }
   }, 60_000);

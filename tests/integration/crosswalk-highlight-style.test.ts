@@ -11,17 +11,17 @@ vi.setConfig({ testTimeout: 30_000, hookTimeout: 60_000 });
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const dist = resolve(root, 'site/dist');
 const css = readFileSync(resolve(root, 'site/src/styles/enhancements.css'), 'utf8');
-const globalCss = readFileSync(resolve(root, 'site/src/styles/global.css'), 'utf8');
+const config = readFileSync(resolve(root, 'site/astro.config.mjs'), 'utf8');
 
 describe('enhancements.css: source rules', () => {
   it('has no transition, animation or keyframes', () => {
     expect(css).not.toMatch(/transition|animation|@keyframes/i);
   });
 
-  it('is imported exactly once by global.css, ahead of every rule', () => {
-    expect(globalCss.match(/@import\s+['"]\.\/enhancements\.css['"]/g)).toHaveLength(1);
-    const firstRule = globalCss.search(/^[^@\s/][^\n]*\{/m);
-    expect(globalCss.indexOf('./enhancements.css')).toBeLessThan(firstRule);
+  it('is listed exactly once in Starlight\'s customCss, after the component sheet', () => {
+    const custom = config.match(/customCss:\s*\[([\s\S]*?)\]/)?.[1] ?? '';
+    expect(custom.match(/'\.\/src\/styles\/enhancements\.css'/g)).toHaveLength(1);
+    expect(custom.indexOf('components.css')).toBeLessThan(custom.indexOf('enhancements.css'));
   });
 
   it('draws every colour from the token file, except in the print block', () => {
@@ -30,12 +30,11 @@ describe('enhancements.css: source rules', () => {
     for (const { key } of CONCEPTS) expect(css, key).toContain(`var(--c-${key})`);
   });
 
-  it('lands in the single emitted stylesheet', () => {
-    const sheets = readdirSync(join(dist, '_astro')).filter((name) => name.endsWith('.css'));
-    expect(sheets).toHaveLength(1);
-    const built = readFileSync(join(dist, '_astro', sheets[0]), 'utf8');
-    expect(built).toContain('[data-concepts~=gate]'); /* minifier drops the quotes */
-    expect(built).toContain('crosswalk__clear');
+  it('lands in exactly one emitted stylesheet', () => {
+    const sheets = readdirSync(join(dist, '_astro')).filter((name) => name.endsWith('.css')).map((name) => readFileSync(join(dist, '_astro', name), 'utf8'));
+    const carriers = sheets.filter((built) => built.includes('crosswalk__clear'));
+    expect(carriers).toHaveLength(1);
+    expect(carriers[0]).toContain('[data-concepts~=gate]'); /* minifier drops the quotes */
   });
 });
 

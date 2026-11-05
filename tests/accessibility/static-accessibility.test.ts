@@ -2,8 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { EVIDENCE_ROW_LABELS, NAV_ITEMS } from '../../site/src/content/contracts';
-import { inspectThemeScript } from './browser-checks';
+import { EVIDENCE_ROW_LABELS } from '../../site/src/content/contracts';
 import { accessibilityPages, requiredKinds } from './browser-fixtures';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -21,50 +20,51 @@ const css = readdirSync(resolve(dist, '_astro'))
 const withoutDisclosures = (html: string) => html.replace(/<details\b[\s\S]*?<\/details>/g, '');
 const text = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 const anchorTexts = (html: string) => [...html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map((match) => text(match[1]));
+const LEARNING_PATH_HREFS = ['/guide/tour/', '/guide/scheduler-as-orchestrator/', '/start/', '/guide/baseline-single-node-pattern/', '/guide/compose-to-hpc-translation/', '/adoption/evaluate/'];
 
 describe('representative static accessibility coverage', () => {
   it('covers every required page kind with a semantic, script-independent document shell', () => {
     const coveredKinds = new Set(pages.map(({ kind }) => kind));
     for (const kind of requiredKinds) expect(coveredKinds.has(kind), kind).toBe(true);
     for (const page of pages) {
-      expect(page.html, page.path).toMatch(/<html lang="en">/);
-      expect(page.html, page.path).toContain('href="#main"');
-      expect(page.html, page.path).toMatch(/<nav[^>]+aria-label="Primary"/);
-      expect(page.html, page.path).toMatch(/<main id="main" tabindex="-1">/);
-      expect(page.html, page.path).toMatch(/<footer class="site-footer">/);
+      expect(page.html, page.path).toMatch(/<html lang="en"[^>]*>/);
+      expect(page.html, page.path).toMatch(/<a class="sl-skip-link[^"]*" href="#_top">/);
+      expect(page.html, page.path).toMatch(/<nav class="sidebar[^"]*" aria-label="Main">/);
+      expect(page.html, page.path).toMatch(/<main\b/);
+      expect(page.html, page.path).toMatch(/<h1 id="_top"/);
+      expect(page.html, page.path).toMatch(/<footer class="l2c-footer/);
       expect(page.html.match(/<h1(?:\s|>)/g), page.path).toHaveLength(1);
       // Inline handlers remain prohibited under the progressive-enhancement policy.
       expect(page.html, page.path).not.toMatch(/onclick=|onkeydown=/i);
     }
   });
 
-  it('puts one blocking theme script in the head and keeps the theme control hidden until script shows it', () => {
+  it('sets the theme before the body is parsed and offers one labelled theme select with dark, light and auto', () => {
     for (const page of pages) {
-      expect(inspectThemeScript(page.html, page.path), page.path).toEqual([]);
-      const control = page.html.match(/<[^>]*data-theme-control[^>]*>/)?.[0] ?? '';
-      expect(control, page.path).toMatch(/\shidden(?:[\s=>]|$)/);
-      const toggles = [...page.html.matchAll(/<button\b[^>]*data-theme-toggle[^>]*>([\s\S]*?)<\/button>/g)];
-      expect(toggles, page.path).toHaveLength(1);
-      expect(toggles[0][0], page.path).toMatch(/\saria-pressed="false"/);
-      expect(page.html, page.path).not.toContain('data-theme-choice');
-      const toggleName = toggles[0][1].replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/<[^>]+>/g, '').trim();
-      expect(toggleName, page.path).toBe('Dark theme');
-      expect(toggles[0][1].match(/<svg\b[^>]*aria-hidden="true"/g), page.path).toHaveLength(2);
+      const head = page.html.match(/<head>[\s\S]*?<\/head>/)?.[0] ?? '';
+      expect(head, page.path).toMatch(/<script>[\s\S]*?localStorage\.getItem\(["']starlight-theme["']\)/);
+      expect(head, page.path).toContain('StarlightThemeProvider');
+      const selects = page.html.match(/<starlight-theme-select>([\s\S]*?)<\/starlight-theme-select>/g) ?? [];
+      expect(selects.length, page.path).toBeGreaterThanOrEqual(1);
+      for (const select of selects) {
+        expect(select, page.path).toMatch(/<label[^>]*><span class="sr-only[^"]*">Select theme<\/span>/);
+        for (const value of ['dark', 'light', 'auto']) expect(select, page.path).toContain(`<option value="${value}"`);
+      }
     }
   });
 
-  it('lists the five frozen navigation items in order, and the four footer links', () => {
+  it('lists the learning path in order in the sidebar, and the site information links in the footer', () => {
     for (const page of pages) {
-      const primary = page.html.match(/<nav[^>]+aria-label="Primary"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';
-      expect(anchorTexts(primary), page.path).toEqual(NAV_ITEMS.map(({ label }) => label));
-      const records = page.html.match(/<nav[^>]+aria-label="Site records"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';
-      expect(anchorTexts(records), page.path).toEqual(['About the project', 'Talks & papers', 'Support', 'GitHub (external)']);
-      expect(records, page.path).not.toMatch(/href="\/about\/(?:attribution|accessibility)\//);
+      const sidebar = page.html.match(/<nav class="sidebar[^"]*"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? '';
+      const hrefs = [...sidebar.matchAll(/<a href="([^"]+)"/g)].map(([, href]) => href);
+      expect(hrefs[0], page.path).toBe('/resources/');
+      expect(hrefs.slice(1, 7), page.path).toEqual(LEARNING_PATH_HREFS);
+      for (const href of ['/diagnostics/', '/about/glossary/', '/about/cheat-sheet/', '/about/project/', '/about/talks-and-papers/', '/about/attribution/', '/about/accessibility/', '/about/support/']) expect(hrefs, `${page.path}: ${href}`).toContain(href);
+      const information = page.html.match(/<nav aria-label="Site information">([\s\S]*?)<\/nav>/)?.[1] ?? '';
+      const labels = anchorTexts(information);
+      expect(labels[0], page.path).toMatch(/^Release v\d+\.\d+\.\d+$/);
+      expect(labels.slice(1), page.path).toEqual(['Report a problem', 'Accessibility', 'Attribution and licenses', 'GitHub repository (external)']);
     }
-    // Attribution, accessibility and licenses stay one link away: the footer's About link reaches a page that links them.
-    const about = pages.find(({ path }) => path === '/about/project/');
-    expect(about, '/about/project/').toBeDefined();
-    for (const href of ['/about/attribution/', '/about/accessibility/']) expect(about!.html).toContain(`href="${href}"`);
   });
 
   it('keeps prerequisites, assumptions, warnings, status, scope, and reporting or recovery links outside disclosures', () => {
@@ -85,7 +85,8 @@ describe('representative static accessibility coverage', () => {
   it('uses named native disclosures, meaningful alternatives, and native table regions', () => {
     for (const page of pages) {
       for (const details of page.html.match(/<details\b[\s\S]*?<\/details>/g) ?? []) {
-        expect(details, page.path).toMatch(/<summary>[^<]+<\/summary>/);
+        const summary = details.match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/)?.[1] ?? '';
+        expect(text(summary), `${page.path}: ${details.slice(0, 80)}`).not.toBe('');
       }
       for (const image of page.html.match(/<img\b[^>]*>/g) ?? []) {
         expect(image, page.path).toMatch(/\balt="[^"]*"/);
@@ -110,9 +111,9 @@ describe('representative static accessibility coverage', () => {
   });
 
   it('provides non-color link, current-page, selected, shape, warning, and status cues', () => {
-    expect(css).toMatch(/a\{[^}]*text-decoration-thickness:/);
-    expect(css).toMatch(/\.action[^{]*\{[^}]*border/);
-    expect(css).toMatch(/\[aria-current=(?:"page"|page)\][^{]*\{[^}]*(?:border|text-decoration|font-weight|content)/);
+    expect(css).toMatch(/a[^{}]*\{[^}]*text-decoration-thickness:/);
+    expect(css).toMatch(/\.sl-link-button[^{]*\{[^}]*border/);
+    expect(css).toMatch(/\[aria-current=(?:"page"|page)\][^{]*\{[^}]*(?:border|text-decoration|font-weight|content|background)/);
     expect(css).toMatch(/\[aria-pressed=(?:"true"|true)\][^{]*\{[^}]*(?:border|outline|text-decoration|font-weight)/);
     for (const mark of ['■', '◆', '▲', '●']) expect(css, mark).toContain(mark);
     for (const page of pages) expect(page.html, page.path).toContain('(external)');
@@ -132,7 +133,9 @@ describe('representative static accessibility coverage', () => {
     expect(css).toMatch(/overflow-wrap:anywhere/);
     expect(css).toMatch(/\.table-overflow\{[^}]*overflow-x:auto/);
     expect(css).not.toMatch(/@import\s+url|url\(["']?https?:|fonts\.(?:googleapis|gstatic)|use\.typekit/i);
-    expect(css).not.toMatch(/@keyframes|animation-name\s*:\s*(?!none)|animation\s*:\s*(?!none)|transition\s*:\s*(?!none)/);
+    // Starlight's two short transitions ride under the reduced-motion reset; keyframe animation stays out.
+    expect(css).not.toMatch(/@keyframes|animation-name\s*:\s*(?!none)|animation\s*:\s*(?!none)/);
+    expect(css).toMatch(/prefers-reduced-motion:reduce\)\{[\s\S]{0,300}?transition:none!important/);
   });
 
   it('self-hosts only the allowed font faces, as swap-loaded local or same-origin woff2 sources', () => {
@@ -157,13 +160,13 @@ describe('representative static accessibility coverage', () => {
     }
   });
 
-  it('renders the 404/not-found page with semantic structure, Home/Resources links, and visible focus', () => {
+  it('renders the 404/not-found page with semantic structure, Home/Guide links, and visible focus', () => {
     const notFound = pages.find(({ kind }) => kind === 'not-found');
     expect(notFound, 'not-found fixture must exist').toBeDefined();
     const html = notFound!.html;
-    expect(html).toMatch(/<html lang="en">/);
-    expect(html).toContain('href="#main"');
-    expect(html).toMatch(/<main id="main" tabindex="-1">/);
+    expect(html).toMatch(/<html lang="en"[^>]*>/);
+    expect(html).toContain('href="#_top"');
+    expect(html).toMatch(/<main\b/);
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/resources/"');
     expect(html.match(/<h1(?:\s|>)/g)).toHaveLength(1);
@@ -172,17 +175,18 @@ describe('representative static accessibility coverage', () => {
 
   it('ensures warning meaning is not color-dependent (text label always present)', () => {
     for (const page of pages) {
-      // Every warning-colored region must have explicit text label
       if (page.html.includes('class="notice"') || page.html.includes('class="support-state')) {
         expect(page.html, page.path).toMatch(/<strong>(?:Warning|Status|Draft|Superseded|Archived|Unvalidated content|failed|unvalidated|stale)(?::|<)/i);
+      }
+      for (const aside of page.html.match(/<aside aria-label="[^"]+" class="starlight-aside[\s\S]*?<\/aside>/g) ?? []) {
+        expect(text(aside.match(/<p class="starlight-aside__title"[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? ''), page.path).not.toBe('');
       }
     }
   });
 
-  it('ensures the secondary hero link is an adequate click target (standard inline link with sufficient text)', () => {
+  it('ensures the secondary hero link is an adequate click target (standard link with sufficient text)', () => {
     const home = pages.find(({ kind }) => kind === 'home')!.html;
-    const heroSecondary = home.match(/class="hero__secondary-link"[^>]*>(.*?)<\/a>/s)?.[1] ?? '';
-    // Must have at least 4 characters of text (adequate target)
+    const heroSecondary = home.match(/class="sl-link-button[^"]*\bminimal\b[^"]*"[^>]*>(.*?)<\/a>/s)?.[1] ?? '';
     expect(heroSecondary.replace(/<[^>]*>/g, '').trim().length).toBeGreaterThanOrEqual(4);
   });
 });

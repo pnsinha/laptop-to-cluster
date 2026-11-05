@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { validateCanonicalConfig } from '../../scripts/publication.mjs';
+import { topLevelCalls, validateCanonicalConfig } from '../../scripts/publication.mjs';
 import config, { CODE_CONTRAST, codeContrast } from '../../site/astro.config.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -33,7 +33,7 @@ describe('Shiki configuration', () => {
 
   it('still passes the canonical-config rules and keeps the integration list closed', () => {
     expect(validateCanonicalConfig(text)).toEqual([]);
-    expect(text.match(/integrations:\s*\[([^\]]+)\]/)?.[1].replace(/\s/g, '')).toBe('sitemap(),canonicalPolicy(),accessibleTables()');
+    expect(topLevelCalls(text.slice(text.search(/integrations\s*:\s*\[/)))).toEqual(['starlight', 'sitemap', 'canonicalPolicy', 'accessibleTables']);
     expect(text).not.toMatch(/ViewTransitions|adapter|server\s*:|session|auth/i);
   });
 

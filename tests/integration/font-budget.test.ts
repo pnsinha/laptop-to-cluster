@@ -8,7 +8,8 @@ import { describe, expect, it } from 'vitest';
  * W3 implements the BUDGET rule in scripts/publication.mjs separately. This file is the workstream-local check:
  * it counts every font face the CSS references (W3 counts only faces whose unicode-range occurs in the page).
  */
-const BUDGET = { fontBytes: 140_000, fontPreloads: 2, scriptBytes: 2048 } as const;
+/* Starlight's theme provider, sidebar state, table of contents and search loader total about 12 KB a page; the budget leaves room for the site's own scripts. */
+const BUDGET = { fontBytes: 140_000, fontPreloads: 2, scriptBytes: 32_768 } as const;
 const SAME_ORIGIN = 'https://laptop-to-cluster.org';
 const THIRD_PARTY_FONT_HOSTS = /fonts\.(?:googleapis|gstatic)\.com|use\.typekit\.net|fonts\.bunny\.net|cdn\.jsdelivr\.net\/fontsource|use\.fontawesome\.com|fonts\.adobe\.com/i;
 const FONT_FILE = /\.(?:woff2?|ttf|otf|eot)(?:[?#].*)?$/i;

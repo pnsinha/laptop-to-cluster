@@ -42,7 +42,7 @@ describe('W6 built pages: Run the example', () => {
   });
 
   it('renders the pager between Module 1 and Module 2', () => {
-    const nav = /<nav class="module-pager"[\s\S]*?<\/nav>/.exec(html)?.[0] ?? '';
+    const nav = /<div class="pagination-links[\s\S]*?<\/div>/.exec(html)?.[0] ?? '';
     expect(nav).toContain('href="/guide/scheduler-as-orchestrator/"');
     expect(nav).toContain('href="/guide/baseline-single-node-pattern/"');
   });
@@ -124,9 +124,10 @@ describe('W6 built pages: Modules 1 and 2', () => {
   });
 
   it('places the diagrams and the implementation reference by marker, and leaks no marker', () => {
-    expect(count(one, /<figure class="diagram"/g)).toBe(2);
-    expect(count(two, /<figure class="diagram"/g)).toBe(1);
-    expect(at(two, 'id="implementation-reference"')).toBeLessThan(at(two, 'id="files-the-workflow-reads-and-writes"'));
+    expect(count(one, /<figure class="diagram not-content"/g)).toBe(2);
+    expect(count(two, /<figure class="diagram not-content"/g)).toBe(1);
+    expect(at(two, 'id="implementation-reference"')).toBeGreaterThan(at(two, 'id="adapt-it"'));
+    expect(at(two, 'id="implementation-reference"')).toBeLessThan(at(two, 'id="safety-and-scope-limitations"'));
     expect(one + two).not.toContain('l2c:');
   });
 
@@ -153,42 +154,45 @@ import { LEARNING_PATH } from '../../site/src/content/contracts';
 
 describe('W6 built pages: Guide', () => {
   const html = page('resources');
-  const tiles = [...html.matchAll(/<a class="resource-tile" href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({ href: m[1], inner: m[2] }));
+  const CARD = /<div class="sl-link-card[^"]*"[\s\S]*?<a href="([^"]+)"[^>]*>([\s\S]*?)<\/div>/g;
+  const tiles = [...html.matchAll(CARD)].map((m) => ({ href: m[1], inner: m[2] }));
   const groupOf = (title: string): string[] => {
     const start = html.indexOf(`>${title}</h2>`);
     const next = html.indexOf('</section>', start);
-    return [...html.slice(start, next).matchAll(/<a class="resource-tile" href="([^"]+)"/g)].map((m) => m[1]);
+    return [...html.slice(start, next).matchAll(CARD)].map((m) => m[1]);
   };
 
-  it('is titled Guide, with the three groups in order', () => {
+  it('is titled Guide, with the four groups in order', () => {
     expect(html).toMatch(/<h1[^>]*>Guide<\/h1>/);
     const headings = [...html.matchAll(/<h2 id="resource-[a-z]+">([^<]+)<\/h2>/g)].map((m) => m[1]);
-    expect(headings).toEqual(['Understand', 'Translate', 'Evaluate and adopt']);
+    expect(headings).toEqual(['Understand', 'Translate', 'Evaluate and adopt', 'Project records']);
   });
 
   it('puts the right pages in each group, in the spec order', () => {
     expect(groupOf('Understand')).toEqual(['/guide/tour/', '/guide/scheduler-as-orchestrator/', '/about/glossary/']);
-    expect(groupOf('Translate')).toEqual(['/guide/compose-to-hpc-translation/', '/start/', '/guide/baseline-single-node-pattern/', '/diagnostics/']);
+    expect(groupOf('Translate')).toEqual(['/guide/compose-to-hpc-translation/', '/start/', '/guide/baseline-single-node-pattern/', '/diagnostics/', '/about/cheat-sheet/']);
     const evaluate = groupOf('Evaluate and adopt');
     expect(evaluate[0]).toBe('/adoption/evaluate/');
     expect(evaluate[1]).toMatch(/^\/applicability\/[a-z0-9-]+\/$/);
-    expect(evaluate.slice(2)).toEqual(['/milestones/1/', '/milestones/2/', '/about/talks-and-papers/']);
+    expect(evaluate).toHaveLength(2);
+    expect(groupOf('Project records')).toEqual(['/milestones/1/', '/milestones/2/', '/about/talks-and-papers/']);
   });
 
   it('links every page on the learning path exactly once', () => {
     const hrefs = tiles.map((tile) => tile.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
-    expect(tiles).toHaveLength(12);
+    expect(tiles).toHaveLength(13);
     const pathRoutes = { 'module-0-orientation': '/guide/tour/', 'module-1-scheduler-orchestrator': '/guide/scheduler-as-orchestrator/', 'start-guide': '/start/', 'module-2-baseline': '/guide/baseline-single-node-pattern/', 'module-3-compose-to-hpc-translation': '/guide/compose-to-hpc-translation/', 'adoption-evaluate': '/adoption/evaluate/' } as const;
     for (const id of LEARNING_PATH) expect(hrefs).toContain(pathRoutes[id]);
   });
 
-  it('keeps tiles plain: no metadata, at most one tag, no style block', () => {
+  it('keeps tiles plain: a title and a summary, no metadata, no style block', () => {
     expect(html).not.toMatch(/Applicability records|Keywords|published ·/i);
     expect(html).not.toMatch(/<style[\s>]/);
     for (const tile of tiles) {
       expect(tile.inner).not.toMatch(/<strong>(?:Keywords|Status|Milestone|Environment|Version):/i);
-      expect(tile.inner.match(/class="resource-tile__tag"/g)?.length ?? 0).toBeLessThanOrEqual(1);
+      expect(tile.inner).toMatch(/class="title[\s"]/);
+      expect(tile.inner).toMatch(/class="description[\s"]/);
     }
   });
 });

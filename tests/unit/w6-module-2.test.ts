@@ -29,7 +29,7 @@ describe('W6 Module 2', () => {
     ]);
   });
 
-  it('places the figures with slot markers inside "How the baseline works"', () => {
+  it('places the timeline and the diagram inside "How the baseline works", and the implementation reference after "Adapt it"', () => {
     for (const name of ['timeline', 'diagram-single-node-architecture', 'implementation-reference']) {
       expect(body.match(new RegExp(`^<!-- l2c:${name} -->$`, 'gm'))).toHaveLength(1);
     }
@@ -38,7 +38,10 @@ describe('W6 Module 2', () => {
     expect(at('timeline')).toBeGreaterThan(0);
     expect(at('timeline')).toBeLessThan(how.indexOf('| Step |'));
     expect(at('diagram-single-node-architecture')).toBeGreaterThan(how.indexOf('| 6. Clean up'));
-    expect(at('implementation-reference')).toBeGreaterThan(at('diagram-single-node-architecture'));
+    expect(at('implementation-reference')).toBe(-1);
+    const reference = body.indexOf('<!-- l2c:implementation-reference -->');
+    expect(reference).toBeGreaterThan(body.indexOf('## Adapt it'));
+    expect(reference).toBeLessThan(body.indexOf('## Safety and scope limitations'));
   });
 
   it('states exactly three goals', () => {
