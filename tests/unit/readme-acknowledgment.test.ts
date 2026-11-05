@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ACKNOWLEDGMENT_DISCLAIMER, ACKNOWLEDGMENT_STATEMENT } from '../../site/src/content/acknowledgment';
@@ -29,9 +29,13 @@ describe('READMEs carry the funding acknowledgment, verbatim', () => {
     expect(text).toContain('](https://laptop-to-cluster.org/milestones/2/#release-v0-2-0)');
   });
 
-  it('the root README lists Modules 0 to 3', () => {
+  it('the root README lists the published modules by their source files, and every repository link it makes resolves', () => {
     const text = readFileSync(`${root}/README.md`, 'utf8');
-    const rows = text.split('\n').filter((line) => /^\| [0-9] \|/.test(line)).map((line) => line.split('|')[1].trim());
-    expect(rows).toEqual(['0', '1', '2', '3']);
+    for (const source of ['00-tour.md', '01-scheduler-as-orchestrator.md', '02-baseline-single-node-pattern.md', '03-compose-to-hpc-translation.md']) {
+      expect(text, source).toContain(`](site/src/content/content-items/${source})`);
+    }
+    const links = [...text.matchAll(/\]\(([^)#]+)\)/g)].map(([, target]) => target).filter((target) => !/^[a-z]+:/.test(target));
+    expect(links.length).toBeGreaterThan(10);
+    for (const target of links) expect(existsSync(`${root}/${target}`), target).toBe(true);
   });
 });
