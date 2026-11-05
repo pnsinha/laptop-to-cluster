@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "anvil-v0-1-0-readiness-timeout-20260725",
+  "evidenceKind": "readiness-timeout",
+  "workflowId": "module-2-baseline",
+  "workflowRevision": "v0.1.0",
+  "releaseCandidate": "v0.1.0",
+  "environment": { "publicName": "Purdue Anvil", "fallback": false },
+  "schedulerVersion": "slurm 25.11.1",
+  "runtimeVersion": "apptainer 1.4.3-1.el8",
+  "containerDigest": "sha256:e871d1e08d712ed708b88a3ecd5d0f5f137ba31b41a5d8fd83d8e44710b7cd33",
+  "submissionId": "19500688",
+  "startedAt": "2026-07-25T16:45:49Z",
+  "endedAt": "2026-07-25T16:45:50Z",
+  "nodes": 1,
+  "coordinatorCount": 1,
+  "workerCount": 2,
+  "terminalState": "FAILED",
+  "exitCode": 75,
+  "reviewAfter": "2026-10-31",
+  "assumptions": [
+    "One Slurm node on a shared partition",
+    "A deliberately bounded readiness deadline (READINESS_TIMEOUT=1) is configured to force the timeout path before the coordinator can publish its endpoint"
+  ],
+  "limitations": [
+    "This is a controlled failure run produced by setting READINESS_TIMEOUT below the coordinator startup time; it validates the readiness-timeout failure path, not a spontaneous cluster failure",
+    "The coordinator was terminated before publishing endpoint.json, so readiness.log is absent and coordinator.log is empty by construction",
+    "This failure run tests readiness-timeout handling only; it does not exercise worker, verification, or cleanup failure paths"
+  ],
+  "portabilityBoundaries": [
+    "Scheduler accounting and timeout-state presentation vary by site",
+    "The FAILED terminal state and exit code 75 reflect this workflow's deliberate BSSW-READY-TIMEOUT diagnostic, not a Slurm infrastructure fault"
+  ],
+  "reviewer": "Parmanand Sinha",
+  "redactValues": [
+    "x-psinha1",
+    "a065",
+    "cis261295",
+    "login04"
+  ]
+}

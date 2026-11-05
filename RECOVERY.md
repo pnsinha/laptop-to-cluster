@@ -34,9 +34,19 @@ Retained release records and validated artifacts expire after 90 days, which is 
 
 | Release | Run | Commit | Recovery artifacts expire |
 |---|---|---|---|
-| v0.1.0 | publication.yml run 31160844556 | `ea4c7c275ae3187fff227b0524351d4cbbce0485` | 2026-11-05 |
-| v0.2.0 | release.yml production run (record the run id here after the deploy) | the release commit | about 90 days after the deploy |
+| v0.1.0 | publication.yml run 31160844556 | `ea4c7c275ae3187fff227b0524351d4cbbce0485` | expired; the run lists no artifacts as of 2026-11-05 |
+| v0.2.0 | release.yml run 39504561028 (tag `v0.2.0`) | `826c29fdbd9ada2ef9c0de1d06eee610d4b06045` | 2027-01-18 |
 
-`releases/recovery-index.json` already names v0.1.0 as `current`, so the v0.2.0 deploy records it as `previous`. Before 2026-11-05, download both v0.1.0 artifacts from run 31160844556 (`gh run download 31160844556`) and keep them somewhere that does not expire, for example assets on a GitHub Release. After that date, restoring v0.1.0 means rebuilding it, and the frozen `publication.yml` does not guard that.
+The v0.1.0 artifacts were not copied before they expired, so restoring v0.1.0 now means rebuilding it from the `v0.1.0` tag. The frozen `publication.yml` does not guard that rebuild, and the rebuilt output may not match the checksum recorded in `releases/recovery-index.json`.
+
+Before 2027-01-18, download the two v0.2.0 artifacts (`validated-site-v0.2.0-…` and `release-record-v0.2.0-…`) and attach them to a GitHub Release for `v0.2.0`, so they outlive the 90-day window:
+
+```sh
+gh run download 39504561028 --dir v0.2.0-artifacts
+(cd v0.2.0-artifacts && for d in */; do zip -qr "${d%/}.zip" "$d"; done)
+gh release create v0.2.0 --verify-tag --title v0.2.0 --notes-file releases/v0.2.0/RELEASE_NOTES.md v0.2.0-artifacts/*.zip
+```
+
+Do the same for every later release on the day it deploys.
 
 Settings the workflows cannot enforce: the `production` environment needs a required reviewer, and `production-recovery` must be created with one before its first use.
