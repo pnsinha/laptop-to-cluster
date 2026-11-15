@@ -21,8 +21,10 @@
     "validate:policy": "node scripts/publication.mjs policy ..",
     "publication:prepare": "node scripts/prepare-publication.mjs .",
     "validate:boundary": "node scripts/publication.mjs boundary .. --require --history HEAD",
-    "publication:validate": "npm run validate:boundary && npm run validate:built && npm run validate:policy && npm run validate:evidence && npm run validate:repository && npm run validate:release",
-    "validate": "npm run check && npm run test && npm run build && npm run test:integration:built && npm run test:accessibility:browser && npm run publication:validate"
+    "publication:checks": "npm run validate:built && npm run validate:policy && npm run validate:evidence && npm run validate:repository && npm run validate:release",
+    "publication:validate": "npm run validate:boundary && npm run publication:checks",
+    "gate": "npm run check && npm run test && npm run build && npm run test:integration:built && npm run test:accessibility:browser",
+    "validate": "npm run gate && npm run publication:validate"
   },
   "dependencies": {
     "@astrojs/sitemap": "3.7.4",

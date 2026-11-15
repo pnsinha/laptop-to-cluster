@@ -89,10 +89,14 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y poppler-utils && pdftotext -v
       - name: Install accessibility browser
         run: npx --no-install playwright install --with-deps chromium
-      - name: The gate (check, tests, one build, built-site checks, links and axe, acknowledgment, boundary scan)
-        run: npm run validate
+      - name: The gate (check, tests, one build, built-site checks, links and axe, acknowledgment)
+        run: npm run gate
+      - name: Boundary scan (the only step that sees the pattern secret)
+        run: npm run validate:boundary
         env:
           L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
+      - name: Publication checks (built output, policy, evidence, repository, release)
+        run: npm run publication:checks
       - name: Pack the validated build with its checksums
         run: npm run publication:prepare
       - uses: actions/upload-artifact@v4.6.2

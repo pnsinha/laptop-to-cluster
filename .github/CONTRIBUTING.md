@@ -43,7 +43,7 @@ Before a pull request, run the publication validators that work locally:
 npm run validate:built && npm run validate:policy && npm run validate:evidence && npm run validate:repository && npm run validate:release
 ```
 
-Do not expect `npm run validate` or `npm run publication:validate` to pass on your machine. Both start with the boundary scan, which needs the `L2C_BOUNDARY_PATTERN` secret that only CI and the maintainer have. CI runs the full set on every pull request from this repository; for a pull request from a fork, the maintainer runs the boundary scan before merging. [`website/scripts/README.md`](../website/scripts/README.md) says what each check does.
+Do not expect `npm run validate` or `npm run publication:validate` to pass on your machine. Both include the boundary scan, which needs the `L2C_BOUNDARY_PATTERN` secret that only CI and the maintainer have. CI runs the full set on every pull request from this repository; for a pull request from a fork, the maintainer runs the boundary scan before merging. [`website/scripts/README.md`](../website/scripts/README.md) says what each check does.
 
 ## Releasing
 

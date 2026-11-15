@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
    formed; this proves it is THIS release. Compared as parsed JSON, so an edge rewrite of whitespace cannot cause a failure.
    Output never prints page bodies. */
 const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
-const releaseLine = (html) => /<p class="release"[^>]*>[\s\S]*?<\/p>/.exec(html)?.[0].replace(/\s+/g, ' ').trim();
+/* The footer names the release on every page: <a href="/milestones/2/#release-v0-2-1">Release v0.2.1</a>. */
+export const releaseLine = (html) => /<a href="\/milestones\/\d+\/#release-v\d+-\d+-\d+">Release v\d+\.\d+\.\d+<\/a>/.exec(html)?.[0];
 
 async function fetchText(fetchImpl, url) {
   const response = await fetchImpl(url, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
@@ -27,7 +28,8 @@ export async function checkOnce({ origin, distDir, fetchImpl = fetch }) {
   try {
     const home = await fetchText(fetchImpl, `${origin}/`);
     const wanted = existsSync(join(distDir, 'index.html')) ? releaseLine(readFileSync(join(distDir, 'index.html'), 'utf8')) : undefined;
-    if (wanted && releaseLine(home) !== wanted) problems.push('/: release status line differs from the uploaded artifact');
+    if (!wanted) problems.push('dist/index.html: no release marker, so this release cannot be told apart from the previous one');
+    else if (releaseLine(home) !== wanted) problems.push('/: release marker differs from the uploaded artifact');
   } catch (error) {
     problems.push(`/: ${error.message}`);
   }

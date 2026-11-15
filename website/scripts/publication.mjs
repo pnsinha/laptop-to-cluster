@@ -2,8 +2,12 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse as parseYaml } from 'yaml';
+import { createRequire } from 'node:module';
 import { defaultPdfToText, runBoundaryScan } from './boundary.mjs';
+
+/* Release, preview and rollback jobs run these scripts without node_modules, so the one npm
+   dependency (yaml, used only by the workflow policy check) is loaded on first use. */
+const parseYaml = (text) => createRequire(import.meta.url)('yaml').parse(text);
 
 export const CANONICAL_ORIGIN = 'https://laptop-to-cluster.org';
 export const REDIRECT_HOSTS = Object.freeze([

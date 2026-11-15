@@ -97,12 +97,17 @@ jobs:
           else
             { echo 'root=.'; echo 'dist=site/dist'; echo 'deploy=site/dist'; echo 'repo=.'; } >> "$GITHUB_OUTPUT"
           fi
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22.15.0'
+      - name: Install the policy check's dependencies
+        working-directory: ${{ steps.layout.outputs.root }}
+        run: npm ci --ignore-scripts
       - name: Validate versioned policy independently of content artifacts
         working-directory: ${{ steps.layout.outputs.root }}
         run: node scripts/publication.mjs policy "$REPOSITORY_ROOT"
         env:
           REPOSITORY_ROOT: ${{ steps.layout.outputs.repo }}
-          L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
       - name: Restore exact Cloudflare Bulk Redirect list
         working-directory: ${{ steps.layout.outputs.root }}
         env:
