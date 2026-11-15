@@ -12,7 +12,7 @@ One folder per tagged release, plus the recovery index. Files in a release folde
 
 ## The other places called "release"
 
-- **The release notes page on the site.** `src/content/content-items/release-vX.Y.Z.md` is what readers see, on the milestone page for that release. It says the same things as `RELEASE_NOTES.md`, written for the site, with links to the test records. Change both together.
+- **The release notes page on the site.** The "Release vX.Y.Z: included changes" section of the milestone page for that release (`src/content/docs/milestones/<n>.mdx`) is what readers see. It says the same things as `RELEASE_NOTES.md`, written for the site, with links to the test records. Change both together.
 - **The release workflow.** [`.github/workflows/release.yml`](../../.github/workflows/release.yml) builds a tag once, validates it and deploys it. Its artifacts expire after 90 days; [`RECOVERY.md`](../RECOVERY.md) says how to keep them.
 - **GitHub Releases.** None exists yet. `RECOVERY.md` gives the commands to create one for a tag and attach its artifacts.
 

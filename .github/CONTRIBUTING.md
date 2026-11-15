@@ -28,13 +28,13 @@ npx playwright install chromium
 For any change, run the fast checks:
 
 ```sh
-npm run check && npm run test:unit && npm run test:property
+npm run check && npm run test:unit
 ```
 
 For a change that affects rendered pages, also build the site and run the page and accessibility checks:
 
 ```sh
-npm run build && npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser
+npm run build && npm run test:integration:built && npm run test:accessibility:browser
 ```
 
 Before a pull request, run the publication validators that work locally:

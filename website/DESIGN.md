@@ -1,108 +1,65 @@
 # Design contract
 
-The site is built on [Starlight](https://starlight.astro.build) (Astro's documentation framework). Starlight owns the page shell: the header with the site title, search and the theme select; the sidebar with the learning path; the "On this page" list; the pager; the skip link; keyboard focus handling for the narrow menu. The site owns its tokens, its typography, its own components, and the footer. Change the shell by configuring or overriding Starlight, not by rebuilding it.
-
-This file is the contract. Read it before changing a layout, a component or a stylesheet, and update it in the same change.
+The site is a plain [Starlight](https://starlight.astro.build) site. Starlight owns the shell: header, search, theme select, sidebar, "On this page", pager, skip link. The site adds a stylesheet, three small overrides and a few components. Change the shell by configuring Starlight, not by rebuilding it. Update this file in the same change as the design.
 
 ## Files
 
 | Concern | Where |
 | --- | --- |
-| Starlight configuration, head entries, component overrides | `astro.config.mjs` |
-| Sidebar groups | `src/content/sidebar.ts` |
-| Page chrome (kind line, lede, status notices, pager, edit link) | `src/content/page-chrome.ts`, `src/components/starlight/PageTitle.astro` |
-| Footer (edit link, last updated, pager, site information, acknowledgment) | `src/components/starlight/Footer.astro` |
-| Hero (home page) | `src/components/starlight/Hero.astro`, `src/content/home.ts`, `src/content/hero-figure.ts` |
-| Every page | `src/layouts/BaseLayout.astro` wraps `StarlightPage` |
-| Learning modules | `src/layouts/LearningModuleLayout.astro` |
-| Tokens | `src/styles/tokens.css` |
-| Token mapping onto Starlight, typography, frame | `src/styles/starlight-theme.css` |
-| The site's own components | `src/styles/components.css` |
-| Optional enhancements (crosswalk highlight, cheat-sheet print) | `src/styles/enhancements.css` |
-| Cascade layers | `src/styles/layers.css` |
+| Pages, one file each; the URL is the file path | `src/content/docs/**/*.md(x)` |
+| Home page (splash template, Starlight hero) | `src/content/docs/index.mdx` |
+| Test record pages, one per record | `src/pages/applicability/[id].astro`, from `src/content/applicability/*.yml` |
+| Feed, URL manifest | `src/pages/feed.xml.ts` (items in `src/content/feed.yml`), `src/pages/url-manifest.json.ts` |
+| Sidebar, head entries, overrides, Markdown options | `astro.config.mjs` |
+| Home keeps its sidebar under the splash template | `src/route-middleware.ts` |
+| `@release` in content becomes the release being built | `plugins/release-refs.mjs` |
+| Every style | `src/styles/custom.css` |
 
-## Cascade layers
+## Page frontmatter
 
-`layers.css` declares, in this order: `l2c-base, starlight, l2c-theme, l2c-components, l2c-utilities`. Starlight's own rules sit in `starlight`, so a site rule in a later layer wins without specificity games. Names are flat on purpose: a dotted name such as `l2c.theme` would nest under a parent declared before `starlight` and lose. `tokens.css` is unlayered custom properties. `enhancements.css` is unlayered and scoped by the `.crosswalk` and `.cheat-sheet` prefixes.
+Only Starlight's fields (`title`, `description`, `template`, `hero`, `sidebar`, `tableOfContents`, `prev`, `next`, `lastUpdated`, `editUrl`, `pagefind`) plus `l2c.kindLine` (the line above the title, "Module 2 · Hands-on · about 30 min") and `l2c.lede` (the sentence below it). Everything else a page shows is in its body.
 
-Which layer a rule belongs in:
+A heading keeps an anchor that predates its text with `## Text {#anchor}`. Use that form, not a raw `<h2>`, so the heading appears in "On this page".
 
-- **l2c-theme** (`starlight-theme.css`): `--sl-*` values, type families and sizes, link cues, the focus ring, the hero, the frame (sidebar and "On this page" column), nothing component-specific.
-- **l2c-components** (`components.css`): one block per site component, named below.
-- **l2c-utilities** (end of `components.css`): the wide-figure breakout, print, forced colours, reduced motion.
+## Overrides
 
-## Tokens
+- `PageTitle`: kind line, the h1 (`id="_top"`, the skip-link target; hyphenated words kept on one line), lede.
+- `Hero`: the title, tagline and actions before the figure, so reading order and the phone layout agree.
+- `Footer`: edit link, last updated, pager, site links, and the acknowledgment from `src/content/acknowledgment.ts`, verbatim, on every page.
 
-`tokens.css` holds the palette (light base, dark under `prefers-color-scheme: dark` and under a stored dark choice, print, forced colours), the type ramp, spacing, lines, radii, focus and the concept hues. Starlight reads `--sl-color-*`, `--sl-text-*` and `--sl-font*`; `starlight-theme.css` maps those onto the site's tokens, so one palette serves both. Do not set a colour, size or face outside `tokens.css`; the publication validator and the accessibility scanner read the token strings.
+## Components
 
-Type floors the scanner enforces: body 16px, controls 15px (`--text-label`, also `--sl-text-sm`), supporting text 14px (`--text-fine`, also `--sl-text-xs`), diagram text 14px as rendered.
-
-Theme: Starlight serves `data-theme="dark"` in the HTML and its head script sets `light` or `dark` from the stored choice (`localStorage` key `starlight-theme`) or the operating system. The head script in `astro.config.mjs` marks a scripted page with `data-l2c-js` and keeps the `theme-color` meta in effect on the page canvas. `tokens.css` honours the dark choice only on a marked page, so a page without JavaScript follows the operating system. The select works only once its script has defined the element; until then it is hidden.
-
-## Frame
-
-- Reading column `--sl-content-width: 42rem`; the home page (`[data-has-hero]`) uses 72rem.
-- Wide figures (`.timeline`, `.diagram`, `.implementation-reference`, `.technical-figure`) break out to the main pane, up to 72rem, centred around the column. The content panel is the size container.
-- The "On this page" column appears from 90rem; below that the dropdown under the header serves. Starlight would show the column from 72rem, which leaves the figures too narrow.
-- Sidebar groups, in order: Guide, Learning path (open), While you run it, Evidence, Project (collapsed). The pager follows the learning path only.
-- Skip link targets the page title (`#_top`). Every page has one `h1` with that id.
-
-## Component vocabulary
-
-Starlight's components, used as they are:
-
-| Component | Used for |
-| --- | --- |
-| `StarlightPage` | every page, through `BaseLayout` |
-| `Card`, `CardGrid` | the three doors on the home page (three columns from 64rem) |
-| `LinkCard`, `CardGrid` | the guide page's tiles |
-| `LinkButton` (`primary`, `secondary`, `minimal`) | hero actions and the closing actions on the home page; `minimal` is underlined |
-| `Aside` (`note`, `tip`, `caution`, `danger`) | status notices under the page title, callouts in content |
-| `EditLink`, `LastUpdated`, `Pagination` | inside the footer override |
-
-The site's own components, each with one block in `components.css` and a test that names it:
-
-| Component | Class root | Notes |
+| Component | Takes | Notes |
 | --- | --- | --- |
-| Concept markers | `.c-step`, `.c-gate`, `.c-scratch`, `.c-net` | text on tint plus a shape; shared chip rule |
-| Hero figure | `.hero__figure`, `.env`, `.env-pair` | plain HTML from `hero-figure.ts`, after the copy |
-| Doors | `.doors`, `.door` | inside Starlight cards; the eyebrow is the card title |
-| Concept map | `.concepts`, `.concept` | the big idea rows |
-| Crosswalk | `.crosswalk` | legend, one disclosure, the panes; two columns from 56rem of its own width |
-| Timeline | `.timeline` | six steps; a row from 48rem of its own width |
-| Diagrams | `.diagram`, `.diagram-svg` | inline SVG, text 14px in a 720-unit viewBox |
-| Evidence | `.applicability-projection`, `.evidence-badge`, `.evidence-panel`, `.evidence-rows`, `.record-summary` | the badge stays outside every disclosure |
-| Implementation reference | `.implementation-reference`, `.source-excerpt` | one disclosure per excerpt |
-| Tables | `.table-overflow`, `.layout-data` | a labelled scroll region around every table |
-| Notices | `.notice` | warnings are a double rule plus the word |
-| Sources | `.sources-scope` | one disclosure |
-| Page header | `.content-header` | kind line, title, lede |
-| Footer | `.l2c-footer`, `.l2c-site-info` | site information links and the verbatim acknowledgment |
-| Home | `.site-facts`, `.home-close`, `.home-credit`, `.event-band` | |
-| Diagnostics, cheat sheet, talks, support | `.diagnostic`, `.cheat-sheet`, `.talk`, `.support-state` | |
+| `TestedBadge` | `record` id, `variant` (`badge` or `summary`) | The only source of tested claims: "Tested" plus "Purdue Anvil · Oct 2026 · Test record" and the rows Tested, You need, Depends on your center, all read from the record (`src/content/evidence.ts`). The badge stays outside every disclosure. |
+| `ImplementationReference` | heading and intro as children | The six excerpts from `src/content/implementation.ts`; the build fails if a `baseline.sbatch` excerpt is not the script's own lines. |
+| `Timeline` | `highlight` (step 1 to 6) | The six steps of one allocation, from `src/content/timeline.ts`. |
+| `Diagrams` | `name` | Inline SVG, text 14px in a 720-unit viewBox. |
+| `ConceptMap`, `Crosswalk` | title and intro; optional `record` slot | The four concepts from `src/content/concepts.ts`; the crosswalk rows from `src/content/crosswalk.ts`, with an optional click-to-highlight script. |
+| `Doors` | `doors` | Three Starlight cards on the home page. |
+| `TalksList` | `band` | Talks and posters from `src/content/talks.yml`; `band` gives the home page's "Presented at" line. |
+| `Acknowledgment` | none | The acknowledgment as a page section, beside a hosted download. |
 
-Rules:
+Starlight's own components are used as they are: `Aside`, `LinkButton`, `Card`, `CardGrid`, `LinkCard`.
 
-- Every class a template uses is defined in a stylesheet, and every class a stylesheet defines is used; `tests/unit/stylesheet-foundation.test.ts` checks both. Starlight's and Astro's classes are listed there as provided.
-- No one-off classes and no inline styles. Markdown content carries no class names except through the build (tables, code).
-- No motion: no transitions or animations in the site's stylesheets; Starlight's sidebar caret is reset. Reduced motion neutralises anything left.
-- Links in the main pane carry a cue that is not colour: an underline, or the border of a filled button or pager link.
-- Focus ring: 2px solid `--focus`, offset 2px, everywhere; `Highlight` under forced colours.
+## Styles
+
+`custom.css` declares the cascade layers first: `l2c-base, starlight, l2c-theme, l2c-components, l2c-utilities`. Starlight's rules sit in `starlight`, so a site rule in a later layer wins without specificity games. Then, in order: tokens (both themes, print, forced colours), the self-hosted `@font-face` rules (two of them preloaded in `astro.config.mjs`), the mapping onto Starlight's `--sl-*` properties, one block per component, utilities, and the crosswalk and cheat-sheet enhancements.
+
+- Type scale: body 16px, labels 15px, supporting text 14px, h1 32px at desktop (28px narrow), h2 24px, h3 20px. Prose measure 40rem inside a 42rem column, centred; the home page column is 72rem.
+- Both themes follow the operating system unless the reader picks one in Starlight's theme select. Code colours that fall under 4.5:1 are swapped in `astro.config.mjs` (`CODE_CONTRAST`).
+- No motion, no inline styles, no one-off classes. Links in the main pane carry a cue that is not colour. Focus ring: 2px solid, offset 2px.
 
 ## Disclosure
 
-Progressive disclosure is a `<details>` element with a named `<summary>`. It may hide detail; it may never hide a warning, an unvalidated-scope notice, the evidence scope, a prerequisite, or a reporting or recovery link. The publication validator reads every built page for this. Print opens every disclosure and restores it afterwards (head script).
+A `<details>` with a named `<summary>` may hide detail. It never hides a warning, a prerequisite, the Tested badge, or a reporting or recovery link. Print opens every disclosure (head script in `astro.config.mjs`).
 
-## Copy
+## Checks
 
-- One `h1` per page. Headings in the display serif, prose in the reading serif, interface in the sans.
-- A page says what it is in the kind line above the title (`pageHeaderLine`), then the lede.
-- Status notices are Starlight asides under the title, never inside the body.
-- Labels are frozen in `src/content/contracts.ts` and `wording.ts`; tests use them.
+1. Build: `npm run check` (0 errors) and `npm run build`; `tests/built/routes.test.ts` pins the published routes.
+2. Workflow and evidence: `npm run validate:evidence`, `tests/unit/implementation-excerpts.test.ts`, `tests/built/tested-badge.test.ts`, `tests/unit/baseline-workflow.test.ts` and the `layered-workflow-*` tests.
+3. Links and accessibility: `tests/built/links.test.ts`, and `npm run test:accessibility:browser` (axe on every page, light and dark).
+4. Acknowledgment: `tests/built/acknowledgment.test.ts` (every page) and `tests/unit/readme-acknowledgment.test.ts`.
+5. Boundary: `npm run validate:boundary`, `tests/unit/boundary*.test.ts`.
 
-## Changing the design
-
-1. Tokens: edit `tokens.css`, run `npm run test:unit` (token pairs, contrast) and the browser scan.
-2. The shell: configure Starlight in `astro.config.mjs` or override a component under `src/components/starlight/`; keep Starlight's class names so its rules and the theme rules still apply.
-3. A component: one per pull request. Edit its block in `components.css`, its `.astro` file, the test that names it, and this file.
-4. Before committing: `npm run check && npm run test:unit`; for anything rendered, `npm run build && npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser`.
+Before committing: `npm run check && npm run test:unit`; for anything rendered, `npm run build && npm run test:integration:built && npm run test:accessibility:browser`.
