@@ -6,6 +6,7 @@ l2c:
   lede: "Get the code and the image, record your local values, submit the example job, check that it worked, and copy your results out."
 ---
 import { Aside, LinkButton } from '@astrojs/starlight/components';
+import { CURRENT_RECORD_PATH } from '../current-record';
 
 <article class="start-path" aria-label="Running the example, step by step">
 
@@ -134,7 +135,7 @@ Use [Troubleshooting](/diagnostics/) to match the ID or symptom you see. If no e
 
 ## How we know this works {#how-we-know-heading}
 
-The example workflow has a published test record: what ran, where it ran, and what it checked. [Read the full test record](/applicability/m2-baseline-anvil-2026-10/).
+The example workflow has a published test record: what ran, where it ran, and what it checked. <a href={CURRENT_RECORD_PATH}>Read the full test record</a>.
 
 </section>
 

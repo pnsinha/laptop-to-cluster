@@ -8,6 +8,7 @@ l2c:
   lede: "What the pattern assumes, where it was tested, and when a service your center already runs is the better choice."
 ---
 import TestedBadge from '../../../components/TestedBadge.astro';
+import { CURRENT_RECORD_ID } from '../../current-record';
 
 <article>
 
@@ -35,7 +36,7 @@ Three labels describe every claim on this site. Tested means it ran on a named c
 
 **Tested.** The summary below is generated from the test record, so it always names the cluster, versions and date of the current record.
 
-<TestedBadge record="m2-baseline-anvil-2026-10" variant="summary" />
+<TestedBadge record={CURRENT_RECORD_ID} variant="summary" />
 
 **Shim-tested (off-cluster only).** The workflow's logic runs against fake scheduler, runtime, clock and file-system boundaries, in eight scenarios: success, invalid input, early coordinator exit, worker failure, checksum mismatch, verification failure, cleanup failure and readiness timeout. These runs never start a container, so they are not cluster evidence.
 

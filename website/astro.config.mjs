@@ -5,6 +5,7 @@ import canonicalPolicy from './plugins/canonical-policy.mjs';
 import accessibleTables from './plugins/accessible-tables.mjs';
 import { satteri } from '@astrojs/markdown-satteri';
 import { releaseRefs } from './plugins/release-refs.mjs';
+import { CURRENT_RECORD_PATH } from './src/content/current-record.ts';
 
 const ORIGIN = 'https://laptop-to-cluster.org';
 const REPOSITORY = 'https://github.com/pnsinha/laptop-to-cluster';
@@ -68,7 +69,7 @@ export default defineConfig({
           'about/glossary',
         ] },
         { label: 'Evidence', items: [
-          { label: 'Test record', link: '/applicability/m2-baseline-anvil-2026-10/' },
+          { label: 'Test record', link: CURRENT_RECORD_PATH },
           { label: 'Milestone 1', slug: 'milestones/1' },
           { label: 'Milestone 2', slug: 'milestones/2' },
         ] },

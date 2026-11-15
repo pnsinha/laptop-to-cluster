@@ -6,6 +6,7 @@ l2c:
   lede: Start with the idea, translate your own Compose file, then check what was tested and whether it fits your center.
 ---
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CURRENT_RECORD_PATH } from '../current-record';
 
 {/* Four groups in reading order. The first three are the learner's questions; the fourth is the project's own record, kept separate so it never competes with the learning path. */}
 
@@ -53,7 +54,7 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 <div class="not-content">
 <CardGrid>
 <LinkCard href="/adoption/evaluate/" title="Evaluate and adopt" description="What the pattern assumes, where it was tested, and when a service your center already runs is the better choice." />
-<LinkCard href="/applicability/m2-baseline-anvil-2026-10/" title="Test record" description="What ran, where it ran, and what it checked." />
+<LinkCard href={CURRENT_RECORD_PATH} title="Test record" description="What ran, where it ran, and what it checked." />
 </CardGrid>
 </div>
 </section>

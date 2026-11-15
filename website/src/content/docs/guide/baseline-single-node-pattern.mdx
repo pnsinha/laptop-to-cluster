@@ -10,8 +10,9 @@ import TestedBadge from '../../../components/TestedBadge.astro';
 import Timeline from '../../../components/Timeline.astro';
 import Diagrams from '../../../components/Diagrams.astro';
 import ImplementationReference from '../../../components/ImplementationReference.astro';
+import { CURRENT_RECORD_ID } from '../../current-record';
 
-<TestedBadge record="m2-baseline-anvil-2026-10" />
+<TestedBadge record={CURRENT_RECORD_ID} />
 
 <section class="module-overview" aria-labelledby="module-overview-heading">
 

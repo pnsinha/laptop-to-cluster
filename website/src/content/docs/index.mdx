@@ -30,10 +30,11 @@ import ConceptMap from '../../components/ConceptMap.astro';
 import Crosswalk from '../../components/Crosswalk.astro';
 import Doors from '../../components/Doors.astro';
 import TestedBadge from '../../components/TestedBadge.astro';
+import { CURRENT_RECORD_ID, CURRENT_RECORD_PATH } from '../current-record';
 
 <p class="site-facts">A 2026 BSSw Fellowship project by Parmanand Sinha · Release @release · Free to read, open source</p>
 
-<TestedBadge record="m2-baseline-anvil-2026-10" />
+<TestedBadge record={CURRENT_RECORD_ID} />
 
 <section class="home-doors" aria-labelledby="doors-title">
 <h2 id="doors-title">Pick your path</h2>
@@ -49,7 +50,7 @@ import TestedBadge from '../../components/TestedBadge.astro';
 
 <ConceptMap title="The big idea">A scheduler (Slurm, at most centers) decides where and when your stack runs. Inside one <a href="/about/glossary/#allocation">allocation</a>, four familiar Compose ideas change meaning.</ConceptMap>
 
-<Crosswalk><a slot="record" href="/applicability/m2-baseline-anvil-2026-10/">Test record</a></Crosswalk>
+<Crosswalk><a slot="record" href={CURRENT_RECORD_PATH}>Test record</a></Crosswalk>
 
 <section class="home-close not-content" aria-labelledby="close-title">
 <h2 id="close-title">Ready to start?</h2>

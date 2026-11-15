@@ -7,6 +7,8 @@ l2c:
   kindLine: "Troubleshooting"
   lede: "When a run fails, the job output names an ID that starts with BSSW-. Find that ID below, or choose the symptom you see."
 ---
+import { CURRENT_RECORD_PATH } from '../current-record';
+
 Each entry below is collapsed. Choose an ID in this list, or select an entry’s heading, to expand it. Printing the page expands every entry.
 
 <nav aria-label="Diagnostics on this page" class="not-content">
@@ -165,7 +167,7 @@ Both `command -v apptainer` and `apptainer --version` succeed in the job environ
 ### Escalate {#bssw-preq-apptainer--escalate}
 Ask center support which rootless runtime is approved. This release does not claim another runtime is validated.
 
-<aside class="diagnostic-applicability" aria-label="Relevant tested context"><p><strong>Relevant discriminator:</strong> runtime: Apptainer. <a href="/applicability/m2-baseline-anvil-2026-10/">Review the complete applicability record</a>.</p></aside>
+<aside class="diagnostic-applicability" aria-label="Relevant tested context"><p><strong>Relevant discriminator:</strong> runtime: Apptainer. <a href={CURRENT_RECORD_PATH}>Review the complete applicability record</a>.</p></aside>
 
 </details>
 

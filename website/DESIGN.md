@@ -10,6 +10,7 @@ The site is a plain [Starlight](https://starlight.astro.build) site. Starlight o
 | Home page (splash template, Starlight hero with one action; the trust line under it) | `src/content/docs/index.mdx` |
 | Test record pages, one per record | `src/pages/applicability/[id].astro`, from `src/content/applicability/*.yml` |
 | Feed, URL manifest | `src/pages/feed.xml.ts` (items in `src/content/feed.yml`), `src/pages/url-manifest.json.ts` |
+| The current test record (id and page path), read by the Tested badges, the "Test record" links and the sidebar; pages citing a specific record keep its id | `src/content/current-record.ts` |
 | Sidebar, head entries, overrides, Markdown options | `astro.config.mjs` |
 | Home keeps its sidebar under the splash template | `src/route-middleware.ts` |
 | `@release` in content becomes the release being built | `plugins/release-refs.mjs` |
