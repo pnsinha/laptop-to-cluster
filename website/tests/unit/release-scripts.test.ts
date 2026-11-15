@@ -6,7 +6,7 @@ import { REQUIRED_SCRIPTS, isStrict, releaseFileIssues } from '../../scripts/val
 import { releaseWorkflowIssues } from '../../scripts/validate-release';
 import { RELEASE } from './helpers/release-workflow-fixture';
 
-const root = new URL('../../..', import.meta.url).pathname;
+const root = new URL('../..', import.meta.url).pathname;
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })));
 function tree(files: Record<string, string>) {
@@ -29,15 +29,15 @@ describe('validate-repository', () => {
   });
 
   it('always requires the frozen v0.1.0 record and the current candidate file', () => {
-    const files = { 'releases/v0.1.0/release-candidate.json': '{}', 'releases/v0.1.0/accessibility-review.yml': 'a: 1' };
+    const files = { 'website/releases/v0.1.0/release-candidate.json': '{}', 'website/releases/v0.1.0/accessibility-review.yml': 'a: 1' };
     const missing = releaseFileIssues(tree(files), 'v0.2.0', false);
-    expect(missing.errors.join('\n')).toContain('releases/v0.2.0/release-candidate.json');
-    const noHistory = releaseFileIssues(tree({ 'releases/v0.2.0/release-candidate.json': '{}' }), 'v0.2.0', false);
-    expect(noHistory.errors.join('\n')).toContain('releases/v0.1.0/release-candidate.json');
+    expect(missing.errors.join('\n')).toContain('website/releases/v0.2.0/release-candidate.json');
+    const noHistory = releaseFileIssues(tree({ 'website/releases/v0.2.0/release-candidate.json': '{}' }), 'v0.2.0', false);
+    expect(noHistory.errors.join('\n')).toContain('website/releases/v0.1.0/release-candidate.json');
   });
 
   it('downgrades the review, the notes and release.yml to warnings until strict', () => {
-    const files = { 'releases/v0.1.0/release-candidate.json': '{}', 'releases/v0.1.0/accessibility-review.yml': 'a: 1', 'releases/v0.2.0/release-candidate.json': '{}' };
+    const files = { 'website/releases/v0.1.0/release-candidate.json': '{}', 'website/releases/v0.1.0/accessibility-review.yml': 'a: 1', 'website/releases/v0.2.0/release-candidate.json': '{}' };
     const lenient = releaseFileIssues(tree(files), 'v0.2.0', false);
     expect(lenient.errors).toEqual([]);
     expect(lenient.warnings.join('\n')).toMatch(/accessibility-review\.yml[\s\S]*RELEASE_NOTES\.md[\s\S]*release\.yml/);

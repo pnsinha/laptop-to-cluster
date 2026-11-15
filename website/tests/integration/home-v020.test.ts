@@ -9,8 +9,8 @@ import { BIG_IDEA, CLOSING, CONCEPT_NOTES, CREDIT, CROSSWALK_DISCLOSURE, EVENT_B
 import { currentReleaseVersion } from '../../src/content/release';
 import type { Talk } from '../../src/content/schema';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const home = readFileSync(resolve(root, 'website/dist/index.html'), 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const home = readFileSync(resolve(root, 'dist/index.html'), 'utf8');
 const main = home.slice(home.indexOf('<main'), home.indexOf('</main>'));
 /* The page's own content, without Starlight's mobile table of contents and other navigation inside <main>. */
 const content = main.replace(/<nav\b[\s\S]*?<\/nav>/g, '');
@@ -26,7 +26,7 @@ const walk = (directory: string): string[] => readdirSync(directory).flatMap((na
   const path = join(directory, name);
   return statSync(path).isDirectory() ? walk(path) : [path];
 });
-const talks = parse(readFileSync(resolve(root, 'website/src/content/talks.yml'), 'utf8')) as Talk[];
+const talks = parse(readFileSync(resolve(root, 'src/content/talks.yml'), 'utf8')) as Talk[];
 const panes = [...main.matchAll(/<figure class="crosswalk__pane" data-pane="([a-z]+)"><figcaption>([\s\S]*?)<\/figcaption><pre><code>([\s\S]*?)<\/code><\/pre><\/figure>/g)]
   .map(([, id, caption, code]) => ({
     id,
@@ -145,7 +145,7 @@ describe('home page, built output', () => {
       const tagged = new Set(panes.find((pane) => pane.id === id)!.lines.flatMap(({ concepts }) => concepts));
       for (const { key } of CONCEPTS) expect(tagged.has(key), `${id}:${key}`).toBe(true);
     }
-    const file = readFileSync(resolve(root, 'workflows/baseline-slurm-apptainer/slurm/baseline.sbatch'), 'utf8').split('\n');
+    const file = readFileSync(resolve(root, '../workflows/baseline-slurm-apptainer/slurm/baseline.sbatch'), 'utf8').split('\n');
     const sbatch = panes.find(({ id }) => id === 'sbatch')!;
     expect(sbatch.lines.length).toBe(CROSSWALK.panes.find(({ id }) => id === 'sbatch')!.lines.length);
     for (const line of sbatch.lines) expect(line.text, `line ${line.n}`).toBe(file[line.n! - 1]);
@@ -226,13 +226,13 @@ describe('home page, built output', () => {
   });
 
   it('keeps the home sources free of style, script and inline handlers', () => {
-    expect(existsSync(resolve(root, 'website/src/components/WorkflowFigure.astro'))).toBe(false);
+    expect(existsSync(resolve(root, 'src/components/WorkflowFigure.astro'))).toBe(false);
     expect(home).not.toContain('workflow-figure');
-    for (const file of walk(resolve(root, 'website/src')).filter((path) => /\.(?:astro|ts|mjs)$/.test(path))) {
+    for (const file of walk(resolve(root, 'src')).filter((path) => /\.(?:astro|ts|mjs)$/.test(path))) {
       expect(readFileSync(file, 'utf8'), file).not.toContain('WorkflowFigure');
     }
     for (const file of ['components/Timeline.astro', 'components/Doors.astro', 'components/Crosswalk.astro', 'pages/index.astro']) {
-      expect(readFileSync(resolve(root, 'website/src', file), 'utf8'), file).not.toMatch(/<style\b|<script\b|\sstyle=|onclick/i);
+      expect(readFileSync(resolve(root, 'src', file), 'utf8'), file).not.toMatch(/<style\b|<script\b|\sstyle=|onclick/i);
     }
   });
 });

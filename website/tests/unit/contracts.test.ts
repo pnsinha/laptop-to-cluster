@@ -12,10 +12,10 @@ describe('frozen contracts', () => {
     expect(ACKNOWLEDGMENT_TEXT).toBe(`${ACKNOWLEDGMENT_STATEMENT} ${ACKNOWLEDGMENT_DISCLAIMER}`);
     expect(ACKNOWLEDGMENT_TEXT.length).toBe(605);
     expect(createHash('sha256').update(ACKNOWLEDGMENT_TEXT).digest('hex')).toBe(ACKNOWLEDGMENT_SHA256);
-    const footer = readFileSync('website/src/components/starlight/Footer.astro', 'utf8');
+    const footer = readFileSync('src/components/starlight/Footer.astro', 'utf8');
     expect(footer).toMatch(/import \{ ACKNOWLEDGMENT_TEXT \} from '..\/..\/content\/acknowledgment'/);
     expect(footer).toContain('<p class="acknowledgment">{ACKNOWLEDGMENT_TEXT}</p>');
-    const component = readFileSync('website/src/components/Acknowledgment.astro', 'utf8');
+    const component = readFileSync('src/components/Acknowledgment.astro', 'utf8');
     expect(component).toMatch(/import \{ ACKNOWLEDGMENT_TEXT \} from '..\/content\/acknowledgment'/);
     expect(component).toContain('<section class="event-acknowledgment"');
     const skip = /\.(woff2|png|jpe?g|gif|webp|svg|ico|pdf)$/i;
@@ -24,8 +24,8 @@ describe('frozen contracts', () => {
         const full = join(dir, e.name);
         return e.isDirectory() ? walk(full) : skip.test(e.name) ? [] : [full];
       });
-    const holders = walk('website/src').filter((f) => /DE-AC02-06CH11357|DE-AC52-07NA27344/.test(readFileSync(f, 'utf8')));
-    expect(holders).toEqual([join('website/src', 'content', 'acknowledgment.ts')]);
+    const holders = walk('src').filter((f) => /DE-AC02-06CH11357|DE-AC52-07NA27344/.test(readFileSync(f, 'utf8')));
+    expect(holders).toEqual([join('src', 'content', 'acknowledgment.ts')]);
   });
 
   it('freezes the user-facing model', () => {
@@ -48,7 +48,7 @@ describe('frozen contracts', () => {
 
 
   it('accepts the record and validates talks.yml', () => {
-    const record = parse(readFileSync('website/src/content/applicability/m1-baseline-anvil.yml', 'utf8'));
+    const record = parse(readFileSync('src/content/applicability/m1-baseline-anvil.yml', 'utf8'));
     const related = applicabilityRecordSchema.parse(record).related_evidence;
     expect(Array.isArray(related)).toBe(true);
     expect(related.length).toBeGreaterThanOrEqual(1);
@@ -56,7 +56,7 @@ describe('frozen contracts', () => {
       expect(entry.role).toBe('negative-test');
       expect(entry.integrity).toMatch(/^sha256:[a-f0-9]{64}$/);
     }
-    const talks = parse(readFileSync('website/src/content/talks.yml', 'utf8')) as unknown[];
+    const talks = parse(readFileSync('src/content/talks.yml', 'utf8')) as unknown[];
     expect(talks.map((t) => talkSchema.parse(t).id)).toEqual(['usrse26-talk', 'sc26-research-poster', 'iguide-forum-2026-poster']);
     expect(talks.filter((t: any) => t.featured)).toHaveLength(1);
   });

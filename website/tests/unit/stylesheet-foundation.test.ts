@@ -7,8 +7,8 @@ import { validateFrontendPolicy } from '../../scripts/publication.mjs';
    safeguards every stylesheet must keep (reduced motion, forced colours, focus), the policy on
    motion and remote fonts, and the one rule that keeps the design uniform: every class a template
    uses is defined in a stylesheet, and every class a stylesheet defines is used somewhere. */
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const styles = `${root}/site/src/styles`;
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const styles = `${root}/src/styles`;
 const read = (name: string) => readFileSync(`${styles}/${name}`, 'utf8');
 const SHEETS = ['layers.css', 'tokens.css', 'fonts.css', 'starlight-theme.css', 'components.css', 'enhancements.css'];
 const site = SHEETS.map(read).join('\n');
@@ -28,7 +28,7 @@ describe('cascade layers', () => {
   });
 
   it('lists the layer file first in Starlight\'s customCss, then tokens and fonts', () => {
-    const config = readFileSync(`${root}/site/astro.config.mjs`, 'utf8');
+    const config = readFileSync(`${root}/astro.config.mjs`, 'utf8');
     const custom = config.match(/customCss:\s*\[([\s\S]*?)\]/)?.[1] ?? '';
     const files = [...custom.matchAll(/'\.\/src\/styles\/([a-z-]+\.css)'/g)].map((match) => match[1]);
     expect(files).toEqual(SHEETS);
@@ -49,7 +49,7 @@ describe('safeguards', () => {
 
   it('draws no motion, gradients, glass or remote fonts of its own', () => {
     const manifest = JSON.parse(readFileSync(`${root}/package.json`, 'utf8'));
-    const config = readFileSync(`${root}/site/astro.config.mjs`, 'utf8');
+    const config = readFileSync(`${root}/astro.config.mjs`, 'utf8');
     for (const name of SHEETS) expect(validateFrontendPolicy(manifest, config, [{ path: name, text: read(name) }]), name).toEqual([]);
     expect(site).not.toMatch(/linear-gradient|radial-gradient|backdrop-filter|box-shadow:\s*(?!none)/);
   });
@@ -67,8 +67,8 @@ describe('class uniformity', () => {
   const PROVIDED_NAMES = new Set(['not-content', 'hero', 'hero-html', 'tagline', 'site-title', 'content-panel', 'pagination-links', 'header', 'sidebar', 'right-sidebar', 'astro-code', 'title', 'description', 'stack', 'icon', 'card', 'body', 'light', 'dark', 'print', 'md', 'cheat-sheet-print', 'primary', 'secondary', 'minimal', 'card-grid', 'caret', 'right-sidebar-container', 'main-pane']);
   /* Classes a template sets from a prop or a typed union, so no literal class attribute carries them. */
   const DYNAMIC = ['degraded', 'unavailable', 'c-step', 'c-gate', 'c-scratch', 'c-net', 'evidence-untested', 'table-overflow', 'table-overflow__instruction', 'layout-data'];
-  const templates = [...walk(`${root}/site/src`), ...walk(`${root}/site/plugins`)].filter((path) => /\.(astro|ts|mjs)$/.test(path) && !path.includes('/content/content-items/'));
-  const markdown = walk(`${root}/site/src/content/content-items`).filter((path) => path.endsWith('.md'));
+  const templates = [...walk(`${root}/src`), ...walk(`${root}/plugins`)].filter((path) => /\.(astro|ts|mjs)$/.test(path) && !path.includes('/content/content-items/'));
+  const markdown = walk(`${root}/src/content/content-items`).filter((path) => path.endsWith('.md'));
   const isName = (name: string) => /^[a-z][a-z0-9_-]*$/.test(name) && !name.endsWith('-');
   const used = new Set<string>(DYNAMIC);
   for (const file of [...templates, ...markdown]) {
@@ -88,7 +88,7 @@ describe('class uniformity', () => {
   });
 
   it('uses every class the stylesheets define', () => {
-    const svgText = readFileSync(`${root}/site/src/components/Diagrams.astro`, 'utf8');
+    const svgText = readFileSync(`${root}/src/components/Diagrams.astro`, 'utf8');
     const dead = [...defined].filter((name) => !used.has(name) && !PROVIDED.test(name) && !PROVIDED_NAMES.has(name) && !svgText.includes(`class="${name}`)).sort();
     expect(dead).toEqual([]);
   });

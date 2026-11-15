@@ -8,12 +8,12 @@ import { serveDist } from './support/serve-dist';
 
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 let server: Awaited<ReturnType<typeof serveDist>>;
 let browser: Browser;
 beforeAll(async () => {
-  if (!existsSync(resolve(dist, 'index.html'))) throw new Error('website/dist is missing; run npm run build first');
+  if (!existsSync(resolve(dist, 'index.html'))) throw new Error('dist is missing; run npm run build first');
   server = await serveDist(dist);
   browser = await chromium.launch({ headless: true });
 });

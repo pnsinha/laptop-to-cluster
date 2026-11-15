@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const dist = resolve(fileURLToPath(new URL('../../..', import.meta.url)), 'website/dist');
+const dist = resolve(fileURLToPath(new URL('../..', import.meta.url)), 'dist');
 const page = (route: string) => readFileSync(resolve(dist, route, 'index.html'), 'utf8');
 const htmlFiles = (directory: string): string[] => readdirSync(directory, { withFileTypes: true })
   .flatMap((entry) => (entry.isDirectory() ? htmlFiles(resolve(directory, entry.name)) : entry.name.endsWith('.html') ? [resolve(directory, entry.name)] : []));

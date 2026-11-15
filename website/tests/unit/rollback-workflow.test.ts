@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const text = readFileSync(`${root}/.github/workflows/rollback.yml`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const text = readFileSync(`${root}/../.github/workflows/rollback.yml`, 'utf8');
 const workflow = parse(text) as any;
 const content: any[] = workflow.jobs['recover-content'].steps;
 const policy: any[] = workflow.jobs['recover-hostname-policy'].steps;
@@ -31,21 +31,21 @@ describe('rollback.yml: version-parametrised recovery', () => {
       'validated-site-${{ inputs.release }}-${{ inputs.source-commit }}',
       'release-record-${{ inputs.release }}-${{ inputs.source-commit }}',
     ]);
-    expect(downloads[1].with.path).toBe('publication/${{ inputs.release }}');
+    expect(downloads[1].with.path).toBe('website/publication/${{ inputs.release }}');
   });
 
   it('refuses a retained record that belongs to another release, then verifies checksums', () => {
     const verify = content.find((step) => /rollback\.mjs/.test(step.run ?? ''));
     expect(verify.env).toEqual({ RELEASE: '${{ inputs.release }}' });
     expect(verify.run).toContain(`jq -e --arg release "$RELEASE" '.release == $release'`);
-    expect(verify.run).toContain('node scripts/rollback.mjs website/dist "publication/${RELEASE}/artifact-manifest.json" "publication/${RELEASE}/deployment-record.json" "$RELEASE"');
+    expect(verify.run).toContain('node scripts/rollback.mjs dist "publication/${RELEASE}/artifact-manifest.json" "publication/${RELEASE}/deployment-record.json" "$RELEASE"');
     expect(verify.run.indexOf('jq -e')).toBeLessThan(verify.run.indexOf('node scripts/rollback.mjs'));
   });
 
   it('maps the boundary pattern on the policy step only', () => {
     expect(text.match(/secrets\.L2C_BOUNDARY_PATTERN/g)).toHaveLength(1);
     expect(workflow.env).toBeUndefined();
-    const step = policy.find((entry) => entry.run === 'node scripts/publication.mjs policy .');
+    const step = policy.find((entry) => entry.run === 'node scripts/publication.mjs policy ..');
     expect(step.env.L2C_BOUNDARY_PATTERN).toBe('${{ secrets.L2C_BOUNDARY_PATTERN }}');
   });
 

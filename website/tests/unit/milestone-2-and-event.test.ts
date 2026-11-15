@@ -8,7 +8,7 @@ const QUOTE_ORIENTATION = 'I think the site could use a site-map or a \u201cmodu
 const QUOTE_WORKFLOW = 'What does the \u201cworkflow source\u201d do? How would a user modify it to run their own application? It seems that the workflow includes results verification, is this something the user would expect to see for their own application? Are the various json files (such as results.json) intended for humans or for other tools to parse?';
 
 const milestone = readItem('milestone-2.md');
-const record = parse(read('website/src/content/milestones/milestone-2.yml')) as { deliverables: { sow_id: string; item_id: string; status: string; public_url?: string }[] };
+const record = parse(read('src/content/milestones/milestone-2.yml')) as { deliverables: { sow_id: string; item_id: string; status: string; public_url?: string }[] };
 const event = readItem('event-iguide-forum-2026.md');
 
 describe('Milestone 2 page', () => {

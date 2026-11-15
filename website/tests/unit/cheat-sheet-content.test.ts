@@ -8,10 +8,10 @@ import { compositionProfileFor } from '../../src/content/projections';
 import { canonicalPath } from '../../src/content/registry';
 import { contentItemSchema } from '../../src/content/schema';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const source = readFileSync(resolve(root, 'website/src/content/content-items/about-cheat-sheet.md'), 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const source = readFileSync(resolve(root, 'src/content/content-items/about-cheat-sheet.md'), 'utf8');
 const [, front, body] = source.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)!;
-const script = readFileSync(resolve(root, 'workflows/baseline-slurm-apptainer/slurm/baseline.sbatch'), 'utf8');
+const script = readFileSync(resolve(root, '../workflows/baseline-slurm-apptainer/slurm/baseline.sbatch'), 'utf8');
 
 /** Every error ID the launcher can print, with its exit code(s). */
 function scriptCodes(): Map<string, Set<number>> {

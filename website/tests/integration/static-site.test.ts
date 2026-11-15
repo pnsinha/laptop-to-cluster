@@ -7,8 +7,8 @@ import { PROJECTION_SECTION, topLevelCalls, validateBuiltOutput } from '../../sc
 import { TIMELINE_STEPS } from '../../src/content/contracts.js';
 import { formatMonthYear } from '../../src/content/projections.js';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 const readPage = (path: string) => readFileSync(resolve(dist, path, 'index.html'), 'utf8');
 const route = {
   home: '', resources: 'resources', start: 'start', diagnostics: 'diagnostics',
@@ -19,9 +19,9 @@ const route = {
   event: 'events/iguide-forum-2026',
 } as const;
 const html = Object.fromEntries(Object.entries(route).map(([key, path]) => [key, readPage(path)])) as Record<keyof typeof route, string>;
-const source = parse(readFileSync(resolve(root, 'website/src/content/applicability/m2-baseline-anvil-2026-10.yml'), 'utf8')) as any;
+const source = parse(readFileSync(resolve(root, 'src/content/applicability/m2-baseline-anvil-2026-10.yml'), 'utf8')) as any;
 const currentSource = source;
-const firstSource = parse(readFileSync(resolve(root, 'website/src/content/applicability/m1-baseline-anvil.yml'), 'utf8')) as any;
+const firstSource = parse(readFileSync(resolve(root, 'src/content/applicability/m1-baseline-anvil.yml'), 'utf8')) as any;
 
 function htmlFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -277,7 +277,7 @@ describe('static accessibility, metadata, and dependency gates', () => {
     for (const page of pages) expect(page.html, page.route).not.toMatch(/<canvas\b|autoplay|<marquee\b|fonts\.(?:googleapis|gstatic)|use\.typekit/i);
     const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
     expect(pkg.dependencies).toEqual({ '@astrojs/sitemap': '3.7.4', '@astrojs/starlight': '0.42.9', astro: '7.4.5' });
-    const config = readFileSync(resolve(root, 'website/astro.config.mjs'), 'utf8');
+    const config = readFileSync(resolve(root, 'astro.config.mjs'), 'utf8');
     expect(topLevelCalls(config.slice(config.search(/integrations\s*:\s*\[/)))).toEqual(['starlight', 'sitemap', 'canonicalPolicy', 'accessibleTables']);
     expect(config).not.toMatch(/ViewTransitions|adapter|server\s*:|session|auth/i);
   });

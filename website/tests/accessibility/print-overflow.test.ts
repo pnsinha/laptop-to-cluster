@@ -15,7 +15,7 @@ const PAGES = [
   '/',
   '/about/cheat-sheet/',
 ];
-const dist = join(fileURLToPath(new URL('../../..', import.meta.url)), 'website/dist');
+const dist = join(fileURLToPath(new URL('../..', import.meta.url)), 'dist');
 const mime = new Map([['.html', 'text/html'], ['.css', 'text/css'], ['.js', 'text/javascript'], ['.json', 'application/json'], ['.svg', 'image/svg+xml'], ['.woff2', 'font/woff2']]);
 
 let browser: Browser;

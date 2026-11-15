@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { verifyLiveRelease } from '../../scripts/verify-live-release.mjs';
 
-const repo = fileURLToPath(new URL('../../..', import.meta.url));
+const repo = fileURLToPath(new URL('../..', import.meta.url));
 const ORIGIN = 'https://laptop-to-cluster.org';
 const manifest = { canonical_origin: ORIGIN, records: [{ id: 'home', path: '/', url: `${ORIGIN}/` }] };
 const page = (release: string) => `<!doctype html><footer><p class="release" aria-label="Release status">Release status: ${release}</p></footer>`;

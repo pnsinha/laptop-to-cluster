@@ -8,7 +8,7 @@ import { currentReleaseVersion } from '../../src/content/release';
 import { RELEASE } from './helpers/release-workflow-fixture';
 import { resolveReleaseVersion, tagPatternMatches, tagTriggers, validateDeploymentWorkflow, validateFrozenPublicationWorkflow, validateReleaseWorkflow, workflowTagPatterns } from '../../scripts/publication.mjs';
 
-const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
+const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })));
 function releasesTree(versions: Record<string, object>) {
@@ -74,7 +74,7 @@ describe('validateReleaseWorkflow', () => {
       ['a shallow checkout', RELEASE.replace('with: { fetch-depth: 0 }', 'with: { fetch-depth: 1 }'), /fetch-depth: 0/],
       ['a reduced validation chain', RELEASE.replace('npm run validate\n', 'npm run validate:built\n'), /full npm run validate/],
       ['an artifact name without the version', RELEASE.replace(/(upload-artifact@v4\.6\.2\n\s+with:\n\s+name: ).*/, '$1validated-site'), /retained artifact name must be/],
-      ['a rebuild during deploy', RELEASE.replace('      - uses: actions/download-artifact@v4.3.0\n        with:\n          name: @{{ needs.plan.outputs.artifact-name }}\n      - run: node scripts/publication.mjs verify website/dist publication/artifact-manifest.json\n      - uses: cloudflare/wrangler-action@v3.14.1\n        env:\n          CLOUDFLARE_API_TOKEN: @{{ secrets.CLOUDFLARE_API_TOKEN }}\n          CLOUDFLARE_ACCOUNT_ID: @{{ secrets.CLOUDFLARE_ACCOUNT_ID }}\n          CLOUDFLARE_ZONE_ID'.replaceAll('@{{', '${{'), '      - run: npm run build\n$&'.replace('$&', '      - uses: actions/download-artifact@v4.3.0\n        with:\n          name: x\n      - run: node scripts/publication.mjs verify website/dist m\n      - uses: cloudflare/wrangler-action@v3.14.1\n        env:\n          CLOUDFLARE_API_TOKEN: x\n          CLOUDFLARE_ACCOUNT_ID: x\n          CLOUDFLARE_ZONE_ID')), /BUILD-ONCE\] forbidden deployment operation/],
+      ['a rebuild during deploy', RELEASE.replace('      - uses: actions/download-artifact@v4.3.0\n        with:\n          name: @{{ needs.plan.outputs.artifact-name }}\n      - run: node scripts/publication.mjs verify dist publication/artifact-manifest.json\n      - uses: cloudflare/wrangler-action@v3.14.1\n        env:\n          CLOUDFLARE_API_TOKEN: @{{ secrets.CLOUDFLARE_API_TOKEN }}\n          CLOUDFLARE_ACCOUNT_ID: @{{ secrets.CLOUDFLARE_ACCOUNT_ID }}\n          CLOUDFLARE_ZONE_ID'.replaceAll('@{{', '${{'), '      - run: npm run build\n$&'.replace('$&', '      - uses: actions/download-artifact@v4.3.0\n        with:\n          name: x\n      - run: node scripts/publication.mjs verify dist m\n      - uses: cloudflare/wrangler-action@v3.14.1\n        env:\n          CLOUDFLARE_API_TOKEN: x\n          CLOUDFLARE_ACCOUNT_ID: x\n          CLOUDFLARE_ZONE_ID')), /BUILD-ONCE\] forbidden deployment operation/],
       ['no checksum verification', RELEASE.replaceAll('publication.mjs verify', 'publication.mjs show'), /ARTIFACT-IDENTITY/],
       ['main branch in the preview job', RELEASE.replace('--branch=preview', '--branch=main'), /--branch=preview must appear only in deploy-preview/],
       ['preview branch in the production job', RELEASE.replace('--branch=main', '--branch=preview'), /--branch=main must appear only in deploy/],

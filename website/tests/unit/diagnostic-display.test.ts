@@ -6,8 +6,8 @@ import {
   displayDiagnosticCode, isReadinessTimeoutDiagnostic, printedDiagnosticHref, printedDiagnosticId,
 } from '../../src/content/diagnostics.js';
 
-const printedIn = (path: string) => [...new Set([...readFileSync(path, 'utf8').matchAll(/\bBSSW-[A-Z]+(?:-[A-Z]+)+\b/g)].map(([id]) => id))];
-const contentDir = 'website/src/content/content-items';
+const printedIn = (path: string) => [...new Set([...readFileSync(`../${path}`, 'utf8').matchAll(/\bBSSW-[A-Z]+(?:-[A-Z]+)+\b/g)].map(([id]) => id))];
+const contentDir = 'src/content/content-items';
 const diagnosticItems = readdirSync(contentDir).filter((name) => name.startsWith('diagnostic-'))
   .map((name) => parse(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(`${contentDir}/${name}`, 'utf8'))![1]) as { id: string; stable_slug: string });
 

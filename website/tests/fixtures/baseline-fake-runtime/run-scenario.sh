@@ -2,7 +2,7 @@
 set -uo pipefail
 SCENARIO=${1:?scenario is required}
 FIXTURE_DIR=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-REPOSITORY_ROOT=$(CDPATH= cd -- "${FIXTURE_DIR}/../../.." && pwd)
+REPOSITORY_ROOT=$(CDPATH= cd -- "${FIXTURE_DIR}/../../../.." && pwd)
 WORKFLOW_ROOT=$REPOSITORY_ROOT/workflows/baseline-slurm-apptainer
 OUTPUT_ROOT=${2:-$(mktemp -d "${TMPDIR:-/tmp}/bssw-fixture.XXXXXX")}
 mkdir -p "$OUTPUT_ROOT/scratch"

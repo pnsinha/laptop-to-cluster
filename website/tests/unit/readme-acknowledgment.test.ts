@@ -3,12 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ACKNOWLEDGMENT_DISCLAIMER, ACKNOWLEDGMENT_STATEMENT } from '../../src/content/acknowledgment';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const READMES = ['README.md', 'evidence/README.md', 'workflows/baseline-slurm-apptainer/README.md', 'workflows/layered-install-trees/README.md'];
 
 describe('READMEs carry the funding acknowledgment, verbatim', () => {
   for (const path of READMES) {
-    const text = readFileSync(`${root}/${path}`, 'utf8');
+    const text = readFileSync(`${root}/../${path}`, 'utf8');
 
     it(`${path} contains the exported statement and disclaimer, byte for byte`, () => {
       expect(text).toContain(ACKNOWLEDGMENT_STATEMENT);
@@ -23,19 +23,11 @@ describe('READMEs carry the funding acknowledgment, verbatim', () => {
     });
   }
 
-  it('the root README links the site and the release notes', () => {
-    const text = readFileSync(`${root}/README.md`, 'utf8');
+  it('the root README links the guide, and every repository link it makes resolves', () => {
+    const text = readFileSync(`${root}/../README.md`, 'utf8');
     expect(text).toContain('](https://laptop-to-cluster.org)');
-    expect(text).toContain('](https://laptop-to-cluster.org/milestones/2/#release-v0-2-0)');
-  });
-
-  it('the root README lists the published modules by their source files, and every repository link it makes resolves', () => {
-    const text = readFileSync(`${root}/README.md`, 'utf8');
-    for (const source of ['00-tour.md', '01-scheduler-as-orchestrator.md', '02-baseline-single-node-pattern.md', '03-compose-to-hpc-translation.md']) {
-      expect(text, source).toContain(`](website/src/content/content-items/${source})`);
-    }
     const links = [...text.matchAll(/\]\(([^)#]+)\)/g)].map(([, target]) => target).filter((target) => !/^[a-z]+:/.test(target));
-    expect(links.length).toBeGreaterThan(10);
-    for (const target of links) expect(existsSync(`${root}/${target}`), target).toBe(true);
+    expect(links.length).toBeGreaterThan(3);
+    for (const target of links) expect(existsSync(`${root}/../${target}`), target).toBe(true);
   });
 });

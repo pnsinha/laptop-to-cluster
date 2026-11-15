@@ -2,8 +2,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const read = (path: string) => readFileSync(`${root}/${path}`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const repoRoot = `${root}/..`;
+const read = (path: string) => readFileSync(`${repoRoot}/${path}`, 'utf8');
 const unwrap = (text: string) => text.replace(/\s+/g, ' ');
 
 describe('layered-install-trees PROVENANCE.md', () => {
@@ -44,7 +45,7 @@ describe('evidence/README.md', () => {
   it('lists both bundle pairs, and every bundle it names exists', () => {
     for (const bundle of ['anvil-baseline-20261007-success', 'anvil-baseline-20261007-readiness-timeout', 'anvil-v0-1-0-success-20260725', 'anvil-v0-1-0-readiness-timeout-20260725']) {
       expect(text, bundle).toContain(`\`${bundle}/\``);
-      expect(existsSync(`${root}/evidence/${bundle}`), bundle).toBe(true);
+      expect(existsSync(`${repoRoot}/evidence/${bundle}`), bundle).toBe(true);
     }
   });
 

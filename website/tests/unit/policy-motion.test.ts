@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { validateFrontendPolicy } from '../../scripts/publication.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-const config = readFileSync(join(root, 'website/astro.config.mjs'), 'utf8');
+const config = readFileSync(join(root, 'astro.config.mjs'), 'utf8');
 const check = (text: string) => validateFrontendPolicy(manifest, config, [{ path: 'x.css', text }]).join('\n');
 
 describe('technology exclusion: motion that is switched off', () => {
@@ -25,7 +25,7 @@ describe('technology exclusion: motion that is switched off', () => {
   });
   it('accepts the real site stylesheets', () => {
     for (const file of ['layers.css', 'tokens.css', 'fonts.css', 'starlight-theme.css', 'components.css', 'enhancements.css']) {
-      expect(check(readFileSync(join(root, 'website/src/styles', file), 'utf8')), file).toBe('');
+      expect(check(readFileSync(join(root, 'src/styles', file), 'utf8')), file).toBe('');
     }
   });
 });

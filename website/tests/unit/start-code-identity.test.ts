@@ -3,15 +3,15 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const git = (...args: string[]) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const git = (...args: string[]) => spawnSync('git', args, { cwd: `${root}/..`, encoding: 'utf8' });
 const tagged = git('rev-parse', '--verify', '--quiet', 'v0.1.0^{commit}').status === 0;
 
 /* /start/ tells readers the example workflow is the tested v0.1.0 code with only its README changed.
    That is a fact about the repository, so it is checked against git rather than pinned as text. */
 describe('the run page’s claim that the example workflow is unchanged since v0.1.0', () => {
   it('is stated on the page', () => {
-    expect(readFileSync(`${root}/site/src/content/content-items/start-run-the-example.md`, 'utf8'))
+    expect(readFileSync(`${root}/src/content/content-items/start-run-the-example.md`, 'utf8'))
       .toContain('is identical to the tested v0.1.0 revision; only its README changed.');
   });
 

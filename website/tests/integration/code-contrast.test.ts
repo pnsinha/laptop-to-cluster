@@ -3,9 +3,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
-const tokens = readFileSync(resolve(root, 'website/src/styles/tokens.css'), 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
+const tokens = readFileSync(resolve(root, 'src/styles/tokens.css'), 'utf8');
 const [lightSurface, darkSurface] = [...tokens.matchAll(/--surface:\s*(#[0-9a-fA-F]{6});/g)].map((match) => match[1]);
 
 const htmlFiles = (directory: string): string[] =>

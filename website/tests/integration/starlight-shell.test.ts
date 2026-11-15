@@ -8,8 +8,8 @@ import { currentReleaseVersion } from '../../src/content/release';
 
 /* The shell every page shares on Starlight: the header, the sidebar, the table of contents, the
    footer with the site information block and the acknowledgment, and the head. */
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 const htmlFiles = (directory: string): string[] => readdirSync(directory, { withFileTypes: true })
   .flatMap((entry) => (entry.isDirectory() ? htmlFiles(resolve(directory, entry.name)) : entry.name.endsWith('.html') ? [resolve(directory, entry.name)] : []));
 const pages = htmlFiles(dist).map((file) => ({ route: `/${relative(dist, file).split(sep).join('/').replace(/index\.html$/, '')}`, html: readFileSync(file, 'utf8') }));
@@ -105,7 +105,7 @@ describe('footer', () => {
 
   it('shows the edit link and the last-updated date on the content pages', () => {
     const module2 = page('/guide/baseline-single-node-pattern/');
-    expect(module2).toContain('href="https://github.com/pnsinha/laptop-to-cluster/edit/main/site/src/content/content-items/02-baseline-single-node-pattern.md"');
+    expect(module2).toContain('href="https://github.com/pnsinha/laptop-to-cluster/edit/main/website/src/content/content-items/02-baseline-single-node-pattern.md"');
     expect(module2).toMatch(/Last updated: <time datetime="2026-10-20T00:00:00\.000Z">/);
     expect(page('/')).not.toContain('/edit/main/');
   });

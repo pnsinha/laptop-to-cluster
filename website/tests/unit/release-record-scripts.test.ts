@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createArtifactManifest } from '../../scripts/publication.mjs';
 import { readReleaseCandidate } from '../../scripts/release-version.mjs';
 
-const repo = fileURLToPath(new URL('../../..', import.meta.url));
+const repo = fileURLToPath(new URL('../..', import.meta.url));
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })));
 const sandbox = () => { const dir = mkdtempSync(join(tmpdir(), 'l2c-release-scripts-')); temporary.push(dir); return dir; };

@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 // Synthetic fixture only. No real boundary term is ever written in a test.
 const TOKEN = 'l2c-boundary-fixture';
-const root = fileURLToPath(new URL('../../..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })));
 
@@ -58,7 +58,7 @@ describe('publication.mjs boundary subcommand', () => {
 
   it('wires the gate first in the publication chain with the exact npm scripts', () => {
     const scripts = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts;
-    expect(scripts['validate:boundary']).toBe('node scripts/publication.mjs boundary . --require --history HEAD');
+    expect(scripts['validate:boundary']).toBe('node scripts/publication.mjs boundary .. --require --history HEAD');
     expect(scripts['publication:validate']).toBe('npm run validate:boundary && npm run validate:built && npm run validate:policy && npm run validate:accessibility-review && npm run validate:evidence && npm run validate:repository && npm run validate:release');
   });
 });

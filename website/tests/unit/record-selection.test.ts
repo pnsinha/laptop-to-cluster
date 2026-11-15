@@ -4,7 +4,7 @@ import { parse } from 'yaml';
 import { currentRecord } from '../../src/content/projections.js';
 import { applicabilityRecordSchema } from '../../src/content/schema.js';
 
-const directory = 'website/src/content/applicability';
+const directory = 'src/content/applicability';
 const records = readdirSync(directory).filter((name) => /\.ya?ml$/.test(name))
   .map((name) => applicabilityRecordSchema.parse(parse(readFileSync(`${directory}/${name}`, 'utf8'))));
 const current = currentRecord(records);
@@ -12,7 +12,7 @@ const current = currentRecord(records);
 /** The applicability_records of a content item, or undefined when the item does not exist (yet). */
 function linked(file: string): string[] | undefined {
   try {
-    const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(`website/src/content/content-items/${file}`, 'utf8'))![1];
+    const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(`src/content/content-items/${file}`, 'utf8'))![1];
     return (parse(frontmatter) as { applicability_records?: string[] }).applicability_records ?? [];
   } catch { return undefined; }
 }

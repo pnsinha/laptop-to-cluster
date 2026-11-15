@@ -44,7 +44,7 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with:
           name: @{{ needs.plan.outputs.artifact-name }}
-      - run: node scripts/publication.mjs verify website/dist publication/artifact-manifest.json
+      - run: node scripts/publication.mjs verify dist publication/artifact-manifest.json
       - uses: cloudflare/wrangler-action@v3.14.1
         env:
           CLOUDFLARE_API_TOKEN: @{{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -59,7 +59,7 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with:
           name: @{{ needs.plan.outputs.artifact-name }}
-      - run: node scripts/publication.mjs verify website/dist publication/artifact-manifest.json
+      - run: node scripts/publication.mjs verify dist publication/artifact-manifest.json
       - uses: cloudflare/wrangler-action@v3.14.1
         env:
           CLOUDFLARE_API_TOKEN: @{{ secrets.CLOUDFLARE_API_TOKEN }}

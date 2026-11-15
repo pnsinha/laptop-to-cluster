@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { parse, stringify } from 'yaml';
 import { currentRecordId, pendingReview, resolveReleaseSha, reviewProfile, validateAccessibilityReview, type ReviewProfile } from '../../scripts/validate-accessibility-review';
 
-const repo = fileURLToPath(new URL('../../..', import.meta.url));
+const repo = fileURLToPath(new URL('../..', import.meta.url));
 const RECORD = 'm2-baseline-anvil-2026-10';
 const REVIEWED = '0123456789abcdef0123456789abcdef01234567';
 const SIGNED_URL = 'https://0a1b2c3d.laptop-to-cluster.pages.dev';

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { resolveReleaseRefs } from '../../src/content/release.js';
 
-const module3 = readFileSync('website/src/content/content-items/03-compose-to-hpc-translation.md', 'utf8');
+const module3 = readFileSync('src/content/content-items/03-compose-to-hpc-translation.md', 'utf8');
 
 describe('release-pinned learner links', () => {
   it('resolves the release token in link targets and leaves pinned links alone', () => {
@@ -17,7 +17,7 @@ describe('release-pinned learner links', () => {
   });
 
   it('uses the token for the clone command on the run page', () => {
-    const start = readFileSync('website/src/content/content-items/start-run-the-example.md', 'utf8');
+    const start = readFileSync('src/content/content-items/start-run-the-example.md', 'utf8');
     expect(start).toContain('git clone --branch @release https://github.com/pnsinha/laptop-to-cluster.git && cd laptop-to-cluster');
     expect(start).not.toMatch(/--branch v\d/);
   });

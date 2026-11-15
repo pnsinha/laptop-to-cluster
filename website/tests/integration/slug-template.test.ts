@@ -7,13 +7,13 @@ import { parse } from 'yaml';
 import { ACKNOWLEDGMENT_SHA256, ACKNOWLEDGMENT_STATEMENT, ACKNOWLEDGMENT_DISCLAIMER } from '../../src/content/acknowledgment';
 import { TALKS_LABEL } from '../../src/content/contracts';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 const page = (route: string) => readFileSync(resolve(dist, route, 'index.html'), 'utf8');
 const normalized = (value: string) => value.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 
 describe('milestone date label', () => {
-  const dueDate = (number: 1 | 2) => parse(readFileSync(resolve(root, `website/src/content/milestones/milestone-${number}.yml`), 'utf8')).due_date as string;
+  const dueDate = (number: 1 | 2) => parse(readFileSync(resolve(root, `src/content/milestones/milestone-${number}.yml`), 'utf8')).due_date as string;
 
   it('shows the milestone record due date under "Due", never the publication date', () => {
     for (const number of [1, 2] as const) {
@@ -37,7 +37,7 @@ describe('Project group in the sidebar', () => {
 });
 
 describe('consolidated release notes on the milestone page', () => {
-  const releaseSource = resolve(root, 'website/src/content/content-items/release-v0.2.0.md');
+  const releaseSource = resolve(root, 'src/content/content-items/release-v0.2.0.md');
 
   it.runIf(existsSync(releaseSource))('renders the v0.2.0 release item once, as a section after the article and before Sources, when present', () => {
     const html = page('milestones/2');
@@ -54,7 +54,7 @@ describe('consolidated release notes on the milestone page', () => {
 });
 
 describe('event acknowledgment beside the download link', () => {
-  const source = readFileSync(resolve(root, 'website/src/content/content-items/event-iguide-forum-2026.md'), 'utf8');
+  const source = readFileSync(resolve(root, 'src/content/content-items/event-iguide-forum-2026.md'), 'utf8');
   const flagged = /^acknowledgment_beside_download:\s*true\s*$/m.test(source);
 
   it.runIf(flagged)('renders the verbatim statement once, after the PDF link, from the single source', () => {

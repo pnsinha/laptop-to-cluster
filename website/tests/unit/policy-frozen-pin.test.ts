@@ -16,6 +16,6 @@ describe('frozen publication pin', () => {
     expect(validateFrozenPublicationWorkflow(wf(null)).join('\n')).toMatch(/FROZEN-RELEASE.*pinned/);
   });
   it('accepts the real publication workflow', () => {
-    expect(validateFrozenPublicationWorkflow(readFileSync('.github/workflows/publication.yml', 'utf8'))).toEqual([]);
+    expect(validateFrozenPublicationWorkflow(readFileSync('../.github/workflows/publication.yml', 'utf8'))).toEqual([]);
   });
 });

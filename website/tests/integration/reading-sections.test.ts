@@ -3,7 +3,7 @@ import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const dist = resolve(fileURLToPath(new URL('../../..', import.meta.url)), 'website/dist');
+const dist = resolve(fileURLToPath(new URL('../..', import.meta.url)), 'dist');
 const htmlFiles = (directory: string): string[] => readdirSync(directory, { withFileTypes: true })
   .flatMap((entry) => (entry.isDirectory() ? htmlFiles(resolve(directory, entry.name)) : entry.name.endsWith('.html') ? [resolve(directory, entry.name)] : []));
 /* HTML void elements only: SVG children are either self-closed or closed explicitly in the built output. */

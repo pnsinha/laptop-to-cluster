@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const item = (file: string) => readFileSync(`${root}/site/src/content/content-items/${file}`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const item = (file: string) => readFileSync(`${root}/src/content/content-items/${file}`, 'utf8');
 
 describe('labels say what they point at', () => {
   it('Milestone 2 calls the first quoted item a suggestion, as the section does', () => {

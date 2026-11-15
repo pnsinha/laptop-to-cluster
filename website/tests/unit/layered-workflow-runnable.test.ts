@@ -1,10 +1,10 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { read, root } from './content-helpers';
+import { read, repoRoot } from './content-helpers';
 
 const dir = 'workflows/layered-install-trees/orchestrations';
-const scripts = readdirSync(join(root, dir)).filter((name) => name.endsWith('.sbatch'));
+const scripts = readdirSync(join(repoRoot, dir)).filter((name) => name.endsWith('.sbatch'));
 const readme = read('workflows/layered-install-trees/README.md');
 
 describe('layered-install-trees package can run as published', () => {

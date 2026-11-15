@@ -3,7 +3,7 @@ import { RECORD_LINK_TEXT, evidenceBadgeParts, evidenceBadgeText, formatMonthYea
 
 type Status = 'validated' | 'stale' | 'failed' | 'unvalidated';
 const list = (heading: string, items: string[]) => `<h2>${heading}</h2><ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
-// The validation date mirrors website/src/pages/applicability/[id].astro:23: <time datetime=ISO>Long date</time>.
+// The validation date mirrors src/pages/applicability/[id].astro:23: <time datetime=ISO>Long date</time>.
 const DEFAULT_DATE_DD = '<time datetime="2026-07-25">July 25, 2026</time>';
 function canonical(status: Status = 'validated', extra = '', dateDd = DEFAULT_DATE_DD) {
   return `<body data-composition-profile="applicability"><section class="applicability-record" data-source-id="m1"><dl>`

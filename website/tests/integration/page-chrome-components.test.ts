@@ -8,7 +8,7 @@ import { pageHeaderLine, pathPagination, statusNotices } from '../../src/content
 import { titleParts } from '../../src/content/title';
 import type { ContentItem } from '../../src/content/schema';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 let container: AstroContainer;
 beforeAll(async () => {
   container = await AstroContainer.create();
@@ -26,7 +26,7 @@ describe('page header line', () => {
     expect(pageHeaderLine({ artifact_type: 'learning-module', title: 'Fixture', summary: 'S.', status: 'published' } as unknown as ContentItem)).toBeUndefined();
   });
   it('appears above the h1 inside the title panel of a built module page', () => {
-    const html = readFileSync(resolve(root, 'website/dist/guide/baseline-single-node-pattern/index.html'), 'utf8');
+    const html = readFileSync(resolve(root, 'dist/guide/baseline-single-node-pattern/index.html'), 'utf8');
     const header = html.match(/<header class="content-header">([\s\S]*?)<\/header>/)?.[1] ?? '';
     expect(header.indexOf('<p class="content-header__line">Module 2 · Hands-on · about 30 min</p>')).toBeGreaterThanOrEqual(0);
     expect(header.indexOf('content-header__line')).toBeLessThan(header.indexOf('<h1 id="_top">'));
@@ -115,7 +115,7 @@ describe('title compounds', () => {
   });
 
   it('renders the compound span on the built pages', () => {
-    const about = readFileSync(resolve(root, 'website/dist/about/project/index.html'), 'utf8');
+    const about = readFileSync(resolve(root, 'dist/about/project/index.html'), 'utf8');
     expect(about).toContain('<h1 id="_top">About the <span class="h-compound">Laptop-to-Cluster</span> Guide</h1>');
   });
 });

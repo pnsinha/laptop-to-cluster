@@ -5,15 +5,15 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { currentReleaseVersion } from '../../src/content/release.js';
 
 /* Needs a built site: `npm run build` first. */
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = `${root}/site/dist`;
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = `${root}/dist`;
 const read = (path: string) => readFileSync(`${dist}/${path}`, 'utf8');
 const pages = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
   const path = join(dir, name);
   return statSync(path).isDirectory() ? pages(path) : name === 'index.html' ? [path] : [];
 });
 const text = (html: string) => html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-beforeAll(() => { if (!existsSync(`${dist}/index.html`)) throw new Error('website/dist is missing: run `npm run build` first'); });
+beforeAll(() => { if (!existsSync(`${dist}/index.html`)) throw new Error('dist is missing: run `npm run build` first'); });
 
 describe('release-pinned links as built', () => {
   const release = currentReleaseVersion();

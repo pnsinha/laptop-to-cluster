@@ -8,10 +8,10 @@ import { serveDist } from './support/serve-dist';
 
 vi.setConfig({ testTimeout: 30_000, hookTimeout: 60_000 });
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
-const css = readFileSync(resolve(root, 'website/src/styles/enhancements.css'), 'utf8');
-const config = readFileSync(resolve(root, 'website/astro.config.mjs'), 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
+const css = readFileSync(resolve(root, 'src/styles/enhancements.css'), 'utf8');
+const config = readFileSync(resolve(root, 'astro.config.mjs'), 'utf8');
 
 describe('enhancements.css: source rules', () => {
   it('has no transition, animation or keyframes', () => {
@@ -41,7 +41,7 @@ describe('enhancements.css: source rules', () => {
 let server: Awaited<ReturnType<typeof serveDist>>;
 let browser: Browser;
 beforeAll(async () => {
-  if (!existsSync(resolve(dist, 'index.html'))) throw new Error('website/dist is missing; run npm run build first');
+  if (!existsSync(resolve(dist, 'index.html'))) throw new Error('dist is missing; run npm run build first');
   server = await serveDist(dist);
   browser = await chromium.launch({ headless: true });
 });

@@ -4,11 +4,11 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 /* The v0.2.0 release as built: what the release promised is on the pages. Needs a built site:
    `npm run build` first. */
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = `${root}/site/dist`;
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = `${root}/dist`;
 const candidate = JSON.parse(readFileSync(`${root}/releases/v0.2.0/release-candidate.json`, 'utf8'));
 const read = (path: string) => readFileSync(`${dist}/${path}`, 'utf8');
-beforeAll(() => { if (!existsSync(`${dist}/index.html`)) throw new Error('website/dist is missing: run `npm run build` first'); });
+beforeAll(() => { if (!existsSync(`${dist}/index.html`)) throw new Error('dist is missing: run `npm run build` first'); });
 
 describe('release v0.2.0 as built', () => {
   it('renders the release inside Milestone 2 under the frozen anchor, exactly once', () => {

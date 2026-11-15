@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const text = readFileSync(`${root}/.github/workflows/ci.yml`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const text = readFileSync(`${root}/../.github/workflows/ci.yml`, 'utf8');
 const workflow = parse(text) as any;
 const steps: any[] = workflow.jobs['publication-gates'].steps;
 const index = (predicate: (step: any) => boolean) => steps.findIndex(predicate);

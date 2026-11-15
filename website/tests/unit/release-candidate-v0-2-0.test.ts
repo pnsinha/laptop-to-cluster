@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const read = (path: string) => readFileSync(`${root}/${path}`, 'utf8');
 const previous = JSON.parse(read('releases/v0.1.0/release-candidate.json'));
 const candidate = JSON.parse(read('releases/v0.2.0/release-candidate.json'));
@@ -37,7 +37,7 @@ describe('v0.2.0 release candidate record', () => {
     const [current, ...rest] = candidate.evidenceIds.filter((id: string) => !id.startsWith('accessibility-review-'));
     expect(candidate.evidenceIds).toContain('accessibility-review-v0.2.0');
     expect(current).toBeTruthy();
-    for (const id of [current, ...rest]) expect(existsSync(`${root}/site/src/content/applicability/${id}.yml`)).toBe(true);
+    for (const id of [current, ...rest]) expect(existsSync(`${root}/src/content/applicability/${id}.yml`)).toBe(true);
     expect(new Set(candidate.evidenceIds).size).toBe(candidate.evidenceIds.length);
   });
 
@@ -81,7 +81,7 @@ describe('v0.2.0 release notes', () => {
   });
 
   it('say that the October re-test reused the July image, using the versions in its record', () => {
-    const record = parse(read(`website/src/content/applicability/${candidate.evidenceIds[0]}.yml`));
+    const record = parse(read(`src/content/applicability/${candidate.evidenceIds[0]}.yml`));
     const slurm = String(record.scheduler.version).replace(/^slurm\s+/i, '');
     const apptainer = String(record.runtime.version).replace(/^apptainer\s+/i, '').replace(/-.*$/, '');
     expect(notes).toContain(`Slurm ${slurm}`);
@@ -93,7 +93,7 @@ describe('v0.2.0 release notes', () => {
 
   it('state no test result of their own', () => {
     /* The one re-test line names the environment versions that its record carries; every other version, job id or percentage is a result. */
-    const record = parse(read(`website/src/content/applicability/${candidate.evidenceIds[0]}.yml`));
+    const record = parse(read(`src/content/applicability/${candidate.evidenceIds[0]}.yml`));
     const allowed = [String(record.scheduler.version).replace(/^slurm\s+/i, ''), String(record.runtime.version).replace(/^apptainer\s+/i, '').replace(/-.*$/, '')];
     let rest = notes;
     for (const version of allowed) rest = rest.replace(new RegExp(`(Slurm|Apptainer) ${version.replace(/\./g, '\\.')}`, 'g'), '$1');

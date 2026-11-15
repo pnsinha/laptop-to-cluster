@@ -9,7 +9,7 @@ const TYPES: Record<string, string> = {
   '.woff2': 'font/woff2', '.pdf': 'application/pdf', '.svg': 'image/svg+xml',
 };
 
-/** Serves a built `website/dist` folder on a random loopback port. Tests call close() in afterAll. */
+/** Serves a built `dist` folder on a random loopback port. Tests call close() in afterAll. */
 export async function serveDist(dist: string): Promise<{ origin: string; close: () => Promise<void> }> {
   const root = resolve(dist);
   const server: Server = createServer((request, response) => {

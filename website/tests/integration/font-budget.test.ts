@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /*
- * The font, preload, script and origin budgets, measured on the built website/dist.
+ * The font, preload, script and origin budgets, measured on the built dist.
  * The BUDGET rule in scripts/publication.mjs checks the same budgets separately. This file is stricter:
  * it counts every font face the CSS references (the rule counts only faces whose unicode-range occurs in the page).
  */
@@ -70,9 +70,9 @@ const parseHeaders = (text: string) => {
   return rules;
 };
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
-if (!existsSync(dist)) throw new Error('website/dist is missing: run `npm run build` before this test');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
+if (!existsSync(dist)) throw new Error('dist is missing: run `npm run build` before this test');
 const readAsset: Asset = (pathname) => readFileSync(resolve(dist, `.${decodeURIComponent(pathname)}`));
 
 function htmlFiles(directory: string): string[] {

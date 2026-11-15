@@ -7,11 +7,11 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { verifyArtifactManifest } from '../../scripts/publication.mjs';
 
 /* Needs a built site (`npm run build`), like every test in this folder. It copies the real
-   website/dist and the real v0.2.0 candidate into a temporary root, so no tracked or ignored path in the repo is written. */
-const repo = fileURLToPath(new URL('../../..', import.meta.url));
+   dist and the real v0.2.0 candidate into a temporary root, so no tracked or ignored path in the repo is written. */
+const repo = fileURLToPath(new URL('../..', import.meta.url));
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })));
-beforeAll(() => { if (!existsSync(join(repo, 'website/dist/index.html'))) throw new Error('website/dist is missing: run `npm run build` first'); });
+beforeAll(() => { if (!existsSync(join(repo, 'dist/index.html'))) throw new Error('dist is missing: run `npm run build` first'); });
 
 const run = (script: string, root: string, env: Record<string, string> = {}) =>
   spawnSync(process.execPath, [join(repo, 'scripts', script), root], { encoding: 'utf8', env: { PATH: process.env.PATH ?? '', GITHUB_SHA: 'f'.repeat(40), RELEASE_SHA: 'a'.repeat(40), ...env } });
@@ -19,7 +19,7 @@ const run = (script: string, root: string, env: Record<string, string> = {}) =>
 function release() {
   const root = mkdtempSync(join(tmpdir(), 'l2c-release-records-'));
   temporary.push(root);
-  cpSync(join(repo, 'website/dist'), join(root, 'website/dist'), { recursive: true });
+  cpSync(join(repo, 'dist'), join(root, 'dist'), { recursive: true });
   mkdirSync(join(root, 'releases/v0.2.0'), { recursive: true });
   cpSync(join(repo, 'releases/v0.2.0/release-candidate.json'), join(root, 'releases/v0.2.0/release-candidate.json'));
   return root;
@@ -36,7 +36,7 @@ describe('release records for the real build', () => {
     const binding = JSON.parse(readFileSync(join(directory, 'release-binding.json'), 'utf8'));
     expect(binding).toMatchObject({ version: 'v0.2.0', repositoryTag: 'v0.2.0', sourceCommit: 'a'.repeat(40), evidenceIds: candidate.evidenceIds, changes: candidate.changes });
     const manifest = JSON.parse(readFileSync(join(directory, 'artifact-manifest.json'), 'utf8'));
-    expect(verifyArtifactManifest(join(root, 'website/dist'), manifest)).toEqual([]);
+    expect(verifyArtifactManifest(join(root, 'dist'), manifest)).toEqual([]);
   });
 
   it('records the planned commit, not GITHUB_SHA, when a dispatch builds a tag behind the tip of main', () => {

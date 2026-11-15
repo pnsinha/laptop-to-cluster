@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { planRelease, toOutputLines } from '../../scripts/release-plan.mjs';
 
-const repo = fileURLToPath(new URL('../../..', import.meta.url));
+const repo = fileURLToPath(new URL('../..', import.meta.url));
 const sha = 'a'.repeat(40);
 const base = { candidateVersion: 'v0.2.0', commitDate: '2026-10-15', sha };
 const plan = (input: Record<string, unknown>) => planRelease({ ...base, ...input } as any);

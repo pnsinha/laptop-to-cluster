@@ -45,7 +45,7 @@ describe('Run the example', () => {
 
   it('tells readers to get the image with acquire.sh, a script that exists', () => {
     expect(section('Get the container image')).toContain(workflow('container/acquire.sh'));
-    expect(existsSync(new URL(`../../${workflow('container/acquire.sh')}`, import.meta.url))).toBe(true);
+    expect(existsSync(new URL(`../../../${workflow('container/acquire.sh')}`, import.meta.url))).toBe(true);
   });
 
   it('checks the input from inside inputs/, matching how the sidecar names its file', () => {

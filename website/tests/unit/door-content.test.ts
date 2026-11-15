@@ -7,8 +7,8 @@ import { DESIGNED_NOT_RUN, LEARNING_PATH, REQUIRED_FRAGMENTS, TIMELINE_STEPS } f
 import { canonicalPath } from '../../src/content/registry';
 import { contentItemSchema } from '../../src/content/schema';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const items = resolve(root, 'website/src/content/content-items');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const items = resolve(root, 'src/content/content-items');
 
 function readItem(file: string): { data: Record<string, unknown>; body: string } {
   const source = readFileSync(resolve(items, file), 'utf8');
@@ -89,7 +89,7 @@ describe('Translate page (Module 3)', () => {
   });
 
   it('runs the same commands as the package README in Step 4', () => {
-    const readme = readFileSync(resolve(root, 'workflows/baseline-slurm-apptainer/README.md'), 'utf8');
+    const readme = readFileSync(resolve(root, '../workflows/baseline-slurm-apptainer/README.md'), 'utf8');
     const readmeSection = readme.split('## Validate and submit')[1].split('\n## ')[0];
     const moduleBlock = body.split('## Step 4')[1].match(/```[a-z]*\n([\s\S]*?)```/)![1];
     const commandLines = moduleBlock.split('\n').filter((line) => line.trim() !== '');
@@ -116,13 +116,13 @@ describe('Translate page (Module 3)', () => {
   });
 
   it('keeps the keep and replace list in agreement with the workflow package', () => {
-    const readme = readFileSync(resolve(root, 'workflows/baseline-slurm-apptainer/README.md'), 'utf8');
+    const readme = readFileSync(resolve(root, '../workflows/baseline-slurm-apptainer/README.md'), 'utf8');
     const adapterTable = readme.split('## Adapter variables and bounds')[1].split('\n## ')[0];
     const variables = [...adapterTable.matchAll(/^\| `([A-Z0-9_]+)` \|/gm)].map((match) => match[1]);
     expect(variables).toHaveLength(14);
     for (const variable of variables) expect(body, variable).toContain(`\`${variable}\``);
 
-    const lines = (file: string, from: number, to: number) => readFileSync(resolve(root, 'workflows/baseline-slurm-apptainer/bin', file), 'utf8').split('\n').slice(from - 1, to).join('\n');
+    const lines = (file: string, from: number, to: number) => readFileSync(resolve(root, '../workflows/baseline-slurm-apptainer/bin', file), 'utf8').split('\n').slice(from - 1, to).join('\n');
     expect(lines('readiness.py', 29, 31)).toContain('"status": "ready"');
     expect(lines('coordinator.py', 27, 28)).toMatch(/def health[\s\S]*"status": "ready"/);
     expect(body).toContain('bin/readiness.py#L29-L31');

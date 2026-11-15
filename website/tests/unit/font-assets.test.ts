@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const fonts = join(root, 'website/public/fonts');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const fonts = join(root, 'public/fonts');
 const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
 /* IBM and Fontsource files are pinned byte for byte: this is what proves the Plex

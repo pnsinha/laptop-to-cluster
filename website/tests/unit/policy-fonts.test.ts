@@ -46,7 +46,7 @@ describe('validateFrontendPolicy font and motion scan', () => {
   const manifest = { dependencies: { '@astrojs/sitemap': '3.7.4', '@astrojs/starlight': '0.42.9', astro: '7.4.5' } };
   const config = "export default { site: 'https://laptop-to-cluster.org', output: 'static', integrations: [starlight({ customCss: ['./a.css'] }), sitemap(), canonicalPolicy(), accessibleTables()] };";
   it('accepts fonts.css, reduced-motion resets, and rejects remote faces and real motion', () => {
-    expect(validateFrontendPolicy(manifest, config, [{ path: 'website/src/styles/fonts.css', text: FONTS }])).toEqual([]);
+    expect(validateFrontendPolicy(manifest, config, [{ path: 'src/styles/fonts.css', text: FONTS }])).toEqual([]);
     expect(validateFrontendPolicy(manifest, config, [{ path: 'a.css', text: '@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}' }])).toEqual([]);
     expect(validateFrontendPolicy(manifest, config, [{ path: 'a.css', text: face('Inter', woff('x/a.woff2')) }]).join('\n')).toMatch(/REMOTE-FONT/);
     expect(validateFrontendPolicy(manifest, config, [{ path: 'a.css', text: 'a{transition:color .2s}' }]).join('\n')).toMatch(/TECHNOLOGY-EXCLUSION/);

@@ -34,13 +34,13 @@ describe('typographic apostrophes in rendered prose fields', () => {
   });
 
   it('talks.yml', () => {
-    const talks = parse(read('website/src/content/talks.yml')) as Array<{ venue: string }>;
+    const talks = parse(read('src/content/talks.yml')) as Array<{ venue: string }>;
     expect(offenders(stringValues(talks))).toEqual([]);
     expect(talks[0].venue).toBe('US-RSE’26');
   });
 
   it('the Module 2 test record: lists copied from the evidence stay byte-identical, every other prose field is typographic', () => {
-    const record = parse(read('website/src/content/applicability/m2-baseline-anvil-2026-10.yml')) as Record<string, unknown>;
+    const record = parse(read('src/content/applicability/m2-baseline-anvil-2026-10.yml')) as Record<string, unknown>;
     const manifest = JSON.parse(read('evidence/anvil-baseline-20261007-success/manifest.json')) as Record<string, unknown>;
     // Evidence fidelity beats typography: these lists repeat the hash-pinned manifest word for word.
     const mirrored = { assumptions: 'assumptions', limitations: 'limitations', portability_boundaries: 'portabilityBoundaries' } as const;
@@ -54,7 +54,7 @@ describe('typographic apostrophes in rendered prose fields', () => {
   });
 
   it('the project attribution record matches wording.ts byte for byte', () => {
-    const record = parse(read('website/src/content/attribution/project.yml')) as { funds_administrator: string };
+    const record = parse(read('src/content/attribution/project.yml')) as { funds_administrator: string };
     expect(record.funds_administrator).toBe(ATTRIBUTION.funds);
   });
 });

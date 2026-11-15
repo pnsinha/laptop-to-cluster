@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { topLevelCalls, validateCanonicalConfig } from '../../scripts/publication.mjs';
 import config, { CODE_CONTRAST, codeContrast } from '../../astro.config.mjs';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const text = readFileSync(`${root}/site/astro.config.mjs`, 'utf8');
-const tokens = readFileSync(`${root}/site/src/styles/tokens.css`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const text = readFileSync(`${root}/astro.config.mjs`, 'utf8');
+const tokens = readFileSync(`${root}/src/styles/tokens.css`, 'utf8');
 const [lightSurface, darkSurface] = [...tokens.matchAll(/--surface:\s*(#[0-9a-fA-F]{6});/g)].map((match) => match[1]);
 
 const luminance = (hex: string) => {

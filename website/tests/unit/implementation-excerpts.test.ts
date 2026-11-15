@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { currentReleaseVersion } from '../../src/content/release.js';
 import { ELISION_LINE, IMPLEMENTATION_REFERENCE, verbatimExcerptIssues } from '../../src/content/implementation.js';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const SBATCH = 'workflows/baseline-slurm-apptainer/slurm/baseline.sbatch';
 const tagged = (): string[] | undefined => {
   try {
@@ -35,7 +35,7 @@ describe('implementation reference carries code excerpts only', () => {
 
   it('shows the baseline.sbatch excerpts as the script’s own lines, in the working tree and at the tag', () => {
     expect(sbatchExcerpts.map(({ id }) => id)).toEqual(['sbatch-configuration', 'sbatch-readiness-gate', 'sbatch-worker-verification']);
-    const sources = [readFileSync(resolve(root, SBATCH), 'utf8').split('\n'), tagged()].filter((lines): lines is string[] => lines !== undefined);
+    const sources = [readFileSync(resolve(root, '..', SBATCH), 'utf8').split('\n'), tagged()].filter((lines): lines is string[] => lines !== undefined);
     expect(sources.length).toBeGreaterThan(0);
     for (const lines of sources) {
       for (const excerpt of sbatchExcerpts) expect(verbatimExcerptIssues(excerpt.code, lines, excerpt.lineStart, excerpt.lineEnd), excerpt.id).toEqual([]);

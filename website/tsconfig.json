@@ -1,9 +1,5 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "compilerOptions": {
-    "noEmit": true,
-    "types": ["node", "vitest/globals"]
-  },
-  "include": [".astro/types.d.ts", "src/**/*", "plugins/**/*", "scripts/**/*.ts", "tests/**/*.ts", "vitest.config.ts", "astro.config.mjs"],
+  "include": [".astro/types.d.ts", "astro.config.mjs", "src/**/*", "plugins/**/*", "public/**/*"],
   "exclude": ["dist"]
 }

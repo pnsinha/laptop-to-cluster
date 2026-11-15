@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { validateDeploymentWorkflow } from '../../scripts/publication.mjs';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const text = readFileSync(`${root}/.github/workflows/publication.yml`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const text = readFileSync(`${root}/../.github/workflows/publication.yml`, 'utf8');
 const workflow = parse(text) as any;
 
 describe('publication.yml stays frozen for the first release', () => {

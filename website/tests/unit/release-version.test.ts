@@ -8,7 +8,7 @@ import { currentReleaseVersion } from '../../src/content/release';
 import { resolveReleaseVersion as publicationResolve } from '../../scripts/publication.mjs';
 import { assertReleaseVersion, resolveReleaseVersion } from '../../scripts/release-version.mjs';
 
-const repo = fileURLToPath(new URL('../../..', import.meta.url));
+const repo = fileURLToPath(new URL('../..', import.meta.url));
 const temporary: string[] = [];
 let saved: string | undefined;
 beforeEach(() => { saved = process.env.RELEASE_VERSION; delete process.env.RELEASE_VERSION; });

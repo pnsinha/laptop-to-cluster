@@ -2,8 +2,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const src = `${root}/site/src`;
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const src = `${root}/src`;
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((name) => {
     const path = `${dir}/${name}`;
@@ -17,7 +17,7 @@ const defined = new Set([...declared.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match
 const supplied = new Set(['--shiki-light', '--shiki-dark']);
 
 describe('custom property resolution', () => {
-  it('resolves every var(--x) under website/src to a property declared in the stylesheets', () => {
+  it('resolves every var(--x) under src to a property declared in the stylesheets', () => {
     const missing: string[] = [];
     for (const file of walk(src).filter((path) => /\.(css|astro|ts)$/.test(path))) {
       const text = readFileSync(file, 'utf8');

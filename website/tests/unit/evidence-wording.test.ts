@@ -46,7 +46,7 @@ describe('module header line', () => {
   });
 
   it('produces the published Module 2 header from its frontmatter', () => {
-    const module2 = frontmatter('website/src/content/content-items/02-baseline-single-node-pattern.md');
+    const module2 = frontmatter('src/content/content-items/02-baseline-single-node-pattern.md');
     expect(moduleHeaderLine(module2 as Parameters<typeof moduleHeaderLine>[0])).toBe(`Module 2 · Hands-on · about ${module2.estimated_minutes} min`);
   });
 });

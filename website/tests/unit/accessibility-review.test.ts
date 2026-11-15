@@ -4,7 +4,7 @@ import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
 import { validateAccessibilityReview } from '../../scripts/validate-accessibility-review';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const record = parse(readFileSync(`${root}/releases/v0.1.0/accessibility-review.yml`, 'utf8'));
 
 describe('versioned accessibility and editorial review record', () => {

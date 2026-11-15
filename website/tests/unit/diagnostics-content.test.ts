@@ -39,7 +39,7 @@ describe('diagnostics', () => {
   });
 
   it('has no diagnostic file that the table above does not know about', () => {
-    const onDisk = readdirSync(resolve(root, 'website/src/content/content-items')).filter((name) => name.startsWith('diagnostic-')).sort();
+    const onDisk = readdirSync(resolve(root, 'src/content/content-items')).filter((name) => name.startsWith('diagnostic-')).sort();
     expect(onDisk).toEqual(Object.values(FILES).sort());
   });
 

@@ -8,12 +8,12 @@ describe('Module 0 rename', () => {
   it.each(['start-run-the-example.md', 'milestone-2.md', '01-scheduler-as-orchestrator.md'])(
     '%s does not link to the retired Module 0 slug',
     (name) => {
-      expect(read(`website/src/content/content-items/${name}`)).not.toContain(OLD_SLUG);
+      expect(read(`src/content/content-items/${name}`)).not.toContain(OLD_SLUG);
     },
   );
 
   it('milestone-2.yml points Module 0 at the tour route', () => {
-    const record = parse(read('website/src/content/milestones/milestone-2.yml')) as {
+    const record = parse(read('src/content/milestones/milestone-2.yml')) as {
       deliverables: { item_id: string; public_url?: string }[];
     };
     const row = record.deliverables.find(({ item_id }) => item_id === 'module-0-orientation');

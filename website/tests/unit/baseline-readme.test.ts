@@ -4,8 +4,8 @@ import { parse } from 'yaml';
 import { currentRecord } from '../../src/content/projections.js';
 import { applicabilityRecordSchema } from '../../src/content/schema.js';
 
-const readme = readFileSync('workflows/baseline-slurm-apptainer/README.md', 'utf8');
-const directory = 'website/src/content/applicability';
+const readme = readFileSync('../workflows/baseline-slurm-apptainer/README.md', 'utf8');
+const directory = 'src/content/applicability';
 const records = readdirSync(directory).filter((name) => /\.ya?ml$/.test(name))
   .map((name) => applicabilityRecordSchema.parse(parse(readFileSync(`${directory}/${name}`, 'utf8'))));
 const validationLines = readme.split('\n').filter((line) => line.startsWith('Validation record:'));

@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
-const root = resolve(import.meta.dirname, '../../..');
+const root = resolve(import.meta.dirname, '../..');
 const runner = join(root, 'tests/fixtures/baseline-fake-runtime/run-scenario.sh');
 const mappings: Record<string, string> = {
   'invalid-input': 'BSSW-PREQ-INPUT',

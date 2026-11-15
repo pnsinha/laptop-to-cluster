@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { DESIGNED_NOT_RUN } from '../../src/content/contracts';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 const pageOf = (route: string) => readFileSync(join(dist, route, 'index.html'), 'utf8');
 const sheet = pageOf('about/cheat-sheet');
 

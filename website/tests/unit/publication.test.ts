@@ -19,7 +19,7 @@ import {
 
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })));
-const root = new URL('../../..', import.meta.url).pathname;
+const root = new URL('../..', import.meta.url).pathname;
 
 function artifactTree() {
   const directory = mkdtempSync(join(tmpdir(), 'bssw-publication-'));
@@ -45,7 +45,7 @@ describe('publication artifact identity', () => {
 
 describe('canonical and hostname release policy', () => {
   it('accepts only the literal apex config and exact three permanent redirect hosts', () => {
-    const config = readFileSync(join(root, 'website/astro.config.mjs'), 'utf8');
+    const config = readFileSync(join(root, 'astro.config.mjs'), 'utf8');
     expect(validateCanonicalConfig(config)).toEqual([]);
     expect(validateCanonicalConfig(config.replace(CANONICAL_ORIGIN, '${process.env.SITE}'))).not.toEqual([]);
     expect(validateHostnamePolicy(policy)).toEqual([]);
@@ -59,7 +59,7 @@ describe('canonical and hostname release policy', () => {
   });
 
   it('rejects deployment jobs that rebuild or omit retained-artifact verification', () => {
-    const workflow = readFileSync(join(root, '.github/workflows/publication.yml'), 'utf8');
+    const workflow = readFileSync(join(root, '../.github/workflows/publication.yml'), 'utf8');
     expect(validateDeploymentWorkflow(workflow)).toEqual([]);
     expect(validateDeploymentWorkflow(workflow.replace('node scripts/publication.mjs verify', 'npm run build && node scripts/publication.mjs verify')).join('\n')).toMatch(/BUILD-ONCE/);
   });
@@ -131,8 +131,8 @@ describe('composition and source-agreement publication gates', () => {
 
   it('blocks new integration dependencies, remote fonts, client frameworks, and decorative motion', () => {
     const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-    const config = readFileSync(join(root, 'website/astro.config.mjs'), 'utf8');
-    const css = readFileSync(join(root, 'website/src/styles/components.css'), 'utf8');
+    const config = readFileSync(join(root, 'astro.config.mjs'), 'utf8');
+    const css = readFileSync(join(root, 'src/styles/components.css'), 'utf8');
     expect(validateFrontendPolicy(manifest, config, [{ path: 'components.css', text: css }])).toEqual([]);
     expect(validateFrontendPolicy({ ...manifest, dependencies: { ...manifest.dependencies, react: '19.0.0' } }, config).join('\n')).toMatch(/DEPENDENCY-EXCLUSION/);
     expect(validateFrontendPolicy(manifest, config.replace('canonicalPolicy()', 'canonicalPolicy(), react()')).join('\n')).toMatch(/INTEGRATION-EXCLUSION/);

@@ -6,11 +6,11 @@ import { describe, expect, it } from 'vitest';
 import { CONCEPTS, DESIGNED_NOT_RUN } from '../../src/content/contracts';
 import { CROSSWALK, CROSSWALK_REVISION } from '../../src/content/crosswalk';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const SBATCH = 'workflows/baseline-slurm-apptainer/slurm/baseline.sbatch';
 const COORDINATOR = 'workflows/baseline-slurm-apptainer/bin/coordinator.py';
 const SBATCH_LINES = [3, 6, 78, 79, 80, 120, 173, 176, 200, 201, 202, 203, 219, 220, 228, 230, 231, 239, 245, 246];
-const fileLines = (path: string) => readFileSync(resolve(root, path), 'utf8').split('\n');
+const fileLines = (path: string) => readFileSync(resolve(root, '..', path), 'utf8').split('\n');
 const taggedLines = (path: string): string[] | undefined => {
   try {
     return execFileSync('git', ['show', `${CROSSWALK_REVISION}:${path}`], {

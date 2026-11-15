@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { TALKS_LABEL } from '../../src/content/contracts';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 const page = (route: string) => readFileSync(resolve(dist, route, 'index.html'), 'utf8');
 const escaped = (text: string) => text.replace(/&/g, '&amp;');
 const textOf = (html: string) => html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ');
@@ -15,7 +15,7 @@ const at = (html: string, needle: string, from = 0): number => {
   expect(index, needle).toBeGreaterThanOrEqual(0);
   return index;
 };
-const talks = parse(readFileSync(resolve(root, 'website/src/content/talks.yml'), 'utf8')) as Array<{ id: string; kind: string; title: string; event_date: string; featured?: boolean; links: Array<{ label: string; href: string }> }>;
+const talks = parse(readFileSync(resolve(root, 'src/content/talks.yml'), 'utf8')) as Array<{ id: string; kind: string; title: string; event_date: string; featured?: boolean; links: Array<{ label: string; href: string }> }>;
 
 describe('Talks and papers page', () => {
   const html = page('about/talks-and-papers');
@@ -76,8 +76,8 @@ describe('Translate page', () => {
 });
 describe('Evaluate and adopt page', () => {
   const html = page('adoption/evaluate');
-  const records = readdirSync(resolve(root, 'website/src/content/applicability')).filter((file) => /\.ya?ml$/.test(file))
-    .map((file) => parse(readFileSync(resolve(root, 'website/src/content/applicability', file), 'utf8')) as { id: string; validation_date: string; superseded_by?: string; environment: { public_name: string } });
+  const records = readdirSync(resolve(root, 'src/content/applicability')).filter((file) => /\.ya?ml$/.test(file))
+    .map((file) => parse(readFileSync(resolve(root, 'src/content/applicability', file), 'utf8')) as { id: string; validation_date: string; superseded_by?: string; environment: { public_name: string } });
   const current = records.filter(({ superseded_by }) => !superseded_by).sort((a, b) => b.validation_date.localeCompare(a.validation_date))[0];
   const summary = html.match(/<section class="record-summary"[\s\S]*?<\/section>/)?.[0] ?? '';
 

@@ -3,8 +3,8 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 const page = (route: string) => readFileSync(join(dist, route, 'index.html'), 'utf8');
 
 describe('cheat sheet: where it is linked from', () => {
@@ -16,7 +16,7 @@ describe('cheat sheet: where it is linked from', () => {
   });
   it('every error ID on the sheet appears on the Troubleshooting page', () => {
     // Match the printed text, not an anchor: the page templates own the anchors.
-    const sheet = readFileSync(join(root, 'website/src/content/content-items/about-cheat-sheet.md'), 'utf8');
+    const sheet = readFileSync(join(root, 'src/content/content-items/about-cheat-sheet.md'), 'utf8');
     // An ID with two exit codes can sit under two evidence labels, so count distinct IDs.
     const ids = [...new Set([...sheet.matchAll(/`(BSSW-[A-Z-]+)` \(([\d, ]+)\)/g)].map((m) => m[1]))];
     expect(ids).toHaveLength(15);

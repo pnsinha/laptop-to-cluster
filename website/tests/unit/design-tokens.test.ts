@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const css = readFileSync(`${root}/site/src/styles/tokens.css`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const css = readFileSync(`${root}/src/styles/tokens.css`, 'utf8');
 type Tokens = Record<string, string>;
 
 /* A theme block starts at --canvas and runs to its closing brace; blocks hold no nested braces. */

@@ -5,7 +5,7 @@ import { projectEvidencePanel } from '../../src/content/projections.js';
 import { applicabilityRecordSchema } from '../../src/content/schema.js';
 import { validateEvidenceRepository, validateRelatedEvidence } from '../../scripts/evidence.js';
 
-const read = (name: string) => applicabilityRecordSchema.parse(parse(readFileSync(`website/src/content/applicability/${name}.yml`, 'utf8')));
+const read = (name: string) => applicabilityRecordSchema.parse(parse(readFileSync(`src/content/applicability/${name}.yml`, 'utf8')));
 const m1 = read('m1-baseline-anvil');
 const m2 = read('m2-baseline-anvil-2026-10');
 const plain = m2.plain_language!;
@@ -30,7 +30,7 @@ describe('m2-baseline-anvil-2026-10', () => {
     expect(m2.related_evidence).toHaveLength(1);
     expect(m2.related_evidence[0]).toMatchObject({ role: 'negative-test' });
     expect(m2.related_evidence[0].id).toMatch(/^anvil-baseline-\d{8}-readiness-timeout$/);
-    expect(validateRelatedEvidence(m2, '.')).toEqual([]);
+    expect(validateRelatedEvidence(m2, '..')).toEqual([]);
   });
 
   it('links both manifests at the commit that added the bundles, never at a release tag', () => {
@@ -48,7 +48,7 @@ describe('m2-baseline-anvil-2026-10', () => {
   });
 
   it('passes every repository evidence check as of today', () => {
-    expect(validateEvidenceRepository('.', new Date().toISOString().slice(0, 10))).toEqual([]);
+    expect(validateEvidenceRepository('..', new Date().toISOString().slice(0, 10))).toEqual([]);
   });
 
   it('shows a month-and-year badge and names no system, version, date, or job ID in plain language', () => {

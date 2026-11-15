@@ -2,8 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const css = readFileSync(`${root}/site/src/styles/fonts.css`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const css = readFileSync(`${root}/src/styles/fonts.css`, 'utf8');
 const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map(([, body]) =>
   Object.fromEntries([...body.matchAll(/([a-z-]+):\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()])));
 const family = (face: Record<string, string>) => face['font-family'].replaceAll('"', '');
@@ -25,7 +25,7 @@ describe('fonts.css', () => {
     for (const [, path, format] of urls) {
       expect(format).toBe('woff2');
       expect(path.startsWith('/fonts/')).toBe(true);
-      expect(existsSync(`${root}/site/public${path}`), path).toBe(true);
+      expect(existsSync(`${root}/public${path}`), path).toBe(true);
     }
     expect(css).not.toMatch(/https?:|@import\s+url|\.ttf|\.otf|\.woff["')]/);
   });

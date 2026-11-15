@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { EVIDENCE_ROW_LABELS } from '../../src/content/contracts';
 import { accessibilityPages, requiredKinds } from './browser-fixtures';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 const pages = accessibilityPages.map((fixture) => ({
   ...fixture,
   html: fixture.distRoute === '404'

@@ -8,7 +8,7 @@ import { accessibilityPages } from '../accessibility/browser-fixtures';
 import { currentRecordId, validateAccessibilityReview } from '../../scripts/validate-accessibility-review';
 import { readReleaseCandidate } from '../../scripts/release-version.mjs';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const load = (path: string) => parse(readFileSync(path, 'utf8'));
 const recordId = currentRecordId(readReleaseCandidate(root, 'v0.2.0').evidenceIds);
 const REQUIRED_CHECKS = [

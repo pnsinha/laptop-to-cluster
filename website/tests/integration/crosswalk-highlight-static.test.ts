@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CONCEPTS } from '../../src/content/contracts';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const dist = resolve(root, 'website/dist');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const dist = resolve(root, 'dist');
 /* The page total is the BUDGET rule's limit (Starlight's theme, sidebar, table of contents and
    search loader are about 12 KB). The highlight script's own cap is 840 B, the lean variant's size. */
 const PAGE_JS_BUDGET = 32768;
@@ -58,11 +58,11 @@ describe('crosswalk highlight: static output', () => {
   });
 
   it('keeps the sources free of handlers and styles', () => {
-    const script = readFileSync(resolve(root, 'website/src/scripts/crosswalk-highlight.ts'), 'utf8');
-    const component = readFileSync(resolve(root, 'website/src/components/CrosswalkEnhancement.astro'), 'utf8');
+    const script = readFileSync(resolve(root, 'src/scripts/crosswalk-highlight.ts'), 'utf8');
+    const component = readFileSync(resolve(root, 'src/components/CrosswalkEnhancement.astro'), 'utf8');
     expect(script).toContain('addEventListener');
     expect(script).not.toMatch(/\.onclick|\.onkey|setTimeout|setInterval|requestAnimationFrame|transition/);
     expect(component).not.toMatch(/<style\b|<div\b|<p\b|<section\b/);
-    expect(readFileSync(resolve(root, 'website/src/pages/index.astro'), 'utf8')).not.toMatch(/<script\b/);
+    expect(readFileSync(resolve(root, 'src/pages/index.astro'), 'utf8')).not.toMatch(/<script\b/);
   });
 });

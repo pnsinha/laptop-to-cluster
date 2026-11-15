@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { validateDeploymentWorkflow, validateReleaseWorkflow } from '../../scripts/publication.mjs';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const text = readFileSync(`${root}/.github/workflows/release.yml`, 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const text = readFileSync(`${root}/../.github/workflows/release.yml`, 'utf8');
 const workflow = parse(text) as any;
 const jobs = workflow.jobs as Record<string, any>;
 const steps = (job: string): any[] => jobs[job].steps;

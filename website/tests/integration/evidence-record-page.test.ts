@@ -7,9 +7,9 @@ import { currentReadmeHref, evidenceHref, olderReadme, recordTitle, repositoryHr
 import { currentReleaseVersion } from '../../src/content/release.js';
 import { applicabilityRecordSchema } from '../../src/content/schema.js';
 
-const root = fileURLToPath(new URL('../../..', import.meta.url));
-const m1 = applicabilityRecordSchema.parse(parse(readFileSync(resolve(root, 'website/src/content/applicability/m1-baseline-anvil.yml'), 'utf8')));
-const built = (id: string) => readFileSync(resolve(root, 'website/dist/applicability', id, 'index.html'), 'utf8');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const m1 = applicabilityRecordSchema.parse(parse(readFileSync(resolve(root, 'src/content/applicability/m1-baseline-anvil.yml'), 'utf8')));
+const built = (id: string) => readFileSync(resolve(root, 'dist/applicability', id, 'index.html'), 'utf8');
 const decode = (html: string) => html.replaceAll('&#39;', "'").replaceAll('&amp;', '&').replaceAll('&quot;', '"');
 
 describe('canonical record page, as built', () => {
@@ -57,7 +57,7 @@ describe('canonical record page, as built', () => {
 
   it('renders a review extension only when the record has one', () => {
     const withExtension = [m1.id, m1.superseded_by!].filter((id) => built(id).includes('id="review-extension"'));
-    const records = [m1, applicabilityRecordSchema.parse(parse(readFileSync(resolve(root, 'website/src/content/applicability', `${m1.superseded_by}.yml`), 'utf8')))];
+    const records = [m1, applicabilityRecordSchema.parse(parse(readFileSync(resolve(root, 'src/content/applicability', `${m1.superseded_by}.yml`), 'utf8')))];
     expect(withExtension).toEqual(records.filter((record) => record.review_extension).map((record) => record.id));
     for (const record of records.filter((record) => record.review_extension)) {
       const page = built(record.id);

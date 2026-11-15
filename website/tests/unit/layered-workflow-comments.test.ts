@@ -24,7 +24,7 @@ describe('layered-install-trees comments', () => {
   });
 
   it('leaves no retired figure or hand-written tested claim anywhere in the tracked workflow directory', () => {
-    const text = walk(join(root, 'workflows/layered-install-trees')).map((file) => readFileSync(file, 'utf8')).join('\n');
+    const text = walk(join(root, '../workflows/layered-install-trees')).map((file) => readFileSync(file, 'utf8')).join('\n');
     expect(text).not.toMatch(/95\.8%|~80 MB|8\.3×|39 of 40|39\/40/);
     /* The third comment fix deletes the hand-written "Verified on Anvil 2026-08-08" claim. */
     expect(text).not.toMatch(/Verified on Anvil/);

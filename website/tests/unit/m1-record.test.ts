@@ -5,7 +5,7 @@ import { projectEvidencePanel } from '../../src/content/projections.js';
 import { applicabilityRecordSchema } from '../../src/content/schema.js';
 import { sha256File, validateRelatedEvidence } from '../../scripts/evidence.js';
 
-const record = applicabilityRecordSchema.parse(parse(readFileSync('website/src/content/applicability/m1-baseline-anvil.yml', 'utf8')));
+const record = applicabilityRecordSchema.parse(parse(readFileSync('src/content/applicability/m1-baseline-anvil.yml', 'utf8')));
 const plain = record.plain_language!;
 const allItems = [plain.tested, ...plain.you_need, ...plain.depends_on_center];
 
@@ -15,8 +15,8 @@ describe('m1-baseline-anvil record', () => {
     const [related] = record.related_evidence;
     expect(related).toMatchObject({ id: 'anvil-v0-1-0-readiness-timeout-20260725', role: 'negative-test' });
     expect(related.path).toBe(`evidence/${related.id}/manifest.json`);
-    expect(related.integrity).toBe(sha256File(related.path));
-    expect(validateRelatedEvidence(record, '.')).toEqual([]);
+    expect(related.integrity).toBe(sha256File(`../${related.path}`));
+    expect(validateRelatedEvidence(record, '..')).toEqual([]);
   });
 
   it('keeps the literal lists that mirror the manifest', () => {
