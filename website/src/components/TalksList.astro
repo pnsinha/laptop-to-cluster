@@ -1,0 +1,24 @@
+---
+/* Talks, posters and papers from talks.yml, newest first. */
+import { getCollection } from 'astro:content';
+
+const talks = (await getCollection('talks')).map(({ data }) => data);
+const KIND = { talk: 'Talk', poster: 'Poster', paper: 'Paper' } as const;
+const isExternal = (href: string) => /^https?:\/\//.test(href);
+const longDate = (iso: string) => new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(new Date(`${iso}T00:00:00`));
+const listed = [...talks].sort((a, b) => b.event_date.localeCompare(a.event_date) || a.id.localeCompare(b.id));
+---
+<ul class="talks not-content" role="list">
+  {listed.map((talk) => (
+    <li class="talk" id={talk.id}>
+      <p class="talk__kind">{KIND[talk.kind]}</p>
+      <h3>{talk.title}</h3>
+      <p class="talk__meta">{talk.venue} · {longDate(talk.event_date)}{talk.location && <> · {talk.location}</>}</p>
+      <ul class="talk__links">
+        {talk.links.map((link) => (
+          <li><a href={link.href} rel={isExternal(link.href) ? 'external' : undefined}>{link.label}{isExternal(link.href) && <span class="external-label"> (external)</span>}</a></li>
+        ))}
+      </ul>
+    </li>
+  ))}
+</ul>

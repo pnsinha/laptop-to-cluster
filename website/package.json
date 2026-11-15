@@ -1,0 +1,44 @@
+{
+  "name": "bssw-fellowship-resource-site",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "build": "astro build",
+    "check": "astro check",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run --project unit",
+    "test:integration:built": "vitest run --project built",
+    "test:accessibility:browser": "tsx scripts/scan-accessibility.ts",
+    "record-run": "tsx scripts/record-run.ts",
+    "validate:evidence": "tsx scripts/validate-evidence.ts",
+    "validate:repository": "tsx scripts/validate-repository.ts",
+    "validate:release": "tsx scripts/validate-release.ts",
+    "validate:built": "node scripts/publication.mjs built-output dist",
+    "validate:policy": "node scripts/publication.mjs policy ..",
+    "publication:prepare": "node scripts/prepare-publication.mjs .",
+    "validate:boundary": "node scripts/publication.mjs boundary .. --require --history HEAD",
+    "publication:checks": "npm run validate:built && npm run validate:policy && npm run validate:evidence && npm run validate:repository && npm run validate:release",
+    "publication:validate": "npm run validate:boundary && npm run publication:checks",
+    "gate": "npm run check && npm run test && npm run build && npm run test:integration:built && npm run test:accessibility:browser",
+    "validate": "npm run gate && npm run publication:validate"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "3.7.4",
+    "@astrojs/starlight": "0.42.9",
+    "astro": "7.4.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.9",
+    "@axe-core/playwright": "4.11.0",
+    "@playwright/test": "1.56.1",
+    "@types/node": "22.15.3",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "yaml": "2.9.0"
+  }
+}

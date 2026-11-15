@@ -1,0 +1,158 @@
+---
+const { name } = Astro.props as { name: string };
+---
+{name === 'compose-to-hpc' && (
+  <figure class="diagram not-content" role="img" aria-label="Compose-to-HPC concept mapping diagram. Each Docker Compose concept on the left maps to its scheduler-managed form on the right: a service becomes an srun job step, an image becomes a prebuilt Apptainer image file, depends_on becomes the readiness gate, a volume becomes job-scoped scratch, a published port becomes loopback, and a device request becomes a gres request that is designed, not run.">
+    <svg viewBox="0 0 720 450" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
+      <text x="110" y="24" class="hdr hdr--primary" text-anchor="middle">Docker Compose</text>
+      <text x="580" y="24" class="hdr hdr--primary" text-anchor="middle">Slurm + Apptainer</text>
+      <line x1="110" y1="36" x2="110" y2="440" class="lane"/>
+      <line x1="580" y1="36" x2="580" y2="440" class="lane"/>
+
+      <rect x="10" y="46" width="200" height="54" class="box-l"/><text x="110" y="79" class="lbl" text-anchor="middle">service</text>
+      <rect x="450" y="46" width="260" height="54" class="box-r"/><text x="580" y="79" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> srun job step</text>
+      <line x1="210" y1="73" x2="450" y2="73" class="arr" marker-end="url(#arrowhead)"/>
+
+      <rect x="10" y="112" width="200" height="54" class="box-l"/><text x="110" y="145" class="lbl" text-anchor="middle">image / build</text>
+      <rect x="450" y="112" width="260" height="54" class="box-r"/><text x="580" y="145" class="lbl" text-anchor="middle">prebuilt .sif image</text>
+      <line x1="210" y1="139" x2="450" y2="139" class="arr" marker-end="url(#arrowhead)"/>
+
+      <rect x="10" y="178" width="200" height="54" class="box-l"/><text x="110" y="211" class="lbl" text-anchor="middle">depends_on</text>
+      <rect x="450" y="178" width="260" height="54" class="box-r"/><text x="580" y="211" class="lbl" text-anchor="middle"><tspan class="mark">◆</tspan> readiness gate</text>
+      <line x1="210" y1="205" x2="450" y2="205" class="arr" marker-end="url(#arrowhead)"/>
+
+      <rect x="10" y="244" width="200" height="54" class="box-l"/><text x="110" y="277" class="lbl" text-anchor="middle">volumes</text>
+      <rect x="450" y="244" width="260" height="54" class="box-r"/><text x="580" y="277" class="lbl" text-anchor="middle"><tspan class="mark">▲</tspan> job-scoped scratch</text>
+      <line x1="210" y1="271" x2="450" y2="271" class="arr" marker-end="url(#arrowhead)"/>
+
+      <rect x="10" y="310" width="200" height="54" class="box-l"/><text x="110" y="343" class="lbl" text-anchor="middle">ports</text>
+      <rect x="450" y="310" width="260" height="54" class="box-r"/><text x="580" y="343" class="lbl" text-anchor="middle"><tspan class="mark">●</tspan> loopback</text>
+      <line x1="210" y1="337" x2="450" y2="337" class="arr" marker-end="url(#arrowhead)"/>
+
+      <rect x="10" y="376" width="200" height="54" class="box-l"/><text x="110" y="409" class="lbl" text-anchor="middle">device_requests</text>
+      <rect x="450" y="376" width="260" height="54" class="box-r"/><text x="580" y="400" class="lbl" text-anchor="middle">--gres=gpu</text><text x="580" y="420" class="sub" text-anchor="middle">Designed, not run</text>
+      <line x1="210" y1="403" x2="450" y2="403" class="arr" marker-end="url(#arrowhead)"/>
+
+      <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="currentColor"/></marker></defs>
+    </svg>
+  </figure>
+)}
+
+{name === 'single-node-architecture' && (
+  <figure class="diagram not-content" role="img" aria-label="Single-node architecture diagram. Inside one scheduler allocation on one node: the coordinator starts first as an srun job step listening on loopback; the readiness gate polls until the coordinator gives the exact expected answer; worker job steps launch only after the gate passes; then the verifier, which runs inside the same job while the coordinator is still running, checks the results and writes result.json. All steps share one job-scoped scratch directory bound at /work.">
+    <svg viewBox="0 0 720 500" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
+      <rect x="20" y="60" width="680" height="430" class="alloc-border"/>
+      <text x="360" y="44" class="hdr" text-anchor="middle">SCHEDULER ALLOCATION (1 node)</text>
+
+      <rect x="40" y="80" width="260" height="84" class="box" rx="6"/>
+      <text x="170" y="104" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> Coordinator</text>
+      <text x="170" y="126" class="sub" text-anchor="middle">srun step · apptainer exec</text>
+      <text x="170" y="148" class="sub" text-anchor="middle">127.0.0.1:PORT</text>
+
+      <rect x="40" y="194" width="260" height="64" class="box" rx="6"/>
+      <text x="170" y="218" class="lbl" text-anchor="middle"><tspan class="mark">◆</tspan> Readiness gate</text>
+      <text x="170" y="240" class="sub" text-anchor="middle">polls /health, exact answer</text>
+
+      <rect x="360" y="80" width="140" height="56" class="box" rx="6"/>
+      <text x="430" y="104" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> Worker 1</text>
+      <text x="430" y="124" class="sub" text-anchor="middle">srun step</text>
+      <rect x="360" y="150" width="140" height="56" class="box" rx="6"/>
+      <text x="430" y="174" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> Worker 2</text>
+      <text x="430" y="194" class="sub" text-anchor="middle">srun step</text>
+      <rect x="360" y="220" width="140" height="56" class="box" rx="6"/>
+      <text x="430" y="244" class="lbl" text-anchor="middle"><tspan class="mark">■</tspan> Worker N</text>
+      <text x="430" y="264" class="sub" text-anchor="middle">srun step</text>
+
+      <rect x="40" y="316" width="260" height="84" class="box" rx="6"/>
+      <text x="170" y="340" class="lbl" text-anchor="middle">Verifier</text>
+      <text x="170" y="362" class="sub" text-anchor="middle">runs inside the job</text>
+      <text x="170" y="384" class="sub" text-anchor="middle">count · uniqueness · content</text>
+
+      <rect x="40" y="430" width="260" height="40" class="recessed-ok" rx="6"/>
+      <text x="170" y="456" class="ok" text-anchor="middle">result.json: status success</text>
+
+      <rect x="520" y="80" width="170" height="390" class="recessed" stroke="var(--border)" stroke-width="1" rx="6"/>
+      <text x="605" y="106" class="lbl" text-anchor="middle"><tspan class="mark">▲</tspan> Job scratch</text>
+      <text x="605" y="130" class="sub" text-anchor="middle">${'{'}RUNTIME_DIR{'}'}</text>
+      <text x="605" y="152" class="sub" text-anchor="middle">bound at /work</text>
+      <text x="605" y="190" class="sub" text-anchor="middle">input.json</text>
+      <text x="605" y="214" class="sub" text-anchor="middle">endpoint.json</text>
+      <text x="605" y="238" class="sub" text-anchor="middle">results.json</text>
+      <text x="605" y="262" class="sub" text-anchor="middle">result.json</text>
+      <text x="605" y="286" class="sub" text-anchor="middle">events.jsonl</text>
+      <text x="605" y="310" class="sub" text-anchor="middle">versions.txt</text>
+      <text x="605" y="334" class="sub" text-anchor="middle">logs/</text>
+
+      <line x1="170" y1="164" x2="170" y2="194" class="arrow" marker-end="url(#ah)"/>
+      <text x="184" y="184" class="note">starts</text>
+
+      <line x1="300" y1="226" x2="360" y2="112" class="gate-arrow" marker-end="url(#ah-gate)"/>
+      <text x="306" y="252" class="tag">ready</text>
+
+      <line x1="430" y1="276" x2="300" y2="346" class="arrow" marker-end="url(#ah)"/>
+      <text x="372" y="322" class="note">results</text>
+
+      <line x1="170" y1="400" x2="170" y2="430" class="arrow" marker-end="url(#ah)"/>
+
+      <defs>
+        <marker id="ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--muted)"/></marker>
+        <marker id="ah-gate" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--c-gate)"/></marker>
+      </defs>
+    </svg>
+  </figure>
+)}
+
+{name === 'readiness-sequence' && (
+  <figure class="diagram not-content" role="img" aria-label="Readiness gate sequence diagram showing how the coordinator starts first, the readiness gate polls until the coordinator gives the exact expected answer, and only then do workers launch.">
+    <svg viewBox="0 0 720 440" xmlns="http://www.w3.org/2000/svg" class="diagram-svg" role="group" aria-hidden="true">
+      <line x1="10" y1="30" x2="710" y2="30" class="tl"/>
+      <text x="10" y="20" class="note">TIME</text>
+
+      <text x="80" y="50" class="lbl" text-anchor="middle">Coordinator</text>
+      <text x="260" y="50" class="lbl" text-anchor="middle"><tspan class="mark">◆</tspan> Readiness gate</text>
+      <text x="480" y="50" class="lbl" text-anchor="middle">Workers</text>
+
+      <rect x="30" y="62" width="100" height="34" class="bar"/>
+      <text x="80" y="85" class="step" text-anchor="middle">start</text>
+      <text x="145" y="85" class="note">1. coordinator launches</text>
+
+      <rect x="30" y="108" width="100" height="34" class="bar"/>
+      <text x="80" y="131" class="step" text-anchor="middle">booting</text>
+      <text x="145" y="131" class="note">2. service initializing</text>
+
+      <rect x="220" y="154" width="80" height="34" class="bar"/>
+      <text x="260" y="177" class="step" text-anchor="middle">poll</text>
+      <text x="312" y="177" class="no">NO</text>
+      <text x="350" y="177" class="note">3. not ready yet</text>
+
+      <rect x="220" y="200" width="80" height="34" class="bar"/>
+      <text x="260" y="223" class="step" text-anchor="middle">poll</text>
+      <text x="312" y="223" class="no">NO</text>
+      <text x="350" y="223" class="note">4. still booting</text>
+
+      <rect x="30" y="246" width="100" height="34" class="ready-bar"/>
+      <text x="80" y="269" class="ok" text-anchor="middle">READY</text>
+      <text x="145" y="269" class="note">5. /health answers</text>
+
+      <rect x="220" y="292" width="80" height="34" class="ready-bar"/>
+      <text x="260" y="315" class="step" text-anchor="middle">poll</text>
+      <text x="312" y="315" class="ok">YES</text>
+      <text x="350" y="315" class="note">6. exact answer</text>
+
+      <rect x="440" y="338" width="80" height="34" class="launch-bar"/>
+      <text x="480" y="361" class="step" text-anchor="middle">launch</text>
+      <text x="535" y="361" class="note">7. workers start</text>
+
+      <rect x="440" y="384" width="80" height="34" class="bar"/>
+      <text x="480" y="407" class="step" text-anchor="middle">working</text>
+      <text x="535" y="407" class="note">8. tasks processed</text>
+
+      <line x1="80" y1="142" x2="80" y2="246" class="tl"/>
+      <line x1="260" y1="188" x2="260" y2="200" class="tl"/>
+      <line x1="260" y1="234" x2="260" y2="292" class="tl"/>
+      <line x1="260" y1="326" x2="440" y2="348" class="gate-arrow" marker-end="url(#seq-ah)"/>
+
+      <defs><marker id="seq-ah" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="var(--c-gate)"/></marker></defs>
+    </svg>
+  </figure>
+)}

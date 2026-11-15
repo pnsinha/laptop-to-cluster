@@ -1,41 +1,34 @@
-# BSSw Fellowship Learning Modules
+# Laptop to Cluster
 
-Portable learning modules for **Bridging the Laptop-to-Cluster Gap: HPC-Native Translation Patterns for Multi-Service AI Stacks** (2026 BSSw Fellowship).
+A guide and runnable examples for moving a Docker Compose stack onto a Slurm cluster with Apptainer. Everything here was tested on Purdue Anvil.
 
-These modules formalize how multi-service Docker Compose stacks map onto shared HPC: scheduler allocation as the orchestration boundary, rootless container runtimes, and center-portable launch patterns.
+## What's here
 
-Read the guide at [laptop-to-cluster.org](https://laptop-to-cluster.org). The [release notes for v0.2.0](https://laptop-to-cluster.org/milestones/2/#release-v0-2-0) say what changed.
+- [`workflows/`](workflows/): run these.
+- [`evidence/`](evidence/): the recorded runs that back the guide's claims.
+- [`website/`](website/): the guide, live at [laptop-to-cluster.org](https://laptop-to-cluster.org).
 
-## Modules
+## Quick start
 
-| # | Title | Topics | Status |
-|---|---|---|---|
-| 0 | [The five-minute tour](site/src/content/content-items/00-tour.md) | `orientation`, `prerequisites` | published |
-| 1 | [Scheduler as Orchestrator](site/src/content/content-items/01-scheduler-as-orchestrator.md) | `scheduler-as-orchestrator` | published |
-| 2 | [Baseline Pattern: Single-Node Service + Workers](site/src/content/content-items/02-baseline-single-node-pattern.md) | `scheduler-as-orchestrator`, `service-workers` | published; tested on Purdue Anvil, Oct 2026 |
-| 3 | [Translate a Compose file](site/src/content/content-items/03-compose-to-hpc-translation.md) | `compose-to-hpc-translation`, `scheduler-as-orchestrator`, `rootless-containers` | published; each row is labelled Tested or Designed, not run |
-
-## Front matter
-
-Each module uses YAML front matter compatible with the project site:
-
-```yaml
-title: ""
-description: ""
-module_number:
-topics: [scheduler-as-orchestrator | slurm-pbs | apptainer-charliecloud | globus-compute | container-first]
-status: draft | published
-last_updated: YYYY-MM-DD
-summary: "1-2 sentence summary for the module index"
+```sh
+git clone https://github.com/pnsinha/laptop-to-cluster.git
+cd laptop-to-cluster/workflows/baseline-slurm-apptainer
 ```
+
+Then follow that directory's README.
+
+## Contributing
+
+See [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md).
+
+## License
+
+- Code is Apache-2.0 ([`LICENSE`](LICENSE)).
+- Guide text, documentation and evidence write-ups are [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Fonts are under the SIL OFL 1.1; their licence files sit beside the fonts in `website/public/fonts/`.
 
 ## Acknowledgment
 
 This work was supported by the Better Scientific Software Fellowship Program, a collaborative effort of the U.S. Department of Energy (DOE), Office of Advanced Scientific Research via ANL under Contract DE-AC02-06CH11357 and the National Nuclear Security Administration Advanced Simulation and Computing Program via LLNL under Contract DE-AC52-07NA27344; and by the National Science Foundation (NSF) via SHI under Grant No. 2435328.
 
 Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the DOE or NSF.
-
-## Author
-
-Parmanand Sinha, PhD — Computational Scientist, University of Chicago Research Computing Center  
-2026 BSSw Fellow (individual capacity)

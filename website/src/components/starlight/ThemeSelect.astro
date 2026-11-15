@@ -1,0 +1,76 @@
+---
+/* Starlight's theme select, replaced by one toggle button named "Dark theme": a sun in the light
+   theme, a moon in the dark one, and aria-pressed for the state. Before any choice the page follows
+   the operating system and nothing is stored. A press flips the theme and stores it under
+   Starlight's own key, `starlight-theme`, so Starlight's head script applies it before paint on the
+   next page; a choice that matches the operating system clears the key, so the page follows the
+   system again. Starlight renders this twice (header and mobile menu); both stay in step. Without
+   JavaScript the element is never defined, custom.css hides it, and the page follows the system. */
+import { Icon } from '@astrojs/starlight/components';
+---
+<l2c-theme-toggle>
+  <button type="button" class="theme-toggle" aria-pressed="false">
+    <Icon name="sun" class="theme-toggle__icon theme-toggle__icon--light" />
+    <Icon name="moon" class="theme-toggle__icon theme-toggle__icon--dark" />
+    <span class="sr-only">Dark theme</span>
+  </button>
+</l2c-theme-toggle>
+
+{/* Inline, so the state is right from the first paint; data-theme is already set by Starlight's head script. */}
+<script is:inline>
+  document.querySelectorAll('l2c-theme-toggle button').forEach((button) => button.setAttribute('aria-pressed', String(document.documentElement.dataset.theme === 'dark')));
+</script>
+
+<script>
+  type Theme = 'light' | 'dark';
+  /** Starlight's localStorage key: its head script reads it before paint. */
+  const STORAGE_KEY = 'starlight-theme';
+  const root = document.documentElement;
+  const prefersLight = matchMedia('(prefers-color-scheme: light)');
+
+  /** The operating system's theme, decided the way Starlight's head script decides it. */
+  const systemTheme = (): Theme => (prefersLight.matches ? 'light' : 'dark');
+
+  function storedTheme(): Theme | undefined {
+    try {
+      const value = localStorage.getItem(STORAGE_KEY);
+      return value === 'light' || value === 'dark' ? value : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  function storeTheme(theme: Theme): void {
+    try {
+      if (theme === systemTheme()) localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      /* Storage can be unavailable (private modes, policies); the choice then lasts for this page only. */
+    }
+  }
+
+  function applyTheme(theme: Theme): void {
+    root.dataset.theme = theme;
+    document.querySelectorAll('l2c-theme-toggle button').forEach((button) => button.setAttribute('aria-pressed', String(theme === 'dark')));
+  }
+
+  /* With no stored choice, keep following the operating system while the page is open. */
+  prefersLight.addEventListener('change', () => {
+    if (!storedTheme()) applyTheme(systemTheme());
+  });
+
+  class ThemeToggle extends HTMLElement {
+    connectedCallback() {
+      const button = this.querySelector('button');
+      if (!button || button.dataset.ready !== undefined) return;
+      button.dataset.ready = '';
+      button.addEventListener('click', () => {
+        const next: Theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        storeTheme(next);
+        applyTheme(next);
+      });
+      applyTheme(storedTheme() ?? systemTheme());
+    }
+  }
+  customElements.define('l2c-theme-toggle', ThemeToggle);
+</script>

@@ -1,0 +1,25 @@
+---
+/* "The big idea" on the home page: one row per concept, Compose on the left, the cluster form on
+   the right. The heading and the intro sentence come from the page; the rows from concepts.ts. */
+import { CONCEPTS } from '../content/concepts';
+
+interface Props { title: string }
+const { title } = Astro.props;
+---
+<section class="concepts not-content" id="big-idea" aria-labelledby="big-idea-title">
+  <h2 id="big-idea-title">{title}</h2>
+  <p class="concepts__intro"><slot /></p>
+  <ol class="concepts__rows" role="list">
+    {CONCEPTS.map(({ key, label, was, note }, index) => (
+      <li class="concept" data-concept={key}>
+        <p class="concept__n" aria-hidden="true">{String(index + 1).padStart(2, '0')}</p>
+        <p class="concept__was"><span class="concept__side">In Compose</span>{' '}{was}</p>
+        <div class="concept__to">
+          <span class="concept__side">On a cluster</span>{' '}
+          <span class={`concept__term c-${key}`}>{label}</span>
+          <p class="concept__note" set:html={note} />
+        </div>
+      </li>
+    ))}
+  </ol>
+</section>

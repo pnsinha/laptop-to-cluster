@@ -1,30 +1,34 @@
 name: release
 
-# Preview: a push to v0.2.0-showcase (fast gate) or a vX.Y.Z-rc.N tag (full gate) deploys to the preview alias.
-# Production: an exact vX.Y.Z tag deploys to main through the same job chain as publication.yml.
+# Production: push a vX.Y.Z tag whose commit is already on main. The gate runs once, the production
+# environment waits for the owner's approval, and the exact validated build is deployed and checked live.
+# Preview: run this workflow by hand with "preview" ticked. It builds the chosen ref and deploys it to the
+# preview alias, with no tag and no approval. Untick it on a tag to redeploy that tag to production (needs approval).
 # The first release is frozen and published only by publication.yml. scripts/release-plan.mjs decides which of these a run is.
 on:
   push:
-    branches: [v0.2.0-showcase]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
       - '!v0.1.0'
   workflow_dispatch:
     inputs:
-      release:
-        description: Release tag to publish after the merge to main (for example v0.2.0)
-        required: true
+      preview:
+        description: Preview only (deploys to the preview alias). Untick, with a tag as the ref, to redeploy that tag to production.
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
-# Every run that can deploy production (a dispatch or a final tag) shares one group that never cancels,
-# so a second run cannot interrupt a deploy between the upload and the release record.
-# Only a superseded branch push is cancelled.
+# Production runs share one group that never cancels, so a second run cannot interrupt a deploy
+# between the upload and the release record. A superseded preview is cancelled.
 concurrency:
-  group: ${{ (github.event_name == 'workflow_dispatch' || (github.ref_type == 'tag' && !contains(github.ref_name, '-rc.'))) && 'release-production' || format('release-{0}', github.ref) }}
-  cancel-in-progress: ${{ github.event_name == 'push' && github.ref_type == 'branch' }}
+  group: ${{ (github.event_name == 'push' || inputs.preview == false) && 'release-production' || format('release-preview-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' && inputs.preview == true }}
+
+defaults:
+  run:
+    working-directory: website
 
 jobs:
   plan:
@@ -35,22 +39,23 @@ jobs:
       version: ${{ steps.plan.outputs.version }}
       date: ${{ steps.plan.outputs.date }}
       sha: ${{ steps.plan.outputs.sha }}
-      preview: ${{ steps.plan.outputs.preview }}
-      full-gate: ${{ steps.plan.outputs.full-gate }}
       artifact-name: ${{ steps.plan.outputs.artifact-name }}
       record-artifact-name: ${{ steps.plan.outputs.record-artifact-name }}
     steps:
       - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release) || github.sha }}
       - uses: actions/setup-node@v4.4.0
         with:
-          node-version: '22.15.0'
+          node-version: '22.23.5'
+      - name: Refuse a release cut before the move to website/
+        working-directory: .
+        run: |
+          [ -d website ] || { echo "::error::this tag predates the website/ layout; redeploy it with rollback.yml (see website/RECOVERY.md)"; exit 1; }
       - id: plan
         name: Decide what this run may do
         env:
-          INPUT_RELEASE: ${{ inputs.release }}
+          INPUT_PREVIEW: ${{ inputs.preview }}
         run: |
           RELEASE_SHA="$(git rev-parse HEAD)" node scripts/release-plan.mjs . > "$RUNNER_TEMP/plan.txt"
           cat "$RUNNER_TEMP/plan.txt"
@@ -68,7 +73,6 @@ jobs:
     env:
       RELEASE_VERSION: ${{ needs.plan.outputs.version }}
       RELEASE_DATE: ${{ needs.plan.outputs.date }}
-      PREVIEW: ${{ needs.plan.outputs.preview }}
       RELEASE_SHA: ${{ needs.plan.outputs.sha }}
     steps:
       - uses: actions/checkout@v4.2.2
@@ -77,47 +81,38 @@ jobs:
           ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/setup-node@v4.4.0
         with:
-          node-version: '22.15.0'
+          node-version: '22.23.5'
           cache: npm
+          cache-dependency-path: website/package-lock.json
       - run: npm ci --ignore-scripts
       - name: Install poppler-utils so hosted PDFs are scanned
         run: sudo apt-get update && sudo apt-get install -y poppler-utils && pdftotext -v
       - name: Install accessibility browser
-        if: needs.plan.outputs.full-gate == 'true'
         run: npx --no-install playwright install --with-deps chromium
-      - name: Full release gate (check, tests, one build, validators, prepare)
-        if: needs.plan.outputs.full-gate == 'true'
-        run: npm run validate
+      - name: The gate (check, tests, one build, built-site checks, links and axe, acknowledgment)
+        run: npm run gate
+      - name: Boundary scan (the only step that sees the pattern secret)
+        run: npm run validate:boundary
         env:
           L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
-      - name: Accessibility review must be signed for production
-        if: needs.plan.outputs.mode == 'production'
-        run: npx --no-install tsx scripts/validate-accessibility-review.ts --require-complete --release-sha "$RELEASE_SHA"
-      - name: Fast preview gate (check, one build, publication validators, prepare)
-        if: needs.plan.outputs.full-gate != 'true'
-        run: |
-          npm run check
-          npm run build
-          npm run publication:validate
-          npm run publication:prepare
-        env:
-          L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
+      - name: Publication checks (built output, policy, evidence, repository, release)
+        run: npm run publication:checks
+      - name: Pack the validated build with its checksums
+        run: npm run publication:prepare
       - uses: actions/upload-artifact@v4.6.2
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
           path: |
-            site/dist/
-            publication/${{ needs.plan.outputs.version }}/
+            website/dist/
+            website/publication/${{ needs.plan.outputs.version }}/
           if-no-files-found: error
-          retention-days: ${{ needs.plan.outputs.mode == 'production' && 90 || 30 }}
+          retention-days: 90
 
   deploy-preview:
     needs: [plan, build-once]
     if: needs.plan.outputs.mode == 'preview'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4.2.2
         with:
@@ -126,17 +121,17 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
-          path: .
+          path: website
       - name: Verify retained upload identity
         env:
           VERSION: ${{ needs.plan.outputs.version }}
-        run: node scripts/publication.mjs verify site/dist "publication/${VERSION}/artifact-manifest.json"
+        run: node scripts/publication.mjs verify dist "publication/${VERSION}/artifact-manifest.json"
       - id: direct-upload
         uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
+          command: pages deploy website/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
       - name: Smoke-check the preview deployment
         env:
           DEPLOYMENT_URL: ${{ steps.direct-upload.outputs.deployment-url }}
@@ -155,8 +150,6 @@ jobs:
     outputs:
       pages-url: ${{ steps.cloudflare.outputs.pages-url }}
       deployment-id: ${{ steps.cloudflare.outputs.deployment-id }}
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4.2.2
         with:
@@ -165,29 +158,17 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
-          path: .
+          path: website
       - name: Verify retained upload identity
         env:
           VERSION: ${{ needs.plan.outputs.version }}
-        run: node scripts/publication.mjs verify site/dist "publication/${VERSION}/artifact-manifest.json"
-      - name: Validate externally supplied Cloudflare readiness
-        env:
-          VERSION: ${{ needs.plan.outputs.version }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
-          CF_CUSTOM_DOMAIN_ID: ${{ vars.CLOUDFLARE_CUSTOM_DOMAIN_ID }}
-          CF_REDIRECT_LIST_ID: ${{ vars.CLOUDFLARE_REDIRECT_LIST_ID }}
-          CF_REDIRECT_RULE_ID: ${{ vars.CLOUDFLARE_REDIRECT_RULE_ID }}
-        run: |
-          jq -n --arg accountId "$CF_ACCOUNT_ID" --arg zoneId "$CF_ZONE_ID" --arg project "$CF_PROJECT" --arg domainId "$CF_CUSTOM_DOMAIN_ID" --arg listId "$CF_REDIRECT_LIST_ID" --arg ruleId "$CF_REDIRECT_RULE_ID" '{schemaVersion:1,accountId:$accountId,zoneId:$zoneId,pagesProjectName:$project,customDomainId:$domainId,customDomainHostname:"laptop-to-cluster.org",customDomainStatus:"active",redirectListId:$listId,redirectRuleId:$ruleId,redirectRuleStatus:"active",dns:[{hostname:"www.laptop-to-cluster.org",proxied:true,status:"active"},{hostname:"laptoptocluster.org",proxied:true,status:"active"},{hostname:"laptop-to-cluster.pnsinha.com",proxied:true,status:"active"}]}' > "publication/${VERSION}/cloudflare-readiness.json"
-          node scripts/publication.mjs cloudflare-readiness "publication/${VERSION}/cloudflare-readiness.json"
+        run: node scripts/publication.mjs verify dist "publication/${VERSION}/artifact-manifest.json"
       - id: direct-upload
         uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
+          command: pages deploy website/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
       - name: Capture Cloudflare deployment identity
         id: cloudflare
         env:
@@ -200,7 +181,7 @@ jobs:
           test -n "$DEPLOYMENT_ID"
           echo "deployment-id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
           echo "pages-url=$PAGES_URL" >> "$GITHUB_OUTPUT"
-      - name: Generate immutable deployment and release records
+      - name: Generate the deployment and release records
         env:
           RELEASE_VERSION: ${{ needs.plan.outputs.version }}
           RELEASE_DATE: ${{ needs.plan.outputs.date }}
@@ -216,12 +197,11 @@ jobs:
       - uses: actions/upload-artifact@v4.6.2
         with:
           name: ${{ needs.plan.outputs.record-artifact-name }}
-          path: publication/${{ needs.plan.outputs.version }}/
+          path: website/publication/${{ needs.plan.outputs.version }}/
           if-no-files-found: error
-          # The repository caps artifact retention at 90 days; say so rather than declare more.
           retention-days: 90
 
-  post-deploy-release-checks:
+  post-deploy:
     needs: [plan, deploy]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -233,17 +213,17 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
-          path: .
+          path: website
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.record-artifact-name }}
-          path: publication/${{ needs.plan.outputs.version }}
-      - name: Apex, redirect, fallback, repository, and anonymous-access checks
+          path: website/publication/${{ needs.plan.outputs.version }}
+      - name: The apex serves this release, not the previous one
+        run: node scripts/verify-live-release.mjs --origin https://laptop-to-cluster.org --dist dist
+      - name: Every built page, the redirects, the fallback and anonymous access
         env:
           RELEASE_VERSION: ${{ needs.plan.outputs.version }}
           PAGES_DEV_FALLBACK_URL: ${{ needs.deploy.outputs.pages-url }}
           RELEASE_RECORD_PATH: publication/${{ needs.plan.outputs.version }}/release-manifest.json
           REPOSITORY_URL: https://github.com/pnsinha/laptop-to-cluster
         run: node scripts/check-public-release.mjs
-      - name: The apex serves this release, not the previous one
-        run: node scripts/verify-live-release.mjs --origin https://laptop-to-cluster.org --dist site/dist

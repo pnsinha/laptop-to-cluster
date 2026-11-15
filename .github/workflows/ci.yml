@@ -1,5 +1,7 @@
-name: blocking-publication-validation
+name: ci
 
+# The same gate a release runs, without deploying. The boundary pattern secret is not available to
+# a fork pull request; the scan then prints a notice and the maintainer runs it before merging.
 on:
   pull_request:
   push:
@@ -8,8 +10,12 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: website
+
 jobs:
-  publication-gates:
+  gate:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -17,40 +23,19 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4.4.0
         with:
-          node-version: '22.15.0'
+          node-version: '22.23.5'
           cache: npm
-      - name: Resolve the release version from the candidate record
-        run: echo "RELEASE_VERSION=$(node scripts/release-version.mjs)" >> "$GITHUB_ENV"
-      - name: Clean pinned install
-        run: npm ci --ignore-scripts
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci --ignore-scripts
       - name: Install poppler-utils so hosted PDFs are scanned
         run: sudo apt-get update && sudo apt-get install -y poppler-utils && pdftotext -v
       - name: Install accessibility browser
         run: npx --no-install playwright install --with-deps chromium
-      - name: Schema and typed-content checks
-        run: npm run check
-      - name: Unit and property checks
-        run: npm run test:unit && npm run test:property
-      - name: Companion script syntax
-        run: bash -n workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
-      - name: Build production site exactly once
-        run: npm run build
-      - name: Note when the boundary pattern is unavailable (fork pull request)
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
-        run: echo "::notice title=Boundary scan::This pull request comes from a fork, so the boundary pattern secret is not available to it. The maintainer runs the scan before merging."
-      - name: Built-site, canonical, link, repository, evidence, boundary, and release gates
-        run: npm run publication:validate
+      - name: The gate (check, tests, one build, built-site checks, links and axe, acknowledgment)
+        run: npm run gate
+      - name: Boundary scan (the only step that sees the pattern secret)
+        run: npm run validate:boundary
         env:
           L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
-      - name: Static integration and accessibility gates
-        run: npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser
-      - name: Generate checksum-bound publication artifact
-        run: npm run publication:prepare
-      - uses: actions/upload-artifact@v4.6.2
-        with:
-          name: validated-site-${{ env.RELEASE_VERSION }}-${{ github.sha }}
-          path: |
-            site/dist/
-            publication/${{ env.RELEASE_VERSION }}/
-          if-no-files-found: error
-          retention-days: 90
+      - name: Publication checks (built output, policy, evidence, repository, release)
+        run: npm run publication:checks

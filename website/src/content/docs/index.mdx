@@ -1,0 +1,66 @@
+---
+title: Bridging the Laptop-to-Cluster Gap
+description: Translate a multi-service Docker Compose stack to a scheduler-managed HPC allocation with Slurm and Apptainer.
+template: splash
+editUrl: false
+tableOfContents: false
+prev: false
+next: false
+hero:
+  title: Your Compose stack, on a shared cluster
+  tagline: '<p class="kicker">A free, open-source learning guide for Docker Compose users</p><p>On your laptop, <code>docker compose up</code> starts the stack on demand. A shared research cluster has no Docker daemon and gives you no root access (administrator rights). Instead, you request a scheduler allocation (a block of computer time on the cluster), wait your turn, and launch the services with a batch script. This guide shows how to make that translation.</p>'
+  image:
+    html: >-
+      <figure class="hero__figure not-content" aria-labelledby="hero-figure-caption"><div class="env-pair">
+      <div class="env"><p class="env__title">Your laptop</p><p class="env__cmd"><code>docker compose up</code></p>
+      <ul class="env__services" role="list"><li class="env__box">coordinator</li><li class="env__box">worker</li><li class="env__box">worker</li></ul>
+      <ul class="env__facts" role="list"><li>Docker daemon, root access</li><li>Starts whenever you ask</li><li>Ports published to your machine</li></ul></div>
+      <div class="env"><p class="env__title">A shared cluster</p><p class="env__cmd"><code>sbatch slurm/baseline.sbatch</code></p>
+      <div class="env__alloc"><p class="env__alloc-label">One allocation: one node, a fixed time</p>
+      <ul class="env__services" role="list"><li class="env__box">coordinator</li><li class="env__box">worker</li><li class="env__box">worker</li></ul></div>
+      <ul class="env__facts" role="list"><li>No Docker daemon, no root access</li><li>A scheduler decides when you run</li><li>Local-only access inside the node</li></ul></div>
+      </div><figcaption id="hero-figure-caption">The same three programs in two environments. On your laptop, Docker starts them on demand. On a cluster, a scheduler grants one allocation and your batch script starts them inside it. Shown here: the single-node baseline, one job on one node.</figcaption></figure>
+  actions:
+    - text: Take the five-minute tour
+      link: /guide/tour/
+      variant: primary
+---
+import { LinkButton } from '@astrojs/starlight/components';
+import ConceptMap from '../../components/ConceptMap.astro';
+import Crosswalk from '../../components/Crosswalk.astro';
+import Doors from '../../components/Doors.astro';
+import TestedBadge from '../../components/TestedBadge.astro';
+import { CURRENT_RECORD_ID, CURRENT_RECORD_PATH } from '../current-record';
+
+<p class="site-facts">A 2026 BSSw Fellowship project by Parmanand Sinha · Release @release · Free to read, open source</p>
+
+<TestedBadge record={CURRENT_RECORD_ID} />
+
+<p class="site-facts">Here from the SC26 poster or a talk? <a href="/about/talks-and-papers/">Talk and poster links</a></p>
+
+<section class="home-doors" aria-labelledby="doors-title">
+<h2 id="doors-title">Pick your path</h2>
+<Doors doors={[
+  { id: 'understand', eyebrow: 'New to clusters? Start here', title: 'Understand the model', href: '/guide/tour/', linkText: 'Take the five-minute tour',
+    summary: 'The six steps from request to results, in detail, with a short annotated script you can read without a cluster account.' },
+  { id: 'translate', eyebrow: 'Already have a Compose file?', title: 'Translate it', href: '/guide/compose-to-hpc-translation/', linkText: 'Open the Compose-to-Slurm map',
+    summary: 'See what each part of your Compose file becomes on a cluster, then edit the example job to run your own services.' },
+  { id: 'evaluate', eyebrow: 'Research software engineers & center staff', title: 'Evaluate and adopt', href: '/adoption/evaluate/', linkText: 'Read the evaluation guide',
+    summary: 'What the pattern assumes, where it was tested, and when a service your center already runs is the better choice.' },
+]} />
+</section>
+
+<ConceptMap title="The big idea">A scheduler (Slurm, at most centers) decides where and when your stack runs. Inside one <a href="/about/glossary/#allocation">allocation</a>, four familiar Compose ideas change meaning.</ConceptMap>
+
+<Crosswalk><a slot="record" href={CURRENT_RECORD_PATH}>Test record</a></Crosswalk>
+
+<section class="home-close not-content" aria-labelledby="close-title">
+<h2 id="close-title">Ready to start?</h2>
+<p>Most readers begin with the tour. If you already have a Compose file, go straight to the translation guide.</p>
+<div class="home-close__actions">
+<LinkButton href="/guide/tour/" variant="secondary">Take the five-minute tour</LinkButton>
+<LinkButton href="/guide/compose-to-hpc-translation/" variant="minimal">Translate your Compose file</LinkButton>
+</div>
+</section>
+
+<p class="home-credit">Written by Parmanand Sinha, Computational Scientist, University of Chicago Research Computing Center, as a 2026 BSSw Fellow in an individual capacity. <a href="/about/project/">About the project</a>.</p>

@@ -1,7 +1,7 @@
 node_modules/
-site/dist/
+website/dist/
 coverage/
-.astro/
+website/.astro/
 .DS_Store
 *.log
 # Evidence-bundle logs are immutable, checksum-verified artifacts and must ship.
@@ -10,12 +10,6 @@ __pycache__/
 *.pyc
 *.sif
 .kiro/
-publication/
-.claude/
-Better_Scientific_Software_SoW.md
-.opencode/
-.agents/
-.kilocode/
-.kombai/
+website/publication/
 mockups/
 wiki/

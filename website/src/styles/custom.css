@@ -1,0 +1,1205 @@
+/* The site's one stylesheet, after Starlight's own. Sections, in order: cascade layer order, tokens
+   (both themes, print, forced colours), self-hosted fonts, the mapping onto Starlight (l2c-theme),
+   the site's components (l2c-components), utilities, then the optional enhancements. */
+
+/* ==== layers ==== */
+/* Cascade layer order for the whole site. Listed first in Starlight's customCss so it runs
+   before Starlight's own layer declaration. The names are flat on purpose: a dotted name such
+   as l2c.theme would nest under a parent layer "l2c", and that parent, declared before
+   "starlight", would place every site layer below Starlight's. l2c-base holds tokens and fonts.
+   l2c-theme maps the tokens onto Starlight's --sl-* properties and sets typography.
+   l2c-components holds the site's own components (timeline, crosswalk, doors, evidence).
+   l2c-utilities holds one-off helpers and the print, forced-colour and reduced-motion rules. */
+@layer l2c-base, starlight, l2c-theme, l2c-components, l2c-utilities;
+
+/* ==== tokens ==== */
+/*
+ * laptop-to-cluster.org design tokens: the visual system on Starlight.
+ * Light is the base palette. Without a stored choice the page follows
+ * prefers-color-scheme; the theme toggle stores a choice and Starlight's
+ * head script sets data-theme on <html>. Starlight also serves
+ * data-theme="dark" in the HTML, so the dark choice counts only on a page
+ * whose script has run (data-l2c-js, set by the head script in
+ * astro.config.mjs); without JavaScript the page keeps following the
+ * operating system. Dark tokens are screen-only, so print always starts
+ * from the light base and then applies the print overrides.
+ * Every text/background pair used by the specimen is checked by
+ * contrast_check.py (WCAG 2.2 AA in both modes).
+ * Do not use light-dark(): the accessibility scanner reads raw token strings.
+ */
+
+:root {
+  color-scheme: light dark;
+  /* Type families: self-hosted face first (fonts.css), then the phase-1 system stacks */
+  --font-display: "Source Serif 4", "Source Serif 4 Fallback", ui-serif, Charter, "Bitstream Charter", "Sitka Text", Cambria, "Noto Serif", Georgia, "DejaVu Serif", serif;
+  --font-reading: "Source Serif 4", "Source Serif 4 Fallback", ui-serif, Charter, "Bitstream Charter", "Sitka Text", Cambria, "Noto Serif", Georgia, "DejaVu Serif", serif;
+  --font-body: "IBM Plex Sans", "IBM Plex Sans Fallback", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-technical: "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Mono", Consolas, "Noto Sans Mono", "DejaVu Sans Mono", "Liberation Mono", "Droid Sans Mono", monospace;
+  --font-marks: "L2C Marks", "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", sans-serif; /* four glyphs only (U+25A0 U+25B2 U+25C6 U+25CF), one face so they match in size */
+  /* Type sizes: one even ramp, 16 / 18 / 20 / 24 / 32 px at desktop (cqi falls back to the viewport when no container is set) */
+  --text-fine: 0.875rem; /* 14px: captions, eyebrows, footer; the floor for essential text */
+  --text-label: 0.9375rem; /* 15px: interface labels, one step below the 16px body: nav, buttons, controls, breadcrumbs, table headers, pager, skip link */
+  --text-ui: var(--text-label); /* UI sans chrome resolves to the label size (15px); running sans text uses --text-base (16px) */
+  --text-code: 0.9375rem; /* 15px: code blocks */
+  --text-code-inline: max(0.875em, 0.875rem); /* inline code: 0.875em, never below 14px */
+  --text-reading: 1rem; /* 16px reading serif: body text is never above 16px, at any width */
+  --text-lede: 1.125rem; /* 18px */
+  --text-h3: 1.25rem; /* 20px */
+  --text-h2: 1.5rem; /* 24px */
+  --text-display: clamp(1.75rem, 1.5rem + 1cqi, 2rem); /* page h1: 28px narrow, 32px at desktop, never above 40px */
+  /* Leading and weight */
+  --leading-display: 1.1;
+  --leading-heading: 1.2;
+  --leading-lede: 1.45;
+  --leading-reading: 1.45;
+  --leading-ui: 1.45;
+  --leading-fine: 1.5;
+  --leading-code: 1.6;
+  --weight-regular: 400;
+  --weight-semibold: 600; /* Plex Sans SemiBold; serif h2/h3 */
+  --weight-display: 600; /* variable serif; no opsz axis is shipped */
+  /* Measure: a physical width, not ch, so sans captions, mono and serif prose share one right edge */
+  --measure-prose: 40rem; /* about 80–88 characters of 16px reading serif */
+  --measure-lede: 40rem;
+  --measure-wide: 72rem;
+  --measure-data: 84rem;
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem; /* between home sections */
+  --space-24: 6rem;
+  /* Lines, radii, focus */
+  --border-thin: 1px;
+  --border-strong: 2px;
+  --rule-concept: 3px; /* inline-start rule on tagged code lines */
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --radius-small: 0.375rem; /* the only general radius */
+  --radius-door: 0.5rem; /* exception: the three doors */
+  --radius-pill: 999px; /* exception: the evidence badge */
+  /* Timeline geometry (bars are borders, positioned by --from / --to on each lane) */
+  --lane-h: 1.5rem;
+  --bar-scratch: 0.1875rem; /* lightest: solid inside the allocation, dotted after it */
+  --bar-coordinator: 0.3125rem; /* heaviest single line: the service everything waits on */
+  --bar-workers: 0.5rem; /* border-style: double draws the two workers as two 3px lines */
+  /* Concept shape markers (aria-hidden; survive print, grayscale and forced colors) */
+  --mark-step: "■";
+  --mark-gate: "◆";
+  --mark-scratch: "▲";
+  --mark-net: "●";
+  /* Legacy names that existing pages still use. Same scale, new names. */
+  --text-body: var(--text-base);
+  --text-lead: var(--text-lede);
+  --text-heading: var(--text-h2);
+  --text-subheading: var(--text-h3);
+  --text-technical: var(--text-code);
+  --flow-tight: var(--space-2);
+  --flow-body: var(--space-4);
+  --flow-section: var(--space-8);
+  --shell-accent: var(--accent);
+
+  /* Surfaces */
+  --canvas: #fbf9f4;
+  --surface: #f3efe5;
+  --raised: #fffefb;
+  /* Text */
+  --text: #23211c;
+  /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+  --shell: #fbf9f4;
+  --shell-text: #23211c;
+  --text-base: 1rem;
+  --text-supporting: 0.875rem;
+  --leading-base: 1.45;
+  --muted: #5a554b;
+  --primary: #1d2a44;
+  --accent: #45506a;
+  /* Primary action */
+  --primary-hover: #2d3e63;
+  --on-primary: #fbf9f4;
+  /* Lines and focus */
+  --border: #857e70;
+  --rule: #c9bfaa;
+  --focus: #1d2a44;
+  /* Status (always text-labelled, never a concept) */
+  --warning: #735600;
+  --warning-surface: #fbf3d0;
+  --danger: #a3211a;
+  --danger-surface: #fbe9e7;
+  --success: #0f6a5f;
+  --success-surface: #e2f3ef;
+  /* Concepts (text on tint; each also has a shape) */
+  --c-step: #0b5cad;
+  --c-step-bg: #e3f0fc;
+  --c-gate: #9a4a00;
+  --c-gate-bg: #fdf0dc;
+  --c-scratch: #5b21b6;
+  --c-scratch-bg: #efe8fd;
+  --c-net: #166534;
+  --c-net-bg: #e3f4e8;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    /* Surfaces */
+    --canvas: #131a29;
+    --surface: #192234;
+    --raised: #1f293d;
+    /* Text */
+    --text: #ebe5d9;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #131a29;
+    --shell-text: #ebe5d9;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #b3ab9c;
+    --primary: #f4eee2;
+    --accent: #b8c1d6;
+    /* Primary action */
+    --primary-hover: #ddd4c1;
+    --on-primary: #131a29;
+    /* Lines and focus */
+    --border: #737c90;
+    --rule: #3a4560;
+    --focus: #f4eee2;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #e8c35f;
+    --warning-surface: #2b2511;
+    --danger: #ff9a8f;
+    --danger-surface: #3a1a1e;
+    --success: #6fd6c4;
+    --success-surface: #10302c;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #79b8ff;
+    --c-step-bg: #0f2a44;
+    --c-gate: #f0a35e;
+    --c-gate-bg: #3a2410;
+    --c-scratch: #c4a5ff;
+    --c-scratch-bg: #2a1d47;
+    --c-net: #6fdd8b;
+    --c-net-bg: #12321d;
+  }
+}
+
+@media screen {
+  :root[data-l2c-js][data-theme="dark"] {
+    color-scheme: dark;
+    /* Surfaces */
+    --canvas: #131a29;
+    --surface: #192234;
+    --raised: #1f293d;
+    /* Text */
+    --text: #ebe5d9;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #131a29;
+    --shell-text: #ebe5d9;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #b3ab9c;
+    --primary: #f4eee2;
+    --accent: #b8c1d6;
+    /* Primary action */
+    --primary-hover: #ddd4c1;
+    --on-primary: #131a29;
+    /* Lines and focus */
+    --border: #737c90;
+    --rule: #3a4560;
+    --focus: #f4eee2;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #e8c35f;
+    --warning-surface: #2b2511;
+    --danger: #ff9a8f;
+    --danger-surface: #3a1a1e;
+    --success: #6fd6c4;
+    --success-surface: #10302c;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #79b8ff;
+    --c-step-bg: #0f2a44;
+    --c-gate: #f0a35e;
+    --c-gate-bg: #3a2410;
+    --c-scratch: #c4a5ff;
+    --c-scratch-bg: #2a1d47;
+    --c-net: #6fdd8b;
+    --c-net-bg: #12321d;
+  }
+}
+
+/* Print: black on white, concept hues kept for colour printers; the shape
+   markers carry the meaning in grayscale. Both selectors are (0,2,0) so a
+   stored theme can never beat them. */
+@media print {
+  :root:not([data-theme]),
+  :root[data-theme] {
+    color-scheme: light;
+    /* Surfaces */
+    --canvas: #ffffff;
+    --surface: #ffffff;
+    --raised: #ffffff;
+    /* Text */
+    --text: #000000;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #ffffff;
+    --shell-text: #000000;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #333333;
+    --primary: #000000;
+    --accent: #333333;
+    /* Primary action */
+    --primary-hover: #000000;
+    --on-primary: #ffffff;
+    /* Lines and focus */
+    --border: #555555;
+    --rule: #999999;
+    --focus: #000000;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #5c4400;
+    --warning-surface: #ffffff;
+    --danger: #8a1c15;
+    --danger-surface: #ffffff;
+    --success: #0b5249;
+    --success-surface: #ffffff;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #0b5cad;
+    --c-step-bg: #ffffff;
+    --c-gate: #9a4a00;
+    --c-gate-bg: #ffffff;
+    --c-scratch: #5b21b6;
+    --c-scratch-bg: #ffffff;
+    --c-net: #166534;
+    --c-net-bg: #ffffff;
+  }
+}
+
+/* Forced colors: map every token to a system colour; shapes, borders and
+   text labels keep the meaning. */
+@media (forced-colors: active) {
+  :root:not([data-theme]),
+  :root[data-theme] {
+    /* Surfaces */
+    --canvas: Canvas;
+    --surface: Canvas;
+    --raised: Canvas;
+    /* Text */
+    --text: CanvasText;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: Canvas;
+    --shell-text: CanvasText;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: CanvasText;
+    --primary: CanvasText;
+    --accent: CanvasText;
+    /* Primary action */
+    --primary-hover: CanvasText;
+    --on-primary: ButtonText;
+    /* Lines and focus */
+    --border: CanvasText;
+    --rule: GrayText;
+    --focus: Highlight;
+    /* Status (always text-labelled, never a concept) */
+    --warning: CanvasText;
+    --warning-surface: Canvas;
+    --danger: CanvasText;
+    --danger-surface: Canvas;
+    --success: CanvasText;
+    --success-surface: Canvas;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: CanvasText;
+    --c-step-bg: Canvas;
+    --c-gate: CanvasText;
+    --c-gate-bg: Canvas;
+    --c-scratch: CanvasText;
+    --c-scratch-bg: Canvas;
+    --c-net: CanvasText;
+    --c-net-bg: Canvas;
+  }
+}
+
+/* ==== fonts ==== */
+/*
+ * Self-hosted fonts: WOFF2 only, same origin, font-display: swap.
+ * Each family directory under /fonts/ ships its own licence text.
+ * IBM Plex files are IBM's own pre-split files and must never be re-subset ("Plex" is a Reserved Font Name).
+ */
+
+/* Source Serif 4: variable roman (wght 200 to 900, no opsz axis shipped) and one italic */
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("/fonts/source-serif-4-5.3.0/source-serif-4-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/source-serif-4-5.3.0/source-serif-4-latin-400-italic.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* IBM Plex Sans: Regular and SemiBold, Latin1 */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-Regular-Latin1.woff2") format("woff2");
+  unicode-range: U+0000, U+000D, U+0020-007E, U+00A0-00A3, U+00A4-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044, U+2074, U+20AC, U+2122, U+2212, U+FB01-FB02;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-SemiBold-Latin1.woff2") format("woff2");
+  unicode-range: U+0000, U+000D, U+0020-007E, U+00A0-00A3, U+00A4-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044, U+2074, U+20AC, U+2122, U+2212, U+FB01-FB02;
+}
+
+/* IBM Plex Mono: Regular, Latin1 */
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-2.5.0/IBMPlexMono-Regular-Latin1.woff2") format("woff2");
+  unicode-range: U+0000, U+000D, U+0020-007E, U+00A0-00A3, U+00A4-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044, U+2074, U+20AC, U+2122, U+2212, U+FB01-FB02;
+}
+
+/* L2C Marks: four shape glyphs only, one face so they match in size */
+@font-face {
+  font-family: "L2C Marks";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/l2c-marks-noto-sans-symbols-2-5.3.0/L2CMarks-Regular.woff2") format("woff2");
+  unicode-range: U+25A0, U+25B2, U+25C6, U+25CF;
+}
+
+/* Metric-matched fallbacks: the page lays out with these until the web fonts arrive, or if they never do.
+   Regular and bold cover the 400 and 600 weights (600 resolves to the 700 face). */
+@font-face {
+  font-family: "Source Serif 4 Fallback";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Georgia");
+  size-adjust: 108.6%;
+}
+@font-face {
+  font-family: "Source Serif 4 Fallback";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local("Georgia Bold");
+  size-adjust: 108.6%;
+}
+@font-face {
+  font-family: "Source Serif 4 Fallback";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Georgia Italic");
+  size-adjust: 108.6%;
+}
+@font-face {
+  font-family: "IBM Plex Sans Fallback";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Arial");
+  size-adjust: 101.6%;
+}
+@font-face {
+  font-family: "IBM Plex Sans Fallback";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local("Arial Bold");
+  size-adjust: 101.6%;
+}
+
+/* Links outside Markdown content (the Tested badge, the troubleshooting index, the talks list,
+   excerpt source links) get the site's link colour instead of the browser's blue. In l2c-base,
+   below Starlight's layer, so every Starlight and site rule that sets a link colour still wins. */
+@layer l2c-base {
+  :where(a:any-link) { color: var(--sl-color-text-accent); }
+}
+
+/* ==== starlight-theme ==== */
+/* laptop-to-cluster.org on Starlight: the site's tokens (tokens.css) mapped onto Starlight's
+   --sl-* properties, plus the typography and layout choices that make Starlight read as this
+   guide. Starlight declares its colours for dark mode on :root and light mode under
+   [data-theme='light']; the tokens here already switch by theme, so one mapping serves both.
+   This file sits in the l2c-theme layer, after Starlight's own layers, so it wins without
+   specificity games. */
+@layer l2c-theme {
+  :root,
+  ::backdrop {
+    /* Ink and surfaces */
+    --sl-color-white: var(--primary);
+    --sl-color-gray-1: var(--text);
+    --sl-color-gray-2: var(--text);
+    --sl-color-gray-3: var(--muted);
+    --sl-color-gray-4: var(--border);
+    --sl-color-gray-5: var(--rule);
+    --sl-color-gray-6: var(--surface);
+    --sl-color-gray-7: var(--raised);
+    --sl-color-black: var(--canvas);
+    --sl-color-text: var(--text);
+    --sl-color-bg: var(--canvas);
+    --sl-color-bg-nav: var(--canvas);
+    --sl-color-bg-sidebar: var(--surface);
+    --sl-color-bg-inline-code: var(--surface);
+    --sl-color-hairline-light: var(--rule);
+    --sl-color-hairline: var(--rule);
+    --sl-color-hairline-shade: var(--surface);
+    /* Accent: the primary ink fills buttons and the current sidebar item */
+    --sl-color-accent-low: var(--surface);
+    --sl-color-accent: var(--accent);
+    --sl-color-accent-high: var(--primary);
+    --sl-color-text-accent: var(--primary);
+    --sl-color-text-invert: var(--on-primary);
+    --sl-color-bg-accent: var(--primary);
+    /* Aside hues on the status and concept tokens */
+    --sl-color-orange-low: var(--warning-surface);
+    --sl-color-orange: var(--warning);
+    --sl-color-orange-high: var(--warning);
+    --sl-color-red-low: var(--danger-surface);
+    --sl-color-red: var(--danger);
+    --sl-color-red-high: var(--danger);
+    --sl-color-green-low: var(--success-surface);
+    --sl-color-green: var(--success);
+    --sl-color-green-high: var(--success);
+    --sl-color-blue-low: var(--c-step-bg);
+    --sl-color-blue: var(--c-step);
+    --sl-color-blue-high: var(--c-step);
+    --sl-color-purple-low: var(--c-scratch-bg);
+    --sl-color-purple: var(--c-scratch);
+    --sl-color-purple-high: var(--c-scratch);
+    /* No shadows: the visual policy draws edges with hairlines */
+    --sl-shadow-sm: none;
+    --sl-shadow-md: none;
+    --sl-shadow-lg: none;
+    /* Type: Plex Sans for the interface, the display serif for headings (below), Plex Mono for code */
+    --sl-font: var(--font-body);
+    --sl-font-mono: var(--font-technical);
+    --sl-text-xs: var(--text-fine);
+    --sl-text-sm: var(--text-label);
+    --sl-text-code: var(--text-code);
+    --sl-text-code-sm: var(--text-fine);
+    --sl-text-h1: var(--text-display);
+    --sl-text-h2: var(--text-h2);
+    --sl-text-h3: var(--text-h3);
+    --sl-text-h4: var(--text-base);
+    --sl-text-h5: var(--text-base);
+    --sl-line-height: 1.6;
+    --sl-line-height-headings: var(--leading-heading);
+    /* Reading column: 42rem of 16px serif stays under 95 characters a line */
+    --sl-content-width: 42rem;
+  }
+  /* Pages with a hero (the home page) use the full frame, sidebar or not */
+  [data-has-hero] {
+    --sl-content-width: 72rem;
+  }
+
+  /* Headings in the display serif, running prose in the reading serif, interface in the sans */
+  h1,
+  .hero h1,
+  .sl-markdown-content :is(h2, h3):not(:where(.not-content *)),
+  .site-title {
+    font-family: var(--font-display);
+    font-weight: var(--weight-semibold);
+    letter-spacing: normal;
+    hyphens: none;
+    text-wrap: balance;
+  }
+  .sl-markdown-content :is(p, li, dd, dt, blockquote):not(:where(.not-content *, table *)) {
+    font-family: var(--font-reading);
+  }
+  .content-header .lede,
+  .hero .tagline {
+    font-family: var(--font-reading);
+    font-size: var(--text-lede);
+    line-height: var(--leading-lede);
+  }
+  /* The lede under each h1 is balanced, so a short one never leaves a lone word on its second line. The home tagline is not. */
+  .content-header .lede {
+    max-inline-size: var(--measure-lede);
+    margin-block-start: 0.75rem;
+    color: var(--text);
+    text-wrap: balance;
+  }
+  .content-header__line {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font-size: var(--text-fine);
+  }
+  @media (min-width: 30rem) {
+    .h-compound { white-space: nowrap; }
+  }
+  /* Every link in the main pane carries a cue that is not colour: an underline, or the border
+     of a filled button or a pager link. Starlight removes the underline from link cards, link
+     buttons and the edit link; the card title and the quiet button get it back. */
+  main a:not(:where(.sl-link-button, .pagination-links a)),
+  .sl-link-button.minimal {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+  main a:hover:not(:where(.sl-link-button, .pagination-links a)) {
+    text-decoration-thickness: 2px;
+  }
+
+  /* One focus ring everywhere: Starlight leaves the browser default, which is thinner than 2px */
+  :focus-visible {
+    outline: var(--focus-width) solid var(--focus);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* The theme toggle (ThemeSelect override) works only once its script has defined the element;
+     until then, and without JavaScript, the page follows the operating system and shows no dead
+     control. The button is a 32px target; it shows a sun in the light theme and a moon in the dark. */
+  l2c-theme-toggle { display: flex; align-items: center; }
+  l2c-theme-toggle:not(:defined) { display: none; }
+  .theme-toggle { display: inline-grid; place-items: center; inline-size: 2rem; block-size: 2rem; margin: 0; padding: 0; color: var(--sl-color-gray-1); background: none; border: 0; border-radius: var(--radius-small); cursor: pointer; }
+  .theme-toggle:hover { color: var(--sl-color-white); }
+  .theme-toggle__icon { inline-size: 1.25rem; block-size: 1.25rem; }
+  :root[data-theme="dark"] .theme-toggle__icon--light,
+  :root:not([data-theme="dark"]) .theme-toggle__icon--dark { display: none; }
+  .sl-markdown-content :is(h1, h2, h3, h4) code { font-size: 0.875em; }
+
+  /* Tables stay native tables inside the scroll region the build adds around each one */
+  .sl-markdown-content .table-overflow > table:not(:where(.not-content *)) {
+    display: table;
+    inline-size: 100%;
+    overflow: visible;
+  }
+
+  /* Hero (the home page). The override in components/starlight/Hero.astro puts the copy first
+     and the two-environment figure after it, so this draws the layout Starlight's hero would
+     have drawn: one column on a phone, copy left and figure right from 50rem. */
+  .hero {
+    display: grid;
+    grid-template-columns: 100%;
+    align-items: center;
+    gap: var(--space-6);
+    padding-block-end: var(--space-4);
+  }
+  .hero .stack { flex-direction: column; gap: clamp(1.5rem, 1.5rem + 1vw, 2rem); }
+  .hero .copy { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .hero .actions { flex-wrap: wrap; gap: 1rem 2rem; }
+  .hero > .hero-html {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+  .hero h1 {
+    color: var(--primary);
+    font-size: clamp(1.75rem, 1.25rem + 1.6vw, 2.25rem);
+    line-height: 1.15;
+  }
+  .hero .tagline {
+    max-inline-size: 36rem;
+  }
+  .hero .tagline p + p { margin-block-start: 0.75rem; }
+  .hero .tagline .kicker {
+    display: block;
+    margin-block-end: 0.5rem;
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: var(--text-fine);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-fine);
+  }
+  @media (min-width: 50rem) {
+    .hero {
+      grid-template-columns: minmax(0, 11fr) minmax(0, 10fr);
+      gap: 4%;
+      padding-block: clamp(2rem, 1rem + 4vmin, 4rem) var(--space-6);
+    }
+  }
+
+  /* Wide figures may use the whole main pane on content pages: the content panel is the size
+     container, and the breakout rule sits in the utilities layer of components.css so that it
+     wins over each figure's own width. */
+  .content-panel {
+    container-type: inline-size;
+  }
+
+  /* The "On this page" column needs room beside the reading column and the wide figures, so it
+     waits for 90rem; until then the dropdown under the header serves, as it does on a phone. With
+     the column shown, the main pane keeps everything the sidebar and the column leave, and the
+     reading column sits in its middle. */
+  @media (min-width: 72rem) and (max-width: 89.99rem) {
+    .right-sidebar-container { display: none; }
+    [data-has-sidebar][data-has-toc] .main-pane { --sl-content-margin-inline: auto; width: 100%; }
+    .lg\:sl-hidden { display: block; }
+  }
+  @media (min-width: 90rem) {
+    .right-sidebar-container { width: var(--sl-sidebar-width); }
+    [data-has-sidebar][data-has-toc] .main-pane { --sl-content-margin-inline: auto; width: calc(100% - var(--sl-sidebar-width)); }
+  }
+
+  /* No motion: the sidebar group caret turns without a transition */
+  .sidebar .caret { transition: none; }
+
+  /* Site title and sidebar labels in the display serif */
+  .site-title { font-size: 1.125rem; }
+}
+
+/* ==== components ==== */
+/* laptop-to-cluster.org components. Everything Starlight does not provide: the four concept
+   marks, the six-step timeline, the crosswalk, the doors, the hero figure, the evidence badge
+   and panel, notices, tables, code, diagrams, the troubleshooting index, the implementation
+   reference, the guide groups, the site information block, and the print and forced-colour
+   rules for all of them. The shell (header, sidebar, table of contents, pager, reading column)
+   is Starlight's. Sizes and colours come from tokens.css. */
+@layer l2c-components {
+  /* ---------- page wrapper and shared text styles ---------- */
+  .module-content, .start-path, .applicability-record { min-inline-size: 0; }
+  .layout-prose { max-inline-size: var(--measure-prose); }
+  .related-evidence { padding-inline-start: 1.125rem; }
+  :where([data-has-hero]) .sl-markdown-content {
+    --l-display: clamp(1.75rem, 1.55rem + 0.6vw, 2rem);
+    --l-lede: 1.125rem;
+    --l-h2: 1.5rem;
+    --l-term: 1.25rem;
+    --l-body: 1rem;
+    --l-annot: 1rem;
+    --l-caption: var(--text-fine);
+  }
+  :where([data-has-hero]) .sl-markdown-content > * + * { margin-block-start: var(--space-12); }
+  .kicker { margin: 0; color: var(--accent); font-family: var(--font-body); font-size: var(--text-fine); font-weight: var(--weight-semibold); line-height: var(--leading-fine); }
+  .site-facts { margin: 0; color: var(--muted); font-family: var(--font-body); font-size: var(--text-fine); line-height: var(--leading-fine); }
+  .home-doors > h2, .concepts > h2, .crosswalk > h2, .home-close > h2 { max-inline-size: var(--measure-prose); font-size: var(--l-h2); line-height: 1.2; }
+  .record-context { max-inline-size: var(--measure-prose); font-size: var(--text-fine); }
+  .release-notes { margin-block-start: var(--flow-section); }
+  .reading-section > * + *, .module-overview > * + * { margin-block-start: var(--flow-body); }
+  :where(.reading-section, .module-overview) > :is(h2, h3) + :is(p, ul, ol) { margin-block-start: var(--flow-tight); }
+  .layout-data { max-inline-size: 100%; }
+  .doors { margin-block-start: var(--space-4); }
+  .concept__to { min-inline-size: 0; }
+
+  /* ---------- concept utilities (colour + shape + word; the four shapes come from one marks face) ---------- */
+  .c-step, .c-gate, .c-scratch, .c-net { color: var(--c); background: var(--c-bg); padding: 0 0.3em 0.05em; border-radius: 0.1875rem; overflow-wrap: anywhere; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .c-step { --c: var(--c-step); --c-bg: var(--c-step-bg); }
+  .c-gate { --c: var(--c-gate); --c-bg: var(--c-gate-bg); }
+  .c-scratch { --c: var(--c-scratch); --c-bg: var(--c-scratch-bg); }
+  .c-net { --c: var(--c-net); --c-bg: var(--c-net-bg); }
+  .c-step::before, .c-gate::before, .c-scratch::before, .c-net::before { margin-inline-end: 0.3em; color: var(--c); font-family: var(--font-marks); font-size: max(0.8em, 0.875rem); font-weight: var(--weight-regular); line-height: 1; }
+  .c-step::before { content: var(--mark-step); }
+  .c-gate::before { content: var(--mark-gate); }
+  .c-scratch::before { content: var(--mark-scratch); }
+  .c-net::before { content: var(--mark-net); }
+  /* The shape is decoration: empty alt text keeps it out of the accessible name. The guard keeps the glyph in engines without the alt syntax. */
+  @supports (content: "a" / "") {
+    .c-step::before { content: var(--mark-step) / ""; }
+    .c-gate::before { content: var(--mark-gate) / ""; }
+    .c-scratch::before { content: var(--mark-scratch) / ""; }
+    .c-net::before { content: var(--mark-net) / ""; }
+  }
+  :is(p, li, dd, dt, figcaption, td, th) :is(.c-step, .c-gate, .c-scratch, .c-net) { background: none; padding: 0; }
+  .concept__term:is(.c-step, .c-gate, .c-scratch, .c-net) { background: var(--c-bg); padding: 0 0.3em 0.05em; }
+
+  /* ---------- hero figure: two environments, plain HTML ---------- */
+  .hero__figure { margin: 0; }
+  .env-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .env { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); background: var(--raised); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }
+  .env__title { margin: 0; color: var(--primary); font-family: var(--font-display); font-size: var(--l-term, 1.25rem); font-weight: var(--weight-semibold); line-height: 1.25; }
+  .env__cmd { margin: 0; }
+  .env__cmd code { display: inline-block; padding: 0.125rem 0.5rem; background: var(--canvas); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }
+  .env__services { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+  .env__box { padding: var(--space-2) var(--space-3); color: var(--text); background: var(--canvas); border: var(--border-thin) solid var(--border); border-radius: var(--radius-small); font-family: var(--font-technical); font-size: var(--l-annot, 1rem); text-align: center; }
+  .env__alloc { padding: var(--space-3); border: var(--border-strong) dashed var(--primary); border-radius: var(--radius-small); }
+  .env__alloc-label { margin: 0 0 var(--space-2); color: var(--primary); font-size: var(--l-annot, 1rem); font-weight: var(--weight-semibold); }
+  .env__facts { margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: var(--l-annot, 1rem); line-height: 1.45; }
+  .env__facts li + li { margin-block-start: var(--space-1); }
+  .env__alloc-label, .env__cmd code { line-height: 1.45; }
+  .hero__figure figcaption { max-inline-size: var(--measure-lede); margin-block-start: var(--space-3); color: var(--muted); font-size: var(--l-caption, var(--text-fine)); line-height: 1.5; }
+  @media (max-width: 30rem) {
+    .env-pair { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- home: concept rows ---------- */
+  .concepts > h2 { margin-block-end: var(--space-4); }
+  .concepts__intro { max-inline-size: var(--measure-prose); font-family: var(--font-reading); font-size: var(--l-body); line-height: 1.5; }
+  .concepts__rows { margin-block-start: var(--space-8); margin-inline: 0; padding: 0; list-style: none; border-block-start: var(--border-thin) solid var(--rule); }
+  .concept { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2) var(--space-8); padding-block: var(--space-5); border-block-end: var(--border-thin) solid var(--rule); }
+  .concept__n { margin: 0; color: var(--muted); font-family: var(--font-technical); font-variant-numeric: tabular-nums; }
+  .concept__side { display: block; margin-block-end: var(--space-1); color: var(--muted); font-family: var(--font-body); font-weight: var(--weight-semibold); }
+  .concept__side, .concept__n { font-size: var(--l-caption); line-height: 1.5; }
+  .concept__was { margin: 0; color: var(--text); font-family: var(--font-display); font-size: var(--l-term); line-height: 1.25; }
+  .concept__term { display: inline-block; font-family: var(--font-display); font-size: var(--l-term); font-weight: var(--weight-semibold); line-height: 1.25; }
+  .concept__note { max-inline-size: 60ch; margin: var(--space-2) 0 0; font-family: var(--font-reading); font-size: var(--l-body); line-height: 1.5; }
+  @media (min-width: 52rem) {
+    .concept { grid-template-columns: 3rem minmax(0, 2fr) minmax(0, 3fr); align-items: start; }
+  }
+
+  /* ---------- six-step timeline: an ordered list; the bars are borders ---------- */
+  .timeline { container-type: inline-size; max-inline-size: var(--measure-wide); margin-block: var(--space-8); --tl-pad: var(--space-4); --overrun: calc(var(--tl-pad) + 2px + 0.5rem); }
+  .timeline__title { display: block; margin-block-end: var(--space-4); color: var(--primary); font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: 1.25; }
+  .timeline__steps { margin: 0; padding: var(--tl-pad); list-style: none; border: var(--border-strong) solid var(--border); border-radius: var(--radius-small); }
+  .timeline__step { display: grid; grid-template-columns: calc(4 * var(--lane-h)) minmax(0, 1fr); column-gap: var(--space-4); align-content: start; }
+  .timeline__step[aria-current="step"] { outline: var(--border-strong) solid var(--primary); outline-offset: 0.25rem; border-radius: var(--radius-small); }
+  .timeline__num, .timeline__step > strong, .timeline__caption { grid-column: 2; }
+  .timeline__num { padding-block-start: var(--space-1); color: var(--muted); font-size: var(--text-fine); font-variant-numeric: tabular-nums; }
+  .timeline__step > strong { font-weight: var(--weight-semibold); }
+  .timeline__caption { display: block; padding-block: var(--space-1) var(--space-5); color: var(--muted); font-size: 0.9375rem; }
+  .timeline__bars { position: relative; display: grid; grid-column: 1; grid-row: 1 / span 3; grid-template-columns: repeat(4, var(--lane-h)); }
+  .timeline__lane { position: relative; }
+  .timeline__lane[data-lane="scratch"] { --bw: var(--bar-scratch); --bc: var(--c-scratch); }
+  .timeline__lane[data-lane="coord"] { --bw: var(--bar-coordinator); --bc: var(--c-step); }
+  .timeline__lane[data-lane="workers"] { --bw: var(--bar-workers); --bc: var(--c-step); --bs: double; }
+  .timeline__lane[data-span="begin"] { --to: 100%; }
+  .timeline__lane[data-lane="scratch"][data-span="begin"] { --from: 40%; }
+  .timeline__lane[data-lane="coord"][data-span="begin"] { --from: 35%; }
+  .timeline__lane[data-span="full"] { --from: 0%; --to: 100%; }
+  .timeline__lane[data-span="within"] { --from: 20%; --to: 90%; }
+  .timeline__lane[data-span="fade"] { --from: 0%; --to: 55%; }
+  .timeline__lane[data-span="stop"] { --from: 0%; --to: 40%; }
+  .timeline__lane:is([data-span="begin"], [data-span="full"], [data-span="within"], [data-span="fade"], [data-span="stop"])::before { content: ""; position: absolute; inset-inline-start: calc(50% - var(--bw) / 2); inset-block-start: var(--from); inset-block-end: calc(100% - var(--to)); border-inline-start: var(--bw) var(--bs, solid) var(--bc); }
+  .timeline__lane[data-span="fade"]::after { content: ""; position: absolute; inset-inline-start: calc(50% - var(--bw) / 2); inset-block-start: var(--to); inset-block-end: calc(-1 * var(--overrun)); border-inline-start: var(--bw) dotted var(--bc); }
+  .timeline__lane[data-span="stop"]::after { content: ""; position: absolute; inset-block-start: calc(var(--to) - 1px); inset-inline: 0.25rem; border-block-start: var(--border-strong) solid var(--bc); }
+  .timeline__lane[data-lane="checks"] { display: flex; align-items: flex-start; justify-content: center; padding-block-start: 0.3rem; }
+  .timeline__mark { display: inline-block; }
+  .timeline__mark--gate { color: var(--c-gate); font-family: var(--font-marks); font-size: 1.25rem; font-weight: var(--weight-regular); line-height: 1; }
+  .timeline__step[data-step="3"] .timeline__bars::after { content: ""; position: absolute; inset-inline: 0; inset-block-start: 0.8rem; border-block-start: var(--border-strong) solid var(--c-gate); }
+  .timeline__mark--verify { display: inline-block; inline-size: 0.4375rem; block-size: 0.8125rem; margin-block-start: 0.05rem; border: solid var(--text); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+  .timeline__after { max-inline-size: var(--measure-prose); margin-block-start: var(--space-3); color: var(--muted); font-size: var(--text-fine); }
+  .timeline__key { display: grid; gap: var(--space-2); max-inline-size: var(--measure-prose); margin: var(--space-6) 0 0; }
+  .timeline__key > div { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: var(--space-3); align-items: baseline; }
+  .timeline__key dt { font-weight: var(--weight-semibold); }
+  .timeline__key dd { margin: 0; }
+  @container (max-width: 24rem) {
+    .timeline__steps { --lane-h: 1rem; }
+  }
+  @container (min-width: 48rem) {
+    /* The fade line runs 2rem past the last step; keep that 2rem inside the timeline so it never widens the page. */
+    .timeline__steps { --overrun: calc(var(--tl-pad) + 2px + 2rem); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-inline-end: 2rem; }
+    .timeline__step { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
+    .timeline__bars { grid-column: 1; grid-row: 1; grid-template-columns: none; grid-template-rows: repeat(4, var(--lane-h)); border-block-end: var(--border-thin) solid var(--rule); }
+    .timeline__step + .timeline__step .timeline__bars::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; border-inline-start: var(--border-thin) dashed var(--rule); }
+    .timeline__num, .timeline__step > strong, .timeline__caption { grid-column: 1; padding-inline: var(--space-2) var(--space-3); }
+    .timeline__num { padding-block-start: var(--space-3); }
+    .timeline__lane:is([data-span="begin"], [data-span="full"], [data-span="within"], [data-span="fade"], [data-span="stop"])::before { inset-block-start: calc(50% - var(--bw) / 2); inset-block-end: auto; inset-inline-start: var(--from); inset-inline-end: calc(100% - var(--to)); border-inline-start: 0; border-block-start: var(--bw) var(--bs, solid) var(--bc); }
+    .timeline__lane[data-span="fade"]::after { inset-block-start: calc(50% - var(--bw) / 2); inset-block-end: auto; inset-inline-start: var(--to); inset-inline-end: calc(-1 * var(--overrun)); border-inline-start: 0; border-block-start: var(--bw) dotted var(--bc); }
+    .timeline__lane[data-span="stop"]::after { inset-block: 0.25rem; inset-inline-start: calc(var(--to) - 1px); inset-inline-end: auto; border-block-start: 0; border-inline-start: var(--border-strong) solid var(--bc); }
+    .timeline__lane[data-lane="checks"] { align-items: center; padding: 0; }
+    .timeline__step[data-step="3"] .timeline__bars::after { inset-block: 0; inset-inline-start: calc(50% - 1px); inset-inline-end: auto; border-block-start: 0; border-inline-start: var(--border-strong) solid var(--c-gate); }
+  }
+
+  /* ---------- doors: Starlight cards; the eyebrow is the card title, the door name a heading ---------- */
+  @media (min-width: 64rem) {
+    .doors .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  .door > * + * { margin-block-start: var(--space-2); }
+  .door__title { margin: 0; font-family: var(--font-display); font-size: var(--l-term, 1.25rem); font-weight: var(--weight-semibold); line-height: 1.25; }
+  .door__summary { margin: 0; font-family: var(--font-reading); font-size: var(--l-body, 1rem); line-height: 1.5; }
+  .door__go { margin: var(--space-3) 0 0; font-size: var(--text-label); }
+  .door__link { font-weight: var(--weight-semibold); }
+
+  /* ---------- crosswalk: rule + shape by default ---------- */
+  .crosswalk { container-type: inline-size; }
+  .crosswalk__subtitle { max-inline-size: var(--measure-prose); color: var(--muted); }
+  .crosswalk__legend { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-6); margin-block: var(--space-6); }
+  .crosswalk__term { display: flex; flex-direction: column; gap: 0.25rem; }
+  .crosswalk__term[data-concept="step"] { --cc: var(--c-step); }
+  .crosswalk__term[data-concept="gate"] { --cc: var(--c-gate); }
+  .crosswalk__term[data-concept="scratch"] { --cc: var(--c-scratch); }
+  .crosswalk__term[data-concept="net"] { --cc: var(--c-net); }
+  .crosswalk__term dt { color: var(--cc); font-weight: var(--weight-semibold); }
+  .crosswalk__term dd { margin: 0; color: var(--muted); font-size: var(--text-fine); }
+  .crosswalk__mark { color: var(--cc); font-family: var(--font-marks); font-weight: var(--weight-regular); line-height: 1; -webkit-user-select: none; user-select: none; }
+  .crosswalk__disclosure { margin-block-start: var(--space-4); }
+  .crosswalk__disclosure > summary { min-block-size: 2rem; padding-block: 0.25rem; cursor: pointer; color: var(--primary); font-weight: var(--weight-semibold); text-decoration: underline; text-underline-offset: 0.2em; }
+  .crosswalk__panes { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); margin-block-start: var(--space-4); }
+  .crosswalk__pane { min-inline-size: 0; margin: 0; }
+  .crosswalk__pane figcaption { margin-block-end: var(--space-2); color: var(--muted); font-size: var(--text-fine); }
+  .crosswalk__pane figcaption a { font-size: var(--text-ui); }
+  .crosswalk__pane pre { margin: 0; padding-block: var(--space-3); padding-inline: 0; overflow-x: auto; color: var(--text); background: var(--surface); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); font-size: var(--text-code); line-height: var(--leading-code); tab-size: 2; }
+  .crosswalk__pane code { display: block; padding: 0; font-size: inherit; background: none; border: 0; }
+  .crosswalk__line { --ind: 1.6875rem; display: block; padding-block: 0; padding-inline-start: calc(var(--space-3) + var(--ind)); padding-inline-end: var(--space-4); text-indent: calc(-1 * var(--ind)); border-inline-start: var(--rule-concept) solid transparent; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .crosswalk__line:has(.crosswalk__n) { --ind: 3.9375rem; }
+  .crosswalk__line[data-concepts] { border-inline-start-color: var(--cc); }
+  .crosswalk__line[data-concepts^="step"] { --cc: var(--c-step); }
+  .crosswalk__line[data-concepts^="gate"] { --cc: var(--c-gate); }
+  .crosswalk__line[data-concepts^="scratch"] { --cc: var(--c-scratch); }
+  .crosswalk__line[data-concepts^="net"] { --cc: var(--c-net); }
+  .crosswalk__line .crosswalk__mark { display: inline-block; inline-size: 1.125rem; margin-inline-end: 0.5625rem; font-size: 0.875rem; text-align: center; text-indent: 0; -webkit-user-select: none; user-select: none; }
+  .crosswalk__n { display: inline-block; inline-size: 1.6875rem; margin-inline-end: 0.5625rem; color: var(--muted); text-align: end; text-indent: 0; -webkit-user-select: none; user-select: none; }
+  @container (min-width: 56rem) {
+    .crosswalk__panes { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+    .crosswalk__pane[data-pane="compose"] { grid-column: 1; grid-row: 1 / span 2; }
+    .crosswalk__pane[data-pane="sbatch"] { grid-column: 2; grid-row: 1; }
+    .crosswalk__pane[data-pane="coordinator"] { grid-column: 2; grid-row: 2; }
+  }
+
+  /* ---------- home bottom: closing actions, author credit ---------- */
+  .home-close > p { max-inline-size: var(--measure-prose); }
+  .home-close__actions { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); align-items: center; margin-block-start: var(--space-4); }
+  .home-credit { max-inline-size: var(--measure-prose); margin: 0; padding-block-start: var(--space-6); border-block-start: var(--border-thin) solid var(--rule); color: var(--muted); font-size: var(--text-label); line-height: 1.5; }
+
+  /* ---------- evidence: badge, panel, record summary ---------- */
+  .applicability-projection { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); max-inline-size: var(--measure-prose); margin-block: var(--space-6); }
+  .applicability-projection > * { margin: 0; }
+  .evidence-badge { display: inline-block; padding: 0.0625rem 0.625rem; color: var(--text); background: var(--raised); border: var(--border-thin) solid var(--border); border-radius: var(--radius-pill); font-size: var(--text-fine); font-weight: var(--weight-semibold); line-height: var(--leading-fine); }
+  .evidence-badge--warning { background: var(--warning-surface); border: 0.25rem double var(--text); }
+  .evidence-link { color: var(--muted); font-size: var(--text-fine); line-height: var(--leading-fine); }
+  .evidence-link a { font-size: var(--text-label); }
+  .applicability-projection--escalated .evidence-link { color: var(--text); }
+  .evidence-panel { flex-basis: 100%; }
+  .evidence-panel > summary { min-block-size: 2rem; padding-block: 0.25rem; cursor: pointer; color: var(--primary); font-weight: var(--weight-semibold); text-decoration: underline; text-underline-offset: 0.2em; }
+  .evidence-rows { display: grid; gap: var(--space-4); max-inline-size: var(--measure-prose); margin: 0; padding: var(--space-4) var(--space-5); background: var(--raised); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }
+  .evidence-panel > .evidence-rows { margin-block-start: var(--space-3); }
+  .evidence-row { display: grid; gap: var(--space-1) var(--space-5); }
+  .evidence-row dt { font-weight: var(--weight-semibold); }
+  .evidence-row dd { margin: 0; }
+  .evidence-row ul { margin: 0; padding-inline-start: 1.125rem; }
+  .evidence-row li + li { margin-block-start: var(--space-1); }
+  .evidence-untested { max-inline-size: var(--measure-prose); margin: var(--space-3) 0 0; }
+  .applicability-projection--escalated { display: block; padding: var(--space-3) var(--space-4); background: var(--warning-surface); border-inline-start: 0.375rem double var(--text); border-radius: 0 var(--radius-small) var(--radius-small) 0; }
+  .applicability-projection--escalated > * + * { margin-block-start: var(--space-2); }
+  .record-summary { max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding: var(--space-4) var(--space-5); background: var(--raised); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }
+  .record-summary__tested { margin: 0; font-family: var(--font-reading); font-size: var(--text-reading); line-height: var(--leading-reading); }
+  .record-summary__scope { margin: var(--space-3) 0 0; padding-inline-start: 1.125rem; }
+  .record-summary__scope li + li { margin-block-start: var(--space-1); }
+  .record-summary > p:last-child { margin: var(--space-3) 0 0; }
+  .record-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr)); column-gap: var(--space-8); row-gap: 0; margin: 0; }
+  .record-grid > div { padding-block: var(--space-3); border-block-start: var(--border-thin) solid var(--rule); }
+  .record-grid dt { font-weight: var(--weight-semibold); }
+  .record-grid dd { margin: var(--flow-tight) 0 0; padding: 0; }
+  .provenance-note { color: var(--muted); font-size: var(--text-label); }
+
+  /* ---------- talks ---------- */
+  .talks { max-inline-size: var(--measure-prose); margin: 0; padding: 0; list-style: none; }
+  .talk { padding-block: var(--space-5); border-block-start: var(--border-thin) solid var(--rule); }
+  .talk:last-child { border-block-end: var(--border-thin) solid var(--rule); }
+  .talk__kind { margin: 0; color: var(--accent); font-size: var(--text-fine); font-weight: var(--weight-semibold); }
+  .talk h3 { margin: var(--space-1) 0 var(--space-2); }
+  .talk__meta { margin: 0; color: var(--muted); }
+  .talk__links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+  .talk__links a { display: inline-block; padding-block: 0.25rem; }
+
+  /* ---------- notices: warnings are a double ink rule plus the word, never colour alone ---------- */
+  .notice { max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding: var(--space-4) var(--space-5); color: var(--text); background: var(--warning-surface); border-inline-start: 0.375rem double var(--text); border-radius: 0 var(--radius-small) var(--radius-small) 0; }
+  .diagnostic-applicability { max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding-inline-start: var(--space-3); border-inline-start: var(--border-strong) solid var(--muted); }
+  .diagnostic-applicability p + p { margin-block-start: var(--flow-tight); }
+  .sources-scope { max-inline-size: var(--measure-prose); margin-block-start: var(--flow-section); padding-block-start: var(--space-6); border-block-start: var(--border-thin) solid var(--rule); }
+  .sources-scope summary { cursor: pointer; font-size: var(--text-label); font-weight: var(--weight-semibold); }
+  .external-label { color: var(--muted); font-size: var(--text-fine); }
+
+  /* ---------- tables ---------- */
+  .table-overflow { position: relative; max-inline-size: 100%; margin-block: var(--space-6); overflow-x: auto; overscroll-behavior-inline: contain; container-type: scroll-state; }
+  .table-overflow:focus-visible { outline-offset: var(--space-1); }
+  .table-overflow__instruction { position: sticky; inset-inline-start: 0; inline-size: fit-content; max-inline-size: var(--measure-prose); margin: 0; padding: var(--space-2) var(--space-3) var(--space-2) 0; color: var(--muted); font-size: var(--text-fine); border-block-end: var(--border-thin) solid var(--rule); }
+  .table-overflow > table { inline-size: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .table-overflow caption { padding-block: var(--space-3); padding-inline: 0; color: var(--primary); font-family: var(--font-display); font-size: 1.125rem; font-weight: var(--weight-semibold); text-align: start; }
+  .table-overflow :is(th, td) { padding: var(--space-2) var(--space-4); text-align: start; vertical-align: top; border: 0; }
+  .table-overflow th { color: var(--muted); font-size: var(--text-label); font-weight: var(--weight-semibold); background: none; }
+  .table-overflow thead th, .table-overflow table:not(:has(thead)) tr:first-child > * { border-block-end: var(--border-thin) solid var(--rule); }
+  .table-overflow :is(th, td):first-child { padding-inline-start: 0; }
+  .table-overflow :is(th, td):last-child { padding-inline-end: 0.25rem; }
+  .table-overflow tbody tr + tr > * { border-block-start: var(--border-thin) solid var(--rule); }
+  .table-overflow tbody tr:nth-child(2n) { background: none; }
+  .table-overflow td code { overflow-wrap: anywhere; }
+  .table-overflow td:first-child code { white-space: nowrap; overflow-wrap: normal; }
+
+  /* ---------- code: always on the surface; Shiki picks light or dark per theme ---------- */
+  code, pre, .technical-figure { font-family: var(--font-technical); }
+  :not(pre) > code { padding: 0.0625em 0.25em; color: var(--text); background: var(--surface); border-radius: 0.25rem; overflow-wrap: anywhere; word-break: break-word; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  pre, .technical-figure { color: var(--text); background: var(--surface); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); font-size: var(--text-code); font-variant-numeric: tabular-nums; line-height: var(--leading-code); }
+  pre { max-inline-size: 100%; padding: var(--space-4); overflow-x: auto; overscroll-behavior-inline: contain; tab-size: 2; }
+  .technical-figure { max-inline-size: 100%; padding: var(--space-4); }
+  .technical-figure figcaption { margin-block-end: var(--space-3); color: var(--primary); font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: var(--leading-heading); }
+  pre code { padding: 0; font-size: inherit; background: none; border: 0; overflow-wrap: normal; word-break: normal; }
+  .hash, .integrity { overflow-wrap: anywhere; word-break: break-word; }
+  .astro-code { color: var(--shiki-light); background-color: var(--surface); }
+  .astro-code span { color: var(--shiki-light); }
+  @media screen and (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .astro-code, :root:not([data-theme="light"]) .astro-code span { color: var(--shiki-dark); }
+  }
+  @media screen {
+    :root[data-l2c-js][data-theme="dark"] .astro-code, :root[data-l2c-js][data-theme="dark"] .astro-code span { color: var(--shiki-dark); }
+  }
+
+  /* ---------- diagrams: all SVG text is 14 px or more ---------- */
+  .diagram { max-inline-size: 100%; margin-block: var(--space-6); padding: var(--space-4); background: var(--canvas); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }
+  .diagram-svg { inline-size: 100%; block-size: auto; color: var(--primary); }
+  .diagram-svg .lbl, .diagram-svg .step { font-family: var(--font-technical); font-size: 14px; }
+  .diagram-svg .mark { fill: var(--text); font-family: var(--font-marks); font-size: 14px; }
+  .diagram-svg .lbl { fill: var(--text); }
+  .diagram-svg .sub, .diagram-svg .note, .diagram-svg .step { fill: var(--muted); }
+  .diagram-svg .sub, .diagram-svg .note { font-family: var(--font-body); font-size: 14px; }
+  .diagram-svg .arr { stroke: var(--primary); stroke-width: 2; fill: none; }
+  .diagram-svg .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .diagram-svg .gate-arrow { stroke: var(--c-gate); stroke-width: 2; fill: none; }
+  .diagram-svg #ah-green polygon, .diagram-svg #seq-ah polygon { fill: var(--c-gate); }
+  .diagram-svg .box-l, .diagram-svg .box-r, .diagram-svg .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  .diagram-svg .box-r { stroke: var(--primary); }
+  .diagram-svg .bar { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  .diagram-svg .recessed { fill: var(--canvas); }
+  .diagram-svg .recessed-ok, .diagram-svg .ready-bar { fill: var(--canvas); stroke: var(--c-gate); stroke-width: 1.5; }
+  .diagram-svg .launch-bar { fill: var(--canvas); stroke: var(--primary); stroke-width: 1.5; }
+  .diagram-svg .lane { stroke: var(--border); stroke-width: 1; stroke-dasharray: 4, 3; }
+  .diagram-svg .tl { stroke: var(--border); stroke-width: 1.5; stroke-dasharray: 3, 3; }
+  .diagram-svg .alloc-border { fill: none; stroke: var(--primary); stroke-width: 1.5; stroke-dasharray: 6, 4; }
+  .diagram-svg .hdr { fill: var(--text); font-family: var(--font-body); font-size: 14px; font-weight: 700; }
+  .diagram-svg .hdr--primary { fill: var(--primary); font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .diagram-svg .tag { fill: var(--success); font-family: var(--font-body); font-size: 14px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .diagram-svg .ok { fill: var(--success); font-family: var(--font-body); font-size: 14px; font-weight: 700; }
+  .diagram-svg .no { fill: var(--danger); font-family: var(--font-body); font-size: 14px; font-weight: 700; }
+
+  /* ---------- troubleshooting index ---------- */
+  .diagnostic-index { display: grid; gap: 0; max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding: 0; list-style: none; }
+  .diagnostic-index li { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); align-items: baseline; padding-block: var(--space-2); border-block-start: var(--border-thin) solid var(--rule); }
+  .diagnostic-index li:last-child { border-block-end: var(--border-thin) solid var(--rule); }
+  .diagnostic-index code { font-size: var(--text-fine); }
+  .diagnostic-code { font-family: var(--font-technical); font-size: var(--text-code); }
+  .diagnostic-stable-id { margin-inline-start: var(--space-2); color: var(--muted); font-family: var(--font-body); font-size: var(--text-fine); }
+  /* Each entry is a Starlight-styled <details> whose summary holds the entry's h2 (closed by default;
+     a fragment link opens it, and print opens all). The chevron and the heading share one line. */
+  .diagnostic-entry { margin-block-start: var(--space-6); }
+  .diagnostic-entry > summary { display: flex; align-items: center; }
+  .diagnostic-entry > summary > h2 { margin: 0; }
+  .diagnostic-entry > summary::before { flex: none; }
+  .diagnostic-entry > h3 { margin-block-start: var(--space-6); font-family: var(--font-display); font-size: var(--text-h3); }
+  .diagnostic-entry > * + * { margin-block-start: var(--flow-body); }
+  .diagnostic-entry > :is(h3) + * { margin-block-start: var(--flow-tight); }
+
+  /* ---------- implementation reference: annotated source excerpts, the code behind a disclosure ---------- */
+  .implementation-reference { max-inline-size: var(--measure-data); margin-block: var(--flow-section); scroll-margin-block-start: calc(var(--sl-nav-height) + var(--space-6)); }
+  .implementation-reference__intro { max-inline-size: var(--measure-prose); }
+  .implementation-reference__intro > * + * { margin-block-start: var(--flow-body); }
+  .implementation-reference__intro p { font-family: var(--font-reading); line-height: var(--leading-reading); }
+  .implementation-reference__actions { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); align-items: center; }
+  .source-excerpt { margin: var(--space-8) 0 0; padding: 0; background: none; border: 0; }
+  .source-excerpt__title { margin: 0; color: var(--text); font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: var(--leading-heading); }
+  .source-excerpt__code { margin-block-start: var(--space-3); }
+  .source-excerpt__code > summary { display: list-item; inline-size: fit-content; min-block-size: 1.5rem; padding-block: 0.125rem; cursor: pointer; color: var(--primary); font-family: var(--font-body); font-size: var(--text-label); font-weight: var(--weight-semibold); text-decoration: none; }
+  .source-excerpt figcaption { display: grid; gap: var(--space-1); margin: 0; }
+  .source-excerpt__meta { display: block; color: var(--text); font-family: var(--font-body); font-size: var(--text-fine); overflow-wrap: anywhere; }
+  .source-excerpt__meta a { font-size: var(--text-label); }
+  .source-excerpt__annotation { max-inline-size: var(--measure-prose); margin-block: var(--space-3) 0; font-family: var(--font-reading); line-height: var(--leading-reading); }
+  .source-excerpt pre { inline-size: 100%; max-block-size: 34rem; min-inline-size: 0; margin-block: var(--space-4) 0; overflow: auto; }
+  .source-excerpt pre code { white-space: pre; }
+  .implementation-reference, .source-excerpt, .source-excerpt figcaption { min-inline-size: 0; }
+
+  /* ---------- guide page groups ---------- */
+  .resource-section { margin-block-start: var(--space-10); }
+  .resource-section__header { max-inline-size: var(--measure-prose); margin-block-end: var(--space-4); }
+  .resource-section__question { max-inline-size: var(--measure-prose); margin-block-start: var(--space-1); color: var(--muted); font-size: var(--text-base); }
+
+  /* ---------- footer: Starlight's meta line and pager, then the site information block ---------- */
+  .l2c-footer { display: flex; flex-direction: column; gap: var(--space-6); }
+  .l2c-footer__meta { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-12); justify-content: space-between; margin-block-start: var(--space-12); color: var(--muted); font-size: var(--text-label); }
+  .l2c-footer__meta > :only-child { margin-inline-start: auto; }
+  .l2c-site-info { margin-block-start: var(--space-4); padding-block-start: var(--space-4); border-block-start: var(--border-thin) solid var(--rule); color: var(--muted); font-family: var(--font-body); font-size: var(--text-fine); line-height: 1.5; }
+  .l2c-site-info__links { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); margin: 0; padding: 0; list-style: none; }
+  .l2c-site-info__links a { display: inline-block; padding-block: 0.25rem; color: var(--primary); font-size: var(--text-label); text-decoration: underline; text-underline-offset: 0.2em; }
+  .l2c-site-info .acknowledgment { max-inline-size: var(--measure-prose); margin: var(--space-4) 0 0; }
+  .event-acknowledgment { max-inline-size: var(--measure-prose); margin-block: var(--space-8) 0; padding-block-start: var(--space-4); border-block-start: var(--border-thin) solid var(--rule); }
+
+  /* ---------- responsive ---------- */
+  @media (min-width: 40rem) {
+    .evidence-row { grid-template-columns: 11rem minmax(0, 1fr); }
+  }
+  @media (min-width: 64rem) {
+    .table-overflow__instruction { display: none; }
+  }
+  /* Without a frame, a region that really scrolls must say so. From 64rem the instruction is hidden for tables that fit; this shows it again for one that can scroll sideways. */
+  @container scroll-state(scrollable: inline) {
+    .table-overflow__instruction { display: block; }
+  }
+  @media (max-width: 48rem) {
+    .source-excerpt__meta { overflow-wrap: anywhere; }
+  }
+}
+
+@layer l2c-utilities {
+  /* Wide figures take the main pane on content pages (container units measure the panel's content
+     box, inside its padding) and centre themselves around the reading column. */
+  .sl-markdown-content :is(.timeline, .implementation-reference, .diagram, .technical-figure):not(:where(.not-content .not-content *)) {
+    --l2c-wide: min(100cqw, 72rem);
+    inline-size: var(--l2c-wide);
+    max-inline-size: none;
+    margin-inline: calc((100% - var(--l2c-wide)) / 2);
+  }
+
+  .crosswalk__sr { position: absolute !important; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; -webkit-user-select: none; user-select: none; }
+
+  @media (forced-colors: active) {
+    * { forced-color-adjust: auto; }
+    :focus-visible { outline: 2px solid Highlight; outline-offset: var(--focus-offset); }
+    a:where(:any-link) { color: LinkText; }
+    .door, .record-summary, .evidence-rows, .timeline__steps, .crosswalk__pane pre, pre, .technical-figure, .env, .env__box, .env__alloc, .env__cmd code { border: 1px solid CanvasText; }
+    .env__alloc { border: var(--border-strong) dashed CanvasText; }
+    .timeline__step[aria-current="step"] { outline-color: Highlight; }
+    .timeline__mark--verify { border-color: CanvasText; }
+    .crosswalk__line[data-concepts] { border-inline-start-color: CanvasText; }
+    .astro-code, .astro-code span { color: CanvasText; background-color: Canvas; }
+  }
+  @media print {
+    .table-overflow__instruction { display: none; }
+    .evidence-panel::details-content, .crosswalk__disclosure::details-content, .source-excerpt__code::details-content, .diagnostic-entry::details-content { content-visibility: visible; display: block; }
+    /* The head script opens every disclosure before printing; the summary is only a screen control. */
+    .source-excerpt__code > summary { display: none; }
+    .crosswalk__pane pre { overflow: visible; }
+    /* Paper cannot scroll, so code wraps and a height-capped excerpt prints whole. */
+    pre, pre code, .source-excerpt pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .source-excerpt pre { max-block-size: none; overflow: visible; }
+    .table-overflow { overflow: visible; }
+    .timeline, .door, .notice, .record-summary, .evidence-rows, .crosswalk__pane, .hero__figure, .concept { break-inside: avoid; }
+    :where(h1, h2, h3, h4) { break-after: avoid; }
+    .table-overflow thead th, .table-overflow table:not(:has(thead)) tr:first-child > * { border-block-end-width: 2px; border-block-end-color: var(--border); }
+    a[href^="http"]:not(nav a)::after { content: " (" attr(href) ")"; overflow-wrap: anywhere; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      scroll-behavior: auto !important;
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
+
+/* ==== enhancements ==== */
+/* v0.2.0 conditional enhancements. Imported once by global.css, so the build still
+   emits a single stylesheet. Rules that matter carry the .crosswalk prefix, so their
+   weight does not depend on where the import sits. Nothing here moves. */
+
+/* ---------- Crosswalk highlight (the script adds the controls; without it none of this applies) ---------- */
+.crosswalk .crosswalk__term[data-concept="step"] { --cc: var(--c-step); --cc-bg: var(--c-step-bg); }
+.crosswalk .crosswalk__term[data-concept="gate"] { --cc: var(--c-gate); --cc-bg: var(--c-gate-bg); }
+.crosswalk .crosswalk__term[data-concept="scratch"] { --cc: var(--c-scratch); --cc-bg: var(--c-scratch-bg); }
+.crosswalk .crosswalk__term[data-concept="net"] { --cc: var(--c-net); --cc-bg: var(--c-net-bg); }
+.crosswalk[data-selected="step"] { --pick: var(--c-step); --pick-bg: var(--c-step-bg); }
+.crosswalk[data-selected="gate"] { --pick: var(--c-gate); --pick-bg: var(--c-gate-bg); }
+.crosswalk[data-selected="scratch"] { --pick: var(--c-scratch); --pick-bg: var(--c-scratch-bg); }
+.crosswalk[data-selected="net"] { --pick: var(--c-net); --pick-bg: var(--c-net-bg); }
+
+.crosswalk .crosswalk__term button,
+.crosswalk .crosswalk__clear {
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  min-block-size: 2rem;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-ui);
+  line-height: var(--leading-ui);
+  color: var(--text);
+  text-align: start;
+  overflow-wrap: anywhere;
+  background: none;
+  border: var(--border-strong) solid var(--border);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+.crosswalk .crosswalk__term button { font-weight: var(--weight-semibold); }
+.crosswalk .crosswalk__term button:hover { border-color: var(--cc); }
+.crosswalk .crosswalk__term button[aria-pressed="true"] {
+  background: var(--cc-bg);
+  border-color: var(--cc);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+.crosswalk .crosswalk__term button:focus-visible,
+.crosswalk .crosswalk__clear:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+.crosswalk .crosswalk__status {
+  display: inline-block;
+  margin-block: var(--space-3) 0;
+  margin-inline-end: var(--space-4);
+  font-size: var(--text-fine);
+  line-height: var(--leading-fine);
+  color: var(--muted);
+}
+.crosswalk .crosswalk__clear[hidden] { display: none; }
+/* Lean variant: no per-line class; the section's data-selected attribute
+   drives selection through these attribute selectors, and --pick carries the concept. */
+.crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+.crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+.crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+.crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] {
+  background: var(--pick-bg);
+  outline: var(--border-strong) solid var(--pick);
+  outline-offset: -2px;
+}
+
+@media (forced-colors: active) {
+  .crosswalk .crosswalk__term button,
+  .crosswalk .crosswalk__clear { border-color: ButtonText; }
+  .crosswalk .crosswalk__term button[aria-pressed="true"] { border-color: Highlight; }
+  .crosswalk .crosswalk__term button:focus-visible,
+  .crosswalk .crosswalk__clear:focus-visible { outline-color: Highlight; }
+  .crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+  .crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+  .crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+  .crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] { outline: 2px solid Highlight; }
+}
+
+@media print {
+  .crosswalk .crosswalk__status,
+  .crosswalk .crosswalk__clear { display: none; }
+  .crosswalk .crosswalk__term button { padding-inline: 0; border-color: transparent; }
+  .crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+  .crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+  .crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+  .crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] { background: none; outline: 2px solid #000; }
+}
+
+
+/* ---------- Cheat sheet: one printed page ---------- */
+@page cheat { margin: 0.35in; }
+@media print {
+  html:has(.cheat-sheet) { page: cheat; }
+  body:has(.cheat-sheet) :is(.sl-skip-link, .header, .sidebar, .right-sidebar, .sources-scope, .table-overflow__instruction, .pagination-links, .l2c-footer__meta, .l2c-site-info nav, .content-header .lede) { display: none; }
+  body:has(.cheat-sheet) { font-size: 8.5pt; line-height: 1.15; }
+  body:has(.cheat-sheet) main { inline-size: auto; max-inline-size: none; margin: 0; padding: 0; }
+  body:has(.cheat-sheet) :is(.content-panel, .sl-container, .sl-markdown-content) { margin: 0; padding: 0; border: 0; }
+  body:has(.cheat-sheet) .l2c-footer { margin: 0; gap: 0; }
+  body:has(.cheat-sheet) .content-header { margin: 0 0 3pt; padding: 0; }
+  body:has(.cheat-sheet) .content-header h1 { margin: 0; font-size: 13pt; line-height: 1.1; }
+  body:has(.cheat-sheet) article { margin: 0; padding: 0; }
+  .cheat-sheet { display: block; }
+  .cheat-sheet > * { margin-block: 0 3pt; }
+  .cheat-sheet h2 { margin: 3pt 0 1pt; font-size: 10pt; line-height: 1.15; break-after: avoid; }
+  .cheat-sheet p, .cheat-sheet li { margin: 0 0 2pt; font-size: 8.5pt; }
+  .cheat-sheet ul { margin: 0 0 2pt; padding-inline-start: 1.1em; columns: 2; column-gap: 0.25in; }
+  .cheat-sheet li { margin: 0; break-inside: avoid; }
+  .cheat-sheet .table-overflow { margin: 0 0 3pt; border: 0; overflow: visible; }
+  .cheat-sheet table, .cheat-sheet .table-overflow > table { inline-size: 100%; min-inline-size: 0; border-collapse: collapse; }
+  .cheat-sheet tr { break-inside: avoid; }
+  .cheat-sheet th, .cheat-sheet td { padding: 0.5pt 2pt; font-size: 8pt; line-height: 1.15; vertical-align: top; border-block-end: 0.5pt solid #000; }
+  .cheat-sheet th:first-child, .cheat-sheet td:first-child { white-space: nowrap; }
+  .cheat-sheet th:last-child, .cheat-sheet td:last-child { inline-size: 1%; white-space: nowrap; }
+  .cheat-sheet code, .cheat-sheet pre { font-size: 8pt; }
+  .cheat-sheet :not(pre) > code { padding: 0; border: 0; background: none; }
+  .cheat-sheet pre { margin: 0 0 2pt; padding: 0 3pt; white-space: pre-wrap; break-inside: avoid; }
+  body:has(.cheat-sheet) .l2c-site-info { margin: 4pt 0 0; padding: 3pt 0 0; border-block-start: 0.5pt solid #000; }
+  body:has(.cheat-sheet) .l2c-site-info .acknowledgment { margin: 0; font-size: 7pt; line-height: 1.2; }
+}
+

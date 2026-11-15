@@ -39,29 +39,40 @@ jobs:
           [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::source-commit must be a full commit SHA"; exit 1; }
       - uses: actions/checkout@v4.2.2
         with: { ref: '${{ inputs.source-commit }}' }
+      - name: Detect the repository layout of the source commit
+        id: layout
+        # Releases cut before the move to website/ keep the site at the repository root.
+        run: |
+          if [ -d website ]; then
+            { echo 'root=website'; echo 'dist=dist'; echo 'deploy=website/dist'; echo 'repo=..'; } >> "$GITHUB_OUTPUT"
+          else
+            { echo 'root=.'; echo 'dist=site/dist'; echo 'deploy=site/dist'; echo 'repo=.'; } >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v4.3.0
         with:
           name: validated-site-${{ inputs.release }}-${{ inputs.source-commit }}
           run-id: ${{ inputs.source-run-id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: .
+          path: ${{ steps.layout.outputs.root }}
       - uses: actions/download-artifact@v4.3.0
         with:
           name: release-record-${{ inputs.release }}-${{ inputs.source-commit }}
           run-id: ${{ inputs.source-run-id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: publication/${{ inputs.release }}
+          path: ${{ steps.layout.outputs.root }}/publication/${{ inputs.release }}
       - name: Select prior artifact only after checksum verification
+        working-directory: ${{ steps.layout.outputs.root }}
         env:
           RELEASE: ${{ inputs.release }}
+          SITE_DIST: ${{ steps.layout.outputs.dist }}
         run: |
           jq -e --arg release "$RELEASE" '.release == $release' "publication/${RELEASE}/deployment-record.json" > /dev/null || { echo "::error::the retained record is for a different release"; exit 1; }
-          node scripts/rollback.mjs site/dist "publication/${RELEASE}/artifact-manifest.json" "publication/${RELEASE}/deployment-record.json" "$RELEASE"
+          node scripts/rollback.mjs "$SITE_DIST" "publication/${RELEASE}/artifact-manifest.json" "publication/${RELEASE}/deployment-record.json" "$RELEASE"
       - uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ inputs.source-commit }} --commit-dirty=false
+          command: pages deploy ${{ steps.layout.outputs.deploy }} --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ inputs.source-commit }} --commit-dirty=false
 
   recover-hostname-policy:
     if: inputs.mode == 'hostname-policy' && inputs.confirmation == 'RECOVER_WITHOUT_REBUILD'
@@ -77,11 +88,28 @@ jobs:
           [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::source-commit must be a full commit SHA"; exit 1; }
       - uses: actions/checkout@v4.2.2
         with: { ref: '${{ inputs.source-commit }}' }
+      - name: Detect the repository layout of the source commit
+        id: layout
+        # Releases cut before the move to website/ keep the site at the repository root.
+        run: |
+          if [ -d website ]; then
+            { echo 'root=website'; echo 'dist=dist'; echo 'deploy=website/dist'; echo 'repo=..'; } >> "$GITHUB_OUTPUT"
+          else
+            { echo 'root=.'; echo 'dist=site/dist'; echo 'deploy=site/dist'; echo 'repo=.'; } >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22.23.5'
+      - name: Install the policy check's dependencies
+        working-directory: ${{ steps.layout.outputs.root }}
+        run: npm ci --ignore-scripts
       - name: Validate versioned policy independently of content artifacts
-        run: node scripts/publication.mjs policy .
+        working-directory: ${{ steps.layout.outputs.root }}
+        run: node scripts/publication.mjs policy "$REPOSITORY_ROOT"
         env:
-          L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
+          REPOSITORY_ROOT: ${{ steps.layout.outputs.repo }}
       - name: Restore exact Cloudflare Bulk Redirect list
+        working-directory: ${{ steps.layout.outputs.root }}
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
