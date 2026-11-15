@@ -23,7 +23,7 @@ A heading keeps an anchor that predates its text with `## Text {#anchor}`. Use t
 
 ## Overrides
 
-- `PageTitle`: kind line, the h1 (`id="_top"`, the skip-link target; hyphenated words kept on one line), lede.
+- `PageTitle`: kind line, the h1 (`id="_top"`, the skip-link target; hyphenated words kept on one line), lede (`text-wrap: balance`).
 - `Hero`: the title, tagline and actions before the figure, so reading order and the phone layout agree.
 - `ThemeSelect`: one button, named "Dark theme", with a sun or moon icon and `aria-pressed`. Before any choice the page follows the operating system and nothing is stored; a press stores `light` or `dark` under Starlight's key `starlight-theme` (cleared when the choice matches the system), so Starlight's head script applies it before paint. Hidden without JavaScript.
 - `Footer`: edit link, last updated, pager, site links, and the acknowledgment from `src/content/acknowledgment.ts`, verbatim, on every page.

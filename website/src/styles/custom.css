@@ -534,10 +534,12 @@
     font-size: var(--text-lede);
     line-height: var(--leading-lede);
   }
+  /* The lede under each h1 is balanced, so a short one never leaves a lone word on its second line. The home tagline is not. */
   .content-header .lede {
     max-inline-size: var(--measure-lede);
     margin-block-start: 0.75rem;
     color: var(--text);
+    text-wrap: balance;
   }
   .content-header__line {
     margin: 0 0 0.5rem;
