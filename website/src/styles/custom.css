@@ -437,6 +437,13 @@
   size-adjust: 101.6%;
 }
 
+/* Links outside Markdown content (the Tested badge, the troubleshooting index, the talks list,
+   excerpt source links) get the site's link colour instead of the browser's blue. In l2c-base,
+   below Starlight's layer, so every Starlight and site rule that sets a link colour still wins. */
+@layer l2c-base {
+  :where(a:any-link) { color: var(--sl-color-text-accent); }
+}
+
 /* ==== starlight-theme ==== */
 /* laptop-to-cluster.org on Starlight: the site's tokens (tokens.css) mapped onto Starlight's
    --sl-* properties, plus the typography and layout choices that make Starlight read as this
