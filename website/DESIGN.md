@@ -53,7 +53,7 @@ Starlight's own components are used as they are: `Aside`, `LinkButton`, `Card`, 
 
 ## Disclosure
 
-A `<details>` with a named `<summary>` may hide detail. It never hides a warning, a prerequisite, the Tested badge, or a reporting or recovery link. Print opens every disclosure (head script in `astro.config.mjs`).
+A `<details>` with a named `<summary>` may hide detail. It never hides a warning, a prerequisite, the Tested badge, or a reporting or recovery link, with one exception: each entry on `/diagnostics/` is a closed `<details class="diagnostic-entry">` whose `<summary>` holds the entry's h2, because a reader arrives there by ID. The entry keeps its id `bssw-<x>`, the heading `bssw-<x>-heading`, the sections `bssw-<x>--signal` and the rest, and the four earlier-name aliases; a line above the index says the entries expand, and the page's closing support link stays outside them. Print opens every disclosure, and a link to any id inside one opens it, on load and on `hashchange` (head scripts in `astro.config.mjs`).
 
 ## Checks
 

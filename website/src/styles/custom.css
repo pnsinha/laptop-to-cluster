@@ -966,6 +966,12 @@
   .diagnostic-index code { font-size: var(--text-fine); }
   .diagnostic-code { font-family: var(--font-technical); font-size: var(--text-code); }
   .diagnostic-stable-id { margin-inline-start: var(--space-2); color: var(--muted); font-family: var(--font-body); font-size: var(--text-fine); }
+  /* Each entry is a Starlight-styled <details> whose summary holds the entry's h2 (closed by default;
+     a fragment link opens it, and print opens all). The chevron and the heading share one line. */
+  .diagnostic-entry { margin-block-start: var(--space-6); }
+  .diagnostic-entry > summary { display: flex; align-items: center; }
+  .diagnostic-entry > summary > h2 { margin: 0; }
+  .diagnostic-entry > summary::before { flex: none; }
   .diagnostic-entry > h3 { margin-block-start: var(--space-6); font-family: var(--font-display); font-size: var(--text-h3); }
   .diagnostic-entry > * + * { margin-block-start: var(--flow-body); }
   .diagnostic-entry > :is(h3) + * { margin-block-start: var(--flow-tight); }
@@ -1044,7 +1050,7 @@
   }
   @media print {
     .table-overflow__instruction { display: none; }
-    .evidence-panel::details-content, .crosswalk__disclosure::details-content, .source-excerpt__code::details-content { content-visibility: visible; display: block; }
+    .evidence-panel::details-content, .crosswalk__disclosure::details-content, .source-excerpt__code::details-content, .diagnostic-entry::details-content { content-visibility: visible; display: block; }
     /* The head script opens every disclosure before printing; the summary is only a screen control. */
     .source-excerpt__code > summary { display: none; }
     .crosswalk__pane pre { overflow: visible; }

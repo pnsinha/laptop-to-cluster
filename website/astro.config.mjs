@@ -28,14 +28,15 @@ export const codeContrast = {
   },
 };
 
-/* Two small scripts every page carries. The first opens every closed disclosure in the main
+/* Small scripts every page carries. The first opens every closed disclosure in the main
    content before printing and closes it again afterwards, so collapsed material prints. The
-   second opens the disclosure that holds a fragment target, so a link into collapsed content
-   lands on visible text in every browser. */
+   last opens the disclosure that holds a fragment target and scrolls to it, so a link into
+   collapsed content lands on visible text in every browser: on load (once the body is parsed,
+   since it runs in the head) and on every hashchange. */
 const PRINT_DISCLOSURES = "(()=>{let o=[];addEventListener('beforeprint',()=>{o=[...document.querySelectorAll('main details:not([open])')];o.forEach((d)=>{d.open=true})});addEventListener('afterprint',()=>o.forEach((d)=>{d.open=false}))})()";
 /* Marks a scripted page (data-l2c-js, which custom.css needs before it honours Starlight's data-theme="dark"), then keeps the theme-color meta in effect on the page's own canvas: the metas follow the OS by their media queries, and a stored choice can set data-theme the other way. */
 const THEME_COLOR_SYNC = "(()=>{const r=document.documentElement;r.dataset.l2cJs='';const f=()=>{const t=r.dataset.theme;if(!t)return;document.querySelectorAll('meta[name=theme-color][media]').forEach((e)=>{e.dataset.media||(e.dataset.media=e.media);e.media=e.dataset.media.includes(t)?'all':'not all'})};f();new MutationObserver(f).observe(r,{attributes:true,attributeFilter:['data-theme']})})()";
-const OPEN_FRAGMENT_TARGET = "(()=>{const f=()=>{if(!location.hash)return;const t=document.getElementById(decodeURIComponent(location.hash.slice(1)));if(!t)return;let d=t.closest('details'),n=0;while(d){d.open=true;n++;d=d.parentElement&&d.parentElement.closest('details')}if(n)t.scrollIntoView()};addEventListener('hashchange',f);f()})()";
+const OPEN_FRAGMENT_TARGET = "(()=>{const f=()=>{if(!location.hash)return;const t=document.getElementById(decodeURIComponent(location.hash.slice(1)));if(!t)return;let d=t.closest('details'),n=0;while(d){d.open=true;n++;d=d.parentElement&&d.parentElement.closest('details')}if(n)t.scrollIntoView()};addEventListener('hashchange',f);document.readyState==='loading'?addEventListener('DOMContentLoaded',f):f()})()";
 
 /* The only two preloads: the serif roman (headings and prose) and Plex Sans Regular (interface). Keep these paths in step with the @font-face rules in custom.css. */
 const PRELOADED_FONTS = [

@@ -7,13 +7,18 @@ l2c:
   kindLine: "Troubleshooting"
   lede: "When a run fails, the job output names an ID that starts with BSSW-. Find that ID below, or choose the symptom you see."
 ---
+Each entry below is collapsed. Choose an ID in this list, or select an entry’s heading, to expand it. Printing the page expands every entry.
+
 <nav aria-label="Diagnostics on this page" class="not-content">
 <ul class="diagnostic-index"><li><a href="#bssw-cleanup-child">A job step did not stop during cleanup</a><code>BSSW-CLEANUP-CHILD</code></li><li><a href="#bssw-preq-command">A required helper command is missing</a><code>BSSW-PREQ-COMMAND</code></li><li><a href="#bssw-worker-exit">A worker step failed</a><code>BSSW-WORKER-EXIT</code></li><li><a href="#bssw-preq-value">An adapter value is out of bounds</a><code>BSSW-PREQ-VALUE</code></li><li><a href="#bssw-prereq-apptainer">Container runtime is unavailable</a><code>BSSW-PREQ-APPTAINER</code></li><li><a href="#bssw-readiness-timeout">Coordinator did not become ready</a><code>BSSW-READY-TIMEOUT</code></li><li><a href="#bssw-storage-unavailable">Job-scoped storage check failed</a><code>BSSW-PREQ-STORAGE</code></li><li><a href="#bssw-prereq-slurm">Scheduler prerequisite is unavailable</a><code>BSSW-PREQ-SLURM</code></li><li><a href="#bssw-preq-image">The container image is missing or unsafe</a><code>BSSW-PREQ-IMAGE</code></li><li><a href="#bssw-coordinator-exit">The coordinator stopped early</a><code>BSSW-COORDINATOR-EXIT</code></li><li><a href="#bssw-integrity-image">The image checksum does not match</a><code>BSSW-INTEGRITY-IMAGE</code></li><li><a href="#bssw-integrity-input">The input checksum does not match</a><code>BSSW-INTEGRITY-INPUT</code></li><li><a href="#bssw-preq-input">The input or expected results are unusable</a><code>BSSW-PREQ-INPUT</code></li><li><a href="#bssw-cleanup-signal">The job was stopped by a signal</a><code>BSSW-CLEANUP-SIGNAL</code></li><li><a href="#bssw-verify-result">The results failed verification</a><code>BSSW-VERIFY-RESULT</code></li></ul>
 </nav>
 
-<section class="diagnostic-entry" id="bssw-cleanup-child" aria-labelledby="bssw-cleanup-child-heading">
+<details class="diagnostic-entry" id="bssw-cleanup-child" aria-labelledby="bssw-cleanup-child-heading">
+<summary>
 
 ## BSSW-CLEANUP-CHILD: A job step did not stop during cleanup {#bssw-cleanup-child-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-CLEANUP-CHILD</code></p>
 
@@ -36,11 +41,14 @@ A new run ends with exit code 0 and no leftover steps.
 ### Escalate {#bssw-cleanup-child--escalate}
 Report the sanitized logs through [support](/about/support/).
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-preq-command" aria-labelledby="bssw-preq-command-heading">
+<details class="diagnostic-entry" id="bssw-preq-command" aria-labelledby="bssw-preq-command-heading">
+<summary>
 
 ## BSSW-PREQ-COMMAND: A required helper command is missing {#bssw-preq-command-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-PREQ-COMMAND</code></p>
 
@@ -63,11 +71,14 @@ The command is found inside a job, and the next submission passes the prerequisi
 ### Escalate {#bssw-preq-command--escalate}
 Ask center support which checksum tool is supported on compute nodes.
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-worker-exit" aria-labelledby="bssw-worker-exit-heading">
+<details class="diagnostic-entry" id="bssw-worker-exit" aria-labelledby="bssw-worker-exit-heading">
+<summary>
 
 ## BSSW-WORKER-EXIT: A worker step failed {#bssw-worker-exit-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-WORKER-EXIT</code></p>
 
@@ -90,11 +101,14 @@ Every worker exits cleanly and the run reaches the verification step.
 ### Escalate {#bssw-worker-exit--escalate}
 Report sanitized worker logs and your center's step policy through [support](/about/support/).
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-preq-value" aria-labelledby="bssw-preq-value-heading">
+<details class="diagnostic-entry" id="bssw-preq-value" aria-labelledby="bssw-preq-value-heading">
+<summary>
 
 ## BSSW-PREQ-VALUE: An adapter value is out of bounds {#bssw-preq-value-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-PREQ-VALUE</code></p>
 
@@ -117,12 +131,16 @@ The next submission gets past the prerequisite checks.
 ### Escalate {#bssw-preq-value--escalate}
 If you need larger values, ask your center whether the node and partition allow them first.
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-preq-apptainer" aria-labelledby="bssw-preq-apptainer-heading">
-<span id="bssw-prereq-apptainer"></span>
+<details class="diagnostic-entry" id="bssw-preq-apptainer" aria-labelledby="bssw-preq-apptainer-heading">
+<summary>
 
 ## BSSW-PREQ-APPTAINER: Container runtime is unavailable {#bssw-preq-apptainer-heading}
+
+</summary>
+
+<span id="bssw-prereq-apptainer"></span>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-PREQ-APPTAINER</code> <span class="diagnostic-stable-id">Earlier name: <code>BSSW-PREREQ-APPTAINER</code></span></p>
 
@@ -149,12 +167,16 @@ Ask center support which rootless runtime is approved. This release does not cla
 
 <aside class="diagnostic-applicability" aria-label="Relevant tested context"><p><strong>Relevant discriminator:</strong> runtime: Apptainer. <a href="/applicability/m2-baseline-anvil-2026-10/">Review the complete applicability record</a>.</p></aside>
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-ready-timeout" aria-labelledby="bssw-ready-timeout-heading">
-<span id="bssw-readiness-timeout"></span>
+<details class="diagnostic-entry" id="bssw-ready-timeout" aria-labelledby="bssw-ready-timeout-heading">
+<summary>
 
 ## BSSW-READY-TIMEOUT: Coordinator did not become ready {#bssw-ready-timeout-heading}
+
+</summary>
+
+<span id="bssw-readiness-timeout"></span>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-READY-TIMEOUT</code> <span class="diagnostic-stable-id">Earlier name: <code>BSSW-READINESS-TIMEOUT</code></span></p>
 
@@ -179,12 +201,16 @@ Confirm the failed run has this diagnostic code, a nonzero result, cleanup evide
 ### Escalate {#bssw-ready-timeout--escalate}
 Report sanitized coordinator and readiness logs through [support](/about/support/).
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-preq-storage" aria-labelledby="bssw-preq-storage-heading">
-<span id="bssw-storage-unavailable"></span>
+<details class="diagnostic-entry" id="bssw-preq-storage" aria-labelledby="bssw-preq-storage-heading">
+<summary>
 
 ## BSSW-PREQ-STORAGE: Job-scoped storage check failed {#bssw-preq-storage-heading}
+
+</summary>
+
+<span id="bssw-storage-unavailable"></span>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-PREQ-STORAGE</code> <span class="diagnostic-stable-id">Earlier name: <code>BSSW-STORAGE-UNAVAILABLE</code></span></p>
 
@@ -210,12 +236,16 @@ The job can create, read, and remove a private test file through the same contai
 ### Escalate {#bssw-preq-storage--escalate}
 Ask center support to confirm the approved scratch and bind policy.
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-preq-slurm" aria-labelledby="bssw-preq-slurm-heading">
-<span id="bssw-prereq-slurm"></span>
+<details class="diagnostic-entry" id="bssw-preq-slurm" aria-labelledby="bssw-preq-slurm-heading">
+<summary>
 
 ## BSSW-PREQ-SLURM: Scheduler prerequisite is unavailable {#bssw-preq-slurm-heading}
+
+</summary>
+
+<span id="bssw-prereq-slurm"></span>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-PREQ-SLURM</code> <span class="diagnostic-stable-id">Earlier name: <code>BSSW-PREREQ-SLURM</code></span></p>
 
@@ -241,11 +271,14 @@ The scheduler command is available and the center confirms an authorized submiss
 ### Escalate {#bssw-preq-slurm--escalate}
 Contact center support when authorization remains unclear.
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-preq-image" aria-labelledby="bssw-preq-image-heading">
+<details class="diagnostic-entry" id="bssw-preq-image" aria-labelledby="bssw-preq-image-heading">
+<summary>
 
 ## BSSW-PREQ-IMAGE: The container image is missing or unsafe {#bssw-preq-image-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-PREQ-IMAGE</code></p>
 
@@ -268,11 +301,14 @@ The next submission gets past the image checks and starts the coordinator.
 ### Escalate {#bssw-preq-image--escalate}
 Ask center support whether image builds are allowed on login nodes or need a build node.
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-coordinator-exit" aria-labelledby="bssw-coordinator-exit-heading">
+<details class="diagnostic-entry" id="bssw-coordinator-exit" aria-labelledby="bssw-coordinator-exit-heading">
+<summary>
 
 ## BSSW-COORDINATOR-EXIT: The coordinator stopped early {#bssw-coordinator-exit-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-COORDINATOR-EXIT</code></p>
 
@@ -295,11 +331,14 @@ A new run passes the readiness gate and keeps the coordinator running until the 
 ### Escalate {#bssw-coordinator-exit--escalate}
 Report sanitized coordinator logs through [support](/about/support/).
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-integrity-image" aria-labelledby="bssw-integrity-image-heading">
+<details class="diagnostic-entry" id="bssw-integrity-image" aria-labelledby="bssw-integrity-image-heading">
+<summary>
 
 ## BSSW-INTEGRITY-IMAGE: The image checksum does not match {#bssw-integrity-image-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-INTEGRITY-IMAGE</code></p>
 
@@ -321,11 +360,14 @@ The next submission gets past the image checks.
 ### Escalate {#bssw-integrity-image--escalate}
 If a fresh build keeps failing, report the sanitized output through [support](/about/support/).
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-integrity-input" aria-labelledby="bssw-integrity-input-heading">
+<details class="diagnostic-entry" id="bssw-integrity-input" aria-labelledby="bssw-integrity-input-heading">
+<summary>
 
 ## BSSW-INTEGRITY-INPUT: The input checksum does not match {#bssw-integrity-input-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-INTEGRITY-INPUT</code></p>
 
@@ -348,11 +390,14 @@ The input file was edited without updating its checksum record, or it was change
 ### Escalate {#bssw-integrity-input--escalate}
 Report the problem through [support](/about/support/) if a restored file still fails.
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-preq-input" aria-labelledby="bssw-preq-input-heading">
+<details class="diagnostic-entry" id="bssw-preq-input" aria-labelledby="bssw-preq-input-heading">
+<summary>
 
 ## BSSW-PREQ-INPUT: The input or expected results are unusable {#bssw-preq-input-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-PREQ-INPUT</code></p>
 
@@ -376,11 +421,14 @@ The validation step passes and the coordinator starts.
 ### Escalate {#bssw-preq-input--escalate}
 If the input is generated by another tool, report the failing sanitized `logs/input-validation.log` through [support](/about/support/).
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-cleanup-signal" aria-labelledby="bssw-cleanup-signal-heading">
+<details class="diagnostic-entry" id="bssw-cleanup-signal" aria-labelledby="bssw-cleanup-signal-heading">
+<summary>
 
 ## BSSW-CLEANUP-SIGNAL: The job was stopped by a signal {#bssw-cleanup-signal-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-CLEANUP-SIGNAL</code></p>
 
@@ -403,11 +451,14 @@ A new run finishes before its time limit and writes `result.json`.
 ### Escalate {#bssw-cleanup-signal--escalate}
 If the scheduler ended the job without a request from you, ask center support for the reason.
 
-</section>
+</details>
 
-<section class="diagnostic-entry" id="bssw-verify-result" aria-labelledby="bssw-verify-result-heading">
+<details class="diagnostic-entry" id="bssw-verify-result" aria-labelledby="bssw-verify-result-heading">
+<summary>
 
 ## BSSW-VERIFY-RESULT: The results failed verification {#bssw-verify-result-heading}
+
+</summary>
 
 <p class="diagnostic-code"><strong>Code:</strong> <code>BSSW-VERIFY-RESULT</code></p>
 
@@ -430,6 +481,6 @@ A new run writes `result.json` with `"status": "success"`.
 ### Escalate {#bssw-verify-result--escalate}
 Report the sanitized verification log through [support](/about/support/).
 
-</section>
+</details>
 
 If execution is blocked, you can still use the conceptual modules and local adaptation guidance. If no symptom matches, [report a missing diagnostic](/about/support/) with sanitized reproduction details.

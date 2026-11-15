@@ -34,7 +34,7 @@ export const accessibilityPages: readonly AccessibilityPageFixture[] = [
   { path: MODULE_2_PATH, distRoute: 'guide/baseline-single-node-pattern', kind: 'runnable module', criticalOutsideDisclosure: ['Prerequisites', 'Tested workflow scope'], focusLandmarks: ['.sl-skip-link', '.sidebar a', '.applicability-projection a', '.sources-scope summary', '.pagination-links a'] },
   { path: '/guide/compose-to-hpc-translation/', distRoute: 'guide/compose-to-hpc-translation', kind: 'conceptual module', focusLandmarks: moduleLandmarks },
   { path: '/adoption/evaluate/', distRoute: 'adoption/evaluate', kind: 'adoption', criticalOutsideDisclosure: ['Test record'], focusLandmarks: ['.sl-skip-link', '.sidebar a', '.record-summary a', '.pagination-links a'] },
-  { path: '/diagnostics/', distRoute: 'diagnostics', kind: 'diagnostics index', criticalOutsideDisclosure: ['report a missing diagnostic', 'Recovery steps', 'Warning:', 'Escalate'] },
+  { path: '/diagnostics/', distRoute: 'diagnostics', kind: 'diagnostics index', criticalOutsideDisclosure: ['report a missing diagnostic', 'Each entry below is collapsed'] },
   ...recordPages,
   { path: '/milestones/1/', distRoute: 'milestones/1', kind: 'milestone', focusLandmarks: ['.sl-skip-link', '.sidebar a', '.applicability-projection a', '.table-overflow'] },
   { path: '/milestones/2/', distRoute: 'milestones/2', kind: 'milestone', focusLandmarks: ['.sl-skip-link', '.sidebar a', '.applicability-projection a', '.table-overflow'] },

@@ -40,3 +40,28 @@ describe('Module 2 code excerpts', () => {
     expect(new Set(summaries).size).toBe(summaries.length);
   });
 });
+
+describe('troubleshooting entries', () => {
+  const html = pages.find(({ path }) => path === '/diagnostics/')!.html;
+  const ENTRIES = ['bssw-cleanup-child', 'bssw-preq-command', 'bssw-worker-exit', 'bssw-preq-value', 'bssw-preq-apptainer', 'bssw-ready-timeout', 'bssw-preq-storage',
+    'bssw-preq-slurm', 'bssw-preq-image', 'bssw-coordinator-exit', 'bssw-integrity-image', 'bssw-integrity-input', 'bssw-preq-input', 'bssw-cleanup-signal', 'bssw-verify-result'];
+  const SECTIONS = ['signal', 'likely-causes', 'recovery-steps', 'verify-the-recovery', 'escalate'];
+  /* Earlier names that older links and job output still use. */
+  const ALIASES = { 'bssw-prereq-apptainer': 'bssw-preq-apptainer', 'bssw-readiness-timeout': 'bssw-ready-timeout', 'bssw-storage-unavailable': 'bssw-preq-storage', 'bssw-prereq-slurm': 'bssw-preq-slurm' };
+  const entries = new Map([...html.matchAll(/<details class="diagnostic-entry" id="([^"]+)"[^>]*>([\s\S]*?)<\/details>/g)].map((match) => [match[1], match[0]]));
+
+  it('are closed disclosures, one per entry, each summary holding the entry heading', () => {
+    expect([...entries.keys()]).toEqual(ENTRIES);
+    for (const [id, block] of entries) {
+      expect(block, id).not.toMatch(/^<details[^>]*\sopen/);
+      expect(block, id).toMatch(new RegExp(`^<details[^>]*>\\s*<summary>\\s*<h2 id="${id}-heading">${id.toUpperCase()}: [^<]+</h2>\\s*</summary>`));
+    }
+  });
+
+  it('keep every id an older link may target, inside the right entry', () => {
+    for (const id of ENTRIES) {
+      for (const target of [`${id}-heading`, ...SECTIONS.map((section) => `${id}--${section}`)]) expect(entries.get(id), target).toContain(`id="${target}"`);
+    }
+    for (const [alias, id] of Object.entries(ALIASES)) expect(entries.get(id), alias).toContain(`id="${alias}"`);
+  });
+});
