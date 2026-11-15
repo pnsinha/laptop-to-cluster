@@ -1,5 +1,6 @@
 # The update feed (/feed.xml), newest first. An entry without a title takes the title of the page it links to;
 # an entry for a section of a page (a diagnostic, a release's notes) names its own.
+- { link: "/milestones/2/#release-v0-2-1", date: "2026-11-15", title: "Release v0.2.1: included changes" }
 - { link: "/adoption/evaluate/", date: "2026-10-20" }
 - { link: "/diagnostics/#bssw-cleanup-child", date: "2026-10-20", title: "A job step did not stop during cleanup" }
 - { link: "/diagnostics/#bssw-cleanup-signal", date: "2026-10-20", title: "The job was stopped by a signal" }
