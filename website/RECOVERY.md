@@ -44,9 +44,9 @@ Before 2027-01-18, download the two v0.2.0 artifacts (`validated-site-v0.2.0-…
 ```sh
 gh run download 39504561028 --dir v0.2.0-artifacts
 (cd v0.2.0-artifacts && for d in */; do zip -qr "${d%/}.zip" "$d"; done)
-gh release create v0.2.0 --verify-tag --title v0.2.0 --notes-file releases/v0.2.0/RELEASE_NOTES.md v0.2.0-artifacts/*.zip
+gh release create v0.2.0 --verify-tag --title v0.2.0 --generate-notes v0.2.0-artifacts/*.zip
 ```
 
-Do the same for every later release on the day it deploys.
+Do the same for every later release on the day it deploys. The steps to cut and approve a release are under "Releasing" in [`MAINTENANCE.md`](MAINTENANCE.md).
 
 Settings the workflows cannot enforce: the `production` environment needs a required reviewer, and `production-recovery` must be created with one before its first use.
