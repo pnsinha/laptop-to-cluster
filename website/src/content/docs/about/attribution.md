@@ -26,7 +26,7 @@ Executable source, workflow assets, configuration, CI automation, and validation
 Original documentation, learning modules, training materials, and publishable evidence use [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
 
 ### Fonts
-The site’s fonts are self-hosted under the SIL Open Font License 1.1: Source Serif 4 (The Source Serif 4 Project Authors), and IBM Plex Sans and IBM Plex Mono (IBM Corp.). Each font’s license file is published beside it.
+The site’s fonts are self-hosted under the SIL Open Font License 1.1: Source Serif 4 (The Source Serif 4 Project Authors); IBM Plex Sans and IBM Plex Mono (IBM Corp.); and a subset of Noto Sans Symbols 2 for the diagram marks (The Noto Project Authors). Each font’s license file is published beside it.
 
 ### Which license covers what
 The [license summary](https://github.com/pnsinha/laptop-to-cluster/blob/main/README.md#license) in the repository README says which parts of the project each license covers. Release v0.1.0 also shipped an [artifact inventory](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/artifact-inventory.yml) and a [third-party record](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/THIRD_PARTY.yml); they describe that release only.
