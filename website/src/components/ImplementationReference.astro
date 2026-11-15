@@ -1,12 +1,14 @@
 ---
-/* The annotated source excerpts of the baseline, one disclosure each. The page supplies the heading
-   and the intro; the two package links stay visible, and a reader opens only the excerpt they are
-   adapting. implementation.ts checks at build time that every baseline.sbatch excerpt is the
+/* The annotated source excerpts of the baseline. The page supplies the heading and the intro; the
+   two package links, each excerpt's title, source link and annotation stay visible, and only the code
+   sits in a closed disclosure, "Show the code (N lines)", whose hidden suffix names the excerpt so
+   every summary reads differently. Print opens it (head script in astro.config.mjs). implementation.ts checks at build time that every baseline.sbatch excerpt is the
    script's own lines at the pinned tag. The section keeps the id the start page links to. */
 import { LinkButton } from '@astrojs/starlight/components';
 import { IMPLEMENTATION_REFERENCE as reference } from '../content/implementation';
 
 const lineRange = (start: number, end: number) => `Lines ${start}–${end}`;
+const lineCount = (code: string) => code.replace(/\n$/, '').split('\n').length;
 ---
 <section class="implementation-reference not-content" id="implementation-reference" aria-labelledby="implementation-reference-heading">
   <header class="implementation-reference__intro">
@@ -16,14 +18,17 @@ const lineRange = (start: number, end: number) => `Lines ${start}–${end}`;
       <LinkButton href={reference.readmeUrl} variant="minimal" rel="external">Read the package README (external)</LinkButton>
     </p>
   </header>
-  {reference.excerpts.map((excerpt) => <details class="source-excerpt__disclosure">
-    <summary>{excerpt.title}</summary>
-    <figure class="technical-figure source-excerpt">
+  {reference.excerpts.map((excerpt) => (
+    <figure class="technical-figure source-excerpt" aria-labelledby={`excerpt-${excerpt.id}`}>
       <figcaption>
+        <h3 class="source-excerpt__title" id={`excerpt-${excerpt.id}`}>{excerpt.title}</h3>
         <span class="source-excerpt__meta"><a href={excerpt.sourceUrl} rel="external"><code>{excerpt.sourcePath}</code> ({lineRange(excerpt.lineStart, excerpt.lineEnd)}) (external)</a></span>
       </figcaption>
       <p class="source-excerpt__annotation">{excerpt.annotation}</p>
-      <pre tabindex="0" aria-label={`${excerpt.title} source code`}><code>{excerpt.code}</code></pre>
+      <details class="source-excerpt__code">
+        <summary>Show the code ({lineCount(excerpt.code)} lines)<span class="sr-only">: {excerpt.title}</span></summary>
+        <pre tabindex="0" aria-label={`${excerpt.title} source code`}><code>{excerpt.code}</code></pre>
+      </details>
     </figure>
-  </details>)}
+  ))}
 </section>

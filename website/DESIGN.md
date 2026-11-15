@@ -33,7 +33,7 @@ A heading keeps an anchor that predates its text with `## Text {#anchor}`. Use t
 | Component | Takes | Notes |
 | --- | --- | --- |
 | `TestedBadge` | `record` id, `variant` (`badge` or `summary`) | The only source of tested claims: "Tested" plus "Purdue Anvil · Oct 2026 · Test record" and the rows Tested, You need, Depends on your center, all read from the record (`src/content/evidence.ts`). The badge stays outside every disclosure. |
-| `ImplementationReference` | heading and intro as children | The six excerpts from `src/content/implementation.ts`; the build fails if a `baseline.sbatch` excerpt is not the script's own lines. |
+| `ImplementationReference` | heading and intro as children | The six excerpts from `src/content/implementation.ts`. Title (h3), source link and annotation stay visible; the code sits in a closed `<details>`, "Show the code (N lines)" plus a visually hidden ": title". The build fails if a `baseline.sbatch` excerpt is not the script's own lines. Ordinary Markdown code blocks stay visible. |
 | `Timeline` | `highlight` (step 1 to 6) | The six steps of one allocation, from `src/content/timeline.ts`. |
 | `Diagrams` | `name` | Inline SVG, text 14px in a 720-unit viewBox. |
 | `ConceptMap`, `Crosswalk` | title and intro; optional `record` slot | The four concepts from `src/content/concepts.ts`; the crosswalk rows from `src/content/crosswalk.ts`, with an optional click-to-highlight script. |

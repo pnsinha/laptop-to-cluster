@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { pages } from './dist';
+import { pages, text } from './dist';
 
-/* Check 3, links: every same-site link and every fragment resolves in the built site. */
+/* Check 3, links: every same-site link and every fragment resolves in the built site, and the
+   disclosures that hide code or entries keep their markup. */
 const ids = new Map(pages.map(({ path, html }) => [path, new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]))]));
 const assets = /^\/(?:_astro|fonts|pagefind)\/|\.(?:pdf|svg|xml|json|txt|css|js|woff2)$/;
 
@@ -22,4 +23,20 @@ describe('internal links', () => {
       expect(broken).toEqual([]);
     });
   }
+});
+
+describe('Module 2 code excerpts', () => {
+  const html = pages.find(({ path }) => path === '/guide/baseline-single-node-pattern/')!.html;
+  const section = /<section class="implementation-reference[\s\S]*?<\/section>/.exec(html)?.[0] ?? '';
+
+  it('each sit in a closed disclosure whose summary names the excerpt', () => {
+    const pres = [...section.matchAll(/<pre\b[^>]*>/g)].map((match) => match[0]);
+    const disclosed = [...section.matchAll(/<details class="source-excerpt__code">\s*<summary>([\s\S]*?)<\/summary>\s*(<pre\b[^>]*>)/g)];
+    expect(pres).toHaveLength(6);
+    expect(disclosed.map((match) => match[2])).toEqual(pres);
+    for (const pre of pres) expect(pre).toMatch(/^<pre tabindex="0" aria-label="[^"]+ source code">$/);
+    const summaries = disclosed.map((match) => text(match[1]));
+    for (const summary of summaries) expect(summary).toMatch(/^Show the code \(\d+ lines\) ?: .+/);
+    expect(new Set(summaries).size).toBe(summaries.length);
+  });
 });

@@ -970,15 +970,16 @@
   .diagnostic-entry > * + * { margin-block-start: var(--flow-body); }
   .diagnostic-entry > :is(h3) + * { margin-block-start: var(--flow-tight); }
 
-  /* ---------- implementation reference: annotated source excerpts, one disclosure each ---------- */
+  /* ---------- implementation reference: annotated source excerpts, the code behind a disclosure ---------- */
   .implementation-reference { max-inline-size: var(--measure-data); margin-block: var(--flow-section); scroll-margin-block-start: calc(var(--sl-nav-height) + var(--space-6)); }
   .implementation-reference__intro { max-inline-size: var(--measure-prose); }
   .implementation-reference__intro > * + * { margin-block-start: var(--flow-body); }
   .implementation-reference__intro p { font-family: var(--font-reading); line-height: var(--leading-reading); }
   .implementation-reference__actions { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); align-items: center; }
-  .source-excerpt__disclosure { margin-block-start: var(--space-4); border: var(--border-thin) solid var(--rule); border-radius: var(--radius-small); }
-  .source-excerpt__disclosure > summary { padding: var(--space-3) var(--space-4); cursor: pointer; color: var(--primary); font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: var(--leading-heading); }
-  .source-excerpt { margin: 0; padding: 0 var(--space-4) var(--space-4); background: none; border: 0; }
+  .source-excerpt { margin: var(--space-8) 0 0; padding: 0; background: none; border: 0; }
+  .source-excerpt__title { margin: 0; color: var(--text); font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: var(--leading-heading); }
+  .source-excerpt__code { margin-block-start: var(--space-3); }
+  .source-excerpt__code > summary { display: list-item; inline-size: fit-content; min-block-size: 1.5rem; padding-block: 0.125rem; cursor: pointer; color: var(--primary); font-family: var(--font-body); font-size: var(--text-label); font-weight: var(--weight-semibold); text-decoration: none; }
   .source-excerpt figcaption { display: grid; gap: var(--space-1); margin: 0; }
   .source-excerpt__meta { display: block; color: var(--text); font-family: var(--font-body); font-size: var(--text-fine); overflow-wrap: anywhere; }
   .source-excerpt__meta a { font-size: var(--text-label); }
@@ -1034,7 +1035,7 @@
     * { forced-color-adjust: auto; }
     :focus-visible { outline: 2px solid Highlight; outline-offset: var(--focus-offset); }
     a:where(:any-link) { color: LinkText; }
-    .door, .record-summary, .evidence-rows, .timeline__steps, .crosswalk__pane pre, pre, .technical-figure, .env, .env__box, .env__alloc, .env__cmd code, .source-excerpt__disclosure { border: 1px solid CanvasText; }
+    .door, .record-summary, .evidence-rows, .timeline__steps, .crosswalk__pane pre, pre, .technical-figure, .env, .env__box, .env__alloc, .env__cmd code { border: 1px solid CanvasText; }
     .env__alloc { border: var(--border-strong) dashed CanvasText; }
     .timeline__step[aria-current="step"] { outline-color: Highlight; }
     .timeline__mark--verify { border-color: CanvasText; }
@@ -1043,13 +1044,15 @@
   }
   @media print {
     .table-overflow__instruction { display: none; }
-    .evidence-panel::details-content, .crosswalk__disclosure::details-content, .source-excerpt__disclosure::details-content { content-visibility: visible; display: block; }
+    .evidence-panel::details-content, .crosswalk__disclosure::details-content, .source-excerpt__code::details-content { content-visibility: visible; display: block; }
+    /* The head script opens every disclosure before printing; the summary is only a screen control. */
+    .source-excerpt__code > summary { display: none; }
     .crosswalk__pane pre { overflow: visible; }
     /* Paper cannot scroll, so code wraps and a height-capped excerpt prints whole. */
     pre, pre code, .source-excerpt pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
     .source-excerpt pre { max-block-size: none; overflow: visible; }
     .table-overflow { overflow: visible; }
-    .timeline, .door, .notice, .record-summary, .evidence-rows, .crosswalk__pane, .hero__figure, .concept, .source-excerpt__disclosure { break-inside: avoid; }
+    .timeline, .door, .notice, .record-summary, .evidence-rows, .crosswalk__pane, .hero__figure, .concept { break-inside: avoid; }
     :where(h1, h2, h3, h4) { break-after: avoid; }
     .table-overflow thead th, .table-overflow table:not(:has(thead)) tr:first-child > * { border-block-end-width: 2px; border-block-end-color: var(--border); }
     a[href^="http"]:not(nav a)::after { content: " (" attr(href) ")"; overflow-wrap: anywhere; }
