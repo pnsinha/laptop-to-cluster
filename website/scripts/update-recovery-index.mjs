@@ -7,10 +7,6 @@ if (!indexPath || !deploymentPath) {
   console.error('Usage: update-recovery-index.mjs <recovery-index.json> <deployment-record.json>');
   process.exit(2);
 }
-if (process.env.PREVIEW === '1') {
-  console.error('ERROR: a preview run must not update the recovery index');
-  process.exit(2);
-}
 const deployment = JSON.parse(readFileSync(deploymentPath, 'utf8'));
 assertReleaseVersion(deployment.release);
 const old = existsSync(indexPath) ? JSON.parse(readFileSync(indexPath, 'utf8')) : { schemaVersion: 1, current: null, previous: null };

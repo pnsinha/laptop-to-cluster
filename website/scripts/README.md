@@ -10,10 +10,9 @@ The build, check and release tooling. Most scripts run through an npm command; t
 | `publication.mjs` | `npm run validate:built`, `npm run validate:policy`, `npm run validate:boundary` | The publication validator: built HTML, links, canonical metadata and footer; dependency, motion, font and deployment policy; the boundary scan for terms that must never be published |
 | `validate-evidence.ts` | `npm run validate:evidence` | Checks every evidence bundle a test record cites: files, checksums, versions and review dates |
 | `validate-repository.ts` | `npm run validate:repository` | Checks the required project files exist and the evidence records are valid |
-| `validate-release.ts` | `npm run validate:release` | Checks the release workflows and the built output against the current release record |
-| `validate-accessibility-review.ts` | `npm run validate:accessibility-review` | Checks the current release's signed accessibility review covers every required page and check |
+| `validate-release.ts` | `npm run validate:release` | Checks the release workflows and the built output |
 
-`npm run publication:validate` runs every check above except the browser scan, and adds the boundary scan. The boundary scan needs the `L2C_BOUNDARY_PATTERN` secret, which only CI has, so it fails locally; see [`CONTRIBUTING.md`](../../.github/CONTRIBUTING.md).
+`npm run publication:validate` runs every check above except the browser scan, and adds the boundary scan; `npm run validate` is the whole release gate. The boundary scan needs the `L2C_BOUNDARY_PATTERN` secret, which only CI has, so it fails locally; see [`CONTRIBUTING.md`](../../.github/CONTRIBUTING.md).
 
 ## Evidence
 
@@ -26,12 +25,12 @@ The build, check and release tooling. Most scripts run through an npm command; t
 
 | Script | Run by | What it does |
 |---|---|---|
-| `release-version.mjs` | `ci.yml` | Resolves the release version from `releases/*/release-candidate.json` |
-| `release-plan.mjs` | `release.yml` | Decides what a release run may do: preview, candidate or production |
-| `prepare-publication.mjs` | `npm run publication:prepare` in `ci.yml`, `release.yml` and `publication.yml` | Packs the validated `website/dist/` and its manifest for deployment |
+| `release-version.mjs` | `release.yml`, the site build | The release version: `RELEASE_VERSION` (the tag), else `package.json` |
+| `release-plan.mjs` | `release.yml` | Decides what a release run may do: production (a `vX.Y.Z` tag) or preview |
+| `prepare-publication.mjs` | `npm run publication:prepare` in `release.yml` and `publication.yml` | Packs the validated `website/dist/` and its manifest for deployment |
 | `generate-release-record.mjs` | `release.yml`, `publication.yml` | Writes the release record that names the commit, artifact checksum and deployment |
 | `verify-live-release.mjs` | `release.yml` | Confirms the deployed site serves the same URL manifest as the build |
-| `check-public-release.mjs` | `release.yml`, `publication.yml` | Checks what a release must show publicly once deployed |
+| `check-public-release.mjs` | `release.yml`, `publication.yml` | Checks that every built page, the redirects and the fallback answer once deployed |
 | `update-recovery-index.mjs` | `release.yml`, `publication.yml` | Moves the previous deployment to `previous` and records the new one in the recovery index |
 | `rollback.mjs` | `rollback.yml` | Verifies a retained build against its checksums before it is redeployed; see [`RECOVERY.md`](../RECOVERY.md) |
 

@@ -3,8 +3,8 @@ import { resolveReleaseVersion } from '../scripts/publication.mjs';
 
 /* Content writes the current release as the word `@release`: in links to the package that ships
    with it (`.../blob/@release/...`), in commands (`git clone --branch @release`) and in text. This
-   plugin swaps in the release the site is built for (RELEASE_VERSION, else the newest
-   releases/<v>/release-candidate.json). Words that merely contain it are left alone, and
+   plugin swaps in the release the site is built for (RELEASE_VERSION, else the
+   version in package.json). Words that merely contain it are left alone, and
    provenance links pinned to an older release are not touched. */
 export const RELEASE_REF_TOKEN = '@release';
 const STANDALONE = /(?<![\w@/-])@release(?![\w/-])/g;
