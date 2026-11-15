@@ -99,7 +99,7 @@ jobs:
           fi
       - uses: actions/setup-node@v4.4.0
         with:
-          node-version: '22.15.0'
+          node-version: '22.23.5'
       - name: Install the policy check's dependencies
         working-directory: ${{ steps.layout.outputs.root }}
         run: npm ci --ignore-scripts

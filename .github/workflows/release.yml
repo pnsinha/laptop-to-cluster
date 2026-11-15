@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4.4.0
         with:
-          node-version: '22.15.0'
+          node-version: '22.23.5'
       - name: Refuse a release cut before the move to website/
         working-directory: .
         run: |
@@ -81,7 +81,7 @@ jobs:
           ref: ${{ needs.plan.outputs.sha }}
       - uses: actions/setup-node@v4.4.0
         with:
-          node-version: '22.15.0'
+          node-version: '22.23.5'
           cache: npm
           cache-dependency-path: website/package-lock.json
       - run: npm ci --ignore-scripts
