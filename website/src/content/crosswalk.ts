@@ -1,8 +1,10 @@
-import { DESIGNED_NOT_RUN, type ConceptKey } from './contracts';
+import type { ConceptKey } from './concepts';
+
+const DESIGNED_NOT_RUN = 'Designed, not run';
 
 export interface CrosswalkLine { n?: number; text: string; concepts: ConceptKey[] }
 export interface CrosswalkPane { id: 'compose' | 'sbatch' | 'coordinator'; file: string; note: string; lines: CrosswalkLine[] }
-export interface CrosswalkData { title: string; subtitle: string; panes: CrosswalkPane[] }
+export interface CrosswalkData { title: string; subtitle: string; disclosure: string; panes: CrosswalkPane[] }
 
 /* The revision the script excerpts are quoted from. Pane labels name this
    revision; they never claim a test. The test record is linked beside them. */
@@ -63,6 +65,8 @@ const sbatch: CrosswalkLine[] = [
 export const CROSSWALK: CrosswalkData = {
   title: 'Four ideas that change meaning',
   subtitle: 'Same idea, same color and shape, on every page of this site.',
+  /* The code panes sit behind one disclosure; the legend stays visible. */
+  disclosure: 'Show the Compose file beside the batch script',
   panes: [
     { id: 'compose', file: 'docker-compose.yml', note: `simplified · ${DESIGNED_NOT_RUN}`, lines: compose },
     { id: 'sbatch', file: 'slurm/baseline.sbatch', note: `excerpt · line numbers from ${CROSSWALK_REVISION}`, lines: sbatch },

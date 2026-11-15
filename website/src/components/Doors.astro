@@ -1,16 +1,16 @@
 ---
-/* The three doors as Starlight cards. The card title is the audience line, so a reader
-   self-selects first; the door's name is a heading inside the card, then the summary and the
-   one link that is the target. */
+/* The three doors on the home page, as Starlight cards. The card title is the audience line, so a
+   reader self-selects first; the door's name is a heading inside the card, then the summary and the
+   one link that is the target. The page passes the doors in. */
 import { Card, CardGrid } from '@astrojs/starlight/components';
-import type { Door, DoorId } from '../content/contracts';
 
-interface Props {
-  doors: (Door & { summary: string; path?: { label: string; href: string }[] })[];
-}
+type DoorId = 'understand' | 'translate' | 'evaluate';
+interface Door { id: DoorId; eyebrow: string; title: string; summary: string; href: string; linkText: string }
+interface Props { doors: Door[] }
 
 const { doors } = Astro.props;
 const ICONS: Record<DoorId, 'open-book' | 'random' | 'setting'> = { understand: 'open-book', translate: 'random', evaluate: 'setting' };
+/* Starlight renders a card title as HTML. */
 const escape = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
 ---
 <div class="doors not-content" id="doors">

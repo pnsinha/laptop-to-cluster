@@ -1,0 +1,45 @@
+---
+/* What was tested, read only from a test record (src/content/applicability/<id>.yml): the badge
+   ("Tested" plus "Purdue Anvil · Oct 2026 · Test record") and the three rows behind it, Tested, You
+   need and Depends on your center. With variant="summary" it renders the short summary the
+   evaluation guide shows instead. No page writes a tested claim by hand; it cites a record here. */
+import { getEntry } from 'astro:content';
+import { badgeParts, evidenceRows, recordSummary } from '../content/evidence';
+
+interface Props { record: string; variant?: 'badge' | 'summary' }
+const { record: id, variant = 'badge' } = Astro.props;
+const entry = await getEntry('applicability', id);
+if (!entry) throw new Error(`TestedBadge: no test record ${id}`);
+const record = entry.data;
+const href = `/applicability/${record.id}/`;
+const badge = badgeParts(record);
+const rows = evidenceRows(record);
+const summary = recordSummary(record);
+---
+{variant === 'summary' ? (
+  <div class="not-content"><section class="record-summary" data-source-id={record.id} aria-label="What was tested">
+    <p class="record-summary__tested">{summary.tested}</p>
+    <ul class="record-summary__scope">{summary.scope.map((value) => <li>{value}</li>)}</ul>
+    <p><a href={href}>Test record</a></p>
+  </section></div>
+) : record.status === 'validated' ? (
+  <section class="applicability-projection not-content" data-source-id={record.id} aria-label="Tested workflow scope">
+    <p class="evidence-badge">{badge.label}</p>
+    <p class="evidence-link">{badge.context && `${badge.context} · `}<a href={href}>Test record</a></p>
+    <details class="evidence-panel">
+      <summary>What this means for you</summary>
+      <dl class="evidence-rows">
+        {rows.map((row) => <div class="evidence-row"><dt>{row.label}</dt><dd><ul>{row.items.map((item) => <li>{item}</li>)}</ul></dd></div>)}
+      </dl>
+      <p class="evidence-untested"><a href="/adoption/evaluate/#not-tested">What hasn’t been tested yet</a></p>
+    </details>
+  </section>
+) : (
+  <section class="applicability-projection applicability-projection--escalated not-content" data-source-id={record.id} aria-label="Tested workflow scope">
+    <p class="evidence-badge evidence-badge--warning"><strong>Warning:</strong> {badge.label}</p>
+    <p class="evidence-link">{badge.context && `${badge.context} · `}<a href={href}>Test record</a></p>
+    <dl class="evidence-rows">
+      {rows.map((row) => <div class="evidence-row"><dt>{row.label}</dt><dd><ul>{row.items.map((item) => <li>{item}</li>)}</ul></dd></div>)}
+    </dl>
+  </section>
+)}

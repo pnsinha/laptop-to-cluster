@@ -1,27 +1,21 @@
 ---
 /* The page footer: Starlight's edit link, last updated and previous/next links, then the site
-   information block and the funding acknowledgment, all inside one footer element. The
-   acknowledgment paragraph is verbatim text from one constant; the publication validator checks
-   it on every page. */
-import { getCollection } from 'astro:content';
+   information links and the funding acknowledgment, all inside one footer element. The
+   acknowledgment is verbatim text from acknowledgment.ts; a built-site test checks it on every page. */
 import EditLink from '@astrojs/starlight/components/EditLink.astro';
 import LastUpdated from '@astrojs/starlight/components/LastUpdated.astro';
 import Pagination from '@astrojs/starlight/components/Pagination.astro';
 import { ACKNOWLEDGMENT_TEXT } from '../../content/acknowledgment';
-import { releaseNotesHref } from '../../content/registry';
-import { currentReleaseVersion } from '../../content/release';
-import { PROJECT } from '../../content/wording';
+import { currentRelease } from '../../../plugins/release-refs.mjs';
 
-const release = currentReleaseVersion();
-const items = (await getCollection('contentItems')).map(({ data }) => data);
-/* The release notes live on the milestone page (or their own page); the registry knows which. */
-const releaseItem = items.find((item) => item.artifact_type === 'release' && item.status === 'published' && item.id === `release-${release.replace(/\./g, '-')}`);
+const release = currentRelease();
+/* Release notes are a section of the milestone page they belong to, with the release's id. */
 const links = [
-  { label: `Release ${release}`, href: releaseItem ? releaseNotesHref(releaseItem) : '/milestones/2/' },
+  { label: `Release ${release}`, href: `/milestones/2/#release-${release.replaceAll('.', '-')}` },
   { label: 'Report a problem', href: '/about/support/' },
   { label: 'Accessibility', href: '/about/accessibility/' },
   { label: 'Attribution and licenses', href: '/about/attribution/' },
-  { label: 'GitHub repository (external)', href: PROJECT.repository, external: true },
+  { label: 'GitHub repository (external)', href: 'https://github.com/pnsinha/laptop-to-cluster', external: true },
 ];
 ---
 <footer class="l2c-footer not-content">

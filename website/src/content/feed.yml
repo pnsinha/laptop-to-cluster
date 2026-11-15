@@ -1,0 +1,35 @@
+# The update feed (/feed.xml), newest first. An entry without a title takes the title of the page it links to;
+# an entry for a section of a page (a diagnostic, a release's notes) names its own.
+- { link: "/adoption/evaluate/", date: "2026-10-20" }
+- { link: "/diagnostics/#bssw-cleanup-child", date: "2026-10-20", title: "A job step did not stop during cleanup" }
+- { link: "/diagnostics/#bssw-cleanup-signal", date: "2026-10-20", title: "The job was stopped by a signal" }
+- { link: "/diagnostics/#bssw-coordinator-exit", date: "2026-10-20", title: "The coordinator stopped early" }
+- { link: "/diagnostics/#bssw-integrity-image", date: "2026-10-20", title: "The image checksum does not match" }
+- { link: "/diagnostics/#bssw-integrity-input", date: "2026-10-20", title: "The input checksum does not match" }
+- { link: "/diagnostics/#bssw-preq-command", date: "2026-10-20", title: "A required helper command is missing" }
+- { link: "/diagnostics/#bssw-preq-image", date: "2026-10-20", title: "The container image is missing or unsafe" }
+- { link: "/diagnostics/#bssw-preq-input", date: "2026-10-20", title: "The input or expected results are unusable" }
+- { link: "/diagnostics/#bssw-preq-value", date: "2026-10-20", title: "An adapter value is out of bounds" }
+- { link: "/diagnostics/#bssw-verify-result", date: "2026-10-20", title: "The results failed verification" }
+- { link: "/diagnostics/#bssw-worker-exit", date: "2026-10-20", title: "A worker step failed" }
+- { link: "/about/cheat-sheet/", date: "2026-10-20" }
+- { link: "/guide/compose-to-hpc-translation/", date: "2026-10-20" }
+- { link: "/milestones/2/", date: "2026-10-20", title: "Release v0.2.0: included changes" }
+- { link: "/about/talks-and-papers/", date: "2026-10-20" }
+- { link: "/milestones/2/", date: "2026-09-26" }
+- { link: "/guide/tour/", date: "2026-09-26" }
+- { link: "/events/iguide-forum-2026/", date: "2026-08-05" }
+- { link: "/about/project/", date: "2026-07-31" }
+- { link: "/about/accessibility/", date: "2026-07-31" }
+- { link: "/about/attribution/", date: "2026-07-31" }
+- { link: "/diagnostics/#bssw-prereq-apptainer", date: "2026-07-31", title: "Container runtime is unavailable" }
+- { link: "/diagnostics/#bssw-prereq-slurm", date: "2026-07-31", title: "Scheduler prerequisite is unavailable" }
+- { link: "/diagnostics/#bssw-readiness-timeout", date: "2026-07-31", title: "Coordinator did not become ready" }
+- { link: "/diagnostics/#bssw-storage-unavailable", date: "2026-07-31", title: "Job-scoped storage check failed" }
+- { link: "/milestones/1/", date: "2026-07-31" }
+- { link: "/guide/scheduler-as-orchestrator/", date: "2026-07-31" }
+- { link: "/guide/baseline-single-node-pattern/", date: "2026-07-31" }
+- { link: "/milestones/1/", date: "2026-07-31", title: "Release v0.1.0" }
+- { link: "/start/", date: "2026-07-31" }
+- { link: "/about/support/", date: "2026-07-31" }
+- { link: "/about/glossary/", date: "2026-07-27" }

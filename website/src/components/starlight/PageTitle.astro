@@ -1,19 +1,15 @@
 ---
-/* Starlight's title panel, with the site's page chrome around the h1: the kind line above
-   ("Module 2 · Hands-on · about 30 min"), the lede below, and any status notice. The values
-   come from the `l2c` frontmatter the layouts pass to StarlightPage. The h1 keeps Starlight's
-   `_top` id, which the skip link targets. */
-import { Aside } from '@astrojs/starlight/components';
-import { titleParts } from '../../content/title';
-
-type Notice = { type: 'note' | 'tip' | 'caution' | 'danger'; title: string; text: string };
+/* Starlight's title panel, with the page's kind line above the h1 ("Module 2 · Hands-on · about
+   30 min") and its lede below, both from the `l2c` frontmatter. A hyphenated word in the title
+   (Laptop-to-Cluster, Single-Node) is wrapped so that it stays on one line. The h1 keeps
+   Starlight's `_top` id, which the skip link targets. */
 const { data } = Astro.locals.starlightRoute.entry;
-const chrome = (data as { l2c?: { kindLine?: string; lede?: string; notices?: Notice[] } }).l2c ?? {};
-const parts = titleParts(data.title);
+const chrome = (data as { l2c?: { kindLine?: string; lede?: string } }).l2c ?? {};
+const parts = data.title.split(/([\p{L}\p{M}\p{N}]+(?:-[\p{L}\p{M}\p{N}]+)+)/u).filter(Boolean);
+const compound = (part: string) => /^[\p{L}\p{M}\p{N}]+(?:-[\p{L}\p{M}\p{N}]+)+$/u.test(part);
 ---
 <header class="content-header">
   {chrome.kindLine && <p class="content-header__line">{chrome.kindLine}</p>}
-  <h1 id="_top">{parts.map((part) => (part.compound ? <span class="h-compound">{part.text}</span> : part.text))}</h1>
+  <h1 id="_top">{parts.map((part) => (compound(part) ? <span class="h-compound">{part}</span> : part))}</h1>
   {chrome.lede && <p class="lede">{chrome.lede}</p>}
-  {chrome.notices?.map((notice) => <Aside type={notice.type} title={notice.title}><p>{notice.text}</p></Aside>)}
 </header>

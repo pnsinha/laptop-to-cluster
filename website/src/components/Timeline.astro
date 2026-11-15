@@ -1,16 +1,15 @@
 ---
-import { TIMELINE_STEPS, type StepNumber } from '../content/contracts';
+import { TIMELINE_STEPS, type StepNumber } from '../content/timeline';
 
 interface Props {
   highlight?: StepNumber;
-  captions: Record<StepNumber, string>;
   title?: string;
 }
 
 type Lane = 'scratch' | 'coord' | 'workers' | 'checks';
 type Span = 'begin' | 'full' | 'within' | 'fade' | 'stop';
 
-const { highlight, captions, title } = Astro.props;
+const { highlight, title } = Astro.props;
 const LANE_ORDER: readonly Lane[] = ['scratch', 'coord', 'workers', 'checks'];
 /* Bars follow slurm/baseline.sbatch at v0.1.0. Job scratch is made in step 1 and
    cleanup never deletes it (fade). The coordinator starts in step 2 and the EXIT
@@ -29,8 +28,8 @@ const MARKS: Partial<Record<StepNumber, 'gate' | 'verify'>> = { 3: 'gate', 5: 'v
 <div class="not-content"><figure class="timeline" aria-labelledby="timeline-title">
   <figcaption id="timeline-title" class="timeline__title">{title ?? 'One allocation, start to finish'}</figcaption>
   <ol class="timeline__steps">
-    {TIMELINE_STEPS.map(({ n, label }) => (
-      <li class="timeline__step" data-step={n} aria-current={n === highlight ? 'step' : undefined}><span class="timeline__num">Step {n}</span> <strong>{label}</strong> <span class="timeline__caption">{captions[n]}</span><span class="timeline__bars" aria-hidden="true">{LANE_ORDER.map((lane) => (<span class="timeline__lane" data-lane={lane} data-span={LANES[n][lane] ?? 'none'}>{lane === 'checks' && MARKS[n] === 'gate' && <span class="timeline__mark timeline__mark--gate">◆</span>}{lane === 'checks' && MARKS[n] === 'verify' && <span class="timeline__mark timeline__mark--verify"></span>}</span>))}</span></li>
+    {TIMELINE_STEPS.map(({ n, label, caption }) => (
+      <li class="timeline__step" data-step={n} aria-current={n === highlight ? 'step' : undefined}><span class="timeline__num">Step {n}</span> <strong>{label}</strong> <span class="timeline__caption">{caption}</span><span class="timeline__bars" aria-hidden="true">{LANE_ORDER.map((lane) => (<span class="timeline__lane" data-lane={lane} data-span={LANES[n][lane] ?? 'none'}>{lane === 'checks' && MARKS[n] === 'gate' && <span class="timeline__mark timeline__mark--gate">◆</span>}{lane === 'checks' && MARKS[n] === 'verify' && <span class="timeline__mark timeline__mark--verify"></span>}</span>))}</span></li>
     ))}
   </ol>
   <p class="timeline__after"><span class="c-scratch">Temporary job storage (job-scoped scratch)</span> may remain until your center clears it. Copy out what you need before the job ends.</p>

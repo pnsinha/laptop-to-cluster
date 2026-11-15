@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { currentReleaseVersion } from './release';
+import { currentRelease } from '../../plugins/release-refs.mjs';
 
 export type ImplementationLanguage = 'bash' | 'python' | 'json';
 
@@ -31,7 +31,7 @@ const RELEASE = 'v0.1.0';
 const REPOSITORY = 'https://github.com/pnsinha/laptop-to-cluster';
 const WORKFLOW_ROOT = resolve(process.cwd(), '..', 'workflows/baseline-slurm-apptainer');
 /* The package and README links follow the release being published, like the @release links in content. The excerpt links below stay pinned to the tag the line numbers come from. */
-const CURRENT_RELEASE = currentReleaseVersion();
+const CURRENT_RELEASE = currentRelease();
 const PACKAGE_URL = `${REPOSITORY}/tree/${CURRENT_RELEASE}/workflows/baseline-slurm-apptainer`;
 const README_URL = `${REPOSITORY}/blob/${CURRENT_RELEASE}/workflows/baseline-slurm-apptainer/README.md`;
 

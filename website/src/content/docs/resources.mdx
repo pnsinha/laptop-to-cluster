@@ -1,0 +1,75 @@
+---
+title: Guide
+description: "A guided path through the Laptop-to-Cluster guide: understand the model, translate your own Compose file, then check what was tested."
+editUrl: false
+l2c:
+  lede: Start with the idea, translate your own Compose file, then check what was tested and whether it fits your center.
+---
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+{/* Four groups in reading order. The first three are the learner's questions; the fourth is the project's own record, kept separate so it never competes with the learning path. */}
+
+<section class="resource-section" aria-labelledby="resource-understand">
+<div class="resource-section__header">
+
+## Understand {#resource-understand}
+
+<p class="resource-section__question">What changes when a Compose stack moves to a shared cluster?</p>
+</div>
+<div class="not-content">
+<CardGrid>
+<LinkCard href="/guide/tour/" title="The five-minute tour" description="Why docker compose up stops working on a shared cluster, what you do instead in six steps, and whether this guide is for you." />
+<LinkCard href="/guide/scheduler-as-orchestrator/" title="Scheduler as Orchestrator" description="The core reframe: on a shared cluster, a scheduler allocation and one launch script do what Compose does on your laptop." />
+<LinkCard href="/about/glossary/" title="Glossary" description="Definitions for the HPC and container terms used across the Laptop-to-Cluster guide." />
+</CardGrid>
+</div>
+</section>
+
+<section class="resource-section" aria-labelledby="resource-translate">
+<div class="resource-section__header">
+
+## Translate {#resource-translate}
+
+<p class="resource-section__question">How do I turn my own Compose file into a cluster job?</p>
+</div>
+<div class="not-content">
+<CardGrid>
+<LinkCard href="/guide/compose-to-hpc-translation/" title="Translate a Compose file" description="See what each part of your Compose file becomes on a cluster, then edit the example job to run your own services." />
+<LinkCard href="/start/" title="Run the example" description="Get the code and the image, record your local values, submit the example job, check that it worked, and copy your results out." />
+<LinkCard href="/guide/baseline-single-node-pattern/" title="Baseline Pattern: Single-Node Service + Workers" description="Run the smallest service-and-workers pattern inside one allocation, with readiness before workers and verification before success." />
+<LinkCard href="/diagnostics/" title="Troubleshooting" description="Find a failure by the ID it prints, with recovery steps." />
+<LinkCard href="/about/cheat-sheet/" title="Cheat sheet" description="A printable reference for one cluster run: the six steps, how Compose ideas map to the cluster, what to set before you submit, and what the error IDs mean." />
+</CardGrid>
+</div>
+</section>
+
+<section class="resource-section" aria-labelledby="resource-evaluate">
+<div class="resource-section__header">
+
+## Evaluate and adopt {#resource-evaluate}
+
+<p class="resource-section__question">What was tested, what was not, and is this the right fit for my center?</p>
+</div>
+<div class="not-content">
+<CardGrid>
+<LinkCard href="/adoption/evaluate/" title="Evaluate and adopt" description="What the pattern assumes, where it was tested, and when a service your center already runs is the better choice." />
+<LinkCard href="/applicability/m2-baseline-anvil-2026-10/" title="Test record" description="What ran, where it ran, and what it checked." />
+</CardGrid>
+</div>
+</section>
+
+<section class="resource-section" aria-labelledby="resource-project">
+<div class="resource-section__header">
+
+## Project records {#resource-project}
+
+<p class="resource-section__question">What has the fellowship published so far, and where was it presented?</p>
+</div>
+<div class="not-content">
+<CardGrid>
+<LinkCard href="/milestones/1/" title="Milestone 1: Foundation and Baseline Model" description="What was published for the July 31, 2026 foundation milestone, and where to find it." />
+<LinkCard href="/milestones/2/" title="Milestone 2: Portability and Dissemination" description="What is planned and in progress for the December 15, 2026 portability milestone, and where to find it." />
+<LinkCard href="/about/talks-and-papers/" title="Talks &amp; papers" description="Where this project has been presented, with a link to each venue’s own page." />
+</CardGrid>
+</div>
+</section>
