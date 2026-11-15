@@ -20,13 +20,16 @@ l2c:
 ## Licenses {#licenses}
 
 ### Executable artifacts
-Executable source, workflow assets, configuration, CI automation, and validation code use the [Apache License 2.0](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/licenses/Apache-2.0.txt).
+Executable source, workflow assets, configuration, CI automation, and validation code use the [Apache License 2.0](https://github.com/pnsinha/laptop-to-cluster/blob/main/LICENSE).
 
 ### Documentation and training
-Original documentation, learning modules, training materials, and publishable evidence use [Creative Commons Attribution 4.0 International](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/licenses/CC-BY-4.0.txt).
+Original documentation, learning modules, training materials, and publishable evidence use [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
 
-### Category and third-party records
-The [artifact inventory](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/artifact-inventory.yml) is the authoritative category-to-license mapping. The [third-party record](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/THIRD_PARTY.yml) identifies each included or adapted work’s source, copyright holder, license, and modification status.
+### Fonts
+The site’s fonts are self-hosted under the SIL Open Font License 1.1: Source Serif 4 (The Source Serif 4 Project Authors), and IBM Plex Sans and IBM Plex Mono (IBM Corp.). Each font’s license file is published beside it.
+
+### Which license covers what
+The [license summary](https://github.com/pnsinha/laptop-to-cluster/blob/main/README.md#license) in the repository README says which parts of the project each license covers. Release v0.1.0 also shipped an [artifact inventory](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/artifact-inventory.yml) and a [third-party record](https://github.com/pnsinha/laptop-to-cluster/blob/v0.1.0/THIRD_PARTY.yml); they describe that release only.
 
 The full funding acknowledgment appears in the footer of every page.
 
