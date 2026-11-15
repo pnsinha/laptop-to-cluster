@@ -2,7 +2,8 @@
 /* What was tested, read only from a test record (src/content/applicability/<id>.yml): the badge
    ("Tested" plus "Purdue Anvil · Oct 2026 · Test record") and the three rows behind it, Tested, You
    need and Depends on your center. With variant="summary" it renders the short summary the
-   evaluation guide shows instead. No page writes a tested claim by hand; it cites a record here. */
+   evaluation guide shows instead. No page writes where or when something was tested by hand; it cites a record here. The
+   status words themselves (Tested, Shim-tested, Designed, not run) are vocabulary and may appear in tables. */
 import { getEntry } from 'astro:content';
 import { badgeParts, evidenceRows, recordSummary } from '../content/evidence';
 

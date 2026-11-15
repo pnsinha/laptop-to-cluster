@@ -10,7 +10,7 @@ Technical content is reviewed against its documented review date, applicable env
 
 ## Workflow
 
-Issues are triaged by affected artifact and severity. Pull requests receive the scope-aware review described in `.github/CONTRIBUTING.md`; CI runs the release gate (build, tests, accessibility, repository policy, acknowledgment, boundary scan). Material technical changes require updated applicability/evidence before a validated claim is published.
+Issues are triaged by affected artifact and severity. Pull requests receive the scope-aware review described in `.github/CONTRIBUTING.md`; CI runs the release gate: the five checks under Releasing. Material technical changes require updated applicability/evidence before a validated claim is published.
 
 ## Releasing
 
