@@ -98,6 +98,7 @@ export default defineConfig({
         Hero: './src/components/starlight/Hero.astro',
         PageTitle: './src/components/starlight/PageTitle.astro',
         Footer: './src/components/starlight/Footer.astro',
+        ThemeSelect: './src/components/starlight/ThemeSelect.astro',
       },
     }),
     sitemap(),

@@ -1,6 +1,6 @@
 # Design contract
 
-The site is a plain [Starlight](https://starlight.astro.build) site. Starlight owns the shell: header, search, theme select, sidebar, "On this page", pager, skip link. The site adds a stylesheet, three small overrides and a few components. Change the shell by configuring Starlight, not by rebuilding it. Update this file in the same change as the design.
+The site is a plain [Starlight](https://starlight.astro.build) site. Starlight owns the shell: header, search, sidebar, "On this page", pager, skip link. The site adds a stylesheet, four small overrides and a few components. Change the shell by configuring Starlight, not by rebuilding it. Update this file in the same change as the design.
 
 ## Files
 
@@ -25,6 +25,7 @@ A heading keeps an anchor that predates its text with `## Text {#anchor}`. Use t
 
 - `PageTitle`: kind line, the h1 (`id="_top"`, the skip-link target; hyphenated words kept on one line), lede.
 - `Hero`: the title, tagline and actions before the figure, so reading order and the phone layout agree.
+- `ThemeSelect`: one button, named "Dark theme", with a sun or moon icon and `aria-pressed`. Before any choice the page follows the operating system and nothing is stored; a press stores `light` or `dark` under Starlight's key `starlight-theme` (cleared when the choice matches the system), so Starlight's head script applies it before paint. Hidden without JavaScript.
 - `Footer`: edit link, last updated, pager, site links, and the acknowledgment from `src/content/acknowledgment.ts`, verbatim, on every page.
 
 ## Components
@@ -47,7 +48,7 @@ Starlight's own components are used as they are: `Aside`, `LinkButton`, `Card`, 
 `custom.css` declares the cascade layers first: `l2c-base, starlight, l2c-theme, l2c-components, l2c-utilities`. Starlight's rules sit in `starlight`, so a site rule in a later layer wins without specificity games. Then, in order: tokens (both themes, print, forced colours), the self-hosted `@font-face` rules (two of them preloaded in `astro.config.mjs`), the mapping onto Starlight's `--sl-*` properties, one block per component, utilities, and the crosswalk and cheat-sheet enhancements.
 
 - Type scale: body 16px, labels 15px, supporting text 14px, h1 32px at desktop (28px narrow), h2 24px, h3 20px. Prose measure 40rem inside a 42rem column, centred; the home page column is 72rem.
-- Both themes follow the operating system unless the reader picks one in Starlight's theme select. Code colours that fall under 4.5:1 are swapped in `astro.config.mjs` (`CODE_CONTRAST`).
+- Both themes follow the operating system unless the reader presses the theme toggle. Code colours that fall under 4.5:1 are swapped in `astro.config.mjs` (`CODE_CONTRAST`).
 - No motion, no inline styles, no one-off classes. Links in the main pane carry a cue that is not colour. Focus ring: 2px solid, offset 2px.
 
 ## Disclosure

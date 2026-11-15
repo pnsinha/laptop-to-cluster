@@ -16,7 +16,7 @@
 /*
  * laptop-to-cluster.org design tokens: the visual system on Starlight.
  * Light is the base palette. Without a stored choice the page follows
- * prefers-color-scheme; Starlight's theme select stores a choice and its
+ * prefers-color-scheme; the theme toggle stores a choice and Starlight's
  * head script sets data-theme on <html>. Starlight also serves
  * data-theme="dark" in the HTML, so the dark choice counts only on a page
  * whose script has run (data-l2c-js, set by the head script in
@@ -566,9 +566,16 @@
     outline-offset: var(--focus-offset);
   }
 
-  /* The theme select works only once its script has defined the element; until then, and
-     without JavaScript, the page follows the operating system and shows no dead control */
-  starlight-theme-select:not(:defined) { display: none; }
+  /* The theme toggle (ThemeSelect override) works only once its script has defined the element;
+     until then, and without JavaScript, the page follows the operating system and shows no dead
+     control. The button is a 32px target; it shows a sun in the light theme and a moon in the dark. */
+  l2c-theme-toggle { display: flex; align-items: center; }
+  l2c-theme-toggle:not(:defined) { display: none; }
+  .theme-toggle { display: inline-grid; place-items: center; inline-size: 2rem; block-size: 2rem; margin: 0; padding: 0; color: var(--sl-color-gray-1); background: none; border: 0; border-radius: var(--radius-small); cursor: pointer; }
+  .theme-toggle:hover { color: var(--sl-color-white); }
+  .theme-toggle__icon { inline-size: 1.25rem; block-size: 1.25rem; }
+  :root[data-theme="dark"] .theme-toggle__icon--light,
+  :root:not([data-theme="dark"]) .theme-toggle__icon--dark { display: none; }
   .sl-markdown-content :is(h1, h2, h3, h4) code { font-size: 0.875em; }
 
   /* Tables stay native tables inside the scroll region the build adds around each one */
