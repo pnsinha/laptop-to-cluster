@@ -96,9 +96,11 @@ account, host, token, or selected filesystem path.
 
 ## Local deterministic fixtures
 
+Run these from the repository root:
+
 ```sh
-bash tests/fixtures/baseline-fake-runtime/run-scenario.sh success
-npx vitest run tests/unit/baseline-workflow.test.ts
+bash website/tests/fixtures/baseline-fake-runtime/run-scenario.sh success
+(cd website && npx vitest run tests/unit/baseline-workflow.test.ts)
 ```
 
 The fixture covers success, invalid input, early coordinator exit, worker failure,

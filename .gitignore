@@ -13,6 +13,7 @@ __pycache__/
 website/publication/
 .claude/*
 !.claude/settings.json
+!.claude/CLAUDE.md
 Better_Scientific_Software_SoW.md
 .opencode/
 .agents/

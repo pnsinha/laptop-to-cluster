@@ -10,7 +10,7 @@ Technical content is reviewed against its documented review date, applicable env
 
 ## Workflow
 
-Issues are triaged by affected artifact and severity. Pull requests receive the scope-aware review described in `CONTRIBUTING.md`; CI validates build, tests, accessibility baseline, repository policy, and release readiness. Material technical changes require updated applicability/evidence before a validated claim is published.
+Issues are triaged by affected artifact and severity. Pull requests receive the scope-aware review described in `.github/CONTRIBUTING.md`; CI validates build, tests, accessibility baseline, repository policy, and release readiness. Material technical changes require updated applicability/evidence before a validated claim is published.
 
 ## Response expectations
 
@@ -18,4 +18,4 @@ This is a fellowship resource, not a staffed service desk. Reports are acknowled
 
 ## Post-fellowship path
 
-Before active maintenance ends, the site will publish a final maintenance date, archive status, v1.0 reconstruction instructions, and reuse path. Open licenses continue to permit adaptation. Current status and alternative contact behavior are maintained in `SUPPORT.md` and `RECOVERY.md`.
+Before active maintenance ends, the site will publish a final maintenance date, archive status, v1.0 reconstruction instructions, and reuse path. Open licenses continue to permit adaptation. Current status and alternative contact behavior are maintained in `.github/SUPPORT.md` and `RECOVERY.md`.

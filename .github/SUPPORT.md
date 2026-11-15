@@ -8,6 +8,6 @@ Accessibility reports should identify the page, barrier, assistive technology or
 
 ## Channel status and alternative contact
 
-The primary channel is GitHub Issues and is considered available unless `RECOVERY.md` or the public site status says otherwise. If issues are unavailable, email `parmanandsinha@gmail.com` with subject `BSSw resource report`, identify the failed channel, and include the same sanitized fields. If email is also unavailable, use https://bssw.io/contact to request a project-maintainer handoff; do not send sensitive security details through that form.
+The primary channel is GitHub Issues and is considered available unless `website/RECOVERY.md` or the public site status says otherwise. If issues are unavailable, email `parmanandsinha@gmail.com` with subject `BSSw resource report`, identify the failed channel, and include the same sanitized fields. If email is also unavailable, use https://bssw.io/contact to request a project-maintainer handoff; do not send sensitive security details through that form.
 
 Public summaries remove respondent-identifying information unless the respondent explicitly approves attribution.

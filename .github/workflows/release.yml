@@ -51,6 +51,10 @@ jobs:
       - uses: actions/setup-node@v4.4.0
         with:
           node-version: '22.15.0'
+      - name: Refuse a release cut before the move to website/
+        working-directory: .
+        run: |
+          [ -d website ] || { echo "::error::this tag predates the website/ layout; redeploy it with rollback.yml (see website/RECOVERY.md)"; exit 1; }
       - id: plan
         name: Decide what this run may do
         env:

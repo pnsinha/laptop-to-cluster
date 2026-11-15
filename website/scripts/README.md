@@ -13,7 +13,7 @@ The build, check and release tooling. Most scripts run through an npm command; t
 | `validate-release.ts` | `npm run validate:release` | Checks the release workflows and the built output against the current release record |
 | `validate-accessibility-review.ts` | `npm run validate:accessibility-review` | Checks the current release's signed accessibility review covers every required page and check |
 
-`npm run publication:validate` runs every check above except the browser scan, and adds the boundary scan. The boundary scan needs the `L2C_BOUNDARY_PATTERN` secret, which only CI has, so it fails locally; see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+`npm run publication:validate` runs every check above except the browser scan, and adds the boundary scan. The boundary scan needs the `L2C_BOUNDARY_PATTERN` secret, which only CI has, so it fails locally; see [`CONTRIBUTING.md`](../../.github/CONTRIBUTING.md).
 
 ## Evidence
 
