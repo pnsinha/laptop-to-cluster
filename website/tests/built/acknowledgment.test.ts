@@ -25,6 +25,6 @@ describe('attribution and licenses', () => {
     expect(html).not.toMatch(/blob\/v0\.1\.0\/licenses\//);
   });
   it('credits the self-hosted fonts', () => {
-    expect(text(html)).toContain('The site’s fonts are self-hosted under the SIL Open Font License 1.1: Source Serif 4 (The Source Serif 4 Project Authors), and IBM Plex Sans and IBM Plex Mono (IBM Corp.). Each font’s license file is published beside it.');
+    expect(text(html)).toContain('The site’s fonts are self-hosted under the SIL Open Font License 1.1: Source Serif 4 (The Source Serif 4 Project Authors); IBM Plex Sans and IBM Plex Mono (IBM Corp.); and a subset of Noto Sans Symbols 2 for the diagram marks (The Noto Project Authors). Each font’s license file is published beside it.');
   });
 });
