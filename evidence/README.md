@@ -21,11 +21,11 @@ Module 2 is `validated` against this representative environment, as recorded in 
 
 ## Record an additional run
 
-Use this procedure to add a new bundle — a later release, a new center, or a re-validation. After running a tagged workflow on Purdue Anvil, copy and complete the applicable metadata template without adding secrets. If Anvil allocation is unavailable, use SDSC Expanse, set `fallback: true`, and record `primaryUnavailableReason`. Capture the scheduler terminal state and exit code from the center scheduler, not from a mock.
+Use this procedure to add a new bundle — a later release, a new center, or a re-validation. After running a tagged workflow on Purdue Anvil, copy and complete the applicable metadata template without adding secrets. If Anvil allocation is unavailable, use SDSC Expanse, set `fallback: true`, and record `primaryUnavailableReason`. Capture the scheduler terminal state and exit code from the center scheduler, not from a mock. Run the npm commands below from `website/`.
 
 ```sh
-npm run record-run -- --metadata /secure/success.json --run-dir /secure/bssw-JOBID --scheduler-log /secure/slurm-JOBID.out --output-root evidence
-npm run validate:evidence -- --bundle evidence/EVIDENCE_ID
+npm run record-run -- --metadata /secure/success.json --run-dir /secure/bssw-JOBID --scheduler-log /secure/slurm-JOBID.out --output-root ../evidence
+npm run validate:evidence -- --bundle ../evidence/EVIDENCE_ID
 ```
 
 Each validated release pairs a successful run with a deliberately bounded readiness-timeout run, as the v0.1.0 bundles above do. The timeout run must exit nonzero with `BSSW-READY-TIMEOUT`, record no worker-start event, and contain no success marker.
@@ -63,7 +63,7 @@ gate from the bundled file — the declared `passed` flag is never trusted:
 Recording uses the same command with `templates/layered-install-trees-metadata.example.json`:
 
 ```sh
-npm run record-run -- --metadata /secure/layered.json --run-dir /secure/any --scheduler-log /secure/gpu-compose-JOBID.out --output-root evidence
+npm run record-run -- --metadata /secure/layered.json --run-dir /secure/any --scheduler-log /secure/gpu-compose-JOBID.out --output-root ../evidence
 ```
 
 The profile's scheduler and runtime version strings must come from the

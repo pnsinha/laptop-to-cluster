@@ -9,7 +9,7 @@ The build, check and release tooling. Most scripts run through an npm command; t
 | `scan-accessibility.ts` | `npm run test:accessibility:browser` | Opens every built page in Chromium: axe, keyboard order and focus, reflow, zoom, forced colours, print, theme, fonts blocked, no JavaScript |
 | `publication.mjs` | `npm run validate:built`, `npm run validate:policy`, `npm run validate:boundary` | The publication validator: built HTML, links, canonical metadata and footer; dependency, motion, font and deployment policy; the boundary scan for terms that must never be published |
 | `validate-evidence.ts` | `npm run validate:evidence` | Checks every evidence bundle a test record cites: files, checksums, versions and review dates |
-| `validate-repository.ts` | `npm run validate:repository` | Checks the required project files exist and every tracked file has a licence category |
+| `validate-repository.ts` | `npm run validate:repository` | Checks the required project files exist and the evidence records are valid |
 | `validate-release.ts` | `npm run validate:release` | Checks the release workflows and the built output against the current release record |
 | `validate-accessibility-review.ts` | `npm run validate:accessibility-review` | Checks the current release's signed accessibility review covers every required page and check |
 
@@ -19,7 +19,7 @@ The build, check and release tooling. Most scripts run through an npm command; t
 
 | Script | npm command | What it does |
 |---|---|---|
-| `record-run.ts` | `npm run record-run` | Turns a cluster run into a redacted, checksummed evidence bundle under `evidence/`; see [`evidence/README.md`](../evidence/README.md) |
+| `record-run.ts` | `npm run record-run` | Turns a cluster run into a redacted, checksummed evidence bundle under `evidence/`; see [`evidence/README.md`](../../evidence/README.md) |
 | `evidence.ts` | (library) | The bundle format and checks that `record-run.ts`, `validate-evidence.ts` and `validate-repository.ts` share |
 
 ## Release and recovery (run by the workflows)
@@ -40,4 +40,3 @@ The build, check and release tooling. Most scripts run through an npm command; t
 | Script | Used by |
 |---|---|
 | `boundary.mjs` | `publication.mjs`: reads the boundary terms from the secret or a local untracked file, and never prints a match |
-| `license-provenance.ts` | `validate-repository.ts`: the licence inventory in `artifact-inventory.yml` |

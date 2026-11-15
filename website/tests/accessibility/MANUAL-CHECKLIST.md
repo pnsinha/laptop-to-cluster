@@ -10,7 +10,7 @@ When you sign:
 
 ## Set up
 
-1. `npm run build`, then `npx astro preview --root site --port 4321`.
+1. `npm run build`, then `npx astro preview --port 4321`.
 2. Open `http://localhost:4321/` in Chrome and Safari. Pages to cover: `/`, `/guide/tour/`, `/guide/baseline-single-node-pattern/`, the current record under `/applicability/`, `/adoption/evaluate/`.
 3. macOS: System Settings, Keyboard, turn on "Keyboard navigation" so Safari tabs to every control. Turn VoiceOver on and off with Cmd+F5. The VoiceOver modifier (VO) is Control+Option.
 

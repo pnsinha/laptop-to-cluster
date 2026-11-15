@@ -22,7 +22,7 @@ const mutableRelease = fc.oneof(
 );
 const repository = fc.tuple(safeSegment, safeSegment, fc.boolean())
   .map(([owner, project, trailingSlash]) => `https://github.com/${owner}/${project}${trailingSlash ? '/' : ''}`);
-const path = fc.constantFrom('README.md', 'package.json', 'website/src/content/registry.ts');
+const path = fc.constantFrom('README.md', 'website/package.json', 'website/src/content/registry.ts');
 const integrity = fc.array(fc.constantFrom(...hex), { minLength: 64, maxLength: 64 })
   .map((characters) => `sha256:${characters.join('')}`);
 const lineAnchor = fc.option(

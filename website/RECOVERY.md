@@ -22,7 +22,7 @@ Record artifact checksum, source commit/release, deployment identifier, outage s
 
 ## Automated checksum-verified recovery
 
-Run the manual `checksum-verified-recovery` workflow with the prior successful workflow run ID, full source commit, and confirmation phrase. Content recovery downloads the retained `site/dist/`, artifact manifest, deployment record, and current/previous recovery index; `scripts/rollback.mjs` rejects any checksum or identity mismatch before the same directory is sent through Pages Direct Upload. The recovery job contains no dependency installation, Astro command, build, output mutation, or tag rewrite.
+Run the manual `checksum-verified-recovery` workflow with the prior successful workflow run ID, full source commit, and confirmation phrase. Content recovery downloads the retained `website/dist/`, artifact manifest, deployment record, and current/previous recovery index; `scripts/rollback.mjs` rejects any checksum or identity mismatch before the same directory is sent through Pages Direct Upload. The recovery job contains no dependency installation, Astro command, build, output mutation, or tag rewrite.
 
 Hostname recovery is a separate workflow mode. It validates `infrastructure/cloudflare/hostname-redirects.v1.json` and restores only the exact three permanent path/query-preserving Bulk Redirect entries under a production-recovery approval environment. It does not download or alter site content.
 
