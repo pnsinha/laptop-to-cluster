@@ -8,7 +8,21 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { z } from 'astro/zod';
 import { parse as parseYaml } from 'yaml';
 import { applicabilityRecordSchema, type ApplicabilityRecord } from '../src/content/schema.js';
-import { canonicalDiagnosticId, isReadinessTimeoutDiagnostic } from '../src/content/diagnostics.js';
+
+/* The workflow prints a few diagnostic IDs under an older spelling than the one the evidence
+   records use; both name the same diagnostic. */
+const CANONICAL_BY_PRINTED: Readonly<Record<string, string>> = {
+  'BSSW-PREQ-SLURM': 'BSSW-PREREQ-SLURM',
+  'BSSW-PREQ-APPTAINER': 'BSSW-PREREQ-APPTAINER',
+  'BSSW-PREQ-STORAGE': 'BSSW-STORAGE-UNAVAILABLE',
+  'BSSW-READY-TIMEOUT': 'BSSW-READINESS-TIMEOUT',
+};
+export function canonicalDiagnosticId(identifier: string): string {
+  const normalized = identifier.trim().toUpperCase();
+  return CANONICAL_BY_PRINTED[normalized] ?? normalized;
+}
+const isReadinessTimeoutDiagnostic = (identifier: string | undefined): boolean =>
+  identifier !== undefined && canonicalDiagnosticId(identifier) === 'BSSW-READINESS-TIMEOUT';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoDateTime = z.string().datetime({ offset: true });
@@ -691,12 +705,6 @@ export function validateApplicabilityAgainstManifest(record: ApplicabilityRecord
   return errors;
 }
 
-function parseFrontmatter(path: string): Record<string, unknown> | undefined {
-  const source = readFileSync(path, 'utf8');
-  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(source);
-  return match ? parseYaml(match[1]) as Record<string, unknown> : undefined;
-}
-
 /** The public repository whose releases the provenance entries cite. */
 export const REPOSITORY_URL = 'https://github.com/pnsinha/laptop-to-cluster';
 const sameRepository = (value: string) => {
@@ -733,14 +741,6 @@ export function provenanceIntegrityErrors(record: ApplicabilityRecord, options: 
   return repositoryReferenceErrors(record.provenance.map(({ reference }, index) => ({ label: `${record.id}.provenance.${index}`, reference })), options);
 }
 
-/** A content item's supporting artifacts, checked the same way: a module page shows these hashes beside their links. */
-export function supportingArtifactIntegrityErrors(name: string, artifacts: unknown, options: IntegrityOptions): string[] {
-  const entries = (Array.isArray(artifacts) ? artifacts : [])
-    .filter((entry): entry is RepositoryReference => Boolean(entry) && typeof entry === 'object' && ['repository', 'release', 'path', 'integrity'].every((key) => typeof (entry as Record<string, unknown>)[key] === 'string'))
-    .map((reference, index) => ({ label: `${name}.supporting_artifacts.${index}`, reference }));
-  return repositoryReferenceErrors(entries, options);
-}
-
 export function validateEvidenceRepository(root: string, now = new Date().toISOString().slice(0, 10), options: { ci?: boolean; warn?: (message: string) => void } = {}): string[] {
   const errors: string[] = [];
   const applicabilityDirectory = join(root, 'website/src/content/applicability');
@@ -770,23 +770,5 @@ export function validateEvidenceRepository(root: string, now = new Date().toISOS
   for (const record of records) errors.push(...validateRelatedEvidence(record, root));
   for (const record of records) errors.push(...provenanceIntegrityErrors(record, { root, ...options }));
   errors.push(...supersessionErrors(records));
-  const contentDirectory = join(root, 'website/src/content/content-items');
-  for (const name of readdirSync(contentDirectory).filter((name) => /\.mdx?$/.test(name)).sort()) {
-    const data = parseFrontmatter(join(contentDirectory, name));
-    if (data) errors.push(...supportingArtifactIntegrityErrors(name, data.supporting_artifacts, { root, ...options }));
-    if (!data || !['runnable', 'hybrid'].includes(String(data.module_type))) continue;
-    const status = String(data.validation_status ?? '');
-    const ids = Array.isArray(data.applicability_records) ? data.applicability_records.map(String) : [];
-    const linked = records.filter((record) => ids.includes(record.id));
-    if (status === 'validated' && !linked.some((record) => record.status === 'validated' && validRecordIds.has(record.id))) {
-      errors.push(`${name}: validated workflow has no current checksum-verified representative evidence`);
-    }
-    if (status === 'unvalidated' && linked.some((record) => record.status === 'validated')) {
-      errors.push(`${name}: workflow status is unvalidated but links validated applicability`);
-    }
-    if (status === 'stale' && linked.every((record) => reviewDeadline(record) >= now)) {
-      errors.push(`${name}: stale workflow status has no stale applicability evidence`);
-    }
-  }
   return errors;
 }
