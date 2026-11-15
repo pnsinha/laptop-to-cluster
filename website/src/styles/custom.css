@@ -1,3 +1,656 @@
+/* The site's one stylesheet, after Starlight's own. Sections, in order: cascade layer order, tokens
+   (both themes, print, forced colours), self-hosted fonts, the mapping onto Starlight (l2c-theme),
+   the site's components (l2c-components), utilities, then the optional enhancements. */
+
+/* ==== layers ==== */
+/* Cascade layer order for the whole site. Listed first in Starlight's customCss so it runs
+   before Starlight's own layer declaration. The names are flat on purpose: a dotted name such
+   as l2c.theme would nest under a parent layer "l2c", and that parent, declared before
+   "starlight", would place every site layer below Starlight's. l2c-base holds tokens and fonts.
+   l2c-theme maps the tokens onto Starlight's --sl-* properties and sets typography.
+   l2c-components holds the site's own components (timeline, crosswalk, doors, evidence).
+   l2c-utilities holds one-off helpers and the print, forced-colour and reduced-motion rules. */
+@layer l2c-base, starlight, l2c-theme, l2c-components, l2c-utilities;
+
+/* ==== tokens ==== */
+/*
+ * laptop-to-cluster.org design tokens: the visual system on Starlight.
+ * Light is the base palette. Without a stored choice the page follows
+ * prefers-color-scheme; Starlight's theme select stores a choice and its
+ * head script sets data-theme on <html>. Starlight also serves
+ * data-theme="dark" in the HTML, so the dark choice counts only on a page
+ * whose script has run (data-l2c-js, set by the head script in
+ * astro.config.mjs); without JavaScript the page keeps following the
+ * operating system. Dark tokens are screen-only, so print always starts
+ * from the light base and then applies the print overrides.
+ * Every text/background pair used by the specimen is checked by
+ * contrast_check.py (WCAG 2.2 AA in both modes).
+ * Do not use light-dark(): the accessibility scanner reads raw token strings.
+ */
+
+:root {
+  color-scheme: light dark;
+  /* Type families: self-hosted face first (fonts.css), then the phase-1 system stacks */
+  --font-display: "Source Serif 4", "Source Serif 4 Fallback", ui-serif, Charter, "Bitstream Charter", "Sitka Text", Cambria, "Noto Serif", Georgia, "DejaVu Serif", serif;
+  --font-reading: "Source Serif 4", "Source Serif 4 Fallback", ui-serif, Charter, "Bitstream Charter", "Sitka Text", Cambria, "Noto Serif", Georgia, "DejaVu Serif", serif;
+  --font-body: "IBM Plex Sans", "IBM Plex Sans Fallback", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-technical: "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Mono", Consolas, "Noto Sans Mono", "DejaVu Sans Mono", "Liberation Mono", "Droid Sans Mono", monospace;
+  --font-marks: "L2C Marks", "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", sans-serif; /* four glyphs only (U+25A0 U+25B2 U+25C6 U+25CF), one face so they match in size */
+  /* Type sizes: one even ramp, 16 / 18 / 20 / 24 / 32 px at desktop (cqi falls back to the viewport when no container is set) */
+  --text-fine: 0.875rem; /* 14px: captions, eyebrows, footer; the floor for essential text */
+  --text-label: 0.9375rem; /* 15px: interface labels, one step below the 16px body: nav, buttons, controls, breadcrumbs, table headers, pager, skip link */
+  --text-ui: var(--text-label); /* UI sans chrome resolves to the label size (15px); running sans text uses --text-base (16px) */
+  --text-code: 0.9375rem; /* 15px: code blocks */
+  --text-code-inline: max(0.875em, 0.875rem); /* inline code: 0.875em, never below 14px */
+  --text-reading: 1rem; /* 16px reading serif: body text is never above 16px, at any width */
+  --text-lede: 1.125rem; /* 18px */
+  --text-h3: 1.25rem; /* 20px */
+  --text-h2: 1.5rem; /* 24px */
+  --text-display: clamp(1.75rem, 1.5rem + 1cqi, 2rem); /* page h1: 28px narrow, 32px at desktop, never above 40px */
+  /* Leading and weight */
+  --leading-display: 1.1;
+  --leading-heading: 1.2;
+  --leading-lede: 1.45;
+  --leading-reading: 1.45;
+  --leading-ui: 1.45;
+  --leading-fine: 1.5;
+  --leading-code: 1.6;
+  --weight-regular: 400;
+  --weight-semibold: 600; /* Plex Sans SemiBold; serif h2/h3 */
+  --weight-display: 600; /* variable serif; no opsz axis is shipped */
+  /* Measure: a physical width, not ch, so sans captions, mono and serif prose share one right edge */
+  --measure-prose: 40rem; /* about 80–88 characters of 16px reading serif */
+  --measure-lede: 40rem;
+  --measure-wide: 72rem;
+  --measure-data: 84rem;
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem; /* between home sections */
+  --space-24: 6rem;
+  /* Lines, radii, focus */
+  --border-thin: 1px;
+  --border-strong: 2px;
+  --rule-concept: 3px; /* inline-start rule on tagged code lines */
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --radius-small: 0.375rem; /* the only general radius */
+  --radius-door: 0.5rem; /* exception: the three doors */
+  --radius-pill: 999px; /* exception: the evidence badge */
+  /* Timeline geometry (bars are borders, positioned by --from / --to on each lane) */
+  --lane-h: 1.5rem;
+  --bar-scratch: 0.1875rem; /* lightest: solid inside the allocation, dotted after it */
+  --bar-coordinator: 0.3125rem; /* heaviest single line: the service everything waits on */
+  --bar-workers: 0.5rem; /* border-style: double draws the two workers as two 3px lines */
+  /* Concept shape markers (aria-hidden; survive print, grayscale and forced colors) */
+  --mark-step: "■";
+  --mark-gate: "◆";
+  --mark-scratch: "▲";
+  --mark-net: "●";
+  /* Legacy names that existing pages still use. Same scale, new names. */
+  --text-body: var(--text-base);
+  --text-lead: var(--text-lede);
+  --text-heading: var(--text-h2);
+  --text-subheading: var(--text-h3);
+  --text-technical: var(--text-code);
+  --flow-tight: var(--space-2);
+  --flow-body: var(--space-4);
+  --flow-section: var(--space-8);
+  --shell-accent: var(--accent);
+
+  /* Surfaces */
+  --canvas: #fbf9f4;
+  --surface: #f3efe5;
+  --raised: #fffefb;
+  /* Text */
+  --text: #23211c;
+  /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+  --shell: #fbf9f4;
+  --shell-text: #23211c;
+  --text-base: 1rem;
+  --text-supporting: 0.875rem;
+  --leading-base: 1.45;
+  --muted: #5a554b;
+  --primary: #1d2a44;
+  --accent: #45506a;
+  /* Primary action */
+  --primary-hover: #2d3e63;
+  --on-primary: #fbf9f4;
+  /* Lines and focus */
+  --border: #857e70;
+  --rule: #c9bfaa;
+  --focus: #1d2a44;
+  /* Status (always text-labelled, never a concept) */
+  --warning: #735600;
+  --warning-surface: #fbf3d0;
+  --danger: #a3211a;
+  --danger-surface: #fbe9e7;
+  --success: #0f6a5f;
+  --success-surface: #e2f3ef;
+  /* Concepts (text on tint; each also has a shape) */
+  --c-step: #0b5cad;
+  --c-step-bg: #e3f0fc;
+  --c-gate: #9a4a00;
+  --c-gate-bg: #fdf0dc;
+  --c-scratch: #5b21b6;
+  --c-scratch-bg: #efe8fd;
+  --c-net: #166534;
+  --c-net-bg: #e3f4e8;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    /* Surfaces */
+    --canvas: #131a29;
+    --surface: #192234;
+    --raised: #1f293d;
+    /* Text */
+    --text: #ebe5d9;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #131a29;
+    --shell-text: #ebe5d9;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #b3ab9c;
+    --primary: #f4eee2;
+    --accent: #b8c1d6;
+    /* Primary action */
+    --primary-hover: #ddd4c1;
+    --on-primary: #131a29;
+    /* Lines and focus */
+    --border: #737c90;
+    --rule: #3a4560;
+    --focus: #f4eee2;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #e8c35f;
+    --warning-surface: #2b2511;
+    --danger: #ff9a8f;
+    --danger-surface: #3a1a1e;
+    --success: #6fd6c4;
+    --success-surface: #10302c;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #79b8ff;
+    --c-step-bg: #0f2a44;
+    --c-gate: #f0a35e;
+    --c-gate-bg: #3a2410;
+    --c-scratch: #c4a5ff;
+    --c-scratch-bg: #2a1d47;
+    --c-net: #6fdd8b;
+    --c-net-bg: #12321d;
+  }
+}
+
+@media screen {
+  :root[data-l2c-js][data-theme="dark"] {
+    color-scheme: dark;
+    /* Surfaces */
+    --canvas: #131a29;
+    --surface: #192234;
+    --raised: #1f293d;
+    /* Text */
+    --text: #ebe5d9;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #131a29;
+    --shell-text: #ebe5d9;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #b3ab9c;
+    --primary: #f4eee2;
+    --accent: #b8c1d6;
+    /* Primary action */
+    --primary-hover: #ddd4c1;
+    --on-primary: #131a29;
+    /* Lines and focus */
+    --border: #737c90;
+    --rule: #3a4560;
+    --focus: #f4eee2;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #e8c35f;
+    --warning-surface: #2b2511;
+    --danger: #ff9a8f;
+    --danger-surface: #3a1a1e;
+    --success: #6fd6c4;
+    --success-surface: #10302c;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #79b8ff;
+    --c-step-bg: #0f2a44;
+    --c-gate: #f0a35e;
+    --c-gate-bg: #3a2410;
+    --c-scratch: #c4a5ff;
+    --c-scratch-bg: #2a1d47;
+    --c-net: #6fdd8b;
+    --c-net-bg: #12321d;
+  }
+}
+
+/* Print: black on white, concept hues kept for colour printers; the shape
+   markers carry the meaning in grayscale. Both selectors are (0,2,0) so a
+   stored theme can never beat them. */
+@media print {
+  :root:not([data-theme]),
+  :root[data-theme] {
+    color-scheme: light;
+    /* Surfaces */
+    --canvas: #ffffff;
+    --surface: #ffffff;
+    --raised: #ffffff;
+    /* Text */
+    --text: #000000;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: #ffffff;
+    --shell-text: #000000;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: #333333;
+    --primary: #000000;
+    --accent: #333333;
+    /* Primary action */
+    --primary-hover: #000000;
+    --on-primary: #ffffff;
+    /* Lines and focus */
+    --border: #555555;
+    --rule: #999999;
+    --focus: #000000;
+    /* Status (always text-labelled, never a concept) */
+    --warning: #5c4400;
+    --warning-surface: #ffffff;
+    --danger: #8a1c15;
+    --danger-surface: #ffffff;
+    --success: #0b5249;
+    --success-surface: #ffffff;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: #0b5cad;
+    --c-step-bg: #ffffff;
+    --c-gate: #9a4a00;
+    --c-gate-bg: #ffffff;
+    --c-scratch: #5b21b6;
+    --c-scratch-bg: #ffffff;
+    --c-net: #166534;
+    --c-net-bg: #ffffff;
+  }
+}
+
+/* Forced colors: map every token to a system colour; shapes, borders and
+   text labels keep the meaning. */
+@media (forced-colors: active) {
+  :root:not([data-theme]),
+  :root[data-theme] {
+    /* Surfaces */
+    --canvas: Canvas;
+    --surface: Canvas;
+    --raised: Canvas;
+    /* Text */
+    --text: CanvasText;
+    /* Compatibility aliases: literal values, because the build checks and the scanner read the raw strings */
+    --shell: Canvas;
+    --shell-text: CanvasText;
+    --text-base: 1rem;
+    --text-supporting: 0.875rem;
+    --leading-base: 1.45;
+    --muted: CanvasText;
+    --primary: CanvasText;
+    --accent: CanvasText;
+    /* Primary action */
+    --primary-hover: CanvasText;
+    --on-primary: ButtonText;
+    /* Lines and focus */
+    --border: CanvasText;
+    --rule: GrayText;
+    --focus: Highlight;
+    /* Status (always text-labelled, never a concept) */
+    --warning: CanvasText;
+    --warning-surface: Canvas;
+    --danger: CanvasText;
+    --danger-surface: Canvas;
+    --success: CanvasText;
+    --success-surface: Canvas;
+    /* Concepts (text on tint; each also has a shape) */
+    --c-step: CanvasText;
+    --c-step-bg: Canvas;
+    --c-gate: CanvasText;
+    --c-gate-bg: Canvas;
+    --c-scratch: CanvasText;
+    --c-scratch-bg: Canvas;
+    --c-net: CanvasText;
+    --c-net-bg: Canvas;
+  }
+}
+
+/* ==== fonts ==== */
+/*
+ * Self-hosted fonts: WOFF2 only, same origin, font-display: swap.
+ * Each family directory under /fonts/ ships its own licence text.
+ * IBM Plex files are IBM's own pre-split files and must never be re-subset ("Plex" is a Reserved Font Name).
+ */
+
+/* Source Serif 4: variable roman (wght 200 to 900, no opsz axis shipped) and one italic */
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("/fonts/source-serif-4-5.3.0/source-serif-4-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/source-serif-4-5.3.0/source-serif-4-latin-400-italic.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* IBM Plex Sans: Regular and SemiBold, Latin1 */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-Regular-Latin1.woff2") format("woff2");
+  unicode-range: U+0000, U+000D, U+0020-007E, U+00A0-00A3, U+00A4-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044, U+2074, U+20AC, U+2122, U+2212, U+FB01-FB02;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-sans-1.1.0/IBMPlexSans-SemiBold-Latin1.woff2") format("woff2");
+  unicode-range: U+0000, U+000D, U+0020-007E, U+00A0-00A3, U+00A4-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044, U+2074, U+20AC, U+2122, U+2212, U+FB01-FB02;
+}
+
+/* IBM Plex Mono: Regular, Latin1 */
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-2.5.0/IBMPlexMono-Regular-Latin1.woff2") format("woff2");
+  unicode-range: U+0000, U+000D, U+0020-007E, U+00A0-00A3, U+00A4-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044, U+2074, U+20AC, U+2122, U+2212, U+FB01-FB02;
+}
+
+/* L2C Marks: four shape glyphs only, one face so they match in size */
+@font-face {
+  font-family: "L2C Marks";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/l2c-marks-noto-sans-symbols-2-5.3.0/L2CMarks-Regular.woff2") format("woff2");
+  unicode-range: U+25A0, U+25B2, U+25C6, U+25CF;
+}
+
+/* Metric-matched fallbacks: the page lays out with these until the web fonts arrive, or if they never do.
+   Regular and bold cover the 400 and 600 weights (600 resolves to the 700 face). */
+@font-face {
+  font-family: "Source Serif 4 Fallback";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Georgia");
+  size-adjust: 108.6%;
+}
+@font-face {
+  font-family: "Source Serif 4 Fallback";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local("Georgia Bold");
+  size-adjust: 108.6%;
+}
+@font-face {
+  font-family: "Source Serif 4 Fallback";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Georgia Italic");
+  size-adjust: 108.6%;
+}
+@font-face {
+  font-family: "IBM Plex Sans Fallback";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Arial");
+  size-adjust: 101.6%;
+}
+@font-face {
+  font-family: "IBM Plex Sans Fallback";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local("Arial Bold");
+  size-adjust: 101.6%;
+}
+
+/* ==== starlight-theme ==== */
+/* laptop-to-cluster.org on Starlight: the site's tokens (tokens.css) mapped onto Starlight's
+   --sl-* properties, plus the typography and layout choices that make Starlight read as this
+   guide. Starlight declares its colours for dark mode on :root and light mode under
+   [data-theme='light']; the tokens here already switch by theme, so one mapping serves both.
+   This file sits in the l2c-theme layer, after Starlight's own layers, so it wins without
+   specificity games. */
+@layer l2c-theme {
+  :root,
+  ::backdrop {
+    /* Ink and surfaces */
+    --sl-color-white: var(--primary);
+    --sl-color-gray-1: var(--text);
+    --sl-color-gray-2: var(--text);
+    --sl-color-gray-3: var(--muted);
+    --sl-color-gray-4: var(--border);
+    --sl-color-gray-5: var(--rule);
+    --sl-color-gray-6: var(--surface);
+    --sl-color-gray-7: var(--raised);
+    --sl-color-black: var(--canvas);
+    --sl-color-text: var(--text);
+    --sl-color-bg: var(--canvas);
+    --sl-color-bg-nav: var(--canvas);
+    --sl-color-bg-sidebar: var(--surface);
+    --sl-color-bg-inline-code: var(--surface);
+    --sl-color-hairline-light: var(--rule);
+    --sl-color-hairline: var(--rule);
+    --sl-color-hairline-shade: var(--surface);
+    /* Accent: the primary ink fills buttons and the current sidebar item */
+    --sl-color-accent-low: var(--surface);
+    --sl-color-accent: var(--accent);
+    --sl-color-accent-high: var(--primary);
+    --sl-color-text-accent: var(--primary);
+    --sl-color-text-invert: var(--on-primary);
+    --sl-color-bg-accent: var(--primary);
+    /* Aside hues on the status and concept tokens */
+    --sl-color-orange-low: var(--warning-surface);
+    --sl-color-orange: var(--warning);
+    --sl-color-orange-high: var(--warning);
+    --sl-color-red-low: var(--danger-surface);
+    --sl-color-red: var(--danger);
+    --sl-color-red-high: var(--danger);
+    --sl-color-green-low: var(--success-surface);
+    --sl-color-green: var(--success);
+    --sl-color-green-high: var(--success);
+    --sl-color-blue-low: var(--c-step-bg);
+    --sl-color-blue: var(--c-step);
+    --sl-color-blue-high: var(--c-step);
+    --sl-color-purple-low: var(--c-scratch-bg);
+    --sl-color-purple: var(--c-scratch);
+    --sl-color-purple-high: var(--c-scratch);
+    /* No shadows: the visual policy draws edges with hairlines */
+    --sl-shadow-sm: none;
+    --sl-shadow-md: none;
+    --sl-shadow-lg: none;
+    /* Type: Plex Sans for the interface, the display serif for headings (below), Plex Mono for code */
+    --sl-font: var(--font-body);
+    --sl-font-mono: var(--font-technical);
+    --sl-text-xs: var(--text-fine);
+    --sl-text-sm: var(--text-label);
+    --sl-text-code: var(--text-code);
+    --sl-text-code-sm: var(--text-fine);
+    --sl-text-h1: var(--text-display);
+    --sl-text-h2: var(--text-h2);
+    --sl-text-h3: var(--text-h3);
+    --sl-text-h4: var(--text-base);
+    --sl-text-h5: var(--text-base);
+    --sl-line-height: 1.6;
+    --sl-line-height-headings: var(--leading-heading);
+    /* Reading column: 42rem of 16px serif stays under 95 characters a line */
+    --sl-content-width: 42rem;
+  }
+  /* Pages with a hero (the home page) use the full frame, sidebar or not */
+  [data-has-hero] {
+    --sl-content-width: 72rem;
+  }
+
+  /* Headings in the display serif, running prose in the reading serif, interface in the sans */
+  h1,
+  .hero h1,
+  .sl-markdown-content :is(h2, h3):not(:where(.not-content *)),
+  .site-title {
+    font-family: var(--font-display);
+    font-weight: var(--weight-semibold);
+    letter-spacing: normal;
+    hyphens: none;
+    text-wrap: balance;
+  }
+  .sl-markdown-content :is(p, li, dd, dt, blockquote):not(:where(.not-content *, table *)) {
+    font-family: var(--font-reading);
+  }
+  .content-header .lede,
+  .hero .tagline {
+    font-family: var(--font-reading);
+    font-size: var(--text-lede);
+    line-height: var(--leading-lede);
+  }
+  .content-header .lede {
+    max-inline-size: var(--measure-lede);
+    margin-block-start: 0.75rem;
+    color: var(--text);
+  }
+  .content-header__line {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font-size: var(--text-fine);
+  }
+  @media (min-width: 30rem) {
+    .h-compound { white-space: nowrap; }
+  }
+  /* Every link in the main pane carries a cue that is not colour: an underline, or the border
+     of a filled button or a pager link. Starlight removes the underline from link cards, link
+     buttons and the edit link; the card title and the quiet button get it back. */
+  main a:not(:where(.sl-link-button, .pagination-links a)),
+  .sl-link-button.minimal {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+  main a:hover:not(:where(.sl-link-button, .pagination-links a)) {
+    text-decoration-thickness: 2px;
+  }
+
+  /* One focus ring everywhere: Starlight leaves the browser default, which is thinner than 2px */
+  :focus-visible {
+    outline: var(--focus-width) solid var(--focus);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* The theme select works only once its script has defined the element; until then, and
+     without JavaScript, the page follows the operating system and shows no dead control */
+  starlight-theme-select:not(:defined) { display: none; }
+  .sl-markdown-content :is(h1, h2, h3, h4) code { font-size: 0.875em; }
+
+  /* Tables stay native tables inside the scroll region the build adds around each one */
+  .sl-markdown-content .table-overflow > table:not(:where(.not-content *)) {
+    display: table;
+    inline-size: 100%;
+    overflow: visible;
+  }
+
+  /* Hero (the home page). The override in components/starlight/Hero.astro puts the copy first
+     and the two-environment figure after it, so this draws the layout Starlight's hero would
+     have drawn: one column on a phone, copy left and figure right from 50rem. */
+  .hero {
+    display: grid;
+    grid-template-columns: 100%;
+    align-items: center;
+    gap: var(--space-6);
+    padding-block-end: var(--space-4);
+  }
+  .hero .stack { flex-direction: column; gap: clamp(1.5rem, 1.5rem + 1vw, 2rem); }
+  .hero .copy { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .hero .actions { flex-wrap: wrap; gap: 1rem 2rem; }
+  .hero > .hero-html {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+  .hero h1 {
+    color: var(--primary);
+    font-size: clamp(1.75rem, 1.25rem + 1.6vw, 2.25rem);
+    line-height: 1.15;
+  }
+  .hero .tagline {
+    max-inline-size: 36rem;
+  }
+  .hero .tagline p + p { margin-block-start: 0.75rem; }
+  .hero .tagline .kicker {
+    display: block;
+    margin-block-end: 0.5rem;
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: var(--text-fine);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-fine);
+  }
+  @media (min-width: 50rem) {
+    .hero {
+      grid-template-columns: minmax(0, 11fr) minmax(0, 10fr);
+      gap: 4%;
+      padding-block: clamp(2rem, 1rem + 4vmin, 4rem) var(--space-6);
+    }
+  }
+
+  /* Wide figures may use the whole main pane on content pages: the content panel is the size
+     container, and the breakout rule sits in the utilities layer of components.css so that it
+     wins over each figure's own width. */
+  .content-panel {
+    container-type: inline-size;
+  }
+
+  /* The "On this page" column needs room beside the reading column and the wide figures, so it
+     waits for 90rem; until then the dropdown under the header serves, as it does on a phone. With
+     the column shown, the main pane keeps everything the sidebar and the column leave, and the
+     reading column sits in its middle. */
+  @media (min-width: 72rem) and (max-width: 89.99rem) {
+    .right-sidebar-container { display: none; }
+    [data-has-sidebar][data-has-toc] .main-pane { --sl-content-margin-inline: auto; width: 100%; }
+    .lg\:sl-hidden { display: block; }
+  }
+  @media (min-width: 90rem) {
+    .right-sidebar-container { width: var(--sl-sidebar-width); }
+    [data-has-sidebar][data-has-toc] .main-pane { --sl-content-margin-inline: auto; width: calc(100% - var(--sl-sidebar-width)); }
+  }
+
+  /* No motion: the sidebar group caret turns without a transition */
+  .sidebar .caret { transition: none; }
+
+  /* Site title and sidebar labels in the display serif */
+  .site-title { font-size: 1.125rem; }
+}
+
+/* ==== components ==== */
 /* laptop-to-cluster.org components. Everything Starlight does not provide: the four concept
    marks, the six-step timeline, the crosswalk, the doors, the hero figure, the evidence badge
    and panel, notices, tables, code, diagrams, the troubleshooting index, the implementation
@@ -6,10 +659,10 @@
    is Starlight's. Sizes and colours come from tokens.css. */
 @layer l2c-components {
   /* ---------- page wrapper and shared text styles ---------- */
-  .l2c-page, .module-content, .start-path, .applicability-record { min-inline-size: 0; }
+  .module-content, .start-path, .applicability-record { min-inline-size: 0; }
   .layout-prose { max-inline-size: var(--measure-prose); }
   .related-evidence { padding-inline-start: 1.125rem; }
-  [data-composition-profile="landing"] {
+  :where([data-has-hero]) .sl-markdown-content {
     --l-display: clamp(1.75rem, 1.55rem + 0.6vw, 2rem);
     --l-lede: 1.125rem;
     --l-h2: 1.5rem;
@@ -18,7 +671,7 @@
     --l-annot: 1rem;
     --l-caption: var(--text-fine);
   }
-  [data-composition-profile="landing"] > * + * { margin-block-start: var(--space-12); }
+  :where([data-has-hero]) .sl-markdown-content > * + * { margin-block-start: var(--space-12); }
   .kicker { margin: 0; color: var(--accent); font-family: var(--font-body); font-size: var(--text-fine); font-weight: var(--weight-semibold); line-height: var(--leading-fine); }
   .site-facts { margin: 0; color: var(--muted); font-family: var(--font-body); font-size: var(--text-fine); line-height: var(--leading-fine); }
   .home-doors > h2, .concepts > h2, .crosswalk > h2, .home-close > h2 { max-inline-size: var(--measure-prose); font-size: var(--l-h2); line-height: 1.2; }
@@ -233,10 +886,7 @@
   .talk__links a { display: inline-block; padding-block: 0.25rem; }
 
   /* ---------- notices: warnings are a double ink rule plus the word, never colour alone ---------- */
-  .notice, .support-state { max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding: var(--space-4) var(--space-5); color: var(--text); background: var(--warning-surface); border-inline-start: 0.375rem double var(--text); border-radius: 0 var(--radius-small) var(--radius-small) 0; }
-  .support-state.degraded { background: var(--warning-surface); }
-  .support-state.unavailable { background: var(--danger-surface); }
-  .notice--info { padding: 0; padding-block-start: var(--space-3); background: none; border: 0; border-block-start: var(--border-thin) solid var(--rule); border-radius: 0; }
+  .notice { max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding: var(--space-4) var(--space-5); color: var(--text); background: var(--warning-surface); border-inline-start: 0.375rem double var(--text); border-radius: 0 var(--radius-small) var(--radius-small) 0; }
   .diagnostic-applicability { max-inline-size: var(--measure-prose); margin-block: var(--space-6); padding-inline-start: var(--space-3); border-inline-start: var(--border-strong) solid var(--muted); }
   .diagnostic-applicability p + p { margin-block-start: var(--flow-tight); }
   .sources-scope { max-inline-size: var(--measure-prose); margin-block-start: var(--flow-section); padding-block-start: var(--space-6); border-block-start: var(--border-thin) solid var(--rule); }
@@ -409,3 +1059,125 @@
     }
   }
 }
+
+/* ==== enhancements ==== */
+/* v0.2.0 conditional enhancements. Imported once by global.css, so the build still
+   emits a single stylesheet. Rules that matter carry the .crosswalk prefix, so their
+   weight does not depend on where the import sits. Nothing here moves. */
+
+/* ---------- Crosswalk highlight (the script adds the controls; without it none of this applies) ---------- */
+.crosswalk .crosswalk__term[data-concept="step"] { --cc: var(--c-step); --cc-bg: var(--c-step-bg); }
+.crosswalk .crosswalk__term[data-concept="gate"] { --cc: var(--c-gate); --cc-bg: var(--c-gate-bg); }
+.crosswalk .crosswalk__term[data-concept="scratch"] { --cc: var(--c-scratch); --cc-bg: var(--c-scratch-bg); }
+.crosswalk .crosswalk__term[data-concept="net"] { --cc: var(--c-net); --cc-bg: var(--c-net-bg); }
+.crosswalk[data-selected="step"] { --pick: var(--c-step); --pick-bg: var(--c-step-bg); }
+.crosswalk[data-selected="gate"] { --pick: var(--c-gate); --pick-bg: var(--c-gate-bg); }
+.crosswalk[data-selected="scratch"] { --pick: var(--c-scratch); --pick-bg: var(--c-scratch-bg); }
+.crosswalk[data-selected="net"] { --pick: var(--c-net); --pick-bg: var(--c-net-bg); }
+
+.crosswalk .crosswalk__term button,
+.crosswalk .crosswalk__clear {
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  min-block-size: 2rem;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-ui);
+  line-height: var(--leading-ui);
+  color: var(--text);
+  text-align: start;
+  overflow-wrap: anywhere;
+  background: none;
+  border: var(--border-strong) solid var(--border);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+.crosswalk .crosswalk__term button { font-weight: var(--weight-semibold); }
+.crosswalk .crosswalk__term button:hover { border-color: var(--cc); }
+.crosswalk .crosswalk__term button[aria-pressed="true"] {
+  background: var(--cc-bg);
+  border-color: var(--cc);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+.crosswalk .crosswalk__term button:focus-visible,
+.crosswalk .crosswalk__clear:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+.crosswalk .crosswalk__status {
+  display: inline-block;
+  margin-block: var(--space-3) 0;
+  margin-inline-end: var(--space-4);
+  font-size: var(--text-fine);
+  line-height: var(--leading-fine);
+  color: var(--muted);
+}
+.crosswalk .crosswalk__clear[hidden] { display: none; }
+/* Lean variant: no per-line class; the section's data-selected attribute
+   drives selection through these attribute selectors, and --pick carries the concept. */
+.crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+.crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+.crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+.crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] {
+  background: var(--pick-bg);
+  outline: var(--border-strong) solid var(--pick);
+  outline-offset: -2px;
+}
+
+@media (forced-colors: active) {
+  .crosswalk .crosswalk__term button,
+  .crosswalk .crosswalk__clear { border-color: ButtonText; }
+  .crosswalk .crosswalk__term button[aria-pressed="true"] { border-color: Highlight; }
+  .crosswalk .crosswalk__term button:focus-visible,
+  .crosswalk .crosswalk__clear:focus-visible { outline-color: Highlight; }
+  .crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+  .crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+  .crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+  .crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] { outline: 2px solid Highlight; }
+}
+
+@media print {
+  .crosswalk .crosswalk__status,
+  .crosswalk .crosswalk__clear { display: none; }
+  .crosswalk .crosswalk__term button { padding-inline: 0; border-color: transparent; }
+  .crosswalk[data-selected="step"] .crosswalk__line[data-concepts~="step"],
+  .crosswalk[data-selected="gate"] .crosswalk__line[data-concepts~="gate"],
+  .crosswalk[data-selected="scratch"] .crosswalk__line[data-concepts~="scratch"],
+  .crosswalk[data-selected="net"] .crosswalk__line[data-concepts~="net"] { background: none; outline: 2px solid #000; }
+}
+
+
+/* ---------- Cheat sheet: one printed page ---------- */
+@page cheat { margin: 0.35in; }
+@media print {
+  html:has(.cheat-sheet) { page: cheat; }
+  body:has(.cheat-sheet) :is(.sl-skip-link, .header, .sidebar, .right-sidebar, .sources-scope, .table-overflow__instruction, .pagination-links, .l2c-footer__meta, .l2c-site-info nav, .content-header .lede) { display: none; }
+  body:has(.cheat-sheet) { font-size: 8.5pt; line-height: 1.15; }
+  body:has(.cheat-sheet) main { inline-size: auto; max-inline-size: none; margin: 0; padding: 0; }
+  body:has(.cheat-sheet) :is(.content-panel, .sl-container, .sl-markdown-content) { margin: 0; padding: 0; border: 0; }
+  body:has(.cheat-sheet) .l2c-footer { margin: 0; gap: 0; }
+  body:has(.cheat-sheet) .content-header { margin: 0 0 3pt; padding: 0; }
+  body:has(.cheat-sheet) .content-header h1 { margin: 0; font-size: 13pt; line-height: 1.1; }
+  body:has(.cheat-sheet) article { margin: 0; padding: 0; }
+  .cheat-sheet { display: block; }
+  .cheat-sheet > * { margin-block: 0 3pt; }
+  .cheat-sheet h2 { margin: 3pt 0 1pt; font-size: 10pt; line-height: 1.15; break-after: avoid; }
+  .cheat-sheet p, .cheat-sheet li { margin: 0 0 2pt; font-size: 8.5pt; }
+  .cheat-sheet ul { margin: 0 0 2pt; padding-inline-start: 1.1em; columns: 2; column-gap: 0.25in; }
+  .cheat-sheet li { margin: 0; break-inside: avoid; }
+  .cheat-sheet .table-overflow { margin: 0 0 3pt; border: 0; overflow: visible; }
+  .cheat-sheet table, .cheat-sheet .table-overflow > table { inline-size: 100%; min-inline-size: 0; border-collapse: collapse; }
+  .cheat-sheet tr { break-inside: avoid; }
+  .cheat-sheet th, .cheat-sheet td { padding: 0.5pt 2pt; font-size: 8pt; line-height: 1.15; vertical-align: top; border-block-end: 0.5pt solid #000; }
+  .cheat-sheet th:first-child, .cheat-sheet td:first-child { white-space: nowrap; }
+  .cheat-sheet th:last-child, .cheat-sheet td:last-child { inline-size: 1%; white-space: nowrap; }
+  .cheat-sheet code, .cheat-sheet pre { font-size: 8pt; }
+  .cheat-sheet :not(pre) > code { padding: 0; border: 0; background: none; }
+  .cheat-sheet pre { margin: 0 0 2pt; padding: 0 3pt; white-space: pre-wrap; break-inside: avoid; }
+  body:has(.cheat-sheet) .l2c-site-info { margin: 4pt 0 0; padding: 3pt 0 0; border-block-start: 0.5pt solid #000; }
+  body:has(.cheat-sheet) .l2c-site-info .acknowledgment { margin: 0; font-size: 7pt; line-height: 1.2; }
+}
+
