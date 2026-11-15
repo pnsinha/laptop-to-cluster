@@ -1,42 +1,24 @@
 ---
-/* Talks, posters and papers from talks.yml, newest first. With `band`, it renders instead the one-line
-   "Presented at …" band for the home page, from every talk and poster in date order. */
+/* Talks, posters and papers from talks.yml, newest first. */
 import { getCollection } from 'astro:content';
 
-interface Props { band?: boolean }
-const { band = false } = Astro.props;
 const talks = (await getCollection('talks')).map(({ data }) => data);
 const KIND = { talk: 'Talk', poster: 'Poster', paper: 'Paper' } as const;
 const isExternal = (href: string) => /^https?:\/\//.test(href);
 const longDate = (iso: string) => new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(new Date(`${iso}T00:00:00`));
 const listed = [...talks].sort((a, b) => b.event_date.localeCompare(a.event_date) || a.id.localeCompare(b.id));
-
-const presented = [...talks].filter(({ kind }) => kind !== 'paper').sort((a, b) => a.event_date.localeCompare(b.event_date)).map((talk) => {
-  const date = new Date(`${talk.event_date}T00:00:00Z`);
-  const day = `${date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })} ${date.getUTCDate()}`;
-  const venue = talk.venue.replace(/\s?['’](\d{2})\b/, '’$1');
-  const city = talk.location?.split(',')[0]?.trim();
-  return `${venue} (${day}${city ? `, ${city}` : ''})`;
-});
-const presentedAt = presented.length === 0 ? '' : `Presented at ${presented.length === 1 ? presented[0] : `${presented.slice(0, -1).join(', ')} and ${presented.at(-1)}`}`;
 ---
-{band ? (presentedAt && (
-  <aside class="event-band not-content" aria-label="Presented at">
-    <p>{presentedAt}: <a href="/about/talks-and-papers/">Talks and posters</a></p>
-  </aside>
-)) : (
-  <ul class="talks not-content" role="list">
-    {listed.map((talk) => (
-      <li class="talk" id={talk.id}>
-        <p class="talk__kind">{KIND[talk.kind]}</p>
-        <h3>{talk.title}</h3>
-        <p class="talk__meta">{talk.venue} · {longDate(talk.event_date)}{talk.location && <> · {talk.location}</>}</p>
-        <ul class="talk__links">
-          {talk.links.map((link) => (
-            <li><a href={link.href} rel={isExternal(link.href) ? 'external' : undefined}>{link.label}{isExternal(link.href) && <span class="external-label"> (external)</span>}</a></li>
-          ))}
-        </ul>
-      </li>
-    ))}
-  </ul>
-)}
+<ul class="talks not-content" role="list">
+  {listed.map((talk) => (
+    <li class="talk" id={talk.id}>
+      <p class="talk__kind">{KIND[talk.kind]}</p>
+      <h3>{talk.title}</h3>
+      <p class="talk__meta">{talk.venue} · {longDate(talk.event_date)}{talk.location && <> · {talk.location}</>}</p>
+      <ul class="talk__links">
+        {talk.links.map((link) => (
+          <li><a href={link.href} rel={isExternal(link.href) ? 'external' : undefined}>{link.label}{isExternal(link.href) && <span class="external-label"> (external)</span>}</a></li>
+        ))}
+      </ul>
+    </li>
+  ))}
+</ul>

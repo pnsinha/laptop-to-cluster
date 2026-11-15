@@ -38,6 +38,15 @@ describe('Tested badges', () => {
     });
   }
 
+  it('are the only tested claim on the home page: the hero makes none and offers one action', () => {
+    const home = pages.find(({ path }) => path === '/')!.html;
+    const hero = /<div class="hero">([\s\S]*?)<\/div>\s*<div class="hero-html/.exec(home)?.[1] ?? '';
+    expect(hero, 'the hero markup').toContain('data-page-title');
+    expect([...hero.matchAll(/class="sl-link-button\b/g)]).toHaveLength(1);
+    expect(hero).toContain('href="/guide/tour/"');
+    expect(text(hero)).not.toMatch(/real cluster|been run on|has been tested/i);
+  });
+
   it('summarise the record on the evaluation guide', () => {
     expect(summaries.map(({ path }) => path)).toEqual(['/adoption/evaluate/']);
     const [{ id, block }] = summaries;

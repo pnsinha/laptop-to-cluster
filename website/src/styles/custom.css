@@ -837,12 +837,10 @@
     .crosswalk__pane[data-pane="coordinator"] { grid-column: 2; grid-row: 2; }
   }
 
-  /* ---------- home bottom: closing actions, author credit, event band ---------- */
+  /* ---------- home bottom: closing actions, author credit ---------- */
   .home-close > p { max-inline-size: var(--measure-prose); }
   .home-close__actions { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); align-items: center; margin-block-start: var(--space-4); }
   .home-credit { max-inline-size: var(--measure-prose); margin: 0; padding-block-start: var(--space-6); border-block-start: var(--border-thin) solid var(--rule); color: var(--muted); font-size: var(--text-label); line-height: 1.5; }
-  .event-band { max-inline-size: var(--measure-prose); padding: var(--space-3) var(--space-4); background: var(--raised); border-inline-start: var(--border-strong) solid var(--accent); border-radius: var(--radius-small); }
-  .event-band p { margin: 0; }
 
   /* ---------- evidence: badge, panel, record summary ---------- */
   .applicability-projection { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); max-inline-size: var(--measure-prose); margin-block: var(--space-6); }
@@ -1029,7 +1027,7 @@
     * { forced-color-adjust: auto; }
     :focus-visible { outline: 2px solid Highlight; outline-offset: var(--focus-offset); }
     a:where(:any-link) { color: LinkText; }
-    .door, .record-summary, .evidence-rows, .event-band, .timeline__steps, .crosswalk__pane pre, pre, .technical-figure, .env, .env__box, .env__alloc, .env__cmd code, .source-excerpt__disclosure { border: 1px solid CanvasText; }
+    .door, .record-summary, .evidence-rows, .timeline__steps, .crosswalk__pane pre, pre, .technical-figure, .env, .env__box, .env__alloc, .env__cmd code, .source-excerpt__disclosure { border: 1px solid CanvasText; }
     .env__alloc { border: var(--border-strong) dashed CanvasText; }
     .timeline__step[aria-current="step"] { outline-color: Highlight; }
     .timeline__mark--verify { border-color: CanvasText; }
@@ -1046,7 +1044,6 @@
     .table-overflow { overflow: visible; }
     .timeline, .door, .notice, .record-summary, .evidence-rows, .crosswalk__pane, .hero__figure, .concept, .source-excerpt__disclosure { break-inside: avoid; }
     :where(h1, h2, h3, h4) { break-after: avoid; }
-    .event-band { border-radius: 0; }
     .table-overflow thead th, .table-overflow table:not(:has(thead)) tr:first-child > * { border-block-end-width: 2px; border-block-end-color: var(--border); }
     a[href^="http"]:not(nav a)::after { content: " (" attr(href) ")"; overflow-wrap: anywhere; }
   }

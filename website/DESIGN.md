@@ -7,7 +7,7 @@ The site is a plain [Starlight](https://starlight.astro.build) site. Starlight o
 | Concern | Where |
 | --- | --- |
 | Pages, one file each; the URL is the file path | `src/content/docs/**/*.md(x)` |
-| Home page (splash template, Starlight hero) | `src/content/docs/index.mdx` |
+| Home page (splash template, Starlight hero with one action; the trust line under it) | `src/content/docs/index.mdx` |
 | Test record pages, one per record | `src/pages/applicability/[id].astro`, from `src/content/applicability/*.yml` |
 | Feed, URL manifest | `src/pages/feed.xml.ts` (items in `src/content/feed.yml`), `src/pages/url-manifest.json.ts` |
 | Sidebar, head entries, overrides, Markdown options | `astro.config.mjs` |
@@ -37,7 +37,7 @@ A heading keeps an anchor that predates its text with `## Text {#anchor}`. Use t
 | `Diagrams` | `name` | Inline SVG, text 14px in a 720-unit viewBox. |
 | `ConceptMap`, `Crosswalk` | title and intro; optional `record` slot | The four concepts from `src/content/concepts.ts`; the crosswalk rows from `src/content/crosswalk.ts`, with an optional click-to-highlight script. |
 | `Doors` | `doors` | Three Starlight cards on the home page. |
-| `TalksList` | `band` | Talks and posters from `src/content/talks.yml`; `band` gives the home page's "Presented at" line. |
+| `TalksList` | none | Talks and posters from `src/content/talks.yml`, newest first, on the talks page. |
 | `Acknowledgment` | none | The acknowledgment as a page section, beside a hosted download. |
 
 Starlight's own components are used as they are: `Aside`, `LinkButton`, `Card`, `CardGrid`, `LinkCard`.

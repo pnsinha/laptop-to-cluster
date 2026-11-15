@@ -8,7 +8,7 @@ prev: false
 next: false
 hero:
   title: Your Compose stack, on a shared cluster
-  tagline: '<p class="kicker">A free, open-source learning guide for Docker Compose users</p><p>A shared research cluster has no Docker daemon and gives you no root access, so <code>docker compose up</code> cannot run there. This guide shows how to start the same services inside one scheduler allocation, with a batch-script pattern that has been run on a real cluster.</p>'
+  tagline: '<p class="kicker">A free, open-source learning guide for Docker Compose users</p><p>On your laptop, <code>docker compose up</code> starts the stack on demand. A shared research cluster has no Docker daemon and gives you no root access (administrator rights). Instead, you request a scheduler allocation (a block of computer time on the cluster), wait your turn, and launch the services with a batch script. This guide shows how to make that translation.</p>'
   image:
     html: >-
       <figure class="hero__figure not-content" aria-labelledby="hero-figure-caption"><div class="env-pair">
@@ -24,20 +24,16 @@ hero:
     - text: Take the five-minute tour
       link: /guide/tour/
       variant: primary
-    - text: Already have a Compose file? Translate it
-      link: /guide/compose-to-hpc-translation/
-      variant: minimal
 ---
 import { LinkButton } from '@astrojs/starlight/components';
 import ConceptMap from '../../components/ConceptMap.astro';
 import Crosswalk from '../../components/Crosswalk.astro';
 import Doors from '../../components/Doors.astro';
-import TalksList from '../../components/TalksList.astro';
 import TestedBadge from '../../components/TestedBadge.astro';
 
-<TestedBadge record="m2-baseline-anvil-2026-10" />
+<p class="site-facts">A 2026 BSSw Fellowship project by Parmanand Sinha · Release @release · Free to read, open source</p>
 
-<p class="site-facts">Release @release · A 2026 BSSw Fellowship project · Free to read, open source</p>
+<TestedBadge record="m2-baseline-anvil-2026-10" />
 
 <section class="home-doors" aria-labelledby="doors-title">
 <h2 id="doors-title">Pick your path</h2>
@@ -65,5 +61,3 @@ import TestedBadge from '../../components/TestedBadge.astro';
 </section>
 
 <p class="home-credit">Written by Parmanand Sinha, Computational Scientist, University of Chicago Research Computing Center, as a 2026 BSSw Fellow in an individual capacity. <a href="/about/project/">About the project</a>.</p>
-
-<TalksList band />
