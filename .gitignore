@@ -11,13 +11,5 @@ __pycache__/
 *.sif
 .kiro/
 website/publication/
-.claude/*
-!.claude/settings.json
-!.claude/CLAUDE.md
-Better_Scientific_Software_SoW.md
-.opencode/
-.agents/
-.kilocode/
-.kombai/
 mockups/
 wiki/
