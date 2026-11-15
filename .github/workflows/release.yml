@@ -26,6 +26,10 @@ concurrency:
   group: ${{ (github.event_name == 'workflow_dispatch' || (github.ref_type == 'tag' && !contains(github.ref_name, '-rc.'))) && 'release-production' || format('release-{0}', github.ref) }}
   cancel-in-progress: ${{ github.event_name == 'push' && github.ref_type == 'branch' }}
 
+defaults:
+  run:
+    working-directory: website
+
 jobs:
   plan:
     runs-on: ubuntu-24.04
@@ -79,6 +83,7 @@ jobs:
         with:
           node-version: '22.15.0'
           cache: npm
+          cache-dependency-path: website/package-lock.json
       - run: npm ci --ignore-scripts
       - name: Install poppler-utils so hosted PDFs are scanned
         run: sudo apt-get update && sudo apt-get install -y poppler-utils && pdftotext -v
@@ -106,8 +111,8 @@ jobs:
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
           path: |
-            site/dist/
-            publication/${{ needs.plan.outputs.version }}/
+            website/dist/
+            website/publication/${{ needs.plan.outputs.version }}/
           if-no-files-found: error
           retention-days: ${{ needs.plan.outputs.mode == 'production' && 90 || 30 }}
 
@@ -126,17 +131,17 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
-          path: .
+          path: website
       - name: Verify retained upload identity
         env:
           VERSION: ${{ needs.plan.outputs.version }}
-        run: node scripts/publication.mjs verify site/dist "publication/${VERSION}/artifact-manifest.json"
+        run: node scripts/publication.mjs verify dist "publication/${VERSION}/artifact-manifest.json"
       - id: direct-upload
         uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
+          command: pages deploy website/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=preview --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
       - name: Smoke-check the preview deployment
         env:
           DEPLOYMENT_URL: ${{ steps.direct-upload.outputs.deployment-url }}
@@ -165,11 +170,11 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
-          path: .
+          path: website
       - name: Verify retained upload identity
         env:
           VERSION: ${{ needs.plan.outputs.version }}
-        run: node scripts/publication.mjs verify site/dist "publication/${VERSION}/artifact-manifest.json"
+        run: node scripts/publication.mjs verify dist "publication/${VERSION}/artifact-manifest.json"
       - name: Validate externally supplied Cloudflare readiness
         env:
           VERSION: ${{ needs.plan.outputs.version }}
@@ -187,7 +192,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
+          command: pages deploy website/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ needs.plan.outputs.sha }} --commit-dirty=false
       - name: Capture Cloudflare deployment identity
         id: cloudflare
         env:
@@ -216,7 +221,7 @@ jobs:
       - uses: actions/upload-artifact@v4.6.2
         with:
           name: ${{ needs.plan.outputs.record-artifact-name }}
-          path: publication/${{ needs.plan.outputs.version }}/
+          path: website/publication/${{ needs.plan.outputs.version }}/
           if-no-files-found: error
           # The repository caps artifact retention at 90 days; say so rather than declare more.
           retention-days: 90
@@ -233,11 +238,11 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.artifact-name }}
-          path: .
+          path: website
       - uses: actions/download-artifact@v4.3.0
         with:
           name: ${{ needs.plan.outputs.record-artifact-name }}
-          path: publication/${{ needs.plan.outputs.version }}
+          path: website/publication/${{ needs.plan.outputs.version }}
       - name: Apex, redirect, fallback, repository, and anonymous-access checks
         env:
           RELEASE_VERSION: ${{ needs.plan.outputs.version }}
@@ -246,4 +251,4 @@ jobs:
           REPOSITORY_URL: https://github.com/pnsinha/laptop-to-cluster
         run: node scripts/check-public-release.mjs
       - name: The apex serves this release, not the previous one
-        run: node scripts/verify-live-release.mjs --origin https://laptop-to-cluster.org --dist site/dist
+        run: node scripts/verify-live-release.mjs --origin https://laptop-to-cluster.org --dist dist

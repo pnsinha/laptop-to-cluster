@@ -24,6 +24,10 @@ permissions:
   actions: read
   contents: read
 
+defaults:
+  run:
+    working-directory: website
+
 jobs:
   recover-content:
     if: inputs.mode == 'content' && inputs.confirmation == 'RECOVER_WITHOUT_REBUILD'
@@ -44,24 +48,24 @@ jobs:
           name: validated-site-${{ inputs.release }}-${{ inputs.source-commit }}
           run-id: ${{ inputs.source-run-id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: .
+          path: website
       - uses: actions/download-artifact@v4.3.0
         with:
           name: release-record-${{ inputs.release }}-${{ inputs.source-commit }}
           run-id: ${{ inputs.source-run-id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: publication/${{ inputs.release }}
+          path: website/publication/${{ inputs.release }}
       - name: Select prior artifact only after checksum verification
         env:
           RELEASE: ${{ inputs.release }}
         run: |
           jq -e --arg release "$RELEASE" '.release == $release' "publication/${RELEASE}/deployment-record.json" > /dev/null || { echo "::error::the retained record is for a different release"; exit 1; }
-          node scripts/rollback.mjs site/dist "publication/${RELEASE}/artifact-manifest.json" "publication/${RELEASE}/deployment-record.json" "$RELEASE"
+          node scripts/rollback.mjs dist "publication/${RELEASE}/artifact-manifest.json" "publication/${RELEASE}/deployment-record.json" "$RELEASE"
       - uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ inputs.source-commit }} --commit-dirty=false
+          command: pages deploy website/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-hash=${{ inputs.source-commit }} --commit-dirty=false
 
   recover-hostname-policy:
     if: inputs.mode == 'hostname-policy' && inputs.confirmation == 'RECOVER_WITHOUT_REBUILD'
@@ -78,7 +82,7 @@ jobs:
       - uses: actions/checkout@v4.2.2
         with: { ref: '${{ inputs.source-commit }}' }
       - name: Validate versioned policy independently of content artifacts
-        run: node scripts/publication.mjs policy .
+        run: node scripts/publication.mjs policy ..
         env:
           L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
       - name: Restore exact Cloudflare Bulk Redirect list

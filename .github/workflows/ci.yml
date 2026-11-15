@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: website
+
 jobs:
   publication-gates:
     runs-on: ubuntu-24.04
@@ -19,6 +23,7 @@ jobs:
         with:
           node-version: '22.15.0'
           cache: npm
+          cache-dependency-path: website/package-lock.json
       - name: Resolve the release version from the candidate record
         run: echo "RELEASE_VERSION=$(node scripts/release-version.mjs)" >> "$GITHUB_ENV"
       - name: Clean pinned install
@@ -32,7 +37,7 @@ jobs:
       - name: Unit and property checks
         run: npm run test:unit && npm run test:property
       - name: Companion script syntax
-        run: bash -n workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
+        run: bash -n ../workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
       - name: Build production site exactly once
         run: npm run build
       - name: Note when the boundary pattern is unavailable (fork pull request)
@@ -50,7 +55,7 @@ jobs:
         with:
           name: validated-site-${{ env.RELEASE_VERSION }}-${{ github.sha }}
           path: |
-            site/dist/
-            publication/${{ env.RELEASE_VERSION }}/
+            website/dist/
+            website/publication/${{ env.RELEASE_VERSION }}/
           if-no-files-found: error
           retention-days: 90
