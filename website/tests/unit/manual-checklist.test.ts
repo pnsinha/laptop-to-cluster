@@ -14,7 +14,7 @@ describe('manual accessibility checklist', () => {
       expect(checklist, surface).toContain(`**${surface}`);
     }
     for (const heading of ['## A. Keyboard pass', '## B. VoiceOver spot check', '## C. Real forced colours', '## D. Print', '## E. Quick extras']) expect(checklist, heading).toContain(heading);
-    expect(checklist).toContain('npx astro preview --root site --port 4321');
+    expect(checklist).toContain('npx astro preview --port 4321');
     expect(checklist).toContain('VO+Space');
   });
 
