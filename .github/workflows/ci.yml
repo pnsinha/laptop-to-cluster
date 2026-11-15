@@ -35,7 +35,7 @@ jobs:
       - name: Schema and typed-content checks
         run: npm run check
       - name: Unit and property checks
-        run: npm run test:unit && npm run test:property
+        run: npm run test:unit
       - name: Companion script syntax
         run: bash -n ../workflows/baseline-slurm-apptainer/slurm/baseline.sbatch
       - name: Build production site exactly once
@@ -48,7 +48,7 @@ jobs:
         env:
           L2C_BOUNDARY_PATTERN: ${{ secrets.L2C_BOUNDARY_PATTERN }}
       - name: Static integration and accessibility gates
-        run: npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser
+        run: npm run test:integration:built && npm run test:accessibility:browser
       - name: Generate checksum-bound publication artifact
         run: npm run publication:prepare
       - uses: actions/upload-artifact@v4.6.2

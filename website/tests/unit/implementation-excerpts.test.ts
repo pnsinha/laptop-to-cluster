@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { currentReleaseVersion } from '../../src/content/release.js';
+import { currentRelease as currentReleaseVersion } from '../../plugins/release-refs.mjs';
 import { ELISION_LINE, IMPLEMENTATION_REFERENCE, verbatimExcerptIssues } from '../../src/content/implementation.js';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));

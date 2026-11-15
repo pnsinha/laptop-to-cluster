@@ -1,32 +1,27 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parse } from 'yaml';
-import { contentItemSchema } from '../../src/content/schema';
 
+/* The v0.2.0 release notes are a section of the Milestone 2 page. */
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const source = readFileSync(`${root}/src/content/content-items/release-v0.2.0.md`, 'utf8');
-const [, frontMatter, body] = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(source) ?? [];
+const page = readFileSync(`${root}/src/content/docs/milestones/2.mdx`, 'utf8');
+const [, section = ''] = /(<section class="release-notes"[\s\S]*?<\/section>)/.exec(page) ?? [];
+const body = section.replace(/^[\s\S]*?\{#release-v0-2-0-heading\}\n/, '').replace(/<\/section>$/, '').replace(/<h3 id="[^"]+">([^<]+)<\/h3>/g, '### $1');
 const candidate = JSON.parse(readFileSync(`${root}/releases/v0.2.0/release-candidate.json`, 'utf8'));
 const currentRecord = candidate.evidenceIds.find((id: string) => !id.startsWith('accessibility-review-'));
 
-describe('release-v0.2.0 content item', () => {
-  const item = contentItemSchema.parse(parse(frontMatter));
-
+describe('release-v0.2.0 notes on the Milestone 2 page', () => {
   it('has the frozen identity from the contracts', () => {
-    expect(item).toMatchObject({ id: 'release-v0-2-0', stable_slug: 'v0-2-0', artifact_type: 'release', milestone: 2, status: 'published' });
+    expect(section).toContain('id="release-v0-2-0"');
+    expect(section).toContain('aria-labelledby="release-v0-2-0-heading"');
   });
 
   it('cites the same applicability record as the release candidate', () => {
-    expect(item.applicability_records).toEqual([currentRecord]);
+    expect(page).toContain(`<TestedBadge record="${currentRecord}" />`);
   });
 
-  it('relates to the milestone it renders inside', () => {
-    expect(item.related).toContain('milestone-2');
-  });
-
-  it('titles the section and carries release notes only, with no id of its own', () => {
-    expect(item.title).toBe('Release v0.2.0: included changes');
+  it('titles the section and carries release notes only', () => {
+    expect(section).toContain('## Release v0.2.0: included changes {#release-v0-2-0-heading}');
     expect(body.trimStart().startsWith('### Added')).toBe(true);
     for (const heading of ['### Added', '### Changed', '### Deprecated', '### Corrected']) expect(body).toContain(heading);
     expect(body).not.toMatch(/\bid=|release-v0-2-0/);

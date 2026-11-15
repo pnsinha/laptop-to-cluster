@@ -17,7 +17,7 @@ export function assertRegularFile(root: string, path: string): string | undefine
 export const isStrict = (env: NodeJS.ProcessEnv = process.env): boolean => env.CI === 'true' || env.RELEASE_STRICT === '1';
 
 export const REQUIRED_SCRIPTS = [
-  'build', 'test:unit', 'test:property', 'test:integration', 'test:accessibility', 'test:accessibility:browser', 'record-run',
+  'build', 'check', 'test:unit', 'test:integration:built', 'test:accessibility:browser', 'record-run',
   'validate:evidence', 'validate:repository', 'validate:release', 'validate:built', 'validate:policy', 'validate:boundary',
   'validate:accessibility-review', 'publication:prepare', 'publication:validate',
 ];

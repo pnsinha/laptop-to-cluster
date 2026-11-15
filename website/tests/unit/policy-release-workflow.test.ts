@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { currentReleaseVersion } from '../../src/content/release';
+import { currentRelease as currentReleaseVersion } from '../../plugins/release-refs.mjs';
 import { RELEASE } from './helpers/release-workflow-fixture';
 import { resolveReleaseVersion, tagPatternMatches, tagTriggers, validateDeploymentWorkflow, validateFrozenPublicationWorkflow, validateReleaseWorkflow, workflowTagPatterns } from '../../scripts/publication.mjs';
 

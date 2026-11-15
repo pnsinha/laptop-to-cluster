@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { currentReleaseVersion } from '../../src/content/release';
+import { currentRelease as currentReleaseVersion } from '../../plugins/release-refs.mjs';
 import { resolveReleaseVersion as publicationResolve } from '../../scripts/publication.mjs';
 import { assertReleaseVersion, resolveReleaseVersion } from '../../scripts/release-version.mjs';
 
@@ -27,7 +27,7 @@ function tree(candidates: Record<string, unknown>) {
   return root;
 }
 
-describe('release version rule (release.ts, publication.mjs and release-version.mjs agree)', () => {
+describe('release version rule (the release-refs plugin, publication.mjs and release-version.mjs agree)', () => {
   const fixtures: Array<[string, Record<string, unknown>, string]> = [
     ['picks the newest candidate', { 'v0.1.0': { version: 'v0.1.0' }, 'v0.2.0': { version: 'v0.2.0' } }, 'v0.2.0'],
     ['compares numerically, not as text', { 'v0.9.0': { version: 'v0.9.0' }, 'v0.10.0': { version: 'v0.10.0' } }, 'v0.10.0'],

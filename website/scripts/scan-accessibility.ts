@@ -1,532 +1,60 @@
+/* Check 3, accessibility: axe (WCAG 2.2 AA rules) on every built page, once in the light theme and
+   once in the dark one. Usage: tsx scripts/scan-accessibility.ts [website-root]; build first. */
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { extname, join, normalize, resolve } from 'node:path';
+import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
+import { extname, join, normalize, relative, resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
-import { chromium, type Page } from 'playwright';
-import { CONCEPTS, DOORS, THEME_STORAGE_KEY, TIMELINE_STEPS } from '../src/content/contracts';
-import { HERO } from '../src/content/home';
-import { HOME_PATH, MODULE_2_PATH, accessibilityPages, recordPaths } from '../tests/accessibility/browser-fixtures';
-import {
-  checkComponentGeometry, checkCrosswalkLayout, checkFontBlocking, checkForcedColors, checkGuideCards, checkHeroAction, checkJsOff, checkMotion, checkPrint, checkThemePrecedence,
-  inspectThemeScript, type Issue, type PageExpectation,
-} from '../tests/accessibility/browser-checks';
-import { auditTokenMap, auditTokens, declaredColorSchemes, pairTokenNames, parseThemeBlocks } from '../tests/accessibility/token-pairs';
+import { chromium } from 'playwright';
 
 const root = resolve(process.argv[2] ?? '.');
 const dist = join(root, 'dist');
-const representative = accessibilityPages.map(({ path }) => path);
-const changed = (process.env.CHANGED_PUBLIC_PATHS ?? '').split(',').map((value) => value.trim()).filter(Boolean);
-const paths = [...new Set([...representative, ...changed])];
-const mime = new Map([['.html', 'text/html'], ['.css', 'text/css'], ['.js', 'text/javascript'], ['.json', 'application/json'], ['.xml', 'application/xml'], ['.txt', 'text/plain'], ['.woff2', 'font/woff2']]);
-const failures: string[] = [];
-const fail = (scope: string, code: string, message: string) => failures.push(`${scope} [${code}] ${message}`);
+if (!existsSync(join(dist, 'index.html'))) throw new Error('dist/index.html is missing: run npm run build first');
 
+const filesUnder = (directory: string): string[] => readdirSync(directory).flatMap((name) => {
+  const path = join(directory, name);
+  return statSync(path).isDirectory() ? filesUnder(path) : [path];
+});
+/* dist/about/project/index.html -> /about/project/; dist/404.html -> /404.html */
+const paths = filesUnder(dist).filter((file) => file.endsWith('.html')).map((file) => `/${relative(dist, file).replaceAll('\\', '/').replace(/index\.html$/, '')}`).sort();
+
+const mime = new Map([['.html', 'text/html'], ['.css', 'text/css'], ['.js', 'text/javascript'], ['.svg', 'image/svg+xml'], ['.woff2', 'font/woff2']]);
 const server = createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
-  const safe = normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, '').replace(/^\//, '');
-  let file = pathname === '/404' ? join(dist, '404.html') : join(dist, safe);
-  if (!existsSync(file) || statSync(file).isDirectory()) file = join(file, 'index.html');
-  if (!existsSync(file) || !file.startsWith(dist)) {
+  let file = join(dist, normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, ''));
+  if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
+  if (!file.startsWith(dist) || !existsSync(file)) {
     response.writeHead(404).end('Not found');
     return;
   }
   response.setHeader('Content-Type', mime.get(extname(file)) ?? 'application/octet-stream');
   createReadStream(file).pipe(response);
 });
-await new Promise<void>((resolveReady) => server.listen(0, '127.0.0.1', resolveReady));
+await new Promise<void>((ready) => server.listen(0, '127.0.0.1', ready));
 const address = server.address();
-if (!address || typeof address === 'string') throw new Error('Accessibility server did not start');
+if (!address || typeof address === 'string') throw new Error('the page server did not start');
 const origin = `http://127.0.0.1:${address.port}`;
+
+const failures: string[] = [];
 const browser = await chromium.launch({ headless: true });
-
-// The shipped stylesheet is audited as text first: pairs, dark parity, aliases, and the declared (not computed) colour schemes.
-const distCss = readdirSync(join(dist, '_astro')).filter((file) => file.endsWith('.css')).map((file) => readFileSync(join(dist, '_astro', file), 'utf8')).join('\n');
-const themeBlocks = parseThemeBlocks(distCss);
-for (const message of auditTokens(distCss)) fail('dist:css', 'A11Y-CONTRAST', message);
-const declaredSchemes = declaredColorSchemes(distCss);
-if (!declaredSchemes.base.includes('light') || !declaredSchemes.base.includes('dark')) fail('dist:css', 'A11Y-COLOR-SCHEME', `the base :root must declare "color-scheme: light dark", found "${declaredSchemes.base}"`);
-if (declaredSchemes.light !== 'light' || declaredSchemes.dark !== 'dark' || declaredSchemes.darkMedia !== 'dark') fail('dist:css', 'A11Y-COLOR-SCHEME', 'the theme blocks must narrow color-scheme to light or dark');
-
-const open = async (page: Page, path: string) => {
-  const response = await page.goto(new URL(path, origin).href, { waitUntil: 'networkidle' });
-  if (!response?.ok()) {
-    fail(`${path}:page`, 'A11Y-PAGE', `expected HTTP 200, received ${response?.status()}`);
-    return false;
-  }
-  return true;
-};
-
-const hasPageOverflow = (page: Page) => page.evaluate(() => {
-  const root = document.documentElement;
-  const body = document.body;
-  return Math.max(root.scrollWidth, body.scrollWidth) > root.clientWidth + 1;
-});
-
-const hasVisibleFocus = (page: Page) => page.locator(':focus').evaluate((element) => {
-  const style = getComputedStyle(element);
-  // The focus indicator itself (outline) must be defined and thick enough.
-  if (style.outlineStyle === 'none' || Number.parseFloat(style.outlineWidth) < 2) return false;
-  const rect = element.getBoundingClientRect();
-  // If the element is within the viewport, the indicator must not be clipped.
-  if (rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth) return true;
-  // An element focused below the fold is scrolled into view by the browser on
-  // Tab for real users; it has a visible indicator even though it is currently
-  // out of view. Accept it as long as it occupies real layout space.
-  return rect.height > 0 && rect.width > 0;
-});
-
-const focusableSelector = 'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
-const tabStopCount = (page: Page) => page.evaluate((selector) => [...document.querySelectorAll<HTMLElement>(selector)].filter((element) => {
-  const style = getComputedStyle(element);
-  if (style.display === 'none' || style.visibility === 'hidden' || !element.getClientRects().length) return false;
-  if ((element as HTMLButtonElement).disabled) return false;
-  const closed = element.closest('details:not([open])');
-  return !closed || element === closed.querySelector(':scope > summary');
-}).length, focusableSelector);
-
-const assertDocumentFocusOrder = async (page: Page, path: string) => {
-  const count = await tabStopCount(page);
-  for (let expected = 0; expected < count; expected += 1) {
-    await page.keyboard.press('Tab');
-    // Browsers scroll a newly focused element into view asynchronously. Scroll
-    // the active element on-screen before checking focus visibility, otherwise
-    // an element focused below the fold is falsely reported as having no
-    // visible focus indicator.
-    await page.evaluate(() => { (document.activeElement as HTMLElement | null)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
-    const currentCount = await tabStopCount(page);
-    const activeIndex = await page.evaluate((selector) => {
-      const elements = [...document.querySelectorAll<HTMLElement>(selector)].filter((element) => {
-        const style = getComputedStyle(element);
-        if (style.display === 'none' || style.visibility === 'hidden' || !element.getClientRects().length) return false;
-        if ((element as HTMLButtonElement).disabled) return false;
-        const closed = element.closest('details:not([open])');
-        return !closed || element === closed.querySelector(':scope > summary');
-      });
-      return elements.indexOf(document.activeElement as HTMLElement);
-    }, focusableSelector);
-    if (currentCount !== count || activeIndex !== expected) {
-      fail(`${path}:keyboard`, 'A11Y-FOCUS-ORDER', `tab ${expected + 1} did not follow document order`);
-      break;
-    }
-    if (!(await hasVisibleFocus(page))) {
-      fail(`${path}:focus`, 'A11Y-FOCUS', `tab stop ${expected + 1} lacks a visible, unobscured focus indicator`);
-      break;
-    }
-  }
-};
-
-const assertLandmarkFocusOrder = async (page: Page, path: string) => {
-  const fixture = accessibilityPages.find((candidate) => candidate.path === path);
-  if (!fixture?.focusLandmarks) return;
-  const positions = await page.evaluate((selectors) => {
-    const elements = [...document.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])')]
-      .filter((element) => {
-        const style = getComputedStyle(element);
-        if (style.display === 'none' || style.visibility === 'hidden' || !element.getClientRects().length) return false;
-        const closed = element.closest('details:not([open])');
-        return !closed || element === closed.querySelector(':scope > summary');
-      });
-    return selectors.map((selector) => elements.indexOf(document.querySelector<HTMLElement>(selector)!));
-  }, [...fixture.focusLandmarks]);
-  for (let index = 0; index < positions.length; index += 1) {
-    if (positions[index] < 0) fail(`${path}:${fixture.focusLandmarks[index]}`, 'A11Y-FOCUS-COVERAGE', 'expected keyboard target is absent or not focusable');
-    if (index > 0 && positions[index] <= positions[index - 1]) fail(`${path}:keyboard`, 'A11Y-FOCUS-ORDER', `${fixture.focusLandmarks[index]} is out of expected focus order`);
-  }
-};
-
-type Rgb = [number, number, number];
-const rgb = (value: string): Rgb => {
-  if (value.startsWith('#')) {
-    const hex = value.slice(1);
-    return [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16)) as Rgb;
-  }
-  const channels = value.match(/[\d.]+/g)?.slice(0, 3).map(Number);
-  if (!channels || channels.length !== 3) throw new Error(`Unsupported color: ${value}`);
-  return channels as Rgb;
-};
-const luminance = (color: Rgb) => color.map((channel) => {
-  const value = channel / 255;
-  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-}).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
-const contrast = (a: string, b: string) => {
-  const values = [luminance(rgb(a)), luminance(rgb(b))].sort((left, right) => right - left);
-  return (values[0] + 0.05) / (values[1] + 0.05);
-};
-
-const tokenNames = pairTokenNames({ 'link-visited': '' });
-const readTokens = (page: Page) => page.evaluate((names) => {
-  const style = getComputedStyle(document.documentElement);
-  return Object.fromEntries(names.map((name) => [name, style.getPropertyValue(`--${name}`).trim().toLowerCase()]).filter(([, value]) => value));
-}, tokenNames) as Promise<Record<string, string>>;
-
-// Every pair, for the scheme the page currently renders (states: rest, hover, focus-visible, selected, visited).
-const assertSemanticContrast = async (page: Page, path: string, scheme: string) => {
-  const label = `${path}:${scheme}`;
-  for (const message of auditTokenMap(await readTokens(page), label)) fail(label, message.includes('restraint band') ? 'A11Y-BORDER-RESTRAINT' : 'A11Y-CONTRAST', message);
-};
-
-// The cascade, once: OS light/dark with no choice, and a stored choice that disagrees with the OS, in both directions. The choice is stored the way the theme select stores it, then the page reloads, so the head script applies it.
-const assertThemeMatrix = async (page: Page, path: string) => {
-  for (const [os, choice] of [['light', null], ['dark', null], ['light', 'dark'], ['dark', 'light']] as const) {
-    await page.emulateMedia({ colorScheme: os });
-    await page.evaluate(([key, value]) => { if (value) localStorage.setItem(key, value); else localStorage.removeItem(key); }, [THEME_STORAGE_KEY, choice] as const);
-    await page.reload({ waitUntil: 'load' });
-    const label = `${path}:os-${os}${choice ? `+choice-${choice}` : ''}`;
-    const tokens = await readTokens(page);
-    for (const message of auditTokenMap(tokens, label)) fail(label, message.includes('restraint band') ? 'A11Y-BORDER-RESTRAINT' : 'A11Y-CONTRAST', message);
-    const effective = choice ?? os;
-    const expected = (effective === 'dark' ? themeBlocks.dark.canvas : themeBlocks.light.canvas)?.toLowerCase();
-    if (tokens.canvas !== expected) fail(label, 'A11Y-THEME-PRECEDENCE', `--canvas is ${tokens.canvas}, expected the ${effective} value ${expected}`);
-  }
-  await page.evaluate((key) => localStorage.removeItem(key), THEME_STORAGE_KEY);
-};
-
-const verifyNativeDisclosure = async (page: Page, detailsSelector: string, name: string, scope: string) => {
-  const details = page.locator(detailsSelector);
-  const summary = details.locator(':scope > summary');
-  const native = await summary.evaluate((element) => ({ tag: element.tagName, name: element.textContent?.trim() }));
-  if (native.tag !== 'SUMMARY' || native.name !== name) {
-    fail(scope, 'A11Y-DISCLOSURE', 'disclosure must use a native summary with an accessible name');
-    return;
-  }
-  if (await details.evaluate((element) => (element as HTMLDetailsElement).open)) fail(scope, 'A11Y-DISCLOSURE', 'disclosure must begin collapsed');
-  const collapsed = await summary.ariaSnapshot();
-  await summary.focus();
-  await page.keyboard.press('Enter');
-  const expanded = await details.evaluate((element) => ({
-    openProperty: (element as HTMLDetailsElement).open,
-    openAttribute: element.hasAttribute('open'),
-    summaryFocused: element.querySelector(':scope > summary') === document.activeElement,
-  }));
-  const expandedSnapshot = await summary.ariaSnapshot();
-  if (!collapsed.includes(name) || !expanded.openProperty || !expanded.openAttribute
-    || !expanded.summaryFocused || !expandedSnapshot.includes(name)) {
-    fail(scope, 'A11Y-DISCLOSURE', 'native disclosure name, control semantics, and expanded state must be programmatically exposed');
-  }
-};
-
-/* Starlight's narrow navigation: one menu button opens the sidebar as a native popover, so it works
-   without JavaScript; the next Tab enters the menu and Escape closes it. */
-const verifyMobileMenu = async (page: Page, scope: string) => {
-  const button = page.locator('.sl-menu-button');
-  const menu = page.locator('#starlight__sidebar');
-  if (await button.count() !== 1 || !(await button.isVisible())) { fail(scope, 'A11Y-KEYBOARD', 'the narrow layout must show one menu button'); return; }
-  const name = ((await button.textContent()) ?? '').trim() || (await button.getAttribute('aria-label'));
-  if (!name) fail(scope, 'A11Y-KEYBOARD', 'the menu button must have an accessible name');
-  const isOpen = () => menu.evaluate((element) => element.matches(':popover-open'));
-  if (await isOpen()) fail(scope, 'A11Y-DISCLOSURE', 'the menu must begin closed');
-  await button.focus();
-  await page.keyboard.press('Enter');
-  if (!(await isOpen())) fail(scope, 'A11Y-DISCLOSURE', 'Enter on the menu button must open the menu');
-  if (!(await button.evaluate((element) => element === document.activeElement)) || !(await hasVisibleFocus(page))) fail(scope, 'A11Y-FOCUS', 'menu button focus must remain visible after opening');
-  await page.keyboard.press('Tab');
-  const firstLink = await menu.locator('a[href]').first().getAttribute('href');
-  const focused = await page.evaluate(() => document.activeElement?.getAttribute('href') ?? null);
-  if (!firstLink || focused !== firstLink) fail(scope, 'A11Y-KEYBOARD', `the first Tab inside the open menu must land on its first link (${firstLink}), found ${JSON.stringify(focused)}`);
-  await page.keyboard.press('Escape');
-  if (await isOpen()) fail(scope, 'A11Y-KEYBOARD', 'Escape must close the menu');
-  if (await hasPageOverflow(page)) fail(scope, 'A11Y-OVERFLOW', 'the narrow layout must not scroll sideways with the menu closed');
-};
-
 try {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  const requestedUrls: Array<{ url: string; type: string }> = [];
-  context.on('request', (request) => requestedUrls.push({ url: request.url(), type: request.resourceType() }));
-  const fontResponses: Array<{ url: string; status: number; type: string }> = [];
-  context.on('response', (response) => { if (response.request().resourceType() === 'font') fontResponses.push({ url: response.url(), status: response.status(), type: response.headers()['content-type'] ?? '' }); });
-
-  for (const path of paths) {
-    if (!(await open(page, path))) continue;
-    await page.keyboard.press('Tab');
-    const first = await page.evaluate(() => document.activeElement?.getAttribute('href') ?? null);
-    if (first !== '#_top') {
-      fail(`${path}:keyboard`, 'A11Y-KEYBOARD', `first focus must be the skip link to #_top, found ${JSON.stringify(first)}`);
-    } else if (!(await hasVisibleFocus(page))) {
-      fail(`${path}:focus`, 'A11Y-FOCUS', 'skip-link focus indicator must be visible and unobscured');
-    }
-    // Starlight's skip link targets the page title, so the browser moves the keyboard position there: the next Tab lands in the content.
-    await page.keyboard.press('Enter');
-    await page.keyboard.press('Tab');
-    const landed = await page.evaluate(() => {
-      const top = document.getElementById('_top');
-      const active = document.activeElement;
-      return location.hash === '#_top' && Boolean(top && active && active !== document.body && (top.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING));
-    });
-    if (!landed) fail(`${path}:keyboard`, 'A11Y-KEYBOARD', 'the skip link must move the keyboard position to the page title, so the next Tab lands in the content');
-    if (await hasPageOverflow(page)) fail(`${path}:layout`, 'A11Y-OVERFLOW', 'page has unintended horizontal overflow');
-    if (await open(page, path)) {
-      await assertLandmarkFocusOrder(page, path);
-      await assertDocumentFocusOrder(page, path);
-    }
-  }
-
   for (const colorScheme of ['light', 'dark'] as const) {
-    await page.emulateMedia({ colorScheme });
+    const context = await browser.newContext({ colorScheme });
+    const page = await context.newPage();
     for (const path of paths) {
-      if (!(await open(page, path))) continue;
+      const response = await page.goto(new URL(path, origin).href, { waitUntil: 'networkidle' });
+      if (!response?.ok()) {
+        failures.push(`${path} (${colorScheme}): HTTP ${response?.status()}`);
+        continue;
+      }
+      const theme = await page.evaluate(() => document.documentElement.dataset.theme);
+      if (theme !== colorScheme) failures.push(`${path} (${colorScheme}): the page rendered the ${theme} theme`);
       const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
-      for (const violation of results.violations) for (const node of violation.nodes) fail(`${path}:${colorScheme}:${node.target.join(' ')}`, `AXE-${violation.id}`, violation.help);
-      await assertSemanticContrast(page, path, colorScheme);
-      const sizing = await page.evaluate(() => {
-        const visible = [...document.querySelectorAll<HTMLElement>('body *')].filter((element) => {
-          const style = getComputedStyle(element);
-          return style.display !== 'none' && style.visibility !== 'hidden' && element.getClientRects().length > 0 && Boolean(element.textContent?.trim());
-        });
-        const controls = visible.filter((element) => element.matches('a, button, summary, input, select, textarea'));
-        const technical = visible.filter((element) => element.matches('code, small, .supporting, .technical-label, .resource-qualifier, .release, .breadcrumbs, .external-label, .module-pager__direction, .table-overflow__instruction, .diagnostic-stable-id, .source-excerpt__meta, .source-excerpt__source, .door__who, .evidence-badge, .evidence-link, .timeline__caption, .crosswalk__legend, .crosswalk__legend dt, .crosswalk__legend dd, .crosswalk figcaption, .kicker, .talk__kind, .talk__meta'));
-        // Diagram text is scaled by its viewBox: measure what the reader sees, not the CSS value.
-        const svgText = [...document.querySelectorAll<SVGTextContentElement>('svg text, svg tspan')].filter((element) => element.getClientRects().length > 0)
-          .map((element) => Number.parseFloat(getComputedStyle(element).fontSize) * ((element as unknown as SVGGraphicsElement).getScreenCTM()?.a ?? 1));
-        const mainLinks = visible.filter((element) => element.matches('main a'));
-        return {
-          body: Number.parseFloat(getComputedStyle(document.body).fontSize),
-          controls: Math.min(...controls.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 15),
-          technical: Math.min(...technical.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)), 14),
-          svgText: Math.min(...svgText, 14),
-          bareLinks: mainLinks.filter((element) => {
-            const style = getComputedStyle(element);
-            return !(style.textDecorationLine.includes('underline')
-              || Number.parseFloat(style.borderTopWidth) >= 1
-              || Number.parseFloat(style.borderBottomWidth) >= 1);
-          }).map((element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40)),
-        };
-      });
-      if (sizing.body < 16 || sizing.controls < 15) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'body text must remain at least 16 CSS pixels and control text at least 15 (the label size, one step below the body)');
-      if (sizing.technical < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', 'supporting and technical text must remain at least 14 CSS pixels');
-      if (sizing.svgText < 14) fail(`${path}:${colorScheme}`, 'A11Y-TEXT-SIZE', `diagram text renders at ${sizing.svgText.toFixed(1)} CSS pixels; the floor is 14`);
-      if (sizing.bareLinks.length) fail(`${path}:${colorScheme}`, 'A11Y-COLOR-MEANING', `links in the content must carry a cue that is not colour (an underline or a border): ${sizing.bareLinks.slice(0, 5).join(', ')}`);
-    }
-  }
-  if (await open(page, HOME_PATH)) await assertThemeMatrix(page, HOME_PATH);
-
-  await page.emulateMedia({ colorScheme: 'light' });
-
-  await page.setViewportSize({ width: 320, height: 800 });
-  for (const path of paths) {
-    if (!(await open(page, path))) continue;
-    if (await hasPageOverflow(page)) fail(`${path}:320px`, 'A11Y-REFLOW', 'content does not reflow within a 320 CSS-pixel viewport');
-    if (path === HOME_PATH) {
-      const hero = await page.evaluate(() => {
-        const heroElement = document.querySelector<HTMLElement>('.hero')!;
-        const copy = document.querySelector<HTMLElement>('.hero .copy');
-        const figure = document.querySelector<HTMLElement>('.hero .hero__figure');
-        const envPair = document.querySelector<HTMLElement>('.hero .env-pair');
-        const order = ['.hero', '.applicability-projection', '#doors', '#big-idea', '#crosswalk'].map((selector) => document.querySelector(selector));
-        return {
-          figureAfterCopy: Boolean(figure && copy && copy.compareDocumentPosition(figure) & Node.DOCUMENT_POSITION_FOLLOWING),
-          oneColumn: getComputedStyle(heroElement).display !== 'grid' || getComputedStyle(heroElement).gridTemplateColumns.split(' ').length === 1,
-          envPairColumn: Boolean(envPair) && getComputedStyle(envPair!).gridTemplateColumns.split(' ').length === 1,
-          homeOrder: order.every((element, index) => element !== null && (index === 0 || Boolean(order[index - 1]!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING))),
-        };
-      });
-      if (!hero.oneColumn || !hero.figureAfterCopy || !hero.envPairColumn) {
-        fail('/:320px', 'A11Y-READING-ORDER', 'the hero must be one column with the two-environment figure stacked after the copy, its panels stacked too');
-      }
-      if (!hero.homeOrder) fail('/:320px', 'A11Y-READING-ORDER', 'home order must be hero, evidence projection, doors, big idea, crosswalk');
-    }
-    const kind = accessibilityPages.find((fixture) => fixture.path === path)?.kind;
-    if (kind === 'conceptual module' || kind === 'runnable module') {
-      const timeline = await page.evaluate(() => {
-        const steps = [...document.querySelectorAll<HTMLElement>('.timeline li.timeline__step')];
-        return {
-          count: steps.length,
-          stepOrder: steps.every((item) => {
-            const label = item.querySelector('strong');
-            const caption = item.querySelector('.timeline__caption');
-            return Boolean(label && caption && label.getBoundingClientRect().top <= caption.getBoundingClientRect().top);
-          }),
-        };
-      });
-      if ((timeline.count > 0 || path === MODULE_2_PATH) && (timeline.count === 0 || !timeline.stepOrder)) {
-        fail(`${path}:320px`, 'A11Y-READING-ORDER', 'each timeline step label must sit above its caption at 320px');
+      for (const violation of results.violations) {
+        for (const node of violation.nodes) failures.push(`${path} (${colorScheme}) ${node.target.join(' ')}: [${violation.id}] ${violation.help}`);
       }
     }
+    await context.close();
   }
-
-  await open(page, '/resources/');
-  await verifyMobileMenu(page, '/resources/:navigation');
-
-  await page.setViewportSize({ width: 1024, height: 900 });
-  await open(page, '/guide/scheduler-as-orchestrator/');
-  await verifyNativeDisclosure(page, '.sources-scope details', 'Review source roles and citations', '/guide/scheduler-as-orchestrator/:sources');
-
-  for (const width of [768, 1280]) {
-    await page.setViewportSize({ width, height: 900 });
-    for (const path of paths) {
-      if (!(await open(page, path))) continue;
-      if (await hasPageOverflow(page)) fail(`${path}:${width}px`, 'A11Y-REFLOW', `page overflows horizontally at ${width} CSS pixels`);
-    }
-  }
-
-  // A 640 CSS-pixel viewport at 200% browser zoom exposes a 320 CSS-pixel layout viewport.
-  await page.setViewportSize({ width: 320, height: 450 });
-  for (const path of paths) {
-    if (!(await open(page, path))) continue;
-    if (await hasPageOverflow(page)) fail(`${path}:200%-zoom`, 'A11Y-ZOOM', 'page overflows horizontally at the 200% zoom-equivalent layout viewport');
-  }
-
-  await page.setViewportSize({ width: 320, height: 900 });
-  await open(page, '/guide/scheduler-as-orchestrator/');
-  const stress = await page.evaluate(() => {
-    const main = document.querySelector('main')!;
-    const hash = document.createElement('p');
-    hash.className = 'hash';
-    hash.textContent = `sha256:${'abcdef0123456789'.repeat(24)}`;
-    const token = document.createElement('p');
-    token.className = 'technical-value';
-    token.textContent = `token_${'A1b2C3d4'.repeat(48)}`;
-    const repository = document.createElement('a');
-    repository.href = `https://github.com/example/${'long-repository-segment-'.repeat(24)}/blob/v0.1.0/${'nested-path/'.repeat(24)}README.md`;
-    repository.textContent = repository.href;
-    const pre = document.createElement('pre');
-    pre.innerHTML = `<code>${'long-command-segment/'.repeat(40)}</code>`;
-    const region = document.createElement('div');
-    region.className = 'table-overflow layout-data';
-    region.tabIndex = 0;
-    region.setAttribute('role', 'region');
-    region.setAttribute('aria-label', 'Stress table');
-    const cells = Array.from({ length: 12 }, (_, index) => `<th scope="col">Column ${index + 1}</th>`).join('');
-    const values = Array.from({ length: 12 }, () => `<td>${'unbroken-value-'.repeat(8)}</td>`).join('');
-    region.innerHTML = `<p class="table-overflow__instruction">Scroll horizontally to view all columns.</p><table><caption>Overflow stress data</caption><thead><tr>${cells}</tr></thead><tbody><tr>${values}</tr></tbody></table>`;
-    main.append(hash, token, repository, pre, region);
-    const table = region.querySelector('table')!;
-    return {
-      hashContained: hash.scrollWidth <= hash.clientWidth + 1,
-      tokenContained: token.scrollWidth <= token.clientWidth + 1,
-      repositoryContained: repository.scrollWidth <= repository.clientWidth + 1,
-      codeLocallyScrollable: pre.scrollWidth > pre.clientWidth,
-      tableLocallyScrollable: region.scrollWidth > region.clientWidth,
-      tableDisplay: getComputedStyle(table).display,
-      caption: table.querySelector('caption')?.textContent,
-      scopedHeaders: table.querySelectorAll('th[scope="col"]').length,
-    };
-  });
-  if (!stress.hashContained) fail('/guide/:hash-stress', 'A11Y-OVERFLOW', 'long hashes must wrap within their container');
-  if (!stress.tokenContained) fail('/guide/:token-stress', 'A11Y-OVERFLOW', 'long tokens must wrap within their container');
-  if (!stress.repositoryContained) fail('/guide/:repository-stress', 'A11Y-OVERFLOW', 'long repository references must wrap within their container');
-  if (!stress.codeLocallyScrollable) fail('/guide/:code-stress', 'A11Y-OVERFLOW', 'long code must scroll within its own region');
-  if (!stress.tableLocallyScrollable) fail('/guide/:table-stress', 'A11Y-OVERFLOW', 'wide tables must scroll within their labelled region');
-  if (stress.tableDisplay !== 'table' || stress.caption !== 'Overflow stress data' || stress.scopedHeaders !== 12) {
-    fail('/guide/:table-stress', 'A11Y-TABLE', 'overflow handling must preserve native table, caption, and scoped-header semantics');
-  }
-  const stressRegion = page.getByRole('region', { name: 'Stress table' });
-  await stressRegion.focus();
-  if (!(await hasVisibleFocus(page))) fail('/guide/:table-stress', 'A11Y-FOCUS', 'the bounded table region must expose visible keyboard focus');
-  await page.keyboard.press('Tab');
-  if (await stressRegion.evaluate((element) => element === document.activeElement)) {
-    fail('/guide/:table-stress', 'A11Y-FOCUS-ORDER', 'the table region must not trap keyboard focus');
-  }
-  if (await hasPageOverflow(page)) fail('/guide/:stress', 'A11Y-OVERFLOW', 'technical stress content must not overflow the page viewport');
-
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await open(page, '/');
-  const decorativeMotion = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('body *')].some((element) => {
-    const style = getComputedStyle(element);
-    return style.animationName !== 'none' || style.transitionDuration.split(',').some((duration) => Number.parseFloat(duration) > 0);
-  }));
-  if (decorativeMotion) fail('/:motion', 'A11Y-MOTION', 'static pages must not add decorative animation or transitions');
-
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await open(page, '/');
-  const reducedMotion = await page.evaluate(() => {
-    const probe = document.createElement('div');
-    probe.style.transition = 'transform 10s';
-    probe.style.animation = 'spin 10s infinite';
-    document.body.append(probe);
-    const style = getComputedStyle(probe);
-    return {
-      preference: matchMedia('(prefers-reduced-motion: reduce)').matches,
-      transition: Number.parseFloat(style.transitionDuration),
-      animation: Number.parseFloat(style.animationDuration),
-      iterations: style.animationIterationCount,
-    };
-  });
-  if (!reducedMotion.preference || reducedMotion.transition > 0.00001
-    || reducedMotion.animation > 0.00001 || reducedMotion.iterations !== '1') {
-    fail('/:reduced-motion', 'A11Y-MOTION', 'reduced-motion preference must minimize transitions and animations');
-  }
-
-  await page.emulateMedia({ media: 'screen', forcedColors: 'none', reducedMotion: 'no-preference', colorScheme: 'light' });
-
-  // Gates that open their own contexts. Each returns issues; the scanner reports them in its usual format.
-  const gate = async (scope: string, run: () => Promise<Issue[]>) => {
-    try { for (const found of await run()) fail(found.scope, found.code, found.message); }
-    catch (error) { fail(scope, 'A11Y-GATE-ERROR', (error instanceof Error ? error.message : String(error)).split('\n')[0]); }
-  };
-  const timelineOrder = { selector: '.timeline__step strong', texts: TIMELINE_STEPS.map(({ label }) => label) };
-  const expectations: Record<string, PageExpectation> = {
-    [HOME_PATH]: { ordered: [{ selector: '.concept__term', texts: CONCEPTS.map(({ label }) => label) }, { selector: '.door__title', texts: DOORS.map(({ title }) => title) }], present: ['h1', '.evidence-badge', '.hero__figure', '.crosswalk__legend', '.crosswalk__disclosure > summary'] },
-    [MODULE_2_PATH]: { ordered: [timelineOrder], present: ['h1', '.evidence-badge'] },
-  };
-  for (const record of recordPaths) expectations[record] = { present: ['h1', '.applicability-record'] };
-  for (const path of Object.keys(expectations)) {
-    await gate(`${path}:forced-colors`, () => checkForcedColors(browser, origin, path, expectations[path]));
-    await gate(`${path}:print`, () => checkPrint(browser, origin, path, expectations[path]));
-  }
-  await gate('/:theme', () => checkThemePrecedence(browser, origin, HOME_PATH, { light: themeBlocks.light, dark: themeBlocks.dark }));
-  for (const path of [HOME_PATH, MODULE_2_PATH]) {
-    const html = await (await fetch(new URL(path, origin))).text();
-    await gate(`${path}:theme-script`, async () => inspectThemeScript(html, `${path}:theme-script`));
-    await gate(`${path}:font-failure`, () => checkFontBlocking(browser, origin, path));
-  }
-  await gate('/guide/tour/:font-failure', () => checkFontBlocking(browser, origin, '/guide/tour/'));
-  await gate('/:crosswalk-layout', () => checkCrosswalkLayout(browser, origin, HOME_PATH));
-  for (const path of [HOME_PATH, '/guide/tour/', MODULE_2_PATH]) await gate(`${path}:component-geometry`, () => checkComponentGeometry(browser, origin, path));
-  await gate('/resources/:guide-cards', () => checkGuideCards(browser, origin, '/resources/'));
-  for (const path of paths) await gate(`${path}:motion`, () => checkMotion(browser, origin, path));
-  await gate('/:no-script', () => checkJsOff(browser, origin, HOME_PATH, 'home', { panel: true }));
-  await gate(`${MODULE_2_PATH}:no-script`, () => checkJsOff(browser, origin, MODULE_2_PATH, 'module', { panel: true }));
-  await gate('/:hero-action', () => checkHeroAction(browser, origin, HOME_PATH, HERO.primary.label, HERO.primary.href));
-
-  const noScript = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 320, height: 800 } });
-  const noScriptRequests: Array<{ url: string; type: string }> = [];
-  noScript.on('request', (request) => noScriptRequests.push({ url: request.url(), type: request.resourceType() }));
-  const noScriptPage = await noScript.newPage();
-  if (await open(noScriptPage, '/resources/')) {
-    await verifyMobileMenu(noScriptPage, '/resources/:no-script');
-    const moduleLink = noScriptPage.getByRole('link', { name: 'Baseline Pattern: Single-Node Service + Workers' }).first();
-    if (await moduleLink.getAttribute('href') !== '/guide/baseline-single-node-pattern/') {
-      fail('/resources/:no-script', 'A11Y-NOJS', 'grouped resource entries must remain ordinary links');
-    }
-    await moduleLink.click();
-    if (new URL(noScriptPage.url()).pathname !== '/guide/baseline-single-node-pattern/') {
-      fail('/resources/:no-script', 'A11Y-NOJS', 'resource links must navigate without JavaScript');
-    }
-  }
-  for (const path of paths) {
-    if (!(await open(noScriptPage, path))) continue;
-    if (await hasPageOverflow(noScriptPage)) fail(`${path}:no-script`, 'A11Y-NOJS', 'representative page must reflow without JavaScript');
-    await assertDocumentFocusOrder(noScriptPage, `${path}:no-script`);
-    const fixture = accessibilityPages.find((candidate) => candidate.path === path);
-    for (const marker of fixture?.criticalOutsideDisclosure ?? []) {
-      const outside = marker === 'Tested workflow scope'
-        ? await noScriptPage.locator('.applicability-projection[aria-label="Tested workflow scope"]').evaluateAll((elements) => elements.some((element) => !element.closest('details')))
-        : await noScriptPage.evaluate((text) => {
-          const clone = document.body.cloneNode(true) as HTMLElement;
-          clone.querySelectorAll('details').forEach((details) => details.remove());
-          return (clone.textContent ?? '').replace(/\s+/g, ' ').includes(text);
-        }, marker);
-      if (!outside) fail(`${path}:no-script:${marker}`, 'A11Y-DISCLOSURE', 'critical content must remain visible outside collapsed disclosures');
-    }
-    const criticalPlacement = await noScriptPage.evaluate(() => {
-      const structural = [...document.querySelectorAll('.notice, .applicability-projection, .diagnostic-applicability, [role="note"]')];
-      const warnings = [...document.querySelectorAll('strong')].filter((element) => /^Warning\b/.test(element.textContent?.trim() ?? ''));
-      return [...structural, ...warnings].every((element) => !element.closest('details'));
-    });
-    if (!criticalPlacement) fail(`${path}:no-script`, 'A11Y-DISCLOSURE', 'warnings, unvalidated state, applicability scope, and actionable status must remain outside disclosures');
-  }
-
-  for (const request of [...requestedUrls, ...noScriptRequests]) {
-    const remote = !request.url.startsWith(origin);
-    if (remote) fail(request.url, 'A11Y-REMOTE-FONT', 'pages must make no remote requests');
-    else if (request.type === 'font' && !/^\/fonts\/[^?#]+\.woff2$/.test(new URL(request.url).pathname)) fail(request.url, 'A11Y-REMOTE-FONT', 'same-origin fonts must be /fonts/*.woff2 files');
-  }
-  for (const response of fontResponses) {
-    if (response.status !== 200 || response.type !== 'font/woff2') fail(response.url, 'A11Y-FONT-MIME', `font response must be 200 font/woff2, received ${response.status} ${response.type}`);
-  }
-  await noScript.close();
-  await context.close();
 } finally {
   await browser.close();
   server.close();
@@ -536,4 +64,4 @@ if (failures.length) {
   console.error(failures.map((failure) => `ERROR: ${failure}`).join('\n'));
   process.exit(1);
 }
-console.log(`Frontend browser validation passed for ${paths.length} built pages: axe, token pairs and states, theme precedence, no-JavaScript, keyboard/focus, 320/768/1280px reflow, 200% zoom, forced colors, print, font failure, overflow stress, tables, and reduced motion.`);
+console.log(`axe found no violations on ${paths.length} built pages, in the light and the dark theme.`);

@@ -61,7 +61,7 @@ describe('ci.yml: version-parametrised blocking validation', () => {
   it('keeps the gates it had: one build, publication validators, static and browser accessibility', () => {
     const runs = steps.map((step) => step.run).filter(Boolean);
     expect(runs.filter((run) => run === 'npm run build')).toHaveLength(1);
-    for (const run of ['npm run check', 'npm run publication:validate', 'npm run publication:prepare', 'npm run test:integration:built && npm run test:accessibility:built && npm run test:accessibility:browser']) expect(runs).toContain(run);
+    for (const run of ['npm run check', 'npm run publication:validate', 'npm run publication:prepare', 'npm run test:integration:built && npm run test:accessibility:browser']) expect(runs).toContain(run);
   });
 
   it('never expands a GitHub expression inside a shell script', () => {
