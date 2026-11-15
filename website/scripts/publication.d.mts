@@ -30,8 +30,6 @@ export const REQUIRED_FRAGMENTS: Readonly<Record<string, readonly string[]>>;
 export function validateFragmentLinks(pages: Array<{ source: string; html: string }>): string[];
 export function validateRequiredFragments(pages: Array<{ source: string; html: string }>): string[];
 export function resolveReleaseVersion(root?: string, env?: Record<string, string | undefined>): string;
-export function tagPatternMatches(pattern: string, tag: string): boolean;
-export function tagTriggers(patterns: string[], tag: string): boolean;
 export function workflowTagPatterns(text: string): string[];
 export function validateReleaseWorkflow(text: string, file?: string): string[];
 export function validateFrozenPublicationWorkflow(text: string, file?: string): string[];

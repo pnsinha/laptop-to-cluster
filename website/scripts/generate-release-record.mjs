@@ -5,10 +5,6 @@ import { assertReleaseVersion, resolveReleaseVersion } from './release-version.m
 
 const root = resolve(process.argv[2] ?? '.');
 const version = assertReleaseVersion(resolveReleaseVersion(root));
-if (process.env.PREVIEW === '1') {
-  console.log(`Preview run: no deployment or release record is generated for ${version}.`);
-  process.exit(0);
-}
 const directory = join(root, 'publication', version);
 const artifact = JSON.parse(readFileSync(join(directory, 'artifact-manifest.json'), 'utf8'));
 const binding = JSON.parse(readFileSync(join(directory, 'release-binding.json'), 'utf8'));
@@ -34,8 +30,6 @@ const release = {
   publishedAt: process.env.RELEASE_DATE ?? new Date().toISOString().slice(0, 10),
   repositoryTag: binding.repositoryTag,
   urlManifestSha256: binding.urlManifestSha256,
-  evidenceIds: binding.evidenceIds,
-  changes: binding.changes,
   deployment,
 };
 const errors = [...validateDeploymentRecord(deployment, artifact), ...validateReleaseManifest(release, artifact)];

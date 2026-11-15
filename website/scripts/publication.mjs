@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parse as parseYaml } from 'yaml';
 import { defaultPdfToText, runBoundaryScan } from './boundary.mjs';
 
 export const CANONICAL_ORIGIN = 'https://laptop-to-cluster.org';
@@ -500,8 +501,6 @@ export function validateReleaseManifest(record, artifactManifest) {
   }
   if (record.version !== record.deployment.release || record.repositoryTag !== record.version) errors.push(diagnostic('release-manifest.json', 'version', 'RELEASE-RECORD', 'release and immutable repository tag must agree'));
   if (!SHA256.test(record.urlManifestSha256 ?? '')) errors.push(diagnostic('release-manifest.json', 'urlManifestSha256', 'RELEASE-RECORD', 'must be SHA-256'));
-  if (!Array.isArray(record.evidenceIds) || record.evidenceIds.length === 0) errors.push(diagnostic('release-manifest.json', 'evidenceIds', 'RELEASE-RECORD', 'at least one evidence identifier is required'));
-  if (!Array.isArray(record.changes) || record.changes.length === 0) errors.push(diagnostic('release-manifest.json', 'changes', 'RELEASE-RECORD', 'classified changes are required'));
   return errors;
 }
 
@@ -519,44 +518,15 @@ export function validateDeploymentWorkflow(workflowText, file = '.github/workflo
   return errors;
 }
 
-/** The one release-version rule: RELEASE_VERSION, else the newest releases/<v>/release-candidate.json. Never defaults to v0.1.0. The site build reads it through website/plugins/release-refs.mjs. */
+/** The one release-version rule: RELEASE_VERSION (the workflows set it from the tag), else v<version> from package.json in `root` (the website/ folder). The site build reads it through website/plugins/release-refs.mjs. */
 export function resolveReleaseVersion(root = '.', env = process.env) {
   const fromEnv = env.RELEASE_VERSION?.trim();
   if (fromEnv) return fromEnv;
-  const directory = join(root, 'releases');
-  const versions = existsSync(directory) ? readdirSync(directory).filter((name) => /^v\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?$/.test(name) && existsSync(join(directory, name, 'release-candidate.json'))) : [];
-  const parts = (version) => version.slice(1).split(/[.-]/).map((part) => Number(part) || 0);
-  const newest = versions.sort((a, b) => { const pa = parts(a); const pb = parts(b); for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pb[i] - pa[i]; return 0; })[0];
-  if (!newest) throw new Error('resolveReleaseVersion: set RELEASE_VERSION or add releases/<version>/release-candidate.json');
-  return JSON.parse(readFileSync(join(directory, newest, 'release-candidate.json'), 'utf8')).version ?? newest;
+  const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+  if (!/^\d+\.\d+\.\d+$/.test(version ?? '')) throw new Error('resolveReleaseVersion: set RELEASE_VERSION or give package.json a version like 1.2.3');
+  return `v${version}`;
 }
 
-/** GitHub Actions tag filter semantics for the characters we use: * (no slash), ** (anything), ? and + (as in a regular expression), [] classes. */
-export function tagPatternMatches(pattern, tag) {
-  let source = '';
-  for (let index = 0; index < pattern.length; index++) {
-    const character = pattern[index];
-    if (character === '*') {
-      if (pattern[index + 1] === '*') { source += '.*'; index++; } else source += '[^/]*';
-    } else if (character === '?' || character === '+') source += character;
-    else if (character === '[') {
-      const end = pattern.indexOf(']', index);
-      if (end < 0) return false;
-      source += pattern.slice(index, end + 1);
-      index = end;
-    } else source += character.replace(/[.\\^$(){}|]/g, '\\$&');
-  }
-  return new RegExp(`^${source}$`).test(tag);
-}
-/** Ordered include/!-exclude evaluation: the last matching pattern decides. */
-export function tagTriggers(patterns, tag) {
-  let triggers = false;
-  for (const pattern of patterns) {
-    if (pattern.startsWith('!')) { if (tagPatternMatches(pattern.slice(1), tag)) triggers = false; }
-    else if (tagPatternMatches(pattern, tag)) triggers = true;
-  }
-  return triggers;
-}
 function jobBlock(text, name) {
   return text.match(new RegExp(`\\n  ${name}:[\\s\\S]*?(?=\\n  [a-zA-Z][\\w-]*:|$)`))?.[0] ?? '';
 }
@@ -569,62 +539,31 @@ function workflowList(text, key) {
 export function workflowTagPatterns(text) {
   return workflowList(text, 'tags');
 }
-function jobNeeds(block) {
-  const match = block.match(/\n    needs:[ \t]*([^\n]*)((?:\n      - [^\n]+)*)/);
-  if (!match) return [];
-  return `${match[1]},${match[2].replace(/\n\s+- /g, ',')}`.replace(/[\[\]]/g, '').split(',').map((item) => item.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
-}
-function jobGate(block) {
-  const condition = (block.match(/\n    if:[ \t]*([^\n]+)/)?.[1] ?? '').replace(/\$\{\{|\}\}/g, '').replace(/\s+/g, '');
-  return /^needs\.plan\.outputs\.mode==['"]?preview['"]?$/.test(condition) ? 'preview' : /^needs\.plan\.outputs\.mode==['"]?production['"]?$/.test(condition) ? 'production' : 'other';
-}
-const artifactName = (output) => new RegExp(`^\\$\\{\\{\\s*needs\\.plan\\.outputs\\.${output}\\s*\\}\\}$`);
-
-/** The release workflow: the properties the policy gate requires of it. */
+/** release.yml must gate production on the `production` environment, deploy only the validated artifact, and never expand ${{ }} inside a run: script. */
 export function validateReleaseWorkflow(text, file = '.github/workflows/release.yml') {
   const errors = [];
-  const fail = (field, check, message) => errors.push(diagnostic(file, field, check, message));
-  const patterns = workflowTagPatterns(text);
-  if (!patterns.length) fail('on.push.tags', 'RELEASE-WORKFLOW', 'tag triggers are required');
-  for (const tag of ['v0.2.0', 'v0.2.0-rc.1']) if (!tagTriggers(patterns, tag)) fail('on.push.tags', 'RELEASE-WORKFLOW', `no tag pattern triggers ${tag}`);
-  if (tagTriggers(patterns, 'v0.1.0')) fail('on.push.tags', 'RELEASE-WORKFLOW', 'the tag patterns match the frozen v0.1.0 tag; add a !v0.1.0 filter');
-  if (/v0\.1\.0/.test(text.replace(/!v0\.1\.0/g, ''))) fail('release', 'RELEASE-WORKFLOW', 'v0.1.0 may appear only inside the !v0.1.0 filter');
-  if (!workflowList(text, 'branches').includes('v0.2.0-showcase')) fail('on.push.branches', 'RELEASE-WORKFLOW', 'the preview trigger on branch v0.2.0-showcase is required');
-  if (!/^permissions:\s*\n\s+contents:\s*read\s*$/m.test(text)) fail('permissions', 'RELEASE-WORKFLOW', 'top-level permissions must be contents: read');
-  if (!/L2C_BOUNDARY_PATTERN:\s*\$\{\{\s*secrets\.L2C_BOUNDARY_PATTERN\s*\}\}/.test(text)) fail('env', 'RELEASE-WORKFLOW', 'L2C_BOUNDARY_PATTERN must be mapped from the secret of the same name');
-  for (const secret of ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_ZONE_ID']) if (!new RegExp(`secrets\\.${secret}\\b`).test(text)) fail('secrets', 'RELEASE-WORKFLOW', `secrets.${secret} must be used`);
-  const plan = jobBlock(text, 'plan');
-  if (!/\n    outputs:\s*\n(?:\s+[a-z]+:[^\n]*\n)*?\s+version:/.test(`${plan}\n`)) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job must output the release version');
-  if (!plan) fail('jobs.plan', 'RELEASE-WORKFLOW', 'the plan job is missing');
-  const build = jobBlock(text, 'build-once');
-  if (!build) fail('jobs.build-once', 'BUILD-ONCE', 'the build-once job is missing');
-  else {
-    if (!/fetch-depth:\s*0/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'checkout needs fetch-depth: 0 for the history scan');
-    if (!jobNeeds(build).includes('plan')) fail('jobs.build-once', 'BUILD-ONCE', 'build-once must need plan');
-    if (!/npm run validate(?![:\w-])/.test(build)) fail('jobs.build-once', 'RELEASE-WORKFLOW', 'the full npm run validate chain is required');
-    const artifact = build.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
-    if (!artifactName('artifact-name').test(artifact.trim())) fail('jobs.build-once', 'BUILD-ONCE', 'the retained artifact name must be ${{ needs.plan.outputs.artifact-name }} (validated-site-<version>-<sha> from the plan job)');
+  const fail = (field, message) => errors.push(diagnostic(file, field, 'RELEASE-WORKFLOW', message));
+  let workflow;
+  try { workflow = parseYaml(text); } catch (error) { return [diagnostic(file, 'yaml', 'RELEASE-WORKFLOW', `does not parse: ${error.message}`)]; }
+  const jobs = workflow?.jobs ?? {};
+  const needs = (job) => [job?.needs ?? []].flat();
+  const tags = workflow?.on?.push?.tags ?? [];
+  if (!tags.includes('!v0.1.0') || !tags.some((tag) => tag.startsWith('v[0-9]'))) fail('on.push.tags', 'tags must trigger on vX.Y.Z and exclude the frozen v0.1.0');
+  if (workflow?.on?.push?.branches) fail('on.push.branches', 'a branch push must not trigger a release; use workflow_dispatch for a preview');
+  if (workflow?.permissions?.contents !== 'read' || Object.keys(workflow?.permissions ?? {}).length !== 1) fail('permissions', 'top-level permissions must be contents: read only');
+  if (jobs.deploy?.environment !== 'production') fail('jobs.deploy', 'the production deploy must run in the production environment');
+  if (!needs(jobs.deploy).includes('build-once')) fail('jobs.deploy', 'deploy must need build-once');
+  const deployText = JSON.stringify(jobs.deploy ?? {});
+  if (/--branch=preview/.test(deployText) || !/--branch=main/.test(deployText)) fail('jobs.deploy', 'production deploys to --branch=main only');
+  const previewText = JSON.stringify(jobs['deploy-preview'] ?? {});
+  if (jobs['deploy-preview']?.environment === 'production' || /--branch=main/.test(previewText) || !/--branch=preview/.test(previewText)) fail('jobs.deploy-preview', 'a preview deploys to --branch=preview and never uses the production environment');
+  errors.push(...validateDeploymentWorkflow(text, file, 'deploy'), ...validateDeploymentWorkflow(text, file, 'deploy-preview'));
+  if (!jobs['post-deploy']) fail('jobs.post-deploy', 'the post-deploy checks are required');
+  for (const [name, job] of Object.entries(jobs)) {
+    for (const step of job.steps ?? []) if (/\$\{\{/.test(step.run ?? '')) fail(`jobs.${name}`, `a run: script expands \${{ }} (step ${JSON.stringify(step.name ?? step.id ?? step.run.slice(0, 30))}); pass it through env:`);
   }
-  for (const [index, step] of [...text.matchAll(/actions\/checkout@[^\n]*\n([\s\S]*?)(?=\n      - |\n  [a-zA-Z]|$)/g)].entries()) if (!/fetch-depth:\s*0/.test(step[1])) fail('jobs', 'RELEASE-WORKFLOW', `checkout step ${index + 1} needs fetch-depth: 0`);
-  for (const name of ['CLOUDFLARE_PAGES_PROJECT', 'CLOUDFLARE_CUSTOM_DOMAIN_ID', 'CLOUDFLARE_REDIRECT_LIST_ID', 'CLOUDFLARE_REDIRECT_RULE_ID']) if (!new RegExp(`vars\\.${name}\\b`).test(text)) fail('vars', 'RELEASE-WORKFLOW', `vars.${name} must be used as in publication.yml`);
-  const preview = jobBlock(text, 'deploy-preview');
-  const production = jobBlock(text, 'deploy');
-  errors.push(...validateDeploymentWorkflow(text, file, 'deploy-preview'), ...validateDeploymentWorkflow(text, file, 'deploy'));
-  for (const [name, block] of [['deploy-preview', preview], ['deploy', production]]) {
-    if (block && jobGate(block) !== (name === 'deploy' ? 'production' : 'preview')) fail(`jobs.${name}`, 'RELEASE-WORKFLOW', `${name} must be gated on the plan mode output (${name === 'deploy' ? "== 'production'" : "== 'preview'"})`);
-    if (block && !jobNeeds(block).includes('build-once')) fail(`jobs.${name}`, 'BUILD-ONCE', `${name} must need build-once`);
-  }
-  const count = (block, needle) => block.split(needle).length - 1;
-  if (count(text, '--branch=preview') !== count(preview, '--branch=preview') || !count(preview, '--branch=preview')) fail('jobs.deploy-preview', 'DIRECT-UPLOAD', '--branch=preview must appear only in deploy-preview, and there it is required');
-  if (count(text, '--branch=main') !== count(production, '--branch=main') || !count(production, '--branch=main')) fail('jobs.deploy', 'DIRECT-UPLOAD', '--branch=main must appear only in deploy, and there it is required');
-  for (const script of ['generate-release-record.mjs', 'update-recovery-index.mjs']) {
-    if (count(text, script) !== count(production, script)) fail('jobs.deploy-preview', 'RELEASE-WORKFLOW', `${script} belongs to the production job only`);
-    if (!production.includes(script)) fail('jobs.deploy', 'RELEASE-WORKFLOW', `${script} must run in the deploy job`);
-  }
-  const post = jobBlock(text, 'post-deploy-release-checks');
-  const releaseRecord = production.match(/actions\/upload-artifact@[\s\S]*?\bname:\s*([^\n]+)/)?.[1] ?? '';
-  if (!artifactName('record-artifact-name').test(releaseRecord.trim())) fail('jobs.deploy', 'RELEASE-WORKFLOW', 'the release record artifact name must be ${{ needs.plan.outputs.record-artifact-name }} (release-record-<version>-<sha> from the plan job)');
-  if (!jobNeeds(post).includes('deploy') || !/check-public-release\.mjs/.test(post)) fail('jobs.post-deploy-release-checks', 'RELEASE-WORKFLOW', 'a post-deploy job that needs deploy and runs check-public-release.mjs is required');
+  const uploads = Object.values(jobs).flatMap((job) => (job.steps ?? []).filter((step) => String(step.uses).startsWith('actions/upload-artifact@')));
+  for (const upload of uploads) if (upload.with?.['retention-days'] !== 90) fail('upload-artifact', 'artifacts are retained for 90 days');
   return errors;
 }
 
@@ -679,14 +618,12 @@ if (invoked) {
       const text = readFileSync(file, 'utf8');
       if (REDIRECT_HOSTS.some((host) => text.includes(host))) errors.push(diagnostic(relative(root, file), 'hostname', 'REDIRECT-POLICY', 'hostname rules must remain outside content redirects'));
     }
-    const requireRelease = args.includes('--require-release-workflow') || process.env.CI === 'true';
     const releasePath = join(root, '.github/workflows/release.yml');
     const releaseErrors = existsSync(releasePath)
       ? validateReleaseWorkflow(readFileSync(releasePath, 'utf8'))
       : [diagnostic('.github/workflows/release.yml', 'file', 'RELEASE-WORKFLOW', 'the release workflow is missing')];
     const frozenErrors = validateFrozenPublicationWorkflow(readFileSync(join(root, '.github/workflows/publication.yml'), 'utf8'));
-    if (requireRelease) errors.push(...releaseErrors, ...frozenErrors);
-    else for (const message of [...releaseErrors, ...frozenErrors]) console.error(`WARNING: ${message}`);
+    errors.push(...releaseErrors, ...frozenErrors);
     if (printErrors(errors)) console.log('Canonical, Cloudflare redirect, and build-once deployment policies are valid.');
   } else if (command === 'cloudflare-readiness') {
     const input = JSON.parse(readFileSync(args[0], 'utf8'));

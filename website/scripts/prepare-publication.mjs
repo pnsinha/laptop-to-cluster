@@ -2,13 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createArtifactManifest, sha256, validateBuiltOutput, verifyArtifactManifest } from './publication.mjs';
-import { assertReleaseVersion, readReleaseCandidate, resolveReleaseVersion } from './release-version.mjs';
+import { assertReleaseVersion, resolveReleaseVersion } from './release-version.mjs';
 
 const root = resolve(process.argv[2] ?? '.');
 const version = assertReleaseVersion(resolveReleaseVersion(root));
 const dist = join(root, 'dist');
 const output = join(root, 'publication', version);
-const candidate = readReleaseCandidate(root, version);
 const errors = validateBuiltOutput(dist);
 if (errors.length) {
   console.error(errors.map((error) => `ERROR: ${error}`).join('\n'));
@@ -25,13 +24,11 @@ const binding = {
   schemaVersion: 1,
   version,
   sourceCommit,
-  repositoryTag: candidate.repositoryTag,
+  repositoryTag: version,
   canonicalOrigin: 'https://laptop-to-cluster.org',
   urlManifestSha256: sha256(readFileSync(join(dist, 'url-manifest.json'))),
   artifactSha256: artifact.artifactSha256,
   artifactFileManifestSha256: artifact.artifactFileManifestSha256,
-  evidenceIds: candidate.evidenceIds,
-  changes: candidate.changes,
   externalInputsRequired: ['cloudflareDeploymentId', 'pagesDevFallbackUrl'],
 };
 writeFileSync(join(output, 'release-binding.json'), JSON.stringify(binding, null, 2) + '\n');
